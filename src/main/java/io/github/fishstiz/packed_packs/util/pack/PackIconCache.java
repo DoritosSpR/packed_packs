@@ -1,0 +1,70 @@
+package io.github.fishstiz.packed_packs.util.pack;
+
+import com.google.common.hash.Hashing;
+import com.mojang.blaze3d.platform.NativeImage;
+import io.github.fishstiz.packed_packs.util.constants.Constants;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackResources;
+import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.resources.IoSupplier;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.InputStream;
+
+@FunctionalInterface
+public interface PackIconCache {
+    ResourceLocation DEFAULT_ICON = ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png");
+
+    @NotNull ResourceLocation getIcon(Pack pack);
+
+    /**
+     * Copied from {@link PackSelectionScreen#loadPackIcon(TextureManager, Pack)}
+     */
+    @SuppressWarnings("all")
+    static ResourceLocation loadPackIcon(Pack pack) {
+        try {
+            final TextureManager manager = Minecraft.getInstance().getTextureManager();
+            ResourceLocation packIcon;
+            try (PackResources packResources = pack.open()) {
+                IoSupplier<InputStream> ioSupplier = packResources.getRootResource("pack.png");
+
+                if (ioSupplier == null) {
+                    return DEFAULT_ICON;
+                }
+
+                String id = pack.getId();
+                ResourceLocation resourceLocation = ResourceLocation.withDefaultNamespace(
+                        "pack/" + Util.sanitizeName(id, ResourceLocation::validPathChar) + "/" + Hashing.sha1().hashUnencodedChars(id) + "/icon"
+                );
+                InputStream inputStream = ioSupplier.get();
+
+                try {
+                    NativeImage nativeImage = NativeImage.read(inputStream);
+                    manager.register(resourceLocation, new DynamicTexture(nativeImage));
+                    packIcon = resourceLocation;
+                } catch (Throwable e) {
+                    if (inputStream != null) {
+                        try {
+                            inputStream.close();
+                        } catch (Throwable e2) {
+                            e.addSuppressed(e2);
+                        }
+                    }
+                    throw e;
+                }
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+            }
+            return packIcon;
+        } catch (Exception e) {
+            Constants.LOGGER.warn("Failed to load icon from pack '{}'", pack.getId(), e);
+            return DEFAULT_ICON;
+        }
+    }
+}

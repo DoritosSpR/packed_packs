@@ -1,0 +1,10 @@
+{
+  "packed_packs.profile": "Profiles",
+  "packed_packs.profile.unnamed": "Unnamed Profile",
+  "packed_packs.apply": "Apply Packs",
+  "packed_packs.search": "Search",
+  "packed_packs.sort": "Sort",
+  "packed_packs.sort.last_updated": "Recent",
+  "packed_packs.sort.last_updated.reverse": "Oldest",
+  "packed_packs.hide_incompatible": "Hide Incompatible"
+}

@@ -1,0 +1,402 @@
+package io.github.fishstiz.packed_packs.gui.components.list;
+
+import io.github.fishstiz.fidgetz.gui.Background;
+import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
+import io.github.fishstiz.packed_packs.gui.components.PackListContainer;
+import io.github.fishstiz.packed_packs.util.constants.Theme;
+import io.github.fishstiz.packed_packs.gui.event.MoveEvent;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.navigation.ScreenDirection;
+import net.minecraft.server.packs.repository.Pack;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.ToIntFunction;
+
+import static com.mojang.blaze3d.platform.InputConstants.*;
+import static io.github.fishstiz.fidgetz.util.WidgetUtil.isPointWithinBounds;
+import static io.github.fishstiz.fidgetz.util.WidgetUtil.playClickSound;
+import static io.github.fishstiz.packed_packs.util.InputUtil.isMoveModifierActive;
+import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
+import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
+import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
+
+public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
+    private static final Sprite UNSELECT_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/unselect_highlighted"));
+    private static final Sprite UNSELECT_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/unselect"));
+    private static final Sprite MOVE_UP_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_up_highlighted"));
+    private static final Sprite MOVE_UP_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_up"));
+    private static final Sprite MOVE_DOWN_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_down_highlighted"));
+    private static final Sprite MOVE_DOWN_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_down"));
+    private static final Theme DROP_ZONE_THEME = Theme.GREEN_500;
+    private static final Background.Color DROP_INDEX = new Background.Color(DROP_ZONE_THEME.getARGB());
+    private static final int SCROLL_COLOR = DROP_ZONE_THEME.withAlpha(0.75f);
+    private static final int SCROLL_COLOR_TRANSPARENT = DROP_ZONE_THEME.withAlpha(0);
+    private static final int DROP_INDEX_PADDING = 2;
+    private static final double SCROLL_STEP = 10;
+    private boolean scrolling;
+
+    public CurrentPackList(PackListContainer parent) {
+        super(parent);
+    }
+
+    @Override
+    protected @NotNull Entry createEntry(Pack pack, int index) {
+        return new Entry(pack, index);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        Entry entry = this.getEntry(this.getLastSelected());
+        if (entry == null || !isMoveModifierActive()) {
+            return super.keyPressed(keyCode, scanCode, modifiers);
+        }
+        if (keyCode == KEY_DOWN) {
+            if (entry.moveDown()) playClickSound();
+            return true;
+        } else if (keyCode == KEY_UP) {
+            if (entry.moveUp()) playClickSound();
+            return true;
+        }
+        return false;
+    }
+
+    private void scrollStep(ScreenDirection direction, float partialTick) {
+        double scrollAmount = this.getScrollAmount();
+        if (direction == ScreenDirection.UP) {
+            scrollAmount -= SCROLL_STEP * partialTick;
+        } else if (direction == ScreenDirection.DOWN) {
+            scrollAmount += SCROLL_STEP * partialTick;
+        }
+
+        this.scrolling = true;
+        this.setClampedScrollAmount(scrollAmount);
+    }
+
+    private int getDropIndex(double mouseY) {
+        if (this.children().isEmpty()) return -1;
+
+        int index = this.getRowIndex(mouseY);
+        if (index == -1) return -1;
+
+        Entry entry = this.getEntry(index);
+        int centerY = entry.getY() + (entry.getHeight() / 2);
+
+        if (mouseY >= centerY) {
+            int next = index + 1;
+            return next < this.children().size() ? next : -1;
+        }
+        return index;
+    }
+
+    private boolean canDrop(PackList source, List<Pack> selection, double mouseX, double mouseY) {
+        if (this.scrolling || this.isQueried() || selection.isEmpty()) {
+            return false;
+        }
+        if (source != this) {
+            return source.isTransferable(selection.getLast());
+        }
+
+        for (Pack selected : selection) {
+            Entry entry = this.getEntry(selected);
+            if (entry != null && entry.isMouseOver(mouseX, mouseY)) {
+                return false;
+            }
+        }
+
+        int[] indices = this.getSelectionIndices();
+        if (indices.length == 0 || hasGap(indices)) {
+            return true;
+        }
+
+        Arrays.sort(indices);
+        int dropIndex = this.getDropIndex(mouseY);
+        int lastSelectionIndex = indices[indices.length - 1];
+
+        if (!this.packs.isEmpty()) {
+            int lastPackIndex = this.packs.indexOf(this.packs.getLast());
+            if (dropIndex == -1 && lastPackIndex == lastSelectionIndex) {
+                return false;
+            }
+        }
+
+        return dropIndex != indices[0] && dropIndex - 1 != lastSelectionIndex;
+    }
+
+    @Override
+    protected @Nullable List<Pack> onDrop(PackList source, List<Pack> selection, double mouseX, double mouseY) {
+        if (!this.canDrop(source, selection, mouseX, mouseY)) return null;
+
+        int dropIndex = this.getDropIndex(mouseY);
+        if (dropIndex == -1) {
+            dropIndex = this.children().size();
+        }
+
+        if (source == this) {
+            return this.move(this.orderSelection(selection), dropIndex) ? selection : null;
+        }
+
+        this.clearSelection();
+        source.clearSelection();
+
+        List<Pack> dropped = new ArrayList<>();
+        for (Pack selected : selection) {
+            if (source.isTransferable(selected)) {
+                source.remove(selected);
+                dropped.add(selected);
+                this.insert(selected, dropIndex);
+                this.select(selected);
+            }
+        }
+        return dropped;
+    }
+
+    private void renderDropIndex(GuiGraphics guiGraphics, int mouseY, int x, int width) {
+        int dropIndex = this.getDropIndex(mouseY);
+        int rowTop = this.getRowTop(dropIndex != -1 ? dropIndex : this.children().size());
+        int indexY = rowTop - this.rowGap - DROP_INDEX_PADDING;
+
+        guiGraphics.enableScissor(this.getX(), this.getY(), this.getRight(), this.getBottom());
+        DROP_INDEX.render(guiGraphics, x, indexY, width, rowTop - indexY + DROP_INDEX_PADDING);
+        guiGraphics.disableScissor();
+    }
+
+    @Override
+    protected void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> selection, int mouseX, int mouseY, float partialTick) {
+        if (this.isQueried()) return;
+
+        int x = this.getX();
+        int y = this.getY();
+        int width = this.scrollbarVisible() ? this.getWidth() - this.scrollbarOffset : this.getWidth();
+        int height = this.getHeight();
+        int right = x + width;
+        int bottom = this.getBottom();
+
+        if (this.isMouseOver(mouseX, mouseY)) {
+            int scrollDownY = bottom - this.itemHeight;
+            int scrollUpBottom = y + this.itemHeight;
+            double scrollAmount = this.getScrollAmount();
+
+            if (scrollAmount < this.getMaxScroll() && mouseY >= scrollDownY) {
+                guiGraphics.fillGradient(x, scrollDownY, right, bottom, SCROLL_COLOR_TRANSPARENT, SCROLL_COLOR);
+                this.scrollStep(ScreenDirection.DOWN, partialTick);
+            } else if (scrollAmount > 0 && mouseY <= scrollUpBottom) {
+                guiGraphics.fillGradient(x, y, right, scrollUpBottom, SCROLL_COLOR, SCROLL_COLOR_TRANSPARENT);
+                this.scrollStep(ScreenDirection.UP, partialTick);
+            } else {
+                this.scrolling = false;
+            }
+
+            if (this.canDrop(source, selection, mouseX, mouseY)) {
+                this.renderDropIndex(guiGraphics, mouseY, x, width);
+            }
+        }
+
+        guiGraphics.renderOutline(x, y, width, height, DROP_ZONE_THEME.getARGB());
+    }
+
+    public class Entry extends PackListBase<Entry>.Entry {
+        private Entry(Pack pack, int index) {
+            super(pack, index);
+        }
+
+        public boolean isFixed() {
+            return this.pack.isFixedPosition();
+        }
+
+        @Override
+        public boolean isTransferable() {
+            return !this.pack.isRequired();
+        }
+
+        private int getDownIndex() {
+            if (this.isFixed()) return -1;
+            for (int i = this.index + 1; i < CurrentPackList.this.packs.size(); i++) {
+                if (!CurrentPackList.this.packs.get(i).isFixedPosition()) return i;
+            }
+            return -1;
+        }
+
+        private int getUpIndex() {
+            if (this.isFixed()) return -1;
+            for (int i = this.index - 1; i >= 0; i--) {
+                if (!CurrentPackList.this.packs.get(i).isFixedPosition()) return i;
+            }
+            return -1;
+        }
+
+        public boolean canMoveDown() {
+            if (CurrentPackList.this.isQueried()) return false;
+
+            int size = CurrentPackList.this.packs.size();
+
+            if (this.isSelected()) {
+                List<Pack> selection = CurrentPackList.this.getOrderedSelection().reversed();
+                if (!selection.isEmpty()) {
+                    Entry entry = CurrentPackList.this.getEntry(selection.getFirst());
+                    return entry != null && entry.getIndex() < size && entry.getDownIndex() > -1;
+                }
+            }
+
+            return this.index >= 0 && this.index < size && this.getDownIndex() > -1;
+        }
+
+        public boolean canMoveUp() {
+            if (CurrentPackList.this.isQueried()) return false;
+
+            if (this.isSelected()) {
+                List<Pack> selection = CurrentPackList.this.getOrderedSelection();
+                if (!selection.isEmpty()) {
+                    Entry entry = CurrentPackList.this.getEntry(selection.getFirst());
+                    return entry != null && entry.getIndex() > 0 && entry.getUpIndex() > -1;
+                }
+            }
+
+            return this.index > 0 && this.getUpIndex() > -1;
+        }
+
+        public boolean isMouseOverRemove(double mouseX, double mouseY) {
+            return this.isTransferable() && isPointWithinBounds(
+                    this.getX() + SPACING,
+                    this.getY(),
+                    UNSELECT_SPRITE.width / 2,
+                    UNSELECT_SPRITE.height,
+                    mouseX,
+                    mouseY
+            );
+        }
+
+        public boolean isMouseOverUp(double mouseX, double mouseY) {
+            return this.canMoveUp() && isPointWithinBounds(
+                    this.getX() + SPACING + MOVE_UP_SPRITE.width / 2,
+                    this.getY(),
+                    MOVE_UP_SPRITE.width / 2,
+                    MOVE_UP_SPRITE.height / 2,
+                    mouseX,
+                    mouseY
+            );
+        }
+
+        public boolean isMouseOverDown(double mouseX, double mouseY) {
+            return this.canMoveDown() && isPointWithinBounds(
+                    this.getX() + SPACING + MOVE_DOWN_SPRITE.width / 2,
+                    this.getY() + MOVE_DOWN_SPRITE.height / 2,
+                    MOVE_DOWN_SPRITE.width / 2,
+                    MOVE_DOWN_SPRITE.height / 2,
+                    mouseX,
+                    mouseY
+            );
+        }
+
+        private @Nullable List<Pack> moveSelection(List<Pack> selection, ToIntFunction<Entry> indexGetter) {
+            List<Pack> moved = new ArrayList<>();
+
+            Pack lastSelected = CurrentPackList.this.getLastSelected();
+            for (int i = 0; i < selection.size(); i++) {
+                Entry entry = CurrentPackList.this.getEntry(selection.get(i));
+                if (entry != null && CurrentPackList.this.move(selection.get(i), indexGetter.applyAsInt(entry))) {
+                    moved.add(selection.get(i));
+                } else if (i == 0) {
+                    return null;
+                }
+            }
+            CurrentPackList.this.select(lastSelected);
+
+            return !moved.isEmpty() ? moved : null;
+        }
+
+        private void sendMoveEvent(@Unmodifiable List<Pack> moved) {
+            CurrentPackList.this.sendEvent(new MoveEvent(CurrentPackList.this, moved));
+        }
+
+        private boolean moveDirection(MoveDirection direction) {
+            if ((direction.isUp() && !this.canMoveUp()) || (direction.isDown() && !this.canMoveDown())) {
+                return false;
+            }
+
+            if (!this.isSelected()) {
+                int targetIndex = direction.isUp() ? this.getUpIndex() : this.getDownIndex();
+                if (!CurrentPackList.this.move(this.pack, targetIndex)) {
+                    CurrentPackList.this.selectExclusive(this.pack);
+                    this.sendMoveEvent(List.of(this.pack));
+                    return true;
+                }
+                return false;
+            }
+
+            List<Pack> moved = direction.isUp()
+                    ? moveSelection(CurrentPackList.this.getOrderedSelection(), Entry::getUpIndex)
+                    : moveSelection(CurrentPackList.this.getOrderedSelection().reversed(), Entry::getDownIndex);
+
+            if (moved != null && !moved.isEmpty()) {
+                this.sendMoveEvent(List.copyOf(moved));
+                return true;
+            }
+
+            return false;
+        }
+
+        public boolean moveUp() {
+            return this.moveDirection(MoveDirection.UP);
+        }
+
+        public boolean moveDown() {
+            return this.moveDirection(MoveDirection.DOWN);
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            int px = (int) mouseX;
+            int py = (int) mouseY;
+
+            if (this.isMouseOverRemove(px, py)) {
+                playClickSound();
+                this.transfer();
+                return false;
+            } else if (this.isMouseOverUp(px, py)) {
+                playClickSound();
+                this.moveUp();
+                return true;
+            } else if (this.isMouseOverDown(px, py)) {
+                playClickSound();
+                this.moveDown();
+                return true;
+            }
+
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
+
+        @Override
+        protected void renderForeground(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
+            if (!hovering && !this.isSelectedLast()) return;
+
+            int x = left + SPACING;
+            OVERLAY.render(guiGraphics, x, top, UNSELECT_SPRITE.width, UNSELECT_SPRITE.height);
+            if (this.isTransferable()) {
+                pick(!this.isMouseOverRemove(mouseX, mouseY), UNSELECT_SPRITE, UNSELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+            }
+            if (this.canMoveUp()) {
+                pick(!this.isMouseOverUp(mouseX, mouseY), MOVE_UP_SPRITE, MOVE_UP_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+            }
+            if (this.canMoveDown()) {
+                pick(!this.isMouseOverDown(mouseX, mouseY), MOVE_DOWN_SPRITE, MOVE_DOWN_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+            }
+        }
+    }
+
+    private enum MoveDirection {
+        UP, DOWN;
+
+        public boolean isUp() {
+            return this == MoveDirection.UP;
+        }
+
+        public boolean isDown() {
+            return this == MoveDirection.DOWN;
+        }
+    }
+}

@@ -1,0 +1,125 @@
+package io.github.fishstiz.fidgetz.gui.components;
+
+import io.github.fishstiz.fidgetz.gui.Metadata;
+import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.NotNull;
+
+public class FidgetzButton<E> extends Button implements Metadata<E> {
+    private E metadata;
+
+    protected FidgetzButton(Builder<E, ?> builder) {
+        super(builder.x, builder.y, builder.width, builder.height, builder.message, builder.onPress, DEFAULT_NARRATION);
+
+        this.metadata = builder.metadata;
+
+        this.setTooltip(builder.tooltip);
+    }
+
+    @Override
+    public E getMetadata() {
+        return this.metadata;
+    }
+
+    @Override
+    public void setMetadata(E metadata) {
+        this.metadata = metadata;
+    }
+
+    public static <E> Builder<E, ?> builder() {
+        return new Builder<>();
+    }
+
+    public static class Builder<E, B extends Builder<E, B>> implements WidgetBuilder<Builder<E, B>> {
+        private int x = 0;
+        private int y = 0;
+        private int width = WidgetBuilder.DEFAULT_WIDTH;
+        private int height = WidgetBuilder.DEFAULT_HEIGHT;
+        private Component message = Component.empty();
+        private Tooltip tooltip;
+        private OnPress onPress = btn -> {
+        };
+        private E metadata;
+
+        protected Builder() {
+        }
+
+        @SuppressWarnings("unchecked")
+        protected B self() {
+            return (B) this;
+        }
+
+        @Override
+        public @NotNull B setX(int x) {
+            this.x = x;
+            return self();
+        }
+
+        @Override
+        public @NotNull B setY(int y) {
+            this.y = y;
+            return self();
+        }
+
+        @Override
+        public @NotNull B setPosition(int x, int y) {
+            this.x = x;
+            this.y = y;
+            return self();
+        }
+
+        @Override
+        public @NotNull B setWidth(int width) {
+            this.width = width;
+            return self();
+        }
+
+        @Override
+        public @NotNull B setHeight(int height) {
+            this.height = height;
+            return self();
+        }
+
+        @Override
+        public @NotNull B setDimensions(int width, int height) {
+            this.width = width;
+            this.height = height;
+            return self();
+        }
+
+        public B setMessage(Component message) {
+            this.message = message;
+            return self();
+        }
+
+        public B setMessage(String message) {
+            return this.setMessage(Component.translatable(message));
+        }
+
+        public B setTooltip(Tooltip tooltip) {
+            this.tooltip = tooltip;
+            return self();
+        }
+
+        public B setOnPress(OnPress onPress) {
+            this.onPress = onPress;
+            return self();
+        }
+
+        public B setOnPress(Runnable onPress) {
+            this.onPress = btn -> onPress.run();
+            return self();
+        }
+
+        public B setMetadata(E metadata) {
+            this.metadata = metadata;
+            return self();
+        }
+
+        public FidgetzButton<E> build() {
+            return new FidgetzButton<>(this);
+        }
+    }
+}

@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "io.github.fishstiz.packed_packs.transform.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [
+    "HeaderAndFooterLayoutAccess",
+    "PackSelectionModelAccessor",
+    "PackSelectionModelMixin",
+    "PackSelectionScreenAccessor",
+    "PackSelectionScreenMixin"
+  ]
+}
