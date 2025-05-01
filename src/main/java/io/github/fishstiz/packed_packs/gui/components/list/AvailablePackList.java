@@ -1,9 +1,11 @@
 package io.github.fishstiz.packed_packs.gui.components.list;
 
+import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.Background;
 import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
-import io.github.fishstiz.packed_packs.gui.components.PackListContainer;
+import io.github.fishstiz.packed_packs.gui.event.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
+import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
@@ -24,8 +26,8 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
     private static final Theme DROP_ZONE_THEME = Theme.RED_700;
     private static final Background.Color DROP_ZONE = new Background.Color(DROP_ZONE_THEME.withAlpha(0.25f));
 
-    public AvailablePackList(PackListContainer parent) {
-        super(parent);
+    public AvailablePackList(PackIconCache iconCache, PackListEventListener listener) {
+        super(iconCache, listener);
     }
 
     @Override
@@ -38,7 +40,7 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
     }
 
     @Override
-    protected @Nullable List<Pack> onDrop(PackList source, List<Pack> selection, double mouseX, double mouseY) {
+    protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, double mouseX, double mouseY) {
         if (this.isInvalidDrop(source, selection)) return null;
 
         this.clearSelection();
@@ -57,7 +59,7 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
     }
 
     @Override
-    protected void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> selection, int mouseX, int mouseY, float partialTick) {
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> selection, int mouseX, int mouseY, float partialTick) {
         if (this.isInvalidDrop(source, selection)) return;
 
         int width = this.scrollbarVisible() ? this.getWidth() - this.scrollbarOffset : this.getWidth();

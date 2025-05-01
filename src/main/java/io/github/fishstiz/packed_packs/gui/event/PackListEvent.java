@@ -2,10 +2,10 @@ package io.github.fishstiz.packed_packs.gui.event;
 
 import io.github.fishstiz.packed_packs.gui.components.list.PackList;
 
-public abstract class Event {
+public abstract class PackListEvent {
     protected final PackList target;
 
-    protected Event(PackList target) {
+    protected PackListEvent(PackList target) {
         this.target = target;
     }
 

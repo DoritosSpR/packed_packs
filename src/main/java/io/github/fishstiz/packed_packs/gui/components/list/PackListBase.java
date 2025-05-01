@@ -1,13 +1,13 @@
 package io.github.fishstiz.packed_packs.gui.components.list;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.Background;
-import io.github.fishstiz.fidgetz.gui.Metadata;
 import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
-import io.github.fishstiz.packed_packs.gui.components.PackListContainer;
-import io.github.fishstiz.packed_packs.gui.metadata.Flex;
+import io.github.fishstiz.packed_packs.gui.event.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.event.*;
+import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -16,7 +16,6 @@ import net.minecraft.client.gui.navigation.FocusNavigationEvent;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.*;
 
@@ -26,21 +25,22 @@ import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
-public abstract class PackListBase<T extends PackListBase<T>.Entry> extends AbstractDynamicList<T> implements PackList, Metadata<Flex> {
+public abstract class PackListBase<T extends PackListBase<T>.Entry> extends AbstractDynamicList<T> implements PackList {
     protected static final int OFFSET_Y = 2;
     protected static final int ITEM_HEIGHT = 32;
     protected static final int ROW_GAP = 3;
     protected final List<Pack> packs = new ArrayList<>();
     private final List<Pack> queried = new ArrayList<>();
     private final List<Pack> selection = new ArrayList<>();
-    private final PackListContainer parent;
+    private final PackListEventListener listener;
+    private final PackIconCache iconCache;
     private final Query query = new Query();
-    private Flex metadata;
 
-    protected PackListBase(PackListContainer parent) {
+    protected PackListBase(PackIconCache iconCache, PackListEventListener listener) {
         super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, OFFSET_Y, ROW_GAP);
 
-        this.parent = parent;
+        this.iconCache = iconCache;
+        this.listener = listener;
         this.queryPacks();
     }
 
@@ -96,13 +96,13 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
-    public @NotNull @Unmodifiable List<Pack> getPacksCopy() {
-        return List.copyOf(this.packs);
+    public @NotNull ImmutableList<Pack> getPacksCopy() {
+        return ImmutableList.copyOf(this.packs);
     }
 
     @Override
-    public @NotNull @Unmodifiable List<Pack> getSelectionCopy() {
-        return List.copyOf(this.selection);
+    public @NotNull ImmutableList<Pack> getSelectionCopy() {
+        return ImmutableList.copyOf(this.selection);
     }
 
     @Override
@@ -117,8 +117,8 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         return sortedSelection;
     }
 
-    public @NotNull @Unmodifiable List<Pack> getOrderedSelection() {
-        return List.copyOf(this.orderSelection(this.selection));
+    public ImmutableList<Pack> getOrderedSelection() {
+        return ImmutableList.copyOf(this.orderSelection(this.selection));
     }
 
     protected int[] getSelectionIndices() {
@@ -315,39 +315,20 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.select(pack);
     }
 
-    protected void sendEvent(Event event) {
-        this.parent.onEvent(event);
+    protected void sendEvent(PackListEvent event) {
+        this.listener.onEvent(event);
     }
 
-    protected abstract @Nullable List<Pack> onDrop(PackList source, List<Pack> selection, double mouseX, double mouseY);
+    protected abstract @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, double mouseX, double mouseY);
 
     @Override
-    public final void drop(PackList source, List<Pack> selection, double mouseX, double mouseY) {
-        List<Pack> dropped = this.onDrop(source, selection, mouseX, mouseY);
+    public final void drop(PackList source, ImmutableList<Pack> selection, double mouseX, double mouseY) {
+        List<Pack> dropped = this.handleDrop(source, selection, mouseX, mouseY);
         if (dropped != null && !dropped.isEmpty()) {
             if (source != this) {
-                this.sendEvent(new TransferEvent(source, this, List.copyOf(dropped)));
+                this.sendEvent(new DropEvent(source, this, dropped));
             } else {
-                this.sendEvent(new MoveEvent(this, List.copyOf(dropped)));
-            }
-        }
-    }
-
-    protected abstract void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> selection, int mouseX, int mouseY, float partialTick);
-
-    @Override
-    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
-
-        if (this.parent.isDraggingSelection()) {
-            DragEvent event = this.parent.getDragged();
-
-            if (event != null) {
-                PoseStack poseStack = guiGraphics.pose();
-                poseStack.pushPose();
-                poseStack.translate(0, 0, this.parent.getDroppableZ());
-                this.renderDroppableZone(guiGraphics, event.target(), event.dragged(), mouseX, mouseY, partialTick);
-                poseStack.popPose();
+                this.sendEvent(new MoveEvent(this, dropped));
             }
         }
     }
@@ -397,9 +378,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (this.parent.isDraggingSelection()) {
-            return true;
-        }
         if (isTransfer(keyCode, modifiers)) {
             Entry entry = this.getEntry(this.getLastSelected());
             if (entry != null && entry.transfer()) {
@@ -428,16 +406,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             this.select(selected);
         }
         this.scrollToLastSelected();
-    }
-
-    @Override
-    public Flex getMetadata() {
-        return this.metadata;
-    }
-
-    @Override
-    public void setMetadata(Flex metadata) {
-        this.metadata = metadata;
     }
 
     public abstract class Entry extends AbstractDynamicList<T>.Entry implements PackList.Entry {
@@ -479,34 +447,17 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return PackListBase.this.getLastSelected() == this.pack;
         }
 
-        private boolean transferPack(Pack selected, PackList target) {
-            if (PackListBase.this.isTransferable(selected)) {
-                PackListBase.this.remove(selected);
-                target.add(selected);
-                return true;
-            }
-            return false;
-        }
+        private boolean sendSelection() {
+            List<Pack> payload = new ArrayList<>();
 
-        private boolean transferSelection(List<Pack> selection, PackList target) {
-            if (selection.isEmpty()) return false;
-
-            Pack lastSelected = PackListBase.this.getLastSelected();
-            PackListBase.this.clearSelection();
-            target.clearSelection();
-
-            List<Pack> transferred = new ArrayList<>();
-            for (Pack selected : selection) {
-                if (this.transferPack(selected, target)) {
-                    transferred.add(selected);
-                    target.select(selected);
+            for (Pack selected : PackListBase.this.getOrderedSelection().reversed()) {
+                if (PackListBase.this.isTransferable(selected)) {
+                    payload.add(selected);
                 }
             }
-            PackListBase.this.select(lastSelected);
-            target.select(lastSelected);
 
-            if (!transferred.isEmpty()) {
-                PackListBase.this.sendEvent(new TransferEvent(PackListBase.this, target, List.copyOf(transferred)));
+            if (!payload.isEmpty()) {
+                PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, payload));
                 return true;
             }
 
@@ -514,15 +465,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         public boolean transfer() {
-            PackList target = PackListBase.this.parent.getTarget(PackListBase.this);
-
-            if (!this.isSelected() && this.transferPack(this.pack, target)) {
-                target.selectExclusive(this.pack);
-                PackListBase.this.sendEvent(new TransferEvent(PackListBase.this, target, List.of(this.pack)));
-                return true;
-            }
-
-            return this.transferSelection(PackListBase.this.getOrderedSelection().reversed(), target);
+            return this.sendSelection();
         }
 
         @Override
@@ -531,15 +474,19 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 if (isRangeModifierActive()) {
                     PackListBase.this.selectRange(this.pack);
                     PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
+                    return true;
                 } else if (isSelectModifierActive()) {
                     PackListBase.this.selectToggle(this.pack);
                     PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
+                    return true;
                 } else if (!this.isSelected()) {
                     PackListBase.this.selectExclusive(this.pack);
                     PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
+                    return true;
                 } else if (this.isSelected() && !this.isSelectedLast()) {
                     PackListBase.this.select(this.pack);
                     PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
+                    return true;
                 }
             }
 
@@ -551,7 +498,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             if (isLeftClick(button)
                 && !isRangeModifierActive()
                 && !isSelectModifierActive()
-                && !PackListBase.this.parent.isDraggingSelection()
                 && PackListBase.this.selection.size() > 1
                 && this.isSelected()
                 && this.isMouseOver(mouseX, mouseY)) {
@@ -569,11 +515,10 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 && isLeftClick(button)
                 && !isRangeModifierActive()
                 && !isSelectModifierActive()
-                && !PackListBase.this.parent.isDraggingSelection()
                 && DragEvent.exceedsThreshold(dragX, dragY)
                 && mouseX <= this.getRight()
                 && this.isMouseOver(mouseX, mouseY)) {
-                PackListBase.this.sendEvent(new DragEvent(PackListBase.this, PackListBase.this.parent));
+                PackListBase.this.sendEvent(new DragEvent(PackListBase.this, PackListBase.this.iconCache));
                 return true;
             }
 
@@ -619,7 +564,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         private void renderWidget(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
             if (this.packWidget.getIcon() == null) { // lazy loads icon as render is not called if entry is not visible
-                this.packWidget.setIcon(PackListBase.this.parent.getIcon(this.pack));
+                this.packWidget.setIcon(PackListBase.this.iconCache.getIcon(this.pack));
             }
 
             this.packWidget.setPosition(left, top);

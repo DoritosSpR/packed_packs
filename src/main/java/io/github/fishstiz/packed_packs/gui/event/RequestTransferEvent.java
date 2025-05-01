@@ -6,13 +6,13 @@ import net.minecraft.server.packs.repository.Pack;
 
 import java.util.List;
 
-public final class MoveEvent extends PackListEvent {
-    public final ImmutableList<Pack> moved;
+public final class RequestTransferEvent extends PackListEvent {
+    private final ImmutableList<Pack> payload;
 
-    public MoveEvent(PackList target, List<Pack> moved) {
+    public RequestTransferEvent(PackList target, List<Pack> payload) {
         super(target);
 
-        this.moved = ImmutableList.copyOf(moved);
+        this.payload = ImmutableList.copyOf(payload);
     }
 
     @Override
@@ -20,7 +20,7 @@ public final class MoveEvent extends PackListEvent {
         return true;
     }
 
-    public ImmutableList<Pack> moved() {
-        return this.moved;
+    public ImmutableList<Pack> payload() {
+        return this.payload;
     }
 }

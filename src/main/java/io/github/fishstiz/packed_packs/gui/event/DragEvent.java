@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.event;
 
+import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.Background;
 import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
 import io.github.fishstiz.packed_packs.gui.components.list.PackList;
@@ -10,11 +11,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.List;
-
-public final class DragEvent extends Event implements Renderable {
+public final class DragEvent extends PackListEvent implements Renderable {
     private static final Background.Color BACKGROUND = new Background.Color(Theme.GRAY_800.getARGB());
     private static final Background.Color OVERLAY = new Background.Color(Theme.BLACK.withAlpha(0.5f));
     private static final Background.Color NUM_BACKGROUND = new Background.Color(Theme.BLUE_500.getARGB());
@@ -26,7 +24,7 @@ public final class DragEvent extends Event implements Renderable {
     private static final int NUM_OFFSET_X = NUM_SIZE / 2;
     private static final int NUM_OFFSET_Y = NUM_SIZE - OFFSET + (ICON_SIZE - NUM_SIZE) / 2;
     private static final double THRESHOLD = 1.0;
-    private final @Unmodifiable List<Pack> dragged;
+    private final ImmutableList<Pack> dragged;
     private final Sprite sprite;
 
     public DragEvent(PackList target, PackIconCache iconCache) {
@@ -46,24 +44,25 @@ public final class DragEvent extends Event implements Renderable {
         return false;
     }
 
-    public List<Pack> dragged() {
+    public ImmutableList<Pack> dragged() {
         return this.dragged;
     }
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        String num = String.valueOf(this.dragged().size());
+        String size = String.valueOf(this.dragged().size());
         Font font = Minecraft.getInstance().font;
+        int sizeWidth = font.width(size);
         int iconX = mouseX - ICON_OFFSET_X;
         int iconY = mouseY - ICON_OFFSET_Y;
-        int numX = mouseX - NUM_OFFSET_X;
+        int numX = mouseX - (NUM_SIZE >= sizeWidth ? NUM_OFFSET_X : sizeWidth / 2);
         int numY = mouseY - NUM_OFFSET_Y;
 
         BACKGROUND.render(guiGraphics, iconX, iconY, ICON_SIZE, ICON_SIZE);
         this.sprite.render(guiGraphics, iconX, iconY, ICON_SIZE, ICON_SIZE, partialTick);
         OVERLAY.render(guiGraphics, iconX, iconY, ICON_SIZE, ICON_SIZE);
-        NUM_BACKGROUND.render(guiGraphics, numX, numY, NUM_SIZE, NUM_SIZE);
-        guiGraphics.drawString(font, num, numX + NUM_SIZE / 2 - font.width(num) / 2, numY + NUM_SIZE / 2 - font.lineHeight / 2, Theme.WHITE.getARGB());
+        NUM_BACKGROUND.render(guiGraphics, numX, numY, Math.max(NUM_SIZE, sizeWidth), NUM_SIZE);
+        guiGraphics.drawString(font, size, numX + NUM_SIZE / 2 - sizeWidth / 2, numY + NUM_SIZE / 2 - font.lineHeight / 2, Theme.WHITE.getARGB());
         guiGraphics.renderOutline(iconX, iconY, ICON_SIZE, ICON_SIZE, Theme.WHITE.getARGB());
         guiGraphics.renderOutline(numX, numY, NUM_SIZE, NUM_SIZE, Theme.WHITE.getARGB());
     }

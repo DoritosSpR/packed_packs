@@ -1,16 +1,16 @@
 package io.github.fishstiz.packed_packs.gui.components.list;
 
+import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.Background;
 import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
-import io.github.fishstiz.packed_packs.gui.components.PackListContainer;
+import io.github.fishstiz.packed_packs.gui.event.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.event.MoveEvent;
+import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.navigation.ScreenDirection;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,8 +40,8 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     private static final double SCROLL_STEP = 10;
     private boolean scrolling;
 
-    public CurrentPackList(PackListContainer parent) {
-        super(parent);
+    public CurrentPackList(PackIconCache iconCache, PackListEventListener listener) {
+        super(iconCache, listener);
     }
 
     @Override
@@ -65,11 +65,11 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         return false;
     }
 
-    private void scrollStep(ScreenDirection direction, float partialTick) {
+    private void scrollStep(MoveDirection direction, float partialTick) {
         double scrollAmount = this.getScrollAmount();
-        if (direction == ScreenDirection.UP) {
+        if (direction.isUp()) {
             scrollAmount -= SCROLL_STEP * partialTick;
-        } else if (direction == ScreenDirection.DOWN) {
+        } else if (direction.isDown()) {
             scrollAmount += SCROLL_STEP * partialTick;
         }
 
@@ -100,6 +100,9 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         if (source != this) {
             return source.isTransferable(selection.getLast());
         }
+        if (selection.getLast().isFixedPosition()) {
+            return false;
+        }
 
         for (Pack selected : selection) {
             Entry entry = this.getEntry(selected);
@@ -128,7 +131,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     }
 
     @Override
-    protected @Nullable List<Pack> onDrop(PackList source, List<Pack> selection, double mouseX, double mouseY) {
+    protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, double mouseX, double mouseY) {
         if (!this.canDrop(source, selection, mouseX, mouseY)) return null;
 
         int dropIndex = this.getDropIndex(mouseY);
@@ -137,7 +140,9 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         if (source == this) {
-            return this.move(this.orderSelection(selection), dropIndex) ? selection : null;
+            List<Pack> movable = new ArrayList<>(selection);
+            movable.removeIf(Pack::isFixedPosition);
+            return this.move(this.orderSelection(movable), dropIndex) ? selection : null;
         }
 
         this.clearSelection();
@@ -166,7 +171,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     }
 
     @Override
-    protected void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> selection, int mouseX, int mouseY, float partialTick) {
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> selection, int mouseX, int mouseY, float partialTick) {
         if (this.isQueried()) return;
 
         int x = this.getX();
@@ -183,10 +188,10 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
             if (scrollAmount < this.getMaxScroll() && mouseY >= scrollDownY) {
                 guiGraphics.fillGradient(x, scrollDownY, right, bottom, SCROLL_COLOR_TRANSPARENT, SCROLL_COLOR);
-                this.scrollStep(ScreenDirection.DOWN, partialTick);
+                this.scrollStep(MoveDirection.DOWN, partialTick);
             } else if (scrollAmount > 0 && mouseY <= scrollUpBottom) {
                 guiGraphics.fillGradient(x, y, right, scrollUpBottom, SCROLL_COLOR, SCROLL_COLOR_TRANSPARENT);
-                this.scrollStep(ScreenDirection.UP, partialTick);
+                this.scrollStep(MoveDirection.UP, partialTick);
             } else {
                 this.scrolling = false;
             }
@@ -204,17 +209,12 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             super(pack, index);
         }
 
-        public boolean isFixed() {
-            return this.pack.isFixedPosition();
-        }
-
         @Override
         public boolean isTransferable() {
             return !this.pack.isRequired();
         }
 
         private int getDownIndex() {
-            if (this.isFixed()) return -1;
             for (int i = this.index + 1; i < CurrentPackList.this.packs.size(); i++) {
                 if (!CurrentPackList.this.packs.get(i).isFixedPosition()) return i;
             }
@@ -222,7 +222,6 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         private int getUpIndex() {
-            if (this.isFixed()) return -1;
             for (int i = this.index - 1; i >= 0; i--) {
                 if (!CurrentPackList.this.packs.get(i).isFixedPosition()) return i;
             }
@@ -309,7 +308,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             return !moved.isEmpty() ? moved : null;
         }
 
-        private void sendMoveEvent(@Unmodifiable List<Pack> moved) {
+        private void sendMoveEvent(List<Pack> moved) {
             CurrentPackList.this.sendEvent(new MoveEvent(CurrentPackList.this, moved));
         }
 
@@ -333,7 +332,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
                     : moveSelection(CurrentPackList.this.getOrderedSelection().reversed(), Entry::getDownIndex);
 
             if (moved != null && !moved.isEmpty()) {
-                this.sendMoveEvent(List.copyOf(moved));
+                this.sendMoveEvent(moved);
                 return true;
             }
 

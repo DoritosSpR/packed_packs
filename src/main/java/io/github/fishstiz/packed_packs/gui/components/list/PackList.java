@@ -1,12 +1,13 @@
 package io.github.fishstiz.packed_packs.gui.components.list;
 
+import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.packed_packs.util.Restorable;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +36,9 @@ public interface PackList extends ContainerEventHandler, Restorable<PackList.Sna
 
     void clearSelection();
 
-    void drop(PackList source, List<Pack> selection, double mouseX, double mouseY);
+    void drop(PackList source, ImmutableList<Pack> selection, double mouseX, double mouseY);
+
+    void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> selection, int mouseX, int mouseY, float partialTick);
 
     @Nullable Entry getSelected();
 
@@ -45,11 +48,9 @@ public interface PackList extends ContainerEventHandler, Restorable<PackList.Sna
         return testNullable(this.getEntry(pack), PackList.Entry::isTransferable);
     }
 
-    @Unmodifiable
-    @NotNull List<Pack> getPacksCopy();
+    @NotNull ImmutableList<Pack> getPacksCopy();
 
-    @Unmodifiable
-    @NotNull List<Pack> getSelectionCopy();
+    @NotNull ImmutableList<Pack> getSelectionCopy();
 
     @NotNull Query getQueryCopy();
 
@@ -64,15 +65,15 @@ public interface PackList extends ContainerEventHandler, Restorable<PackList.Sna
     }
 
     class Snapshot extends Restorable.Snapshot<Snapshot> {
-        public final @Unmodifiable List<Pack> packs;
-        public final @Unmodifiable List<Pack> selection;
+        public final ImmutableList<Pack> packs;
+        public final ImmutableList<Pack> selection;
         public final Query query;
 
         protected Snapshot(PackList target, List<Pack> packs, List<Pack> selection, Query query) {
             super(target);
 
-            this.packs = List.copyOf(packs);
-            this.selection = List.copyOf(selection);
+            this.packs = ImmutableList.copyOf(packs);
+            this.selection = ImmutableList.copyOf(selection);
             this.query = query.copy();
         }
 

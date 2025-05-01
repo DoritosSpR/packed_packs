@@ -9,11 +9,11 @@ import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
-import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-public class PackRepositoryHelper {
+public class PackRepositoryHelper implements PackIconCache {
     private final Map<String, ResourceLocation> cachedIcons = new HashMap<>();
     private final PackRepository repository;
     private final PackSelectionModel model;
@@ -28,8 +28,8 @@ public class PackRepositoryHelper {
         this.availablePacks.addAll(((PackSelectionModelAccessor) this.model).getUnselectedPacks());
     }
 
-    public @Unmodifiable List<Pack> getPacks() {
-        return List.copyOf(this.availablePacks);
+    public ImmutableList<Pack> getPacks() {
+        return ImmutableList.copyOf(this.availablePacks);
     }
 
     public void refresh() {
@@ -44,7 +44,8 @@ public class PackRepositoryHelper {
         Minecraft.getInstance().options.updateResourcePacks(this.repository);
     }
 
-    public ResourceLocation getPackIcon(Pack pack) {
+    @Override
+    public @NotNull ResourceLocation getIcon(Pack pack) {
         return pack != null
                 ? this.cachedIcons.computeIfAbsent(pack.getId(), string -> PackIconCache.loadPackIcon(pack))
                 : PackIconCache.DEFAULT_ICON;

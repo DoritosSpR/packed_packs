@@ -2,16 +2,13 @@ package io.github.fishstiz.packed_packs.gui;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
+import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.gui.components.layout.PackLayout;
 import io.github.fishstiz.packed_packs.gui.components.PackListContainer;
 import io.github.fishstiz.packed_packs.gui.components.layout.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.components.layout.CurrentPacksLayout;
-import io.github.fishstiz.packed_packs.gui.components.list.PackList;
-import io.github.fishstiz.packed_packs.gui.components.list.Query;
+import io.github.fishstiz.packed_packs.gui.components.list.*;
 import io.github.fishstiz.packed_packs.gui.event.*;
-import io.github.fishstiz.packed_packs.gui.components.list.CurrentPackList;
-import io.github.fishstiz.packed_packs.gui.components.list.AvailablePackList;
-import io.github.fishstiz.packed_packs.gui.metadata.Flex;
 import io.github.fishstiz.packed_packs.gui.components.Sidebar;
 import io.github.fishstiz.packed_packs.transform.mixin.HeaderAndFooterLayoutAccess;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
@@ -19,26 +16,20 @@ import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionModel;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
-import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LayoutSettings;
-import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
-import static io.github.fishstiz.packed_packs.gui.metadata.Flex.applyFlex;
-import static io.github.fishstiz.packed_packs.gui.metadata.Flex.horizontal;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 
 public class PackedPacksScreen extends PackListContainer {
@@ -46,7 +37,6 @@ public class PackedPacksScreen extends PackListContainer {
     private static final int SPACING = 8;
     private static final float DROP_ZONE_Z = 100;
     private static final float SIDEBAR_Z = 200;
-    private static final float DRAGGED_Z = 300;
     private final Screen previous;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final Sidebar<?, ?> sidebar = Sidebar.builder(this)
@@ -57,6 +47,7 @@ public class PackedPacksScreen extends PackListContainer {
     private final PackRepositoryHelper repository;
     private final AvailablePacksLayout availablePacks;
     private final CurrentPacksLayout currentPacks;
+    private final List<PackList> packLists;
     private final HistoryManager history;
     private boolean listHeadersOpen = false; // TODO: config
 
@@ -65,8 +56,10 @@ public class PackedPacksScreen extends PackListContainer {
 
         this.previous = previous;
         this.repository = new PackRepositoryHelper(repository);
-        this.availablePacks = new AvailablePacksLayout(this, SPACING, BUTTON_SIZE);
-        this.currentPacks = new CurrentPacksLayout(this, SPACING);
+        this.availablePacks = new AvailablePacksLayout(this.repository, this, SPACING);
+        this.currentPacks = new CurrentPacksLayout(this.repository, this, SPACING);
+        this.packLists = List.of(this.availablePacks.getList(), this.currentPacks.getList());
+
         this.availablePacks.getList().query(false, Query.SortOption.A_Z, ""); // TODO: config
 
         this.history = new HistoryManager(this.takeSnapshots());
@@ -86,47 +79,43 @@ public class PackedPacksScreen extends PackListContainer {
 
     @Override
     protected void init() {
-        this.initHeader(this.layout.addToHeader(LinearLayout.horizontal().spacing(SPACING)));
-
-        LinearLayout contents = this.layout.addToContents(LinearLayout.horizontal().spacing(SPACING));
-        this.availablePacks.init(contents.addChild(LinearLayout.vertical().spacing(SPACING)));
-        this.currentPacks.init(contents.addChild(LinearLayout.vertical().spacing(SPACING)));
-        this.availablePacks.getList().setMetadata(horizontal(this::getMaxWidth, SPACING, this.currentPacks.getList()));
-        this.currentPacks.getList().setMetadata(horizontal(this::getMaxWidth, SPACING, this.availablePacks.getList()));
-
-        this.initFooter(this.layout.addToFooter(LinearLayout.horizontal().spacing(SPACING)));
-
         this.initSidebar();
-
+        this.layout.addToHeader(this.createHeader());
+        this.layout.addToContents(this.createContents());
+        this.layout.addToFooter(this.createFooter());
         this.layout.visitWidgets(this::addRenderableWidget);
         this.repositionElements();
     }
 
-    private void initHeader(@NotNull LinearLayout header) {
-        ToggleableEditBox<Flex> nameField = ToggleableEditBox.<Flex>builder(this.font)
+    private FlexLayout createHeader() {
+        FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
+        ToggleableEditBox<?> nameField = ToggleableEditBox.builder(this.font)
                 .setHint(ResourceUtil.getText("profile.unnamed"))
-                .setHeight(BUTTON_SIZE)
                 .build();
-        FidgetzButton<?> toggleSidebar = header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this.sidebar::toggle).build());
-        FidgetzButton<?> toggleHeaders = header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this::toggleListHeaders).build());
-        FidgetzButton<?> toggleNameField = header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(nameField::toggle).build());
-        FidgetzButton<?> optionsButton = FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this::onClose).build();
-        nameField.setMetadata(horizontal(this::getMaxWidth, SPACING, toggleSidebar, toggleHeaders, toggleNameField, optionsButton));
-        header.addChild(nameField);
-        header.addChild(optionsButton);
+        header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this.sidebar::toggle).build());
+        header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this::toggleListHeaders).build());
+        header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(nameField::toggle).build());
+        header.addFlexChild(nameField, false);
+        header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this::onClose).build());
+        return header;
     }
 
-    private void initFooter(@NotNull LinearLayout footer) {
-        FidgetzButton<Flex> apply = footer.addChild(FidgetzButton.<Flex>builder()
+    private FlexLayout createContents() {
+        FlexLayout contents = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
+        this.availablePacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING), false));
+        this.currentPacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING), false));
+        return contents;
+    }
+
+    private FlexLayout createFooter() {
+        FlexLayout footer = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
+        footer.addFlexChild(FidgetzButton.builder() // Apply button
                 .setMessage(ResourceUtil.getText("apply"))
-                .setOnPress(this::commit)
-                .build());
-        FidgetzButton<Flex> done = footer.addChild(FidgetzButton.<Flex>builder()
+                .setOnPress(this::commit).build(), false);
+        footer.addFlexChild(FidgetzButton.builder() // Done button
                 .setMessage(CommonComponents.GUI_DONE)
-                .setOnPress(this::onClose)
-                .build());
-        apply.setMetadata(horizontal(this::getMaxWidth, SPACING, done));
-        done.setMetadata(horizontal(this::getMaxWidth, SPACING, apply));
+                .setOnPress(this::onClose).build(), false);
+        return footer;
     }
 
     private void initSidebar() {
@@ -141,16 +130,12 @@ public class PackedPacksScreen extends PackListContainer {
     }
 
     private void repositionLists() {
-        this.availablePacks.setHeaderVisibility(this.listHeadersOpen, this.layout.getContentHeight());
-        this.currentPacks.setHeaderVisibility(this.listHeadersOpen, this.layout.getContentHeight());
+        this.availablePacks.setHeaderVisibility(this.listHeadersOpen);
+        this.currentPacks.setHeaderVisibility(this.listHeadersOpen);
     }
 
     @Override
     protected void repositionElements() {
-        applyFlex(this.layout);
-        applyFlex(this.sidebar.getRoot().getLayout());
-        this.availablePacks.repositionElements();
-        this.currentPacks.repositionElements();
         this.layout.arrangeElements();
         ((HeaderAndFooterLayoutAccess) this.layout).getContentsFrame().setY(this.layout.getHeaderHeight());
         this.sidebar.repositionElements();
@@ -185,48 +170,12 @@ public class PackedPacksScreen extends PackListContainer {
     }
 
     @Override
-    public @NotNull @Unmodifiable List<PackList> getLists() {
-        return List.of(this.availablePacks.getList(), this.currentPacks.getList());
-    }
-
-    private void handleTransferEvent(TransferEvent event) {
-        event.target().setFocused(null);
-        this.focusList(event.destination());
-
-        if (event.destination() == this.currentPacks.getList()) {
-            this.currentPacks.getList().scrollToLastSelected();
-        }
-    }
-
-    private void handleMoveEvent(MoveEvent event) {
-        PackList.Entry entry = event.target().getSelected();
-        if (entry != null) {
-            this.focus(ComponentPath.path(entry, event.target(), this));
-        }
+    public @NotNull List<PackList> getPackLists() {
+        return this.packLists;
     }
 
     @Override
-    public void onEvent(Event event) {
-        if (event instanceof TransferEvent transfer) {
-            this.handleTransferEvent(transfer);
-        } else if (event instanceof MoveEvent move) {
-            this.handleMoveEvent(move);
-        } else if (event instanceof DragEvent drag) {
-            this.onDrag(drag);
-        }
-
-        if (event.modifiesTarget()) {
-            this.history.push(this.takeSnapshots());
-        }
-    }
-
-    @Override
-    public @NotNull ResourceLocation getIcon(Pack pack) {
-        return this.repository.getPackIcon(pack);
-    }
-
-    @Override
-    public @NotNull PackList getTarget(PackList source) {
+    public @NotNull PackList getDestination(PackList source) {
         return switch (source) {
             case AvailablePackList ignore -> this.currentPacks.getList();
             case CurrentPackList ignore -> this.availablePacks.getList();
@@ -234,14 +183,28 @@ public class PackedPacksScreen extends PackListContainer {
         };
     }
 
+
     @Override
-    public float getDroppableZ() {
-        return DROP_ZONE_Z;
+    protected void transferFocus(PackList source, PackList destination) {
+        super.transferFocus(source, destination);
+
+        if (destination == currentPacks.getList()) {
+            currentPacks.getList().scrollToLastSelected();
+        }
     }
 
     @Override
-    public float getDraggableZ() {
-        return DRAGGED_Z;
+    public void onEvent(PackListEvent event) {
+        super.onEvent(event);
+
+        if (event.modifiesTarget()) {
+            this.history.push(this.takeSnapshots());
+        }
+    }
+
+    @Override
+    public float getDroppableZ() {
+        return DROP_ZONE_Z;
     }
 
     public @Nullable PackLayout<?> getLayoutFromSelectedList() {
@@ -252,9 +215,9 @@ public class PackedPacksScreen extends PackListContainer {
         );
     }
 
-    public ToggleableEditBox<Flex> focusSearchField(@NotNull PackLayout<?> packLayout) {
+    public ToggleableEditBox<?> focusSearchField(@NotNull PackLayout<?> packLayout) {
         if (!this.listHeadersOpen) this.toggleListHeaders();
-        ToggleableEditBox<Flex> searchField = packLayout.getSearchField();
+        ToggleableEditBox<?> searchField = packLayout.getSearchField();
         this.focus(searchField);
         return searchField;
     }
@@ -287,7 +250,7 @@ public class PackedPacksScreen extends PackListContainer {
         if (keyCode == KEY_BACKSPACE) {
             PackLayout<?> packLayout = this.getLayoutFromSelectedList();
             if (packLayout != null) {
-                ToggleableEditBox<Flex> searchField = packLayout.getSearchField();
+                ToggleableEditBox<?> searchField = packLayout.getSearchField();
                 if (!searchField.isFocused() && !searchField.getValue().isEmpty()) {
                     return this.focusSearchField(packLayout).keyPressed(keyCode, scanCode, modifiers);
                 }

@@ -1,18 +1,16 @@
 package io.github.fishstiz.packed_packs.gui.event;
 
+import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.packed_packs.gui.components.list.PackList;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.List;
-
-public final class SelectionEvent extends Event {
-    private final @Unmodifiable List<Pack> selection;
+public final class SelectionEvent extends PackListEvent {
+    private final ImmutableList<Pack> selected;
 
     public SelectionEvent(PackList target) {
         super(target);
 
-        this.selection = target.getSelectionCopy();
+        this.selected = target.getSelectionCopy();
     }
 
     @Override
@@ -20,7 +18,7 @@ public final class SelectionEvent extends Event {
         return true;
     }
 
-    public List<Pack> selection() {
-        return this.selection;
+    public ImmutableList<Pack> selected() {
+        return this.selected;
     }
 }

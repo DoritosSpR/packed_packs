@@ -4,17 +4,17 @@ import io.github.fishstiz.fidgetz.gui.Metadata;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.layouts.Layout;
+import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 
 import java.util.function.Consumer;
 
-public class LayoutWrapper<T extends Layout, E> extends AbstractWidget implements Metadata<E> {
+public class LayoutWrapper<T extends Layout, E> extends AbstractWidget implements Layout, Metadata<E> {
     private final T layout;
     private int minWidth;
     private int minHeight;
-    private boolean absolute = false;
     private E metadata;
 
     public LayoutWrapper(T layout, int minWidth, int minHeight) {
@@ -29,12 +29,12 @@ public class LayoutWrapper<T extends Layout, E> extends AbstractWidget implement
         this.repositionElements();
     }
 
-    public T getLayout() {
-        return this.layout;
+    public LayoutWrapper(T layout) {
+        this(layout, 0, 0);
     }
 
-    public void setAbsolute(boolean absolute) {
-        this.absolute = absolute;
+    public T getLayout() {
+        return this.layout;
     }
 
     @Override
@@ -52,7 +52,6 @@ public class LayoutWrapper<T extends Layout, E> extends AbstractWidget implement
         this.setWidth(this.width);
     }
 
-
     public void setMinHeight(int minHeight) {
         this.minHeight = minHeight;
         this.setHeight(this.height);
@@ -60,12 +59,9 @@ public class LayoutWrapper<T extends Layout, E> extends AbstractWidget implement
 
     public void repositionElements() {
         this.layout.arrangeElements();
-
-        if (!this.absolute) {
-            this.setPosition(this.layout.getX(), this.layout.getY());
-            this.setWidth(this.layout.getWidth());
-            this.setHeight(this.layout.getHeight());
-        }
+        this.setPosition(this.layout.getX(), this.layout.getY());
+        this.setWidth(this.layout.getWidth());
+        this.setHeight(this.layout.getHeight());
     }
 
     @Override
@@ -84,8 +80,50 @@ public class LayoutWrapper<T extends Layout, E> extends AbstractWidget implement
     }
 
     @Override
+    public void setX(int x) {
+        super.setX(x);
+        this.layout.setX(x);
+    }
+
+    @Override
+    public void setY(int y) {
+        super.setY(y);
+        this.layout.setY(y);
+    }
+
+    @Override
+    public int getX() {
+        return this.layout.getX();
+    }
+
+    @Override
+    public int getY() {
+        return this.layout.getY();
+    }
+
+    @Override
+    public int getWidth() {
+        return this.width;
+    }
+
+    @Override
+    public int getHeight() {
+        return this.height;
+    }
+
+    @Override
+    public void visitChildren(Consumer<LayoutElement> visitor) {
+        this.layout.visitChildren(visitor);
+    }
+
+    @Override
     public void visitWidgets(Consumer<AbstractWidget> consumer) {
         this.layout.visitWidgets(consumer);
+    }
+
+    @Override
+    public void arrangeElements() {
+        this.repositionElements();
     }
 
     @Override

@@ -1,8 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.event;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.packed_packs.gui.components.list.PackList;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import org.jetbrains.annotations.NotNull;
@@ -12,7 +10,7 @@ import java.util.Optional;
 
 import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
 
-public interface DragEventListener extends ContainerEventHandler {
+public interface DragEventHandler extends ContainerEventHandler {
     @Nullable DragEvent getDragged();
 
     void setDragged(DragEvent dragged);
@@ -35,6 +33,15 @@ public interface DragEventListener extends ContainerEventHandler {
     }
 
     @Override
+    default boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (this.isDraggingSelection()) {
+            return true;
+        }
+
+        return ContainerEventHandler.super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
     default boolean mouseReleased(double mouseX, double mouseY, int button) {
         DragEvent event = this.getDragged();
 
@@ -47,22 +54,7 @@ public interface DragEventListener extends ContainerEventHandler {
         return ContainerEventHandler.super.mouseReleased(mouseX, mouseY, button);
     }
 
-    default void renderDragged(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        DragEvent event = this.getDragged();
-        if (event != null) {
-            PoseStack poseStack = guiGraphics.pose();
-            poseStack.pushPose();
-            poseStack.translate(0, 0, this.getDraggableZ());
-            event.render(guiGraphics, mouseX, mouseY, partialTick);
-            poseStack.popPose();
-        }
-    }
-
     default float getDroppableZ() {
         return 100;
-    }
-
-    default float getDraggableZ() { // insert red circle
-        return 200;
     }
 }
