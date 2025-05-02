@@ -1,8 +1,8 @@
 package io.github.fishstiz.packed_packs.compat.minecraftcursor;
 
 import io.github.fishstiz.minecraftcursor.api.*;
-import io.github.fishstiz.packed_packs.gui.components.list.AvailablePackList;
-import io.github.fishstiz.packed_packs.gui.components.list.CurrentPackList;
+import io.github.fishstiz.packed_packs.gui.components.AvailablePackList;
+import io.github.fishstiz.packed_packs.gui.components.CurrentPackList;
 
 public class PackedPacksMinecraftCursor implements MinecraftCursorInitializer {
     @Override

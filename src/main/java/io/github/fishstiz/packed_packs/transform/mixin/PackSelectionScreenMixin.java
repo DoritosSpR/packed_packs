@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.transform.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
-import io.github.fishstiz.packed_packs.gui.PackedPacksScreen;
+import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;

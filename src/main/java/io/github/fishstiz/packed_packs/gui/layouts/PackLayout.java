@@ -1,8 +1,8 @@
-package io.github.fishstiz.packed_packs.gui.components.layout;
+package io.github.fishstiz.packed_packs.gui.layouts;
 
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.gui.components.list.PackListBase;
+import io.github.fishstiz.packed_packs.gui.components.PackListBase;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 public abstract class PackLayout<T extends PackListBase<?>> {
     protected final T list;
     private final GridWrapper<FlexLayout> header;
-    private ToggleableEditBox<?> searchField;
+    private ToggleableEditBox<Void> searchField;
     private FlexLayout layout;
 
     protected PackLayout(T list, int spacing) {
@@ -25,7 +25,7 @@ public abstract class PackLayout<T extends PackListBase<?>> {
     public final void init(@NotNull FlexLayout layout) {
         this.layout = layout;
 
-        this.searchField = ToggleableEditBox.builder()
+        this.searchField = ToggleableEditBox.<Void>builder()
                 .setHint(ResourceUtil.getText("search"))
                 .setEditable(true)
                 .addListener(this.list::search)
@@ -42,7 +42,7 @@ public abstract class PackLayout<T extends PackListBase<?>> {
         return this.list;
     }
 
-    public ToggleableEditBox<?> getSearchField() {
+    public ToggleableEditBox<Void> getSearchField() {
         return this.searchField;
     }
 

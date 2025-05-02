@@ -1,7 +1,7 @@
-package io.github.fishstiz.packed_packs.gui.event;
+package io.github.fishstiz.packed_packs.gui.components.events;
 
 import com.google.common.collect.ImmutableList;
-import io.github.fishstiz.packed_packs.gui.components.list.PackList;
+import io.github.fishstiz.packed_packs.gui.components.PackList;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,10 +27,8 @@ public final class RequestTransferEvent extends PackListEvent {
     public RequestTransferEvent(PackList target, @NotNull Pack trigger) {
         super(target);
 
-        Objects.requireNonNull(trigger);
-
         this.payload = ImmutableList.of(trigger);
-        this.trigger = trigger;
+        this.trigger = Objects.requireNonNull(trigger);
     }
 
     @Override

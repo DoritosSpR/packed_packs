@@ -1,11 +1,11 @@
-package io.github.fishstiz.packed_packs.gui.components.list;
+package io.github.fishstiz.packed_packs.gui.components;
 
 import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.Background;
 import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
-import io.github.fishstiz.packed_packs.gui.event.PackListEventListener;
+import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.gui.event.MoveEvent;
+import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
 import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
 import static com.mojang.blaze3d.platform.InputConstants.*;
@@ -358,21 +359,20 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (isLeftClick(button)) {
                 if (this.isMouseOverRemove(mouseX, mouseY)) {
-                    playClickSound();
-                    this.transfer();
-                    return false;
+                    return this.consumeClick(CurrentPackList.Entry::transfer);
                 } else if (this.isMouseOverUp(mouseX, mouseY)) {
-                    playClickSound();
-                    this.moveUp();
-                    return true;
+                    return this.consumeClick(CurrentPackList.Entry::moveUp);
                 } else if (this.isMouseOverDown(mouseX, mouseY)) {
-                    playClickSound();
-                    this.moveDown();
-                    return true;
+                    return this.consumeClick(CurrentPackList.Entry::moveDown);
                 }
             }
-
             return super.mouseClicked(mouseX, mouseY, button);
+        }
+
+        private boolean consumeClick(Consumer<CurrentPackList.Entry> action) {
+            playClickSound();
+            action.accept(this);
+            return false;
         }
 
         @Override

@@ -1,6 +1,6 @@
 package io.github.fishstiz.fidgetz.gui.shapes;
 
-import io.github.fishstiz.fidgetz.util.Constants;
+import io.github.fishstiz.fidgetz.util.LogUtil;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.layouts.LayoutElement;
 
@@ -13,12 +13,12 @@ public final class GuiRectangle {
         this.widget = new LayoutElement() {
             @Override
             public void setX(int x) {
-                Constants.logUnsupported();
+                LogUtil.logUnsupported();
             }
 
             @Override
             public void setY(int y) {
-                Constants.logUnsupported();
+                LogUtil.logUnsupported();
             }
 
             @Override
@@ -43,7 +43,7 @@ public final class GuiRectangle {
 
             @Override
             public void visitWidgets(Consumer<AbstractWidget> consumer) {
-                Constants.logUnsupported();
+                LogUtil.logUnsupported();
             }
         };
     }

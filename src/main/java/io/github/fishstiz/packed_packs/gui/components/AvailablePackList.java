@@ -1,9 +1,9 @@
-package io.github.fishstiz.packed_packs.gui.components.list;
+package io.github.fishstiz.packed_packs.gui.components;
 
 import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.Background;
 import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
-import io.github.fishstiz.packed_packs.gui.event.PackListEventListener;
+import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.client.gui.GuiGraphics;
@@ -100,7 +100,7 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
 
         @Override
         protected void renderForeground(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            if (!hovering && !this.isSelectedLast()) return;
+            if (!this.isMouseOver(mouseX, mouseY) && !this.isSelectedLast()) return;
 
             int x = left + SPACING;
             OVERLAY.render(guiGraphics, x, top, SELECT_SPRITE.width, SELECT_SPRITE.height);

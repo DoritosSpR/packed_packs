@@ -1,7 +1,7 @@
-package io.github.fishstiz.packed_packs.gui.components.list;
+package io.github.fishstiz.packed_packs.gui.components;
 
 import com.google.common.collect.ImmutableList;
-import io.github.fishstiz.packed_packs.util.Restorable;
+import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.testNullable;
@@ -45,17 +44,17 @@ public interface PackList extends ContainerEventHandler, Restorable<PackList.Sna
     @Nullable Entry getEntry(Pack pack);
 
     default boolean isTransferable(Pack pack) {
-        return testNullable(this.getEntry(pack), PackList.Entry::isTransferable);
+        return testNullable(this.getEntry(pack), Entry::isTransferable);
     }
 
-    @NotNull ImmutableList<Pack> getPacksCopy();
+    @NotNull ImmutableList<Pack> copyPacks();
 
-    @NotNull ImmutableList<Pack> getSelectionCopy();
+    @NotNull ImmutableList<Pack> copySelection();
 
-    @NotNull Query getQueryCopy();
+    @NotNull Query copyQuery();
 
-    default PackList.Snapshot captureState() {
-        return new Snapshot(this, this.getPacksCopy(), this.getSelectionCopy(), this.getQueryCopy());
+    default @NotNull Snapshot captureState() {
+        return new Snapshot(this, this.copyPacks(), this.copySelection(), this.copyQuery());
     }
 
     interface Entry extends GuiEventListener {
@@ -64,24 +63,16 @@ public interface PackList extends ContainerEventHandler, Restorable<PackList.Sna
         Pack getPack();
     }
 
-    class Snapshot extends Restorable.Snapshot<Snapshot> {
-        public final ImmutableList<Pack> packs;
-        public final ImmutableList<Pack> selection;
-        public final Query query;
-
-        protected Snapshot(PackList target, List<Pack> packs, List<Pack> selection, Query query) {
-            super(target);
-
-            this.packs = ImmutableList.copyOf(packs);
-            this.selection = ImmutableList.copyOf(selection);
-            this.query = query.copy();
-        }
-
-        public Snapshot validate(Collection<Pack> validPacks) {
+    record Snapshot(
+            PackList target,
+            ImmutableList<Pack> packs,
+            ImmutableList<Pack> selection,
+            Query query
+    ) implements Restorable.Snapshot<Snapshot> {
+        public Snapshot validate(List<Pack> validPacks) {
             List<Pack> validated = new ArrayList<>(this.packs);
             validated.retainAll(validPacks);
-
-            return new Snapshot((PackList) this.target, validated, this.selection, query);
+            return new Snapshot(this.target, ImmutableList.copyOf(validated), this.selection, this.query);
         }
     }
 }

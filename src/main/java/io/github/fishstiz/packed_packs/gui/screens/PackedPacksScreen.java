@@ -1,15 +1,18 @@
-package io.github.fishstiz.packed_packs.gui;
+package io.github.fishstiz.packed_packs.gui.screens;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.gui.components.layout.PackLayout;
-import io.github.fishstiz.packed_packs.gui.components.PackListContainer;
-import io.github.fishstiz.packed_packs.gui.components.layout.AvailablePacksLayout;
-import io.github.fishstiz.packed_packs.gui.components.layout.CurrentPacksLayout;
-import io.github.fishstiz.packed_packs.gui.components.list.*;
-import io.github.fishstiz.packed_packs.gui.event.*;
-import io.github.fishstiz.packed_packs.gui.components.Sidebar;
+import io.github.fishstiz.fidgetz.util.debounce.Debouncer;
+import io.github.fishstiz.fidgetz.util.debounce.ImmediateDebouncer;
+import io.github.fishstiz.packed_packs.PackRepositoryHelper;
+import io.github.fishstiz.packed_packs.gui.components.*;
+import io.github.fishstiz.packed_packs.gui.layouts.PackLayout;
+import io.github.fishstiz.packed_packs.gui.layouts.AvailablePacksLayout;
+import io.github.fishstiz.packed_packs.gui.layouts.CurrentPacksLayout;
+import io.github.fishstiz.packed_packs.gui.components.events.*;
+import io.github.fishstiz.packed_packs.gui.history.HistoryManager;
+import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import io.github.fishstiz.packed_packs.transform.mixin.HeaderAndFooterLayoutAccess;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionModel;
@@ -25,21 +28,21 @@ import net.minecraft.server.packs.repository.PackRepository;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 
-public class PackedPacksScreen extends PackListContainer {
+public class PackedPacksScreen extends PackListContainer implements Restorable<PackedPacksScreen.Snapshot> {
     private static final int BUTTON_SIZE = 20;
     private static final int SPACING = 8;
     private static final float DROP_ZONE_Z = 100;
     private static final float SIDEBAR_Z = 200;
+    private static final long SEARCH_LISTENER_DELAY_MS = 250;
     private final Screen previous;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
-    private final Sidebar<?, ?> sidebar = Sidebar.builder(this)
+    private final Sidebar<Void, Void> sidebar = Sidebar.<Void, Void>builder(this)
             .setTitle(ResourceUtil.getText("profile").withColor(Theme.GRAY_800.getARGB()), false) // gray
             .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
             .setZ(SIDEBAR_Z)
@@ -48,7 +51,8 @@ public class PackedPacksScreen extends PackListContainer {
     private final AvailablePacksLayout availablePacks;
     private final CurrentPacksLayout currentPacks;
     private final List<PackList> packLists;
-    private final HistoryManager history;
+    private final HistoryManager<Snapshot> history;
+    private final Debouncer<String> searchListener;
     private boolean listHeadersOpen = false; // TODO: config
 
     public PackedPacksScreen(Screen previous, PackRepository repository) {
@@ -59,11 +63,8 @@ public class PackedPacksScreen extends PackListContainer {
         this.availablePacks = new AvailablePacksLayout(this.repository, this, SPACING);
         this.currentPacks = new CurrentPacksLayout(this.repository, this, SPACING);
         this.packLists = List.of(this.availablePacks.getList(), this.currentPacks.getList());
-
-        this.availablePacks.getList().query(false, Query.SortOption.A_Z, ""); // TODO: config
-
-        this.history = new HistoryManager(this.takeSnapshots());
-        this.reset();
+        this.history = new HistoryManager<>(this.captureState());
+        this.searchListener = new ImmediateDebouncer<>(() -> this.history.reset(this.captureState()), SEARCH_LISTENER_DELAY_MS);
     }
 
     @Override
@@ -85,6 +86,7 @@ public class PackedPacksScreen extends PackListContainer {
         this.layout.addToFooter(this.createFooter());
         this.layout.visitWidgets(this::addRenderableWidget);
         this.repositionElements();
+        this.reset();
     }
 
     private FlexLayout createHeader() {
@@ -104,6 +106,8 @@ public class PackedPacksScreen extends PackListContainer {
         FlexLayout contents = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
         this.availablePacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING), false));
         this.currentPacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING), false));
+        this.currentPacks.getSearchField().addListener(this.searchListener);
+        this.availablePacks.getSearchField().addListener(this.searchListener);
         return contents;
     }
 
@@ -149,24 +153,21 @@ public class PackedPacksScreen extends PackListContainer {
 
     public void commit() {
         this.currentPacks.getSearchField().setValue("");
-        this.repository.applyPacks(this.currentPacks.getList().getPacksCopy());
+        this.repository.applyPacks(this.currentPacks.getList().copyPacks());
     }
 
     public void reset() {
-        List<Pack> requiredPacks = new ArrayList<>();
-        List<Pack> nonRequiredPacks = new ArrayList<>();
+        PackRepositoryHelper.PackGroup packs = this.repository.getPacksByRequirement();
+        this.availablePacks.getList().reload(packs.unselected());
+        this.currentPacks.getList().reload(packs.selected());
+        this.history.reset(this.captureState());
+    }
 
-        for (Pack pack : this.repository.getPacks()) {
-            if (pack.isRequired()) {
-                requiredPacks.add(pack);
-            } else {
-                nonRequiredPacks.add(pack);
-            }
-        }
-
-        this.availablePacks.getList().reload(nonRequiredPacks);
-        this.currentPacks.getList().reload(requiredPacks);
-        this.history.reset(this.takeSnapshots());
+    public void useSelected() {
+        PackRepositoryHelper.PackGroup packs = this.repository.getPacksBySelected();
+        this.availablePacks.getList().reload(packs.unselected());
+        this.currentPacks.getList().reload(packs.selected());
+        this.history.reset(this.captureState());
     }
 
     @Override
@@ -198,7 +199,7 @@ public class PackedPacksScreen extends PackListContainer {
         super.onEvent(event);
 
         if (event.modifiesTarget()) {
-            this.history.push(this.takeSnapshots());
+            this.history.push(this.captureState());
         }
     }
 
@@ -215,9 +216,9 @@ public class PackedPacksScreen extends PackListContainer {
         );
     }
 
-    public ToggleableEditBox<?> focusSearchField(@NotNull PackLayout<?> packLayout) {
+    public ToggleableEditBox<Void> focusSearchField(@NotNull PackLayout<?> packLayout) {
         if (!this.listHeadersOpen) this.toggleListHeaders();
-        ToggleableEditBox<?> searchField = packLayout.getSearchField();
+        ToggleableEditBox<Void> searchField = packLayout.getSearchField();
         this.focus(searchField);
         return searchField;
     }
@@ -250,7 +251,7 @@ public class PackedPacksScreen extends PackListContainer {
         if (keyCode == KEY_BACKSPACE) {
             PackLayout<?> packLayout = this.getLayoutFromSelectedList();
             if (packLayout != null) {
-                ToggleableEditBox<?> searchField = packLayout.getSearchField();
+                ToggleableEditBox<Void> searchField = packLayout.getSearchField();
                 if (!searchField.isFocused() && !searchField.getValue().isEmpty()) {
                     return this.focusSearchField(packLayout).keyPressed(keyCode, scanCode, modifiers);
                 }
@@ -275,5 +276,26 @@ public class PackedPacksScreen extends PackListContainer {
             this.layout.visitWidgets(w -> w.setFocused(false));
         }
         return false;
+    }
+
+    @Override
+    public @NotNull PackedPacksScreen.Snapshot captureState() {
+        return new Snapshot(this, this.availablePacks.getList().captureState(), this.currentPacks.getList().captureState());
+    }
+
+    @Override
+    public void replaceState(@NotNull Snapshot snapshot) {
+        List<Pack> validPacks = this.repository.getPacks();
+        this.availablePacks.getSortButton().setValueSilently(snapshot.availablePacks.query().getSort());
+        this.availablePacks.getCompatButton().setValueSilently(snapshot.availablePacks.query().isHideIncompatible());
+        snapshot.availablePacks.validate(validPacks).restore();
+        snapshot.currentPacks.validate(validPacks).restore();
+    }
+
+    public record Snapshot(
+            PackedPacksScreen target,
+            PackList.Snapshot availablePacks,
+            PackList.Snapshot currentPacks
+    ) implements Restorable.Snapshot<Snapshot> {
     }
 }

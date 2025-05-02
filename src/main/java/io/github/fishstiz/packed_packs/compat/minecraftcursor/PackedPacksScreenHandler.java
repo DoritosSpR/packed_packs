@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.compat.minecraftcursor;
 
 import io.github.fishstiz.minecraftcursor.api.CursorHandler;
 import io.github.fishstiz.minecraftcursor.api.CursorType;
-import io.github.fishstiz.packed_packs.gui.PackedPacksScreen;
+import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.gui.components.Sidebar;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 

@@ -1,12 +1,12 @@
-package io.github.fishstiz.packed_packs.gui.components.list;
+package io.github.fishstiz.packed_packs.gui.components;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.Background;
 import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
-import io.github.fishstiz.packed_packs.gui.event.PackListEventListener;
+import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.gui.event.*;
+import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.Util;
 import net.minecraft.client.gui.ComponentPath;
@@ -19,8 +19,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 
 import static com.google.common.primitives.Ints.contains;
+import static io.github.fishstiz.fidgetz.util.WidgetUtil.isPointWithinBounds;
 import static io.github.fishstiz.fidgetz.util.WidgetUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
@@ -97,17 +99,17 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
-    public @NotNull ImmutableList<Pack> getPacksCopy() {
+    public @NotNull ImmutableList<Pack> copyPacks() {
         return ImmutableList.copyOf(this.packs);
     }
 
     @Override
-    public @NotNull ImmutableList<Pack> getSelectionCopy() {
+    public @NotNull ImmutableList<Pack> copySelection() {
         return ImmutableList.copyOf(this.selection);
     }
 
     @Override
-    public @NotNull Query getQueryCopy() {
+    public @NotNull Query copyQuery() {
         return this.query.copy();
     }
 
@@ -144,12 +146,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.clearSelection();
         this.queryPacks();
         this.scrollToTop();
-    }
-
-    public void query(boolean incompatibleHidden, Query.SortOption sort, String search) {
-        if (this.query.update(incompatibleHidden, sort, search)) {
-            this.refresh();
-        }
     }
 
     public void sort(Query.SortOption sort) {
@@ -394,20 +390,20 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
-    public void replaceState(Snapshot snapshot) {
+    public void replaceState(@NotNull Snapshot snapshot) {
         this.packs.clear();
 
-        for (Pack pack : snapshot.packs) {
+        for (Pack pack : snapshot.packs()) {
             if (pack != null && !this.packs.contains(pack)) {
                 this.packs.add(pack);
             }
         }
 
-        this.query.update(snapshot.query);
+        this.query.update(snapshot.query());
         this.queryPacks();
 
         this.clearSelection();
-        for (Pack selected : snapshot.selection) {
+        for (Pack selected : snapshot.selection()) {
             this.select(selected);
         }
         this.scrollToLastSelected();
@@ -424,6 +420,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         protected final Pack pack;
         private final PackWidget packWidget;
         private long lastClickTime = 0;
+        private MouseSelectionState mouseSelectionState = MouseSelectionState.INACTIVE;
 
         protected Entry(Pack pack, int index) {
             super(index);
@@ -491,59 +488,68 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return false;
         }
 
+        private void fireClickEvent(BiConsumer<PackListBase<T>, Pack> selector, MouseSelectionState state) {
+            this.mouseSelectionState = state;
+            selector.accept(PackListBase.this, this.pack);
+            PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
+        }
+
+        @Override
+        public boolean isMouseOver(double mouseX, double mouseY) {
+            return isPointWithinBounds(
+                    this.getX(),
+                    this.getY() - BACKGROUND_OFFSET,
+                    this.getWidth(),
+                    this.getHeight() + BACKGROUND_OFFSET * 2,
+                    mouseX, mouseY
+            );
+        }
+
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (isLeftClick(button) && mouseX <= this.getRight()) {
+            if (isLeftClick(button) && this.isMouseOver(mouseX, mouseY)) {
                 if (!isRangeModifierActive() && !isSelectModifierActive() && this.handleDoubleClick()) {
                     return true;
                 }
                 if (isRangeModifierActive()) {
-                    PackListBase.this.selectRange(this.pack);
-                    PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
-                    return true;
+                    this.fireClickEvent(PackListBase::selectRange, MouseSelectionState.SELECTING_MANY);
                 } else if (isSelectModifierActive()) {
-                    PackListBase.this.selectToggle(this.pack);
-                    PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
-                    return true;
+                    this.fireClickEvent(PackListBase::selectToggle, MouseSelectionState.SELECTING_MANY);
                 } else if (!this.isSelected()) {
-                    PackListBase.this.selectExclusive(this.pack);
-                    PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
-                    return true;
+                    this.fireClickEvent(PackListBase::selectExclusive, MouseSelectionState.SELECTING_ONE);
                 } else if (this.isSelected() && !this.isSelectedLast()) {
-                    PackListBase.this.select(this.pack);
-                    PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
-                    return true;
+                    this.fireClickEvent(PackListBase::select, MouseSelectionState.SELECTING_ONE);
+                } else {
+                    this.mouseSelectionState = MouseSelectionState.SELECTING_ONE;
                 }
+                return true;
             }
-
-            return super.mouseClicked(mouseX, mouseY, button);
+            this.mouseSelectionState = MouseSelectionState.INACTIVE;
+            return false;
         }
 
         @Override
         public boolean mouseReleased(double mouseX, double mouseY, int button) {
-            if (isLeftClick(button)
-                && !isRangeModifierActive()
-                && !isSelectModifierActive()
-                && PackListBase.this.selection.size() > 1
-                && this.isSelected()
-                && this.isMouseOver(mouseX, mouseY)) {
-                PackListBase.this.selectExclusive(this.pack);
-                PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
+            if (this.isSelectedLast()
+                && this.isMouseOver(mouseX, mouseY)
+                && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE
+                && PackListBase.this.selection.size() > 1) {
+                this.fireClickEvent(PackListBase::selectExclusive, MouseSelectionState.INACTIVE);
                 return true;
             }
-
-            return super.mouseReleased(mouseX, mouseY, button);
+            this.mouseSelectionState = MouseSelectionState.INACTIVE;
+            return false;
         }
 
         @Override
         public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+            if (!this.isMouseOver(mouseX, mouseY)) {
+                this.mouseSelectionState = MouseSelectionState.INACTIVE;
+                return false;
+            }
             if (this.isSelected()
-                && isLeftClick(button)
-                && !isRangeModifierActive()
-                && !isSelectModifierActive()
-                && DragEvent.exceedsThreshold(dragX, dragY)
-                && mouseX <= this.getRight()
-                && this.isMouseOver(mouseX, mouseY)) {
+                && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE
+                && DragEvent.exceedsThreshold(dragX, dragY)) {
                 PackListBase.this.sendEvent(new DragEvent(
                         PackListBase.this,
                         PackListBase.this.getOrderedSelection().reversed(),
@@ -552,8 +558,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 ));
                 return true;
             }
-
-            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+            return false;
         }
 
         @Override
@@ -619,6 +624,12 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         @Override
         public @NotNull List<? extends NarratableEntry> narratables() {
             return this.narratables;
+        }
+
+        private enum MouseSelectionState {
+            INACTIVE,
+            SELECTING_ONE,
+            SELECTING_MANY
         }
     }
 }

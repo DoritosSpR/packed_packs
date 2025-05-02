@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.gui.components.list;
+package io.github.fishstiz.packed_packs.gui.components;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
@@ -99,8 +99,8 @@ class PackWidget extends AbstractWidget {
     }
 
     @Override
-    public void playDownSound(SoundManager handler) {
-        // remove down sound
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return false;
     }
 
     @Override

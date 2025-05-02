@@ -1,8 +1,8 @@
-package io.github.fishstiz.packed_packs.gui.components;
+package io.github.fishstiz.packed_packs.gui.screens;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.fishstiz.packed_packs.gui.event.*;
-import io.github.fishstiz.packed_packs.gui.components.list.PackList;
+import io.github.fishstiz.packed_packs.gui.components.events.*;
+import io.github.fishstiz.packed_packs.gui.components.PackList;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -12,7 +12,6 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
 import java.util.List;
 
 public abstract class PackListContainer extends Screen implements PackListEventListener, DragEventHandler {
@@ -105,23 +104,6 @@ public abstract class PackListContainer extends Screen implements PackListEventL
             case DropEvent drop -> this.transferFocus(drop.target(), drop.destination());
             default -> {
             }
-        }
-    }
-
-    protected PackList.Snapshot[] takeSnapshots() {
-        List<PackList> lists = this.getPackLists();
-        PackList.Snapshot[] snapshots = new PackList.Snapshot[lists.size()];
-
-        for (int i = 0; i < lists.size(); i++) {
-            snapshots[i] = lists.get(i).captureState();
-        }
-
-        return snapshots;
-    }
-
-    protected void validatePackLists(Collection<Pack> validPacks) {
-        for (PackList.Snapshot snapshot : this.takeSnapshots()) {
-            snapshot.validate(validPacks).restore();
         }
     }
 

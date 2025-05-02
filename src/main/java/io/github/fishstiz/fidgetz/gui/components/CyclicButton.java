@@ -8,11 +8,13 @@ import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class CyclicButton<T extends CyclicButton.Option, E> extends Button implements Metadata<E> {
     private final @Nullable Component prefix;
-    private final Consumer<T> pressAction;
+    private final List<Consumer<T>> listeners;
     private final T[] options;
     private int value = 0;
     private E metadata;
@@ -28,27 +30,64 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends Button imple
                 Button.DEFAULT_NARRATION
         );
 
-        this.pressAction = builder.pressAction;
+        this.listeners = builder.listeners;
         this.options = builder.options;
         this.prefix = builder.prefix;
         this.metadata = builder.metadata;
 
-        this.updateMessage();
+        this.setValueSilently(builder.value);
+
         if (builder.tooltip != null) this.setTooltip(builder.tooltip);
+    }
+
+    private void setValue(T value, boolean silent) {
+        for (int i = 0; i < this.options.length; i++) {
+            if (this.options[i] == value) {
+                this.value = i;
+                break;
+            }
+        }
+        if (!silent) {
+            this.informListeners();
+        }
+        this.updateMessage();
+    }
+
+    public void setValue(T value) {
+        this.setValue(value, false);
+    }
+
+    public void setValueSilently(T value) {
+        this.setValue(value, true);
+    }
+
+    public T getValue() {
+        return this.options[this.value];
     }
 
     @Override
     public void onPress() {
         this.value = this.value >= this.options.length - 1 ? 0 : this.value + 1;
         this.updateMessage();
-        if (this.pressAction != null) this.pressAction.accept(this.options[this.value]);
+        this.informListeners();
     }
 
     private void updateMessage() {
         this.setMessage(this.prefix != null
-                ? this.prefix.copy().append(": ").append(this.options[this.value].text())
-                : this.options[this.value].text()
+                ? this.prefix.copy().append(": ").append(this.getValue().text())
+                : this.getValue().text()
         );
+    }
+
+    private void informListeners() {
+        T option = this.getValue();
+        for (var listener : this.listeners) {
+            listener.accept(option);
+        }
+    }
+
+    public void addListener(Consumer<T> listener) {
+        this.listeners.add(listener);
     }
 
     @Override
@@ -61,34 +100,34 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends Button imple
         this.metadata = metadata;
     }
 
-    public static <E> Builder<Option, E> builder(Consumer<Option> pressAction, Component... components) {
+    public static <E> Builder<Option, E> builder(Component... components) {
         Option[] options = new Option[components.length];
 
         for (int i = 0; i < components.length; i++) {
             options[i] = Option.create(components[i]);
         }
 
-        return new Builder<>(pressAction, options);
+        return new Builder<>(options);
     }
 
-    public static <T extends Option, E> Builder<T, E> builder(Consumer<T> pressAction, T[] options) {
-        return new Builder<>(pressAction, options);
+    public static <T extends Option, E> Builder<T, E> builder(T[] options) {
+        return new Builder<>(options);
     }
 
     public static class Builder<T extends Option, E> implements WidgetBuilder<Builder<T, E>> {
+        private final List<Consumer<T>> listeners = new ArrayList<>();
         private final T[] options;
-        private final Consumer<T> pressAction;
         private int x = 0;
         private int y = 0;
         private int width = WidgetBuilder.DEFAULT_WIDTH;
         private int height = WidgetBuilder.DEFAULT_HEIGHT;
+        private T value;
         private Component prefix;
         private Tooltip tooltip;
         private E metadata;
 
-        private Builder(Consumer<T> pressAction, T[] options) {
+        private Builder(T[] options) {
             this.options = options;
-            this.pressAction = pressAction;
         }
 
         @Override
@@ -129,6 +168,11 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends Button imple
             return this;
         }
 
+        public Builder<T, E> setValue(T value) {
+            this.value = value;
+            return this;
+        }
+
         public Builder<T, E> setPrefix(Component prefix) {
             this.prefix = prefix;
             return this;
@@ -136,6 +180,11 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends Button imple
 
         public Builder<T, E> setTooltip(Tooltip tooltip) {
             this.tooltip = tooltip;
+            return this;
+        }
+
+        public Builder<T, E> addListener(Consumer<T> listener) {
+            this.listeners.add(listener);
             return this;
         }
 

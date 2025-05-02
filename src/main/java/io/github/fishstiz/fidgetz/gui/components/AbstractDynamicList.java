@@ -1,6 +1,6 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
-import io.github.fishstiz.fidgetz.util.Constants;
+import io.github.fishstiz.fidgetz.util.LogUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -99,12 +99,12 @@ public abstract class AbstractDynamicList<T extends AbstractDynamicList<T>.Entry
 
         @Override
         public final void setX(int x) {
-            Constants.logUnsupported();
+            LogUtil.logUnsupported();
         }
 
         @Override
         public final void setY(int y) {
-            Constants.logUnsupported();
+            LogUtil.logUnsupported();
         }
 
         @Override

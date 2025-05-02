@@ -1,10 +1,11 @@
-package io.github.fishstiz.packed_packs.gui.components.list;
+package io.github.fishstiz.packed_packs.gui.components;
 
 import io.github.fishstiz.fidgetz.gui.components.CyclicButton;
 import io.github.fishstiz.packed_packs.util.pack.PackUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.List;
@@ -57,15 +58,7 @@ public class Query {
         return this.update(query.hideIncompatible, query.sort, query.search);
     }
 
-    boolean isQuerying() {
-        return this.hideIncompatible || (this.search != null && !this.search.isEmpty()) || this.sort != null;
-    }
-
-    Query copy() {
-        return new Query(this.hideIncompatible, this.sort, this.search);
-    }
-
-    public void apply(final List<Pack> packs) {
+    void apply(final List<Pack> packs) {
         Objects.requireNonNull(packs);
 
         if (this.hideIncompatible) {
@@ -77,6 +70,26 @@ public class Query {
         if (this.sort != null) {
             packs.sort(this.sort.getComparator());
         }
+    }
+
+    boolean isQuerying() {
+        return this.hideIncompatible || (this.search != null && !this.search.isEmpty()) || this.sort != null;
+    }
+
+    public Query copy() {
+        return new Query(this.hideIncompatible, this.sort, this.search);
+    }
+
+    public boolean isHideIncompatible() {
+        return this.hideIncompatible;
+    }
+
+    public SortOption getSort() {
+        return this.sort;
+    }
+
+    public String getSearch() {
+        return this.search;
     }
 
     public enum SortOption implements CyclicButton.Option {

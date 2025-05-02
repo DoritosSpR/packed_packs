@@ -4,7 +4,7 @@ import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
 import io.github.fishstiz.fidgetz.transform.mixin.EditBoxAccess;
 import io.github.fishstiz.fidgetz.gui.Metadata;
 import io.github.fishstiz.fidgetz.transform.interfaces.TextRenderer;
-import io.github.fishstiz.fidgetz.util.Constants;
+import io.github.fishstiz.fidgetz.util.LogUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.EditBox;
@@ -13,35 +13,35 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
     private static final int DEFAULT_MAX_LENGTH = 32;
     private final List<Consumer<String>> listeners = new ArrayList<>();
-    private final Consumer<String> baseResponder;
     private final int hintColor;
     private E metadata;
+    private int focusedTextColor;
+    private String previousValue;
 
     private ToggleableEditBox(Builder<E> builder) {
         super(builder.font, builder.x, builder.y, builder.width, builder.height, Component.literal(builder.value));
 
-        int defaultTextColor = ((EditBoxAccess) this).getTextColor();
-        int textColor = builder.textColor != null ? builder.textColor : defaultTextColor;
-
         this.hintColor = builder.hintColor != null ? builder.hintColor : ((EditBoxAccess) this).getTextColorUneditable();
-        this.baseResponder = value -> this.setTextColor(!value.isEmpty() || this.isFocused() ? textColor : this.hintColor);
         this.listeners.addAll(builder.listeners);
 
+        this.focusedTextColor = builder.textColor != null ? builder.textColor : ((EditBoxAccess) this).getTextColor();
+        this.previousValue = builder.value;
         this.metadata = builder.metadata;
 
         this.setValue(builder.value);
         this.setEditable(builder.editable);
         this.setHint(builder.hint);
-        this.setTextColor(!builder.value.isEmpty() || this.isFocused() ? textColor : this.hintColor);
         this.setMaxLength(builder.maxLength);
-        this.setResponder(this.baseResponder);
-
         ((TextRenderer) this).fidgetz$setShadow(builder.textShadow);
+        this.updateTextColor();
+
+        super.setResponder(this::onRespond);
     }
 
     public void toggle() {
@@ -63,22 +63,29 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
     public void setTextColor(int color) {
         super.setTextColor(color);
         this.setTextColorUneditable(color);
+        this.focusedTextColor = color;
+    }
+
+    private void updateTextColor() {
+        int color = !this.getValue().isEmpty() || this.isFocused() ? this.focusedTextColor : this.hintColor;
+        super.setTextColor(color);
+        this.setTextColorUneditable(color);
+    }
+
+    private void onRespond(String value) {
+        this.updateTextColor();
+
+        if (!Objects.equals(this.previousValue, value)) {
+            this.previousValue = value;
+            for (var listener : listeners) {
+                listener.accept(value);
+            }
+        }
     }
 
     @Override
     public void setResponder(Consumer<String> responder) {
-        if (responder != this.baseResponder) {
-            Constants.logUnsupported("Use addListener instead of setResponder.");
-            return;
-        }
-
-        super.setResponder(value -> {
-            responder.accept(value);
-
-            for (var listener : listeners) {
-                listener.accept(value);
-            }
-        });
+        LogUtil.logUnsupported("Use addListener instead of setResponder.");
     }
 
     public void addListener(Consumer<String> listener) {
@@ -98,7 +105,7 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
     @Override
     public void setFocused(boolean focused) {
         super.setFocused(focused);
-        this.baseResponder.accept(this.getValue());
+        this.updateTextColor();
     }
 
     @Override

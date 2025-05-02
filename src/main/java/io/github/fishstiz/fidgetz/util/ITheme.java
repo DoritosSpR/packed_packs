@@ -5,7 +5,7 @@ public interface ITheme {
 
     default int withAlpha(float alpha) {
         if (alpha < 0.0f || alpha > 1.0f) {
-            Constants.LOGGER.warn("Alpha must be between 0.0 and 1.0");
+            LogUtil.LOGGER.warn("Alpha must be between 0.0 and 1.0");
             alpha = Math.clamp(alpha, 0.0f, 1.0f);
         }
 

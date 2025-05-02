@@ -3,11 +3,10 @@ package io.github.fishstiz.fidgetz.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Constants {
-    public static final String PROJECT_ID = "fidgetz";
-    public static final Logger LOGGER = LoggerFactory.getLogger(PROJECT_ID);
+public class LogUtil {
+    public static final Logger LOGGER = LoggerFactory.getLogger("fidgetz");
 
-    private Constants() {
+    private LogUtil() {
     }
 
     public static void logUnsupported(String message) {

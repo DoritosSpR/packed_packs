@@ -8,7 +8,7 @@ import io.github.fishstiz.fidgetz.gui.*;
 import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.transform.interfaces.ToggleableDialogContainer;
-import io.github.fishstiz.fidgetz.util.Constants;
+import io.github.fishstiz.fidgetz.util.LogUtil;
 import io.github.fishstiz.fidgetz.util.WidgetUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -304,7 +304,7 @@ public class ToggleableDialog<T extends LayoutElement, E> extends AbstractWidget
     }
 
     private void logUnsupported() {
-        Constants.logUnsupported("Modify root element instead.");
+        LogUtil.logUnsupported("Modify root element instead.");
     }
 
     @Override

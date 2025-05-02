@@ -3,10 +3,12 @@ package io.github.fishstiz.fidgetz.gui.components;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class ToggleButton<E> extends FidgetzButton<E> {
-    private final Consumer<Boolean> listener;
+    private final List<Consumer<Boolean>> listeners;
     private final boolean prefixMessage;
     private Component prefix;
     private boolean value;
@@ -14,7 +16,7 @@ public class ToggleButton<E> extends FidgetzButton<E> {
     protected ToggleButton(ToggleBuilder<E> builder) {
         super(builder);
 
-        this.listener = builder.listener;
+        this.listeners = builder.listeners;
         this.prefixMessage = builder.prefixMessage;
         this.value = builder.value;
         this.prefix = this.getMessage();
@@ -22,13 +24,24 @@ public class ToggleButton<E> extends FidgetzButton<E> {
         this.updateMessage();
     }
 
-    public void setValue(boolean value) {
+    private void setValue(boolean value, boolean silent) {
         this.value = value;
-        this.updateMessage();
 
-        if (this.listener != null) {
-            this.listener.accept(value);
+        if (!silent) {
+            for (var listener : this.listeners) {
+                listener.accept(this.getValue());
+            }
         }
+
+        this.updateMessage();
+    }
+
+    public void setValue(boolean value) {
+        this.setValue(value, false);
+    }
+
+    public void setValueSilently(boolean value) {
+        this.setValue(value, true);
     }
 
     public boolean getValue() {
@@ -40,6 +53,10 @@ public class ToggleButton<E> extends FidgetzButton<E> {
         super.onClick(mouseX, mouseY);
 
         this.setValue(!this.getValue());
+    }
+
+    public void addListener(Consumer<Boolean> listener) {
+        this.listeners.add(listener);
     }
 
     @Override
@@ -67,9 +84,9 @@ public class ToggleButton<E> extends FidgetzButton<E> {
     }
 
     public static class ToggleBuilder<E> extends FidgetzButton.Builder<E, ToggleBuilder<E>> {
+        private final List<Consumer<Boolean>> listeners = new ArrayList<>();
         private boolean value = false;
         private boolean prefixMessage = true;
-        private Consumer<Boolean> listener;
 
         protected ToggleBuilder() {
         }
@@ -84,8 +101,8 @@ public class ToggleButton<E> extends FidgetzButton<E> {
             return this;
         }
 
-        public ToggleBuilder<E> setListener(Consumer<Boolean> listener) {
-            this.listener = listener;
+        public ToggleBuilder<E> addListener(Consumer<Boolean> listener) {
+            this.listeners.add(listener);
             return this;
         }
 
