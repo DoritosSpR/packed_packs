@@ -8,6 +8,7 @@ import io.github.fishstiz.packed_packs.gui.event.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.event.*;
 import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
+import net.minecraft.Util;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -413,6 +414,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     public abstract class Entry extends AbstractDynamicList<T>.Entry implements PackList.Entry {
+        private static final int DOUBLE_CLICK_DELTA_MS = 200;
         protected static final int SPACING = 2;
         protected static final int BACKGROUND_OFFSET = 1;
         protected static final Background.Color OVERLAY = new Background.Color(Theme.WHITE.withAlpha(0.25F));
@@ -421,6 +423,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         protected final List<NarratableEntry> narratables = new ArrayList<>();
         protected final Pack pack;
         private final PackWidget packWidget;
+        private long lastClickTime = 0;
 
         protected Entry(Pack pack, int index) {
             super(index);
@@ -478,9 +481,22 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return this.sendSelection();
         }
 
+        private boolean handleDoubleClick() {
+            long currentTime = Util.getMillis();
+            if (this.isTransferable() && this.isSelectedLast() && currentTime - lastClickTime <= DOUBLE_CLICK_DELTA_MS) {
+                PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, this.pack));
+                return true;
+            }
+            lastClickTime = currentTime;
+            return false;
+        }
+
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (isLeftClick(button) && mouseX <= this.getRight()) {
+                if (!isRangeModifierActive() && !isSelectModifierActive() && this.handleDoubleClick()) {
+                    return true;
+                }
                 if (isRangeModifierActive()) {
                     PackListBase.this.selectRange(this.pack);
                     PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));

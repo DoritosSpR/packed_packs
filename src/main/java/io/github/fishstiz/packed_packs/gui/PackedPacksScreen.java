@@ -33,7 +33,7 @@ import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 
 public class PackedPacksScreen extends PackListContainer {
-    static final int BUTTON_SIZE = 20;
+    private static final int BUTTON_SIZE = 20;
     private static final int SPACING = 8;
     private static final float DROP_ZONE_Z = 100;
     private static final float SIDEBAR_Z = 200;
@@ -261,11 +261,19 @@ public class PackedPacksScreen extends PackListContainer {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        boolean handledClick = super.mouseClicked(mouseX, mouseY, button);
-        if (!handledClick && !(this.getFocused() instanceof PackList)) {
+        if (super.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        if (isClickForward(button)) {
+            return this.history.redo();
+        }
+        if (isClickBack(button)) {
+            return this.history.undo();
+        }
+        if (isLeftClick(button) && !(this.getFocused() instanceof PackList)) {
             this.setFocused(this.children().getFirst());
             this.layout.visitWidgets(w -> w.setFocused(false));
         }
-        return handledClick;
+        return false;
     }
 }

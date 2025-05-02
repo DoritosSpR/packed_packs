@@ -12,6 +12,7 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.List;
 
 public abstract class PackListContainer extends Screen implements PackListEventListener, DragEventHandler {
@@ -116,6 +117,12 @@ public abstract class PackListContainer extends Screen implements PackListEventL
         }
 
         return snapshots;
+    }
+
+    protected void validatePackLists(Collection<Pack> validPacks) {
+        for (PackList.Snapshot snapshot : this.takeSnapshots()) {
+            snapshot.validate(validPacks).restore();
+        }
     }
 
     @Override
