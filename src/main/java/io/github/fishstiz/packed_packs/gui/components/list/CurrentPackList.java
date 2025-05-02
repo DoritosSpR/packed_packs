@@ -20,6 +20,7 @@ import java.util.function.ToIntFunction;
 import static com.mojang.blaze3d.platform.InputConstants.*;
 import static io.github.fishstiz.fidgetz.util.WidgetUtil.isPointWithinBounds;
 import static io.github.fishstiz.fidgetz.util.WidgetUtil.playClickSound;
+import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isMoveModifierActive;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
@@ -93,26 +94,32 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         return index;
     }
 
-    private boolean canDrop(PackList source, List<Pack> selection, double mouseX, double mouseY) {
+    private boolean isMouserOverSelection(List<Pack> selection, double mouseX, double mouseY) {
+        for (Pack selected : selection) {
+            Entry entry = this.getEntry(selected);
+            if (entry != null && entry.isMouseOver(mouseX, mouseY)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean canDrop(PackList source, List<Pack> selection, Pack trigger, double mouseX, double mouseY) {
         if (this.scrolling || this.isQueried() || selection.isEmpty()) {
             return false;
         }
         if (source != this) {
-            return source.isTransferable(selection.getLast());
+            return source.isTransferable(trigger);
         }
-        if (selection.getLast().isFixedPosition()) {
+        if (trigger.isFixedPosition() || this.isMouserOverSelection(selection, mouseX, mouseY)) {
             return false;
         }
 
-        for (Pack selected : selection) {
-            Entry entry = this.getEntry(selected);
-            if (entry != null && entry.isMouseOver(mouseX, mouseY)) {
-                return false;
-            }
+        int[] indices = this.getIndicesFromSelection(selection);
+        if (indices.length == 0) {
+            return false;
         }
-
-        int[] indices = this.getSelectionIndices();
-        if (indices.length == 0 || hasGap(indices)) {
+        if (hasGap(indices)) {
             return true;
         }
 
@@ -131,8 +138,8 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     }
 
     @Override
-    protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, double mouseX, double mouseY) {
-        if (!this.canDrop(source, selection, mouseX, mouseY)) return null;
+    protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, Pack trigger, double mouseX, double mouseY) {
+        if (!this.canDrop(source, selection, trigger, mouseX, mouseY)) return null;
 
         int dropIndex = this.getDropIndex(mouseY);
         if (dropIndex == -1) {
@@ -146,8 +153,6 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         this.clearSelection();
-        source.clearSelection();
-
         List<Pack> dropped = new ArrayList<>();
         for (Pack selected : selection) {
             if (source.isTransferable(selected)) {
@@ -157,6 +162,8 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
                 this.select(selected);
             }
         }
+        this.select(trigger);
+
         return dropped;
     }
 
@@ -171,7 +178,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> selection, int mouseX, int mouseY, float partialTick) {
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> selection, Pack trigger, int mouseX, int mouseY, float partialTick) {
         if (this.isQueried()) return;
 
         int x = this.getX();
@@ -196,7 +203,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
                 this.scrolling = false;
             }
 
-            if (this.canDrop(source, selection, mouseX, mouseY)) {
+            if (this.canDrop(source, selection, trigger, mouseX, mouseY)) {
                 this.renderDropIndex(guiGraphics, mouseY, x, width);
             }
         }
@@ -319,7 +326,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
             if (!this.isSelected()) {
                 int targetIndex = direction.isUp() ? this.getUpIndex() : this.getDownIndex();
-                if (!CurrentPackList.this.move(this.pack, targetIndex)) {
+                if (CurrentPackList.this.move(this.pack, targetIndex)) {
                     CurrentPackList.this.selectExclusive(this.pack);
                     this.sendMoveEvent(List.of(this.pack));
                     return true;
@@ -349,21 +356,20 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            int px = (int) mouseX;
-            int py = (int) mouseY;
-
-            if (this.isMouseOverRemove(px, py)) {
-                playClickSound();
-                this.transfer();
-                return false;
-            } else if (this.isMouseOverUp(px, py)) {
-                playClickSound();
-                this.moveUp();
-                return true;
-            } else if (this.isMouseOverDown(px, py)) {
-                playClickSound();
-                this.moveDown();
-                return true;
+            if (isLeftClick(button)) {
+                if (this.isMouseOverRemove(mouseX, mouseY)) {
+                    playClickSound();
+                    this.transfer();
+                    return false;
+                } else if (this.isMouseOverUp(mouseX, mouseY)) {
+                    playClickSound();
+                    this.moveUp();
+                    return true;
+                } else if (this.isMouseOverDown(mouseX, mouseY)) {
+                    playClickSound();
+                    this.moveDown();
+                    return true;
+                }
             }
 
             return super.mouseClicked(mouseX, mouseY, button);

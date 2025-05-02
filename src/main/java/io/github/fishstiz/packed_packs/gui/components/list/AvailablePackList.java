@@ -19,6 +19,7 @@ import static io.github.fishstiz.fidgetz.util.WidgetUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
 import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
+import static java.util.Optional.ofNullable;
 
 public final class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
     private static final Sprite SELECT_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/select_highlighted"));
@@ -35,17 +36,15 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
         return new Entry(pack, index);
     }
 
-    private boolean isInvalidDrop(PackList source, List<Pack> selection) {
-        return source == this || selection.isEmpty() || !source.isTransferable(selection.getLast());
+    private boolean isInvalidDrop(PackList source, ImmutableList<Pack> selection, Pack trigger) {
+        return source == this || selection.isEmpty() || !source.isTransferable(trigger);
     }
 
     @Override
-    protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, double mouseX, double mouseY) {
-        if (this.isInvalidDrop(source, selection)) return null;
+    protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, Pack trigger, double mouseX, double mouseY) {
+        if (this.isInvalidDrop(source, selection, trigger)) return null;
 
         this.clearSelection();
-        source.clearSelection();
-
         List<Pack> dropped = new ArrayList<>();
         for (Pack selected : selection) {
             if (source.isTransferable(selected)) {
@@ -55,12 +54,15 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
                 this.select(selected);
             }
         }
+        this.select(trigger);
+        ofNullable(this.getEntry(trigger)).ifPresent(this::ensureVisible);
+
         return dropped;
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> selection, int mouseX, int mouseY, float partialTick) {
-        if (this.isInvalidDrop(source, selection)) return;
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> selection, Pack trigger, int mouseX, int mouseY, float partialTick) {
+        if (this.isInvalidDrop(source, selection, trigger)) return;
 
         int width = this.scrollbarVisible() ? this.getWidth() - this.scrollbarOffset : this.getWidth();
 

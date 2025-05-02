@@ -19,7 +19,7 @@ public interface DragEventHandler extends ContainerEventHandler {
         return this.getDragged() != null;
     }
 
-    default void onDrag(DragEvent event) {
+    default void handleDragEvent(DragEvent event) {
         if (!this.isDraggingSelection()) {
             this.setDragged(event);
         }
@@ -28,7 +28,7 @@ public interface DragEventHandler extends ContainerEventHandler {
     default void onRelease(@NotNull DragEvent event, double mouseX, double mouseY) {
         Optional<GuiEventListener> child = this.getChildAt(mouseX, mouseY);
         if (child.isPresent() && child.get() instanceof PackList packList) {
-            packList.drop(event.target(), event.dragged(), mouseX, mouseY);
+            packList.drop(event.target(), event.dragged(), event.trigger(), mouseX, mouseY);
         }
     }
 

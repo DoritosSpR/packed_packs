@@ -121,13 +121,17 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         return ImmutableList.copyOf(this.orderSelection(this.selection));
     }
 
-    protected int[] getSelectionIndices() {
-        int[] selectionIndices = new int[this.selection.size()];
-        for (int i = 0; i < this.selection.size(); i++) {
-            int index = this.queried.indexOf(this.selection.get(i));
+    protected int[] getIndicesFromSelection(List<Pack> selection) {
+        int[] selectionIndices = new int[selection.size()];
+        for (int i = 0; i < selection.size(); i++) {
+            int index = this.queried.indexOf(selection.get(i));
             selectionIndices[i] = index;
         }
         return selectionIndices;
+    }
+
+    protected int[] getSelectionIndices() {
+        return this.getIndicesFromSelection(this.selection);
     }
 
     @Override
@@ -319,11 +323,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.listener.onEvent(event);
     }
 
-    protected abstract @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, double mouseX, double mouseY);
+    protected abstract @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, Pack trigger, double mouseX, double mouseY);
 
     @Override
-    public final void drop(PackList source, ImmutableList<Pack> selection, double mouseX, double mouseY) {
-        List<Pack> dropped = this.handleDrop(source, selection, mouseX, mouseY);
+    public final void drop(PackList source, ImmutableList<Pack> selection, Pack trigger, double mouseX, double mouseY) {
+        List<Pack> dropped = this.handleDrop(source, selection, trigger, mouseX, mouseY);
         if (dropped != null && !dropped.isEmpty()) {
             if (source != this) {
                 this.sendEvent(new DropEvent(source, this, dropped));
@@ -457,7 +461,8 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             }
 
             if (!payload.isEmpty()) {
-                PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, payload));
+                Pack trigger = this.isTransferable() ? this.pack : null;
+                PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, payload, trigger));
                 return true;
             }
 
@@ -465,6 +470,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         public boolean transfer() {
+            if (!this.isSelected() && this.isTransferable()) {
+                PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, this.pack));
+                return true;
+            }
+
             return this.sendSelection();
         }
 
@@ -518,7 +528,12 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 && DragEvent.exceedsThreshold(dragX, dragY)
                 && mouseX <= this.getRight()
                 && this.isMouseOver(mouseX, mouseY)) {
-                PackListBase.this.sendEvent(new DragEvent(PackListBase.this, PackListBase.this.iconCache));
+                PackListBase.this.sendEvent(new DragEvent(
+                        PackListBase.this,
+                        PackListBase.this.getOrderedSelection().reversed(),
+                        this.pack,
+                        PackListBase.this.iconCache
+                ));
                 return true;
             }
 

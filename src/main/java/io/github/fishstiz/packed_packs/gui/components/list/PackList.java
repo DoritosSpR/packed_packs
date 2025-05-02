@@ -36,9 +36,9 @@ public interface PackList extends ContainerEventHandler, Restorable<PackList.Sna
 
     void clearSelection();
 
-    void drop(PackList source, ImmutableList<Pack> selection, double mouseX, double mouseY);
+    void drop(PackList source, ImmutableList<Pack> selection, Pack trigger, double mouseX, double mouseY);
 
-    void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> selection, int mouseX, int mouseY, float partialTick);
+    void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> selection, Pack trigger, int mouseX, int mouseY, float partialTick);
 
     @Nullable Entry getSelected();
 
