@@ -39,7 +39,7 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
         this.sortButton = CyclicButton.<Query.SortOption, Void>builder(Query.SortOption.values())
                 .setPrefix(ResourceUtil.getText("sort"))
                 .setWidth(60)
-//                .setDimensions(20, 20)
+                .setDimensions(20, 20)
                 .addListener(this.list::sort)
                 .addListener(value -> this.sendQueryEvent())
                 .setValue(Query.SortOption.A_Z) // TODO: config
@@ -47,7 +47,7 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
         this.compatButton = ToggleButton.<Void>builder() // TODO: convert to icons
                 .setMessage(ResourceUtil.getText("hide_incompatible"))
                 .setWidth(60)
-//                .setDimensions(20, 20)
+                .setDimensions(20, 20)
                 .addListener(this.list::hideIncompatible)
                 .addListener(value -> this.sendQueryEvent())
                 .setValue(false) // TODO: config

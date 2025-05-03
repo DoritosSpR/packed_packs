@@ -1,4 +1,4 @@
-package io.github.fishstiz.fidgetz.gui.sprites;
+package io.github.fishstiz.fidgetz.gui.renderables.sprites;
 
 import io.github.fishstiz.fidgetz.gui.shapes.Line;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;

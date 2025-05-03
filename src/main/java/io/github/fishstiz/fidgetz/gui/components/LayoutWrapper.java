@@ -1,6 +1,5 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
-import io.github.fishstiz.fidgetz.gui.Metadata;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.layouts.Layout;
@@ -11,11 +10,10 @@ import net.minecraft.network.chat.Component;
 
 import java.util.function.Consumer;
 
-public class LayoutWrapper<T extends Layout, E> extends AbstractWidget implements Layout, Metadata<E> {
+public class LayoutWrapper<T extends Layout> extends AbstractWidget implements Layout {
     private final T layout;
     private int minWidth;
     private int minHeight;
-    private E metadata;
 
     public LayoutWrapper(T layout, int minWidth, int minHeight) {
         super(layout.getX(), layout.getY(), layout.getWidth(), layout.getHeight(), Component.empty());
@@ -62,16 +60,6 @@ public class LayoutWrapper<T extends Layout, E> extends AbstractWidget implement
         this.setPosition(this.layout.getX(), this.layout.getY());
         this.setWidth(this.layout.getWidth());
         this.setHeight(this.layout.getHeight());
-    }
-
-    @Override
-    public E getMetadata() {
-        return this.metadata;
-    }
-
-    @Override
-    public void setMetadata(E metadata) {
-        this.metadata = metadata;
     }
 
     @Override

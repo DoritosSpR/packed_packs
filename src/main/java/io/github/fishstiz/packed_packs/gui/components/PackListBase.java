@@ -2,8 +2,9 @@ package io.github.fishstiz.packed_packs.gui.components;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.fishstiz.fidgetz.gui.Background;
 import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
+import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
+import io.github.fishstiz.fidgetz.util.WidgetUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
@@ -22,7 +23,6 @@ import java.util.*;
 import java.util.function.BiConsumer;
 
 import static com.google.common.primitives.Ints.contains;
-import static io.github.fishstiz.fidgetz.util.WidgetUtil.isPointWithinBounds;
 import static io.github.fishstiz.fidgetz.util.WidgetUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
@@ -413,8 +413,8 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         private static final int DOUBLE_CLICK_DELTA_MS = 200;
         protected static final int SPACING = 2;
         protected static final int BACKGROUND_OFFSET = 1;
-        protected static final Background.Color OVERLAY = new Background.Color(Theme.WHITE.withAlpha(0.25F));
-        protected static final Background.Color SELECTED_OVERLAY = new Background.Color(Theme.BLUE_500.withAlpha(0.25F));
+        protected static final ColoredRect OVERLAY = new ColoredRect(Theme.WHITE.withAlpha(0.25F));
+        protected static final ColoredRect SELECTED_OVERLAY = new ColoredRect(Theme.BLUE_500.withAlpha(0.25F));
         protected final List<GuiEventListener> children = new ArrayList<>();
         protected final List<NarratableEntry> narratables = new ArrayList<>();
         protected final Pack pack;
@@ -496,7 +496,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         @Override
         public boolean isMouseOver(double mouseX, double mouseY) {
-            return isPointWithinBounds(
+            return WidgetUtil.containsPoint(
                     this.getX(),
                     this.getY() - BACKGROUND_OFFSET,
                     this.getWidth(),

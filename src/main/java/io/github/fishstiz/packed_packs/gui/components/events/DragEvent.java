@@ -1,8 +1,8 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
 import com.google.common.collect.ImmutableList;
-import io.github.fishstiz.fidgetz.gui.Background;
-import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
+import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.gui.components.PackList;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
@@ -15,9 +15,9 @@ import net.minecraft.server.packs.repository.Pack;
 import java.util.List;
 
 public final class DragEvent extends PackListEvent implements Renderable {
-    private static final Background.Color BACKGROUND = new Background.Color(Theme.GRAY_800.getARGB());
-    private static final Background.Color OVERLAY = new Background.Color(Theme.BLACK.withAlpha(0.5f));
-    private static final Background.Color NUM_BACKGROUND = new Background.Color(Theme.BLUE_500.getARGB());
+    private static final ColoredRect BACKGROUND = new ColoredRect(Theme.GRAY_800.getARGB());
+    private static final ColoredRect OVERLAY = new ColoredRect(Theme.BLACK.withAlpha(0.5f));
+    private static final ColoredRect NUM_BACKGROUND = new ColoredRect(Theme.BLUE_500.getARGB());
     private static final int OFFSET = 4;
     private static final int ICON_SIZE = 48;
     private static final int NUM_SIZE = 16;

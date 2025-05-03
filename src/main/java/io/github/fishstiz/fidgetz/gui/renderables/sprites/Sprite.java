@@ -1,12 +1,12 @@
-package io.github.fishstiz.fidgetz.gui.sprites;
+package io.github.fishstiz.fidgetz.gui.renderables.sprites;
 
-import io.github.fishstiz.fidgetz.gui.RenderableRectangle;
+import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.shapes.Line;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
-public class Sprite implements RenderableRectangle {
+public class Sprite implements RenderableRect {
     public final ResourceLocation location;
     public final int width;
     public final int height;

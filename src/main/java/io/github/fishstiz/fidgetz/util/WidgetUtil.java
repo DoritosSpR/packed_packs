@@ -1,11 +1,16 @@
 package io.github.fishstiz.fidgetz.util;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 
+import java.util.List;
+
 public class WidgetUtil {
+    public static final List<GuiEventListener> EMPTY_CHILDREN = List.of();
+
     private WidgetUtil() {
     }
 
@@ -13,47 +18,50 @@ public class WidgetUtil {
         Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
     }
 
-    public static boolean isPointWithinBounds(int x, int y, int width, int height, double px, double py) {
+    public static boolean containsPoint(int x, int y, int width, int height, double px, double py) {
         return px >= x && px < (x + width) && py >= y && py < (y + height);
     }
 
-    public static boolean isPointWithinBounds(int x, int y, int width, int height, int px, int py) {
-        return isPointWithinBounds(x, y, width, height, (double) px, py);
+    public static boolean containsPoint(int x, int y, int width, int height, int px, int py) {
+        return containsPoint(x, y, width, height, (double) px, py);
     }
 
-    public static <T extends LayoutElement> boolean isPointWithinBounds(T widget, int px, int py) {
-        return isPointWithinBounds(widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(), px, py);
+    public static boolean containsPoint(LayoutElement element, int px, int py) {
+        return containsPoint(element.getX(), element.getY(), element.getWidth(), element.getHeight(), px, py);
     }
 
-    public static <T extends LayoutElement> boolean isPointWithinBounds(T widget, double px, double py) {
-        return isPointWithinBounds(widget, (int) px, (int) py);
+    public static boolean containsPoint(LayoutElement element, double px, double py) {
+        return containsPoint(element, (int) px, (int) py);
     }
 
-    public static <T extends LayoutElement> boolean isWidgetFullyWithinBounds(T container, T widget) {
+    public static boolean contains(LayoutElement container, LayoutElement element) {
         int containerX = container.getX();
         int containerY = container.getY();
         int containerX2 = containerX + container.getWidth();
         int containerY2 = containerY + container.getHeight();
 
-        int widgetX1 = widget.getX();
-        int widgetY1 = widget.getY();
-        int widgetX2 = widgetX1 + widget.getWidth();
-        int widgetY2 = widgetY1 + widget.getHeight();
+        int elementX1 = element.getX();
+        int elementY1 = element.getY();
+        int elementX2 = elementX1 + element.getWidth();
+        int elementY2 = elementY1 + element.getHeight();
 
-        return widgetX1 >= containerX && widgetY1 >= containerY && widgetX2 <= containerX2 && widgetY2 <= containerY2;
+        return elementX1 >= containerX &&
+               elementY1 >= containerY &&
+               elementX2 <= containerX2 &&
+               elementY2 <= containerY2;
     }
 
-    public static <T extends LayoutElement> boolean isWidgetWithinBounds(T container, T widget) {
-        int containerX = container.getX();
-        int containerY = container.getY();
-        int containerX2 = containerX + container.getWidth();
-        int containerY2 = containerY + container.getHeight();
+    public static boolean intersects(LayoutElement first, LayoutElement second) {
+        int firstX = first.getX();
+        int firstY = first.getY();
+        int firstX2 = firstX + first.getWidth();
+        int firstY2 = firstY + first.getHeight();
 
-        int widgetX1 = widget.getX();
-        int widgetY1 = widget.getY();
-        int widgetX2 = widgetX1 + widget.getWidth();
-        int widgetY2 = widgetY1 + widget.getHeight();
+        int secondX = second.getX();
+        int secondY = second.getY();
+        int secondX2 = secondX + second.getWidth();
+        int secondY2 = secondY + second.getHeight();
 
-        return !(widgetX2 <= containerX || widgetX1 >= containerX2 || widgetY2 <= containerY || widgetY1 >= containerY2);
+        return !(secondX2 <= firstX || secondX >= firstX2 || secondY2 <= firstY || secondY >= firstY2);
     }
 }

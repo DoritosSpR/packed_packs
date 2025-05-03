@@ -1,7 +1,7 @@
 package io.github.fishstiz.packed_packs.gui.components;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
-import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.ChatFormatting;
@@ -10,7 +10,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.MultiLineLabel;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;

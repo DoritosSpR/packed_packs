@@ -23,7 +23,10 @@ public class PollingDebouncer<T> extends Debouncer<T> {
         this.lastCallTime = Util.getMillis();
         this.pending = true;
         this.lastArg = t;
-        this.poll();
+    }
+
+    public void abort() {
+        this.pending = false;
     }
 
     public void poll() {

@@ -42,9 +42,11 @@ public class PackedPacksScreen extends PackListContainer implements Restorable<P
     private static final long SEARCH_LISTENER_DELAY_MS = 250;
     private final Screen previous;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
-    private final Sidebar<Void, Void> sidebar = Sidebar.<Void, Void>builder(this)
+    private final Sidebar sidebar = Sidebar.builder()
             .setTitle(ResourceUtil.getText("profile").withColor(Theme.GRAY_800.getARGB()), false) // gray
             .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
+            .setAutoClose(false)
+            .setTrapFocus(true)
             .setZ(SIDEBAR_Z)
             .build();
     private final PackRepositoryHelper repository;
@@ -125,7 +127,7 @@ public class PackedPacksScreen extends PackListContainer implements Restorable<P
     private void initSidebar() {
         // TODO: profiles
 //        LayoutSettings settings = LayoutSettings.defaults().padding(SPACING).paddingBottom(0);
-        this.sidebar.getRoot().getLayout().visitWidgets(this.sidebar::addWidget);
+//        this.sidebar.getRoot().getLayout().visitWidgets(this.sidebar::addRenderableChild);
         this.addRenderableWidget(this.sidebar);
     }
 

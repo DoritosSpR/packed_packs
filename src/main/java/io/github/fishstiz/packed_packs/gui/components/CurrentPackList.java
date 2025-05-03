@@ -1,8 +1,10 @@
 package io.github.fishstiz.packed_packs.gui.components;
 
 import com.google.common.collect.ImmutableList;
-import io.github.fishstiz.fidgetz.gui.Background;
-import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
+import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
+import io.github.fishstiz.fidgetz.gui.renderables.GradientRect;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.util.WidgetUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
@@ -19,7 +21,6 @@ import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
 import static com.mojang.blaze3d.platform.InputConstants.*;
-import static io.github.fishstiz.fidgetz.util.WidgetUtil.isPointWithinBounds;
 import static io.github.fishstiz.fidgetz.util.WidgetUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isMoveModifierActive;
@@ -34,10 +35,10 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     private static final Sprite MOVE_UP_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_up"));
     private static final Sprite MOVE_DOWN_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_down_highlighted"));
     private static final Sprite MOVE_DOWN_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_down"));
-    private static final Theme DROP_ZONE_THEME = Theme.GREEN_500;
-    private static final Background.Color DROP_INDEX = new Background.Color(DROP_ZONE_THEME.getARGB());
-    private static final int SCROLL_COLOR = DROP_ZONE_THEME.withAlpha(0.75f);
-    private static final int SCROLL_COLOR_TRANSPARENT = DROP_ZONE_THEME.withAlpha(0);
+    private static final Theme DROP_THEME = Theme.GREEN_500;
+    private static final ColoredRect DROP_INDEX = new ColoredRect(DROP_THEME.getARGB());
+    private static final GradientRect SCROLL_UP = GradientRect.fromTop(DROP_THEME.withAlpha(0.75f), DROP_THEME.withAlpha(0));
+    private static final GradientRect SCROLL_DOWN = SCROLL_UP.flip();
     private static final int DROP_INDEX_PADDING = 2;
     private static final double SCROLL_STEP = 10;
     private boolean scrolling;
@@ -186,19 +187,17 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         int y = this.getY();
         int width = this.scrollbarVisible() ? this.getWidth() - this.scrollbarOffset : this.getWidth();
         int height = this.getHeight();
-        int right = x + width;
         int bottom = this.getBottom();
 
         if (this.isMouseOver(mouseX, mouseY)) {
-            int scrollDownY = bottom - this.itemHeight;
-            int scrollUpBottom = y + this.itemHeight;
             double scrollAmount = this.getScrollAmount();
 
+            int scrollDownY = bottom - this.itemHeight;
             if (scrollAmount < this.getMaxScroll() && mouseY >= scrollDownY) {
-                guiGraphics.fillGradient(x, scrollDownY, right, bottom, SCROLL_COLOR_TRANSPARENT, SCROLL_COLOR);
+                SCROLL_DOWN.render(guiGraphics, x, scrollDownY, width, this.itemHeight);
                 this.scrollStep(MoveDirection.DOWN, partialTick);
-            } else if (scrollAmount > 0 && mouseY <= scrollUpBottom) {
-                guiGraphics.fillGradient(x, y, right, scrollUpBottom, SCROLL_COLOR, SCROLL_COLOR_TRANSPARENT);
+            } else if (scrollAmount > 0 && mouseY <= y + this.itemHeight) {
+                SCROLL_UP.render(guiGraphics, x, y, width, this.itemHeight);
                 this.scrollStep(MoveDirection.UP, partialTick);
             } else {
                 this.scrolling = false;
@@ -209,7 +208,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             }
         }
 
-        guiGraphics.renderOutline(x, y, width, height, DROP_ZONE_THEME.getARGB());
+        guiGraphics.renderOutline(x, y, width, height, DROP_THEME.getARGB());
     }
 
     public class Entry extends PackListBase<Entry>.Entry {
@@ -267,7 +266,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         public boolean isMouseOverRemove(double mouseX, double mouseY) {
-            return this.isTransferable() && isPointWithinBounds(
+            return this.isTransferable() && WidgetUtil.containsPoint(
                     this.getX() + SPACING,
                     this.getY(),
                     UNSELECT_SPRITE.width / 2,
@@ -278,7 +277,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         public boolean isMouseOverUp(double mouseX, double mouseY) {
-            return this.canMoveUp() && isPointWithinBounds(
+            return this.canMoveUp() && WidgetUtil.containsPoint(
                     this.getX() + SPACING + MOVE_UP_SPRITE.width / 2,
                     this.getY(),
                     MOVE_UP_SPRITE.width / 2,
@@ -289,7 +288,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         public boolean isMouseOverDown(double mouseX, double mouseY) {
-            return this.canMoveDown() && isPointWithinBounds(
+            return this.canMoveDown() && WidgetUtil.containsPoint(
                     this.getX() + SPACING + MOVE_DOWN_SPRITE.width / 2,
                     this.getY() + MOVE_DOWN_SPRITE.height / 2,
                     MOVE_DOWN_SPRITE.width / 2,

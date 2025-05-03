@@ -10,14 +10,10 @@ public class LogUtil {
     }
 
     public static void logUnsupported(String message) {
-        try {
-            throw new UnsupportedOperationException(message);
-        } catch (UnsupportedOperationException e) {
-            if (!e.getMessage().isEmpty()) {
-                LOGGER.error("Unsupported operation: ", e);
-            } else {
-                LOGGER.error("Unsupported operation. ", e);
-            }
+        if (!message.isEmpty()) {
+            LOGGER.error("Unsupported operation: {}", message, new UnsupportedOperationException(message));
+        } else {
+            LOGGER.error("Unsupported operation.", new UnsupportedOperationException(message));
         }
     }
 

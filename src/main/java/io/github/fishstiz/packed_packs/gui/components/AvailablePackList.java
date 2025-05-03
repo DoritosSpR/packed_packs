@@ -1,8 +1,9 @@
 package io.github.fishstiz.packed_packs.gui.components;
 
 import com.google.common.collect.ImmutableList;
-import io.github.fishstiz.fidgetz.gui.Background;
-import io.github.fishstiz.fidgetz.gui.sprites.Sprite;
+import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.util.WidgetUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
@@ -14,7 +15,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.github.fishstiz.fidgetz.util.WidgetUtil.isPointWithinBounds;
 import static io.github.fishstiz.fidgetz.util.WidgetUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
 import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
@@ -25,7 +25,7 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
     private static final Sprite SELECT_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/select_highlighted"));
     private static final Sprite SELECT_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/select"));
     private static final Theme DROP_ZONE_THEME = Theme.RED_700;
-    private static final Background.Color DROP_ZONE = new Background.Color(DROP_ZONE_THEME.withAlpha(0.25f));
+    private static final ColoredRect DROP_ZONE = new ColoredRect(DROP_ZONE_THEME.withAlpha(0.25f));
 
     public AvailablePackList(PackIconCache iconCache, PackListEventListener listener) {
         super(iconCache, listener);
@@ -67,7 +67,7 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
         int width = this.scrollbarVisible() ? this.getWidth() - this.scrollbarOffset : this.getWidth();
 
         if (this.isMouseOver(mouseX, mouseY)) {
-            DROP_ZONE.render(guiGraphics, this.getX(), this.getY(), width, this.getHeight());
+            DROP_ZONE.render(guiGraphics, this.getX(), this.getY(), width, this.getHeight(), partialTick);
         }
 
         guiGraphics.renderOutline(this.getX(), this.getY(), width, this.getHeight(), DROP_ZONE_THEME.getARGB());
@@ -84,7 +84,7 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
         }
 
         public boolean isSelectMouseOver(double mouseX, double mouseY) {
-            return isPointWithinBounds(this.getX() + SPACING, this.getY(), SELECT_SPRITE.width, SELECT_SPRITE.height, mouseX, mouseY);
+            return WidgetUtil.containsPoint(this.getX() + SPACING, this.getY(), SELECT_SPRITE.width, SELECT_SPRITE.height, mouseX, mouseY);
         }
 
         @Override

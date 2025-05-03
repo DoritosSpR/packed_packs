@@ -14,7 +14,7 @@ public class PackedPacksScreenHandler implements CursorHandler<PackedPacksScreen
         if (packsScreen.isDraggingSelection()) {
             return CursorType.GRABBING;
         }
-        if (child instanceof Sidebar<?, ?> sidebar
+        if (child instanceof Sidebar sidebar
             && sidebar.isMouseOver(mouseX, mouseY)
             && sidebar.getChildAt(mouseX, mouseY).isEmpty()) {
             return CursorType.DEFAULT_FORCE;
