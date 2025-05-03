@@ -36,17 +36,17 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
         return new Entry(pack, index);
     }
 
-    private boolean isInvalidDrop(PackList source, ImmutableList<Pack> selection, Pack trigger) {
-        return source == this || selection.isEmpty() || !source.isTransferable(trigger);
+    private boolean isInvalidDrop(PackList source, ImmutableList<Pack> payload, Pack trigger) {
+        return source == this || payload.isEmpty() || !source.isTransferable(trigger);
     }
 
     @Override
-    protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, Pack trigger, double mouseX, double mouseY) {
-        if (this.isInvalidDrop(source, selection, trigger)) return null;
+    protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+        if (this.isInvalidDrop(source, payload, trigger)) return null;
 
         this.clearSelection();
         List<Pack> dropped = new ArrayList<>();
-        for (Pack selected : selection) {
+        for (Pack selected : payload) {
             if (source.isTransferable(selected)) {
                 source.remove(selected);
                 dropped.add(selected);
@@ -61,8 +61,8 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> selection, Pack trigger, int mouseX, int mouseY, float partialTick) {
-        if (this.isInvalidDrop(source, selection, trigger)) return;
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
+        if (this.isInvalidDrop(source, payload, trigger)) return;
 
         int width = this.scrollbarVisible() ? this.getWidth() - this.scrollbarOffset : this.getWidth();
 

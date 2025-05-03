@@ -16,7 +16,7 @@ public final class RequestTransferEvent extends PackListEvent {
     public RequestTransferEvent(PackList target, List<Pack> payload, @Nullable Pack trigger) {
         super(target);
 
-        if (payload.isEmpty()) {
+        if (Objects.requireNonNull(payload).isEmpty()) {
             throw new IllegalStateException("Payload cannot be empty");
         }
 

@@ -80,6 +80,15 @@ public abstract class PackListContainer extends Screen implements PackListEventL
         this.unfocusOtherLists(event.target());
     }
 
+    private void handleMoveEvent(MoveEvent event) {
+        PackList.Entry entry = event.target().getEntry(event.trigger());
+        if (entry != null) {
+            this.focus(ComponentPath.path(entry, event.target(), this));
+        } else {
+            this.focus(event.target());
+        }
+    }
+
     @Override
     public @Nullable DragEvent getDragged() {
         return this.dragged;
@@ -99,7 +108,7 @@ public abstract class PackListContainer extends Screen implements PackListEventL
         switch (event) {
             case SelectionEvent selection -> this.unfocusOtherLists(selection.target());
             case RequestTransferEvent request -> this.handleRequestTransferEvent(request);
-            case MoveEvent move -> this.focus(move.target());
+            case MoveEvent move -> this.handleMoveEvent(move);
             case DragEvent drag -> this.handleDragEvent(drag);
             case DropEvent drop -> this.transferFocus(drop.target(), drop.destination());
             default -> {
@@ -118,7 +127,7 @@ public abstract class PackListContainer extends Screen implements PackListEventL
             poseStack.translate(0, 0, this.getDroppableZ());
 
             for (PackList list : this.getPackLists()) {
-                list.renderDroppableZone(guiGraphics, event.target(), event.dragged(), event.trigger(), mouseX, mouseY, partialTick);
+                list.renderDroppableZone(guiGraphics, event.target(), event.payload(), event.trigger(), mouseX, mouseY, partialTick);
             }
 
             poseStack.translate(0, 0, 1f);

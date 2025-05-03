@@ -18,14 +18,14 @@ public final class DragEvent extends PackListEvent implements Renderable {
     private static final ColoredRect BACKGROUND = new ColoredRect(Theme.GRAY_800.getARGB());
     private static final ColoredRect OVERLAY = new ColoredRect(Theme.BLACK.withAlpha(0.5f));
     private static final ColoredRect NUM_BACKGROUND = new ColoredRect(Theme.BLUE_500.getARGB());
-    private static final int OFFSET = 4;
+    private static final int OFFSET_Y = 4;
     private static final int ICON_SIZE = 48;
     private static final int NUM_SIZE = 16;
     private static final int ICON_OFFSET_X = ICON_SIZE / 2;
-    private static final int ICON_OFFSET_Y = ICON_SIZE - OFFSET;
-    private static final int NUM_OFFSET_Y = 16 - OFFSET + (ICON_SIZE - 16) / 2;
+    private static final int ICON_OFFSET_Y = ICON_SIZE - OFFSET_Y;
+    private static final int NUM_OFFSET_Y = NUM_SIZE - OFFSET_Y + (ICON_SIZE - NUM_SIZE) / 2;
     private static final double THRESHOLD = 1.0;
-    private final ImmutableList<Pack> dragged;
+    private final ImmutableList<Pack> payload;
     private final Pack trigger;
     private final Sprite sprite;
 
@@ -34,9 +34,9 @@ public final class DragEvent extends PackListEvent implements Renderable {
 
         if (selection.isEmpty()) {
             throw new IllegalStateException("Cannot create drag event with empty selection.");
-
         }
-        this.dragged = ImmutableList.copyOf(selection);
+
+        this.payload = ImmutableList.copyOf(selection);
         this.trigger = trigger;
         this.sprite = Sprite.of32(iconCache.getIcon(trigger));
     }
@@ -46,8 +46,8 @@ public final class DragEvent extends PackListEvent implements Renderable {
         return false;
     }
 
-    public ImmutableList<Pack> dragged() {
-        return this.dragged;
+    public ImmutableList<Pack> payload() {
+        return this.payload;
     }
 
     public Pack trigger() {
@@ -56,7 +56,7 @@ public final class DragEvent extends PackListEvent implements Renderable {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        String sizeString = String.valueOf(this.dragged().size());
+        String sizeString = String.valueOf(this.payload().size());
         Font font = Minecraft.getInstance().font;
         int sizeStringWidth = font.width(sizeString);
         int iconX = mouseX - ICON_OFFSET_X;

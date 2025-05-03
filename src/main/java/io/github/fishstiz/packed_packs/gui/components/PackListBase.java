@@ -329,7 +329,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             if (source != this) {
                 this.sendEvent(new DropEvent(source, this, dropped));
             } else {
-                this.sendEvent(new MoveEvent(this, dropped));
+                this.sendEvent(new MoveEvent(this, dropped, trigger));
             }
         }
     }

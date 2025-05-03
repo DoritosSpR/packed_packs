@@ -7,12 +7,14 @@ import net.minecraft.server.packs.repository.Pack;
 import java.util.List;
 
 public final class MoveEvent extends PackListEvent {
-    public final ImmutableList<Pack> moved;
+    private final ImmutableList<Pack> moved;
+    private final Pack trigger;
 
-    public MoveEvent(PackList target, List<Pack> moved) {
+    public MoveEvent(PackList target, List<Pack> moved, Pack trigger) {
         super(target);
 
         this.moved = ImmutableList.copyOf(moved);
+        this.trigger = trigger;
     }
 
     @Override
@@ -22,5 +24,9 @@ public final class MoveEvent extends PackListEvent {
 
     public ImmutableList<Pack> moved() {
         return this.moved;
+    }
+
+    public Pack trigger() {
+        return this.trigger;
     }
 }

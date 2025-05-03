@@ -106,18 +106,18 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         return false;
     }
 
-    private boolean canDrop(PackList source, List<Pack> selection, Pack trigger, double mouseX, double mouseY) {
-        if (this.scrolling || this.isQueried() || selection.isEmpty()) {
+    private boolean canDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+        if (this.scrolling || this.isQueried() || payload.isEmpty()) {
             return false;
         }
         if (source != this) {
             return source.isTransferable(trigger);
         }
-        if (trigger.isFixedPosition() || this.isMouserOverSelection(selection, mouseX, mouseY)) {
+        if (trigger.isFixedPosition() || this.isMouserOverSelection(payload, mouseX, mouseY)) {
             return false;
         }
 
-        int[] indices = this.getIndicesFromSelection(selection);
+        int[] indices = this.getIndicesFromSelection(payload);
         if (indices.length == 0) {
             return false;
         }
@@ -140,8 +140,8 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     }
 
     @Override
-    protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, Pack trigger, double mouseX, double mouseY) {
-        if (!this.canDrop(source, selection, trigger, mouseX, mouseY)) return null;
+    protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+        if (!this.canDrop(source, payload, trigger, mouseX, mouseY)) return null;
 
         int dropIndex = this.getDropIndex(mouseY);
         if (dropIndex == -1) {
@@ -149,14 +149,14 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         if (source == this) {
-            List<Pack> movable = new ArrayList<>(selection);
+            List<Pack> movable = new ArrayList<>(payload);
             movable.removeIf(Pack::isFixedPosition);
-            return this.move(this.orderSelection(movable), dropIndex) ? selection : null;
+            return this.move(this.orderSelection(movable), dropIndex) ? payload : null;
         }
 
         this.clearSelection();
         List<Pack> dropped = new ArrayList<>();
-        for (Pack selected : selection) {
+        for (Pack selected : payload) {
             if (source.isTransferable(selected)) {
                 source.remove(selected);
                 dropped.add(selected);
@@ -180,7 +180,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> selection, Pack trigger, int mouseX, int mouseY, float partialTick) {
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
         if (this.isQueried()) return;
 
         int x = this.getX();
@@ -203,7 +203,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
                 this.scrolling = false;
             }
 
-            if (this.canDrop(source, selection, trigger, mouseX, mouseY)) {
+            if (this.canDrop(source, payload, trigger, mouseX, mouseY)) {
                 this.renderDropIndex(guiGraphics, mouseY, x, width);
             }
         }
@@ -316,7 +316,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         private void sendMoveEvent(List<Pack> moved) {
-            CurrentPackList.this.sendEvent(new MoveEvent(CurrentPackList.this, moved));
+            CurrentPackList.this.sendEvent(new MoveEvent(CurrentPackList.this, moved, this.pack));
         }
 
         private boolean moveDirection(MoveDirection direction) {
