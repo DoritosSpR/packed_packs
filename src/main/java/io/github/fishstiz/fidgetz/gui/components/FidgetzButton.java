@@ -2,6 +2,8 @@ package io.github.fishstiz.fidgetz.gui.components;
 
 import io.github.fishstiz.fidgetz.gui.Metadata;
 import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
@@ -15,7 +17,9 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
 
         this.metadata = builder.metadata;
 
-        this.setTooltip(builder.tooltip);
+        if (builder.tooltip != null) {
+            this.setTooltip(builder.tooltip);
+        }
     }
 
     @Override
@@ -26,6 +30,25 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
     @Override
     public void setMetadata(E metadata) {
         this.metadata = metadata;
+    }
+
+    @Override
+    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.isHovered = this.isMouseOver(mouseX, mouseY);
+
+        super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        boolean isMouseOver = super.isMouseOver(mouseX, mouseY);
+        boolean isCoveredAtPoint = false;
+
+        if (Minecraft.getInstance().screen instanceof ToggleableDialogContainer dialogContainer) {
+            isCoveredAtPoint = dialogContainer.isChildCoveredAtPoint(this, mouseX, mouseY);
+        }
+
+        return isMouseOver && !isCoveredAtPoint;
     }
 
     public static <E> Builder<E, ?> builder() {

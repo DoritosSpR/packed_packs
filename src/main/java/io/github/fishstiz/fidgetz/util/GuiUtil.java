@@ -1,0 +1,101 @@
+package io.github.fishstiz.fidgetz.util;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.layouts.LayoutElement;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+
+import java.util.List;
+
+public class GuiUtil {
+    public static final List<GuiEventListener> EMPTY_CHILDREN = List.of();
+
+    private GuiUtil() {
+    }
+
+    public static void playClickSound() {
+        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+    }
+
+    public static boolean containsPoint(int x, int y, int width, int height, double px, double py) {
+        return px >= x && px < (x + width) && py >= y && py < (y + height);
+    }
+
+    public static boolean containsPoint(int x, int y, int width, int height, int px, int py) {
+        return containsPoint(x, y, width, height, (double) px, py);
+    }
+
+    public static boolean containsPoint(LayoutElement element, int px, int py) {
+        return containsPoint(element.getX(), element.getY(), element.getWidth(), element.getHeight(), px, py);
+    }
+
+    public static boolean containsPoint(LayoutElement element, double px, double py) {
+        return containsPoint(element, (int) px, (int) py);
+    }
+
+    public static boolean contains(ScreenRectangle container, ScreenRectangle rectangle) {
+        return rectangle.left() >= container.left() &&
+               rectangle.top() >= container.top() &&
+               rectangle.right() <= container.right() &&
+               rectangle.bottom() <= container.bottom();
+    }
+
+    public static boolean contains(LayoutElement container, ScreenRectangle rectangle) {
+        return rectangle.left() >= container.getX() &&
+               rectangle.top() >= container.getY() &&
+               rectangle.right() <= getRight(container) &&
+               rectangle.bottom() <= getBottom(container);
+    }
+
+    public static boolean contains(ScreenRectangle container, LayoutElement element) {
+        return element.getX() >= container.left() &&
+               element.getY() >= container.top() &&
+               getRight(element) <= container.right() &&
+               getBottom(element) <= container.bottom();
+    }
+
+    public static boolean contains(LayoutElement container, LayoutElement element) {
+        return element.getX() >= container.getX() &&
+               element.getY() >= container.getY() &&
+               getRight(element) <= getRight(container) &&
+               getBottom(element) <= getBottom(container);
+    }
+
+    public static boolean intersects(ScreenRectangle first, ScreenRectangle second) {
+        return first.left() < second.right() &&
+               first.right() > second.left() &&
+               first.top() < second.bottom() &&
+               first.bottom() > second.top();
+    }
+
+    public static boolean intersects(LayoutElement first, ScreenRectangle second) {
+        return first.getX() < second.right() &&
+               getRight(first) > second.left() &&
+               first.getY() < second.bottom() &&
+               getBottom(first) > second.top();
+    }
+
+    public static boolean intersects(ScreenRectangle first, LayoutElement second) {
+        return first.left() < getRight(second) &&
+               first.right() > second.getX() &&
+               first.top() < getBottom(second) &&
+               first.bottom() > second.getY();
+    }
+
+    public static boolean intersects(LayoutElement first, LayoutElement second) {
+        return first.getX() < getRight(second) &&
+               getRight(first) > second.getX() &&
+               first.getY() < getBottom(second) &&
+               getBottom(first) > second.getY();
+    }
+
+    public static int getRight(LayoutElement element) {
+        return element.getX() + element.getWidth();
+    }
+
+    public static int getBottom(LayoutElement element) {
+        return element.getY() + element.getHeight();
+    }
+}

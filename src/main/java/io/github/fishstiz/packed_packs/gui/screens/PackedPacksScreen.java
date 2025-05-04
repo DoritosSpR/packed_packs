@@ -1,6 +1,8 @@
 package io.github.fishstiz.packed_packs.gui.screens;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
+import io.github.fishstiz.fidgetz.gui.components.ToggleableDialog;
+import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.util.debounce.Debouncer;
@@ -34,7 +36,7 @@ import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 
-public class PackedPacksScreen extends PackListContainer implements Restorable<PackedPacksScreen.Snapshot> {
+public class PackedPacksScreen extends PackListContainer implements ToggleableDialogContainer, Restorable<PackedPacksScreen.Snapshot> {
     private static final int BUTTON_SIZE = 20;
     private static final int SPACING = 8;
     private static final float DROP_ZONE_Z = 100;
@@ -42,13 +44,6 @@ public class PackedPacksScreen extends PackListContainer implements Restorable<P
     private static final long SEARCH_LISTENER_DELAY_MS = 250;
     private final Screen previous;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
-    private final Sidebar sidebar = Sidebar.builder()
-            .setTitle(ResourceUtil.getText("profile").withColor(Theme.GRAY_800.getARGB()), false) // gray
-            .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
-            .setAutoClose(false)
-            .setTrapFocus(true)
-            .setZ(SIDEBAR_Z)
-            .build();
     private final PackRepositoryHelper repository;
     private final AvailablePacksLayout availablePacks;
     private final CurrentPacksLayout currentPacks;
@@ -56,6 +51,7 @@ public class PackedPacksScreen extends PackListContainer implements Restorable<P
     private final HistoryManager<Snapshot> history;
     private final Debouncer<String> searchListener;
     private boolean listHeadersOpen = false; // TODO: config
+    private Sidebar sidebar;
 
     public PackedPacksScreen(Screen previous, PackRepository repository) {
         super(ResourceUtil.getModName());
@@ -83,19 +79,19 @@ public class PackedPacksScreen extends PackListContainer implements Restorable<P
     @Override
     protected void init() {
         this.initSidebar();
+        this.addWidget(this.sidebar);
         this.layout.addToHeader(this.createHeader());
         this.layout.addToContents(this.createContents());
         this.layout.addToFooter(this.createFooter());
         this.layout.visitWidgets(this::addRenderableWidget);
+        this.addRenderableOnly(this.sidebar);
         this.repositionElements();
         this.reset();
     }
 
     private FlexLayout createHeader() {
         FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        ToggleableEditBox<?> nameField = ToggleableEditBox.builder(this.font)
-                .setHint(ResourceUtil.getText("profile.unnamed"))
-                .build();
+        ToggleableEditBox<?> nameField = ToggleableEditBox.builder(this.font).setHint(ResourceUtil.getText("profile.unnamed")).build();
         header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this.sidebar::toggle).build());
         header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this::toggleListHeaders).build());
         header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(nameField::toggle).build());
@@ -126,9 +122,11 @@ public class PackedPacksScreen extends PackListContainer implements Restorable<P
 
     private void initSidebar() {
         // TODO: profiles
-//        LayoutSettings settings = LayoutSettings.defaults().padding(SPACING).paddingBottom(0);
-//        this.sidebar.getRoot().getLayout().visitWidgets(this.sidebar::addRenderableChild);
-        this.addRenderableWidget(this.sidebar);
+        this.sidebar = Sidebar.builder(this)
+                .setTitle(ResourceUtil.getText("profile").withColor(Theme.GRAY_800.getARGB()), false) // gray
+                .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
+                .setZ(SIDEBAR_Z)
+                .build();
     }
 
     public int getMaxWidth() {
@@ -185,7 +183,6 @@ public class PackedPacksScreen extends PackListContainer implements Restorable<P
             default -> throw new IllegalStateException("Unexpected value: " + source);
         };
     }
-
 
     @Override
     protected void transferFocus(PackList source, PackList destination) {
@@ -278,6 +275,11 @@ public class PackedPacksScreen extends PackListContainer implements Restorable<P
             this.layout.visitWidgets(w -> w.setFocused(false));
         }
         return false;
+    }
+
+    @Override
+    public List<ToggleableDialog<?>> getDialogs() {
+        return List.of(this.sidebar);
     }
 
     @Override

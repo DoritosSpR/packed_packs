@@ -4,11 +4,10 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
-import io.github.fishstiz.fidgetz.gui.shapes.LayoutRectangle;
-import io.github.fishstiz.fidgetz.util.WidgetUtil;
+import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
+import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
@@ -20,6 +19,7 @@ import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.navigation.FocusNavigationEvent;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
@@ -36,23 +36,25 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     private final List<Renderable> renderables = new ArrayList<>();
     private final List<NarratableEntry> narratables = new ArrayList<>();
     private final List<Consumer<Boolean>> listeners = new ArrayList<>();
-    private final LayoutRectangle boundingBox;
-    private final RenderableRect backdrop;
-    private final RenderableRect background;
+    private final Screen screen;
     private final T root;
     private final float z;
+    private final GuiRectangle boundingBox;
+    private final RenderableRect backdrop;
+    private final RenderableRect background;
     private final boolean autoClose;
-    private final LayoutRectangle ignoreAutoCloseArea;
+    private final GuiRectangle ignoreAutoCloseArea;
     private final boolean autoLoseFocus;
     private final boolean closeOnEscape;
     private final boolean captureClick;
-    private final boolean trapFocus;
+    private final boolean captureFocus;
     private final boolean focusOnOpen;
     private @Nullable NarratableEntry lastNarratable;
     private boolean open = false;
     private boolean hovered;
 
     protected ToggleableDialog(Builder<T, ?> builder) {
+        this.screen = builder.screen;
         this.root = builder.root;
         this.z = builder.z;
         this.boundingBox = builder.boundingBox;
@@ -60,11 +62,11 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         this.background = builder.background;
         this.autoClose = builder.autoClose;
         this.ignoreAutoCloseArea = builder.ignoreAutoCloseArea;
+        this.focusOnOpen = builder.focusOnOpen;
         this.autoLoseFocus = builder.autoLoseFocus;
         this.closeOnEscape = builder.closeOnEscape;
         this.captureClick = builder.captureClick;
-        this.focusOnOpen = builder.focusOnOpen;
-        this.trapFocus = builder.trapFocus;
+        this.captureFocus = builder.captureFocus;
 
         this.setOpen(builder.open);
         this.listeners.addAll(builder.listeners);
@@ -73,6 +75,10 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
 
     public T getRoot() {
         return this.root;
+    }
+
+    public float getZ() {
+        return this.z;
     }
 
     public void toggle() {
@@ -86,13 +92,19 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
             listener.accept(open);
         }
 
-        if (this.focusOnOpen || this.trapFocus) {
+        if (this.focusOnOpen || this.captureFocus) {
             ObjectsUtil.<Runnable>pick(open, this.focusOnOpenTask, this.focusOnOpenTask::abort).run();
         }
     }
 
     public boolean isOpen() {
         return this.open;
+    }
+
+    public <U extends GuiEventListener> U addWidget(U widget) {
+        this.children.add(Objects.requireNonNull(widget));
+        if (widget instanceof NarratableEntry narratable) this.narratables.add(narratable);
+        return widget;
     }
 
     public <U extends Renderable> U addRenderableOnly(U renderable) {
@@ -104,13 +116,12 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         this.children.add(Objects.requireNonNull(child));
         this.renderables.add(child);
         if (child instanceof NarratableEntry narratable) this.narratables.add(narratable);
-
         return child;
     }
 
     @Override
     public @NotNull List<? extends GuiEventListener> children() {
-        return this.isOpen() ? List.copyOf(this.children) : WidgetUtil.EMPTY_CHILDREN;
+        return this.isOpen() ? List.copyOf(this.children) : GuiUtil.EMPTY_CHILDREN;
     }
 
     @Override
@@ -154,55 +165,24 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         this.focusOnOpenTask.poll();
 
         if (this.isOpen()) {
-            Screen screen = Minecraft.getInstance().screen;
-            if (screen != null) {
-                int x = this.boundingBox.getX();
-                int y = this.boundingBox.getY();
-                int width = this.boundingBox.getWidth();
-                int height = this.boundingBox.getHeight();
+            int x = this.boundingBox.getX();
+            int y = this.boundingBox.getY();
+            int width = this.boundingBox.getWidth();
+            int height = this.boundingBox.getHeight();
 
-                PoseStack poseStack = guiGraphics.pose();
-                poseStack.pushPose();
-                poseStack.translate(0, 0, this.z);
+            PoseStack poseStack = guiGraphics.pose();
+            poseStack.pushPose();
+            poseStack.translate(0, 0, this.z);
 
-                this.renderBackdrop(guiGraphics, 0, 0, screen.width, screen.height, mouseX, mouseY, partialTick);
-                this.renderBackground(guiGraphics, x, y, width, height, mouseX, mouseY, partialTick);
-                for (Renderable renderable : this.renderables) {
-                    renderable.render(guiGraphics, mouseX, mouseY, partialTick);
-                }
-                this.renderForeground(guiGraphics, x, y, width, height, mouseX, mouseY, partialTick);
-
-                poseStack.popPose();
+            this.renderBackdrop(guiGraphics, 0, 0, this.screen.width, this.screen.height, mouseX, mouseY, partialTick);
+            this.renderBackground(guiGraphics, x, y, width, height, mouseX, mouseY, partialTick);
+            for (Renderable renderable : this.renderables) {
+                renderable.render(guiGraphics, mouseX, mouseY, partialTick);
             }
-        }
-    }
+            this.renderForeground(guiGraphics, x, y, width, height, mouseX, mouseY, partialTick);
 
-    private boolean isChild(LayoutElement element) {
-        return element instanceof GuiEventListener listener && this.children.contains(listener);
-    }
-
-    public boolean contains(LayoutElement element) {
-        if (this.isChild(element) || this.boundingBox.contains(element)) {
-            return true;
+            poseStack.popPose();
         }
-        for (var child : this.children) {
-            if (child instanceof LayoutElement childElement && WidgetUtil.contains(childElement, element)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean intersects(LayoutElement element) {
-        if (this.isChild(element) || this.boundingBox.intersects(element)) {
-            return true;
-        }
-        for (var child : this.children) {
-            if (child instanceof LayoutElement childElement && WidgetUtil.intersects(childElement, element)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean isValidClickButton(int button) {
@@ -230,7 +210,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         if (!this.isOpen()) {
             return false;
         }
-        if (this.boundingBox.contains(mouseX, mouseY)) {
+        if (this.boundingBox.containsPoint(mouseX, mouseY)) {
             return true;
         }
         return this.getChildAt(mouseX, mouseY).isPresent();
@@ -259,19 +239,75 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
             return true;
         }
         if (this.autoClose && this.isValidClickButton(button) &&
-            (this.ignoreAutoCloseArea == null || !this.ignoreAutoCloseArea.contains(mouseX, mouseY))) {
+            (this.ignoreAutoCloseArea == null || !this.ignoreAutoCloseArea.containsPoint(mouseX, mouseY))) {
             this.setOpen(false);
         }
-        return this.captureClick || this.trapFocus;
+        return this.captureClick || this.captureFocus;
+    }
+
+    public boolean encloses(LayoutElement element) {
+        return element != null && (this.boundingBox.contains(element) || this.childEncloses(element.getRectangle()));
+    }
+
+    public boolean encloses(GuiEventListener guiEventListener) {
+        if (guiEventListener == null) return false;
+
+        if (guiEventListener instanceof LayoutElement element) {
+            return this.encloses(element);
+        }
+
+        ScreenRectangle rectangle = guiEventListener.getRectangle();
+        return this.boundingBox.contains(rectangle) || this.childEncloses(rectangle);
+    }
+
+    private boolean childEncloses(ScreenRectangle rectangle) {
+        for (GuiEventListener child : this.children) {
+            LayoutElement childElement = child instanceof LayoutElement element ? element : null;
+            if ((childElement != null && GuiUtil.contains(childElement, rectangle)) ||
+                (childElement == null && GuiUtil.contains(child.getRectangle(), rectangle))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean intersects(LayoutElement element) {
+        return element != null && (this.boundingBox.intersects(element) || this.childIntersects(element.getRectangle()));
+    }
+
+    public boolean intersects(GuiEventListener guiEventListener) {
+        if (guiEventListener == null) return false;
+
+        if (guiEventListener instanceof LayoutElement element) {
+            return this.intersects(element);
+        }
+
+        ScreenRectangle rectangle = guiEventListener.getRectangle();
+        return this.boundingBox.intersects(rectangle) || this.childIntersects(rectangle);
+    }
+
+    private boolean childIntersects(ScreenRectangle rectangle) {
+        for (GuiEventListener child : this.children) {
+            LayoutElement childElement = child instanceof LayoutElement e ? e : null;
+            if ((childElement != null && GuiUtil.intersects(childElement, rectangle)) ||
+                (childElement == null && GuiUtil.intersects(child.getRectangle(), rectangle))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public @NotNull ScreenRectangle getRectangle() {
+        return this.boundingBox.getScreenRectangle();
     }
 
     public void focus() {
-        Screen screen = Minecraft.getInstance().screen;
-        if (this.isOpen() && screen != null) {
-            screen.clearFocus();
+        if (this.isOpen()) {
+            this.screen.clearFocus();
             ComponentPath path = this.children.isEmpty()
-                    ? ComponentPath.path(this, screen)
-                    : ComponentPath.path(this.children.getFirst(), this, screen);
+                    ? ComponentPath.path(this, this.screen)
+                    : ComponentPath.path(this.children.getFirst(), this, this.screen);
             path.applyFocus(true);
         }
     }
@@ -279,7 +315,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     @Override
     public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent event) {
         ComponentPath next = super.nextFocusPath(event);
-        if (this.trapFocus && next == null) {
+        if (this.captureFocus && next == null) {
             return this.children.isEmpty()
                     ? ComponentPath.path(this)
                     : ComponentPath.path(this.children.getFirst(), this);
@@ -320,7 +356,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
             }
             if (sortedNarratables.size() > 1) {
                 narrationElementOutput.add(NarratedElementType.POSITION, Component.translatable("narrator.position.screen", narratableSearchResult.index + 1, sortedNarratables.size()));
-                if (narratableSearchResult.priority == NarratableEntry.NarrationPriority.FOCUSED) {
+                if (narratableSearchResult.priority == NarrationPriority.FOCUSED) {
                     narrationElementOutput.add(NarratedElementType.USAGE, this.getUsageNarration());
                 }
             }
@@ -328,29 +364,31 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         }
     }
 
-    public static <T extends LayoutElement> Builder<T, ?> builder(T root) {
-        return new Builder<>(root);
+    public static <S extends Screen & ToggleableDialogContainer, T extends LayoutElement> Builder<T, ?> builder(S screen, T root) {
+        return new Builder<>(screen, root);
     }
 
     public static class Builder<T extends LayoutElement, B extends Builder<T, B>> {
         protected final List<Consumer<Boolean>> listeners = new ArrayList<>();
+        protected final Screen screen;
         protected final T root;
-        protected LayoutRectangle boundingBox;
+        protected GuiRectangle boundingBox;
         protected RenderableRect backdrop;
         protected RenderableRect background;
         protected boolean open = false;
         protected boolean autoClose = true;
-        protected LayoutRectangle ignoreAutoCloseArea;
+        protected GuiRectangle ignoreAutoCloseArea;
+        protected boolean focusOnOpen = true;
         protected boolean autoLoseFocus = true;
         protected boolean closeOnEscape = true;
         protected boolean captureClick = false;
-        protected boolean focusOnOpen = true;
-        protected boolean trapFocus = false;
+        protected boolean captureFocus = false;
         protected float z = 1;
 
-        protected Builder(T root) {
+        protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, T root) {
+            this.screen = screen;
             this.root = root;
-            this.boundingBox = LayoutRectangle.viewOf(this.root);
+            this.boundingBox = GuiRectangle.viewOf(this.root);
         }
 
         @SuppressWarnings("unchecked")
@@ -358,13 +396,13 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
             return (B) this;
         }
 
-        public B setBoundingBox(LayoutRectangle boundingBox) {
+        public B setBoundingBox(GuiRectangle boundingBox) {
             this.boundingBox = boundingBox;
             return self();
         }
 
         public B setBoundingBox(LayoutElement elementView) {
-            this.boundingBox = LayoutRectangle.viewOf(elementView);
+            this.boundingBox = GuiRectangle.viewOf(elementView);
             return self();
         }
 
@@ -403,20 +441,25 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
             return self();
         }
 
-        public B setAutoClose(LayoutRectangle ignoredArea) {
+        public B setAutoClose(GuiRectangle ignoredArea) {
             this.ignoreAutoCloseArea = ignoredArea;
             this.autoClose = true;
             return self();
         }
 
         public B setAutoClose(LayoutElement ignoredArea) {
-            this.ignoreAutoCloseArea = LayoutRectangle.viewOf(ignoredArea);
+            this.ignoreAutoCloseArea = GuiRectangle.viewOf(ignoredArea);
             this.autoClose = true;
             return self();
         }
 
         public B setCloseOnEscape(boolean closeOnEscape) {
             this.closeOnEscape = closeOnEscape;
+            return self();
+        }
+
+        public B setFocusOnOpen(boolean focusOnOpen) {
+            this.focusOnOpen = focusOnOpen;
             return self();
         }
 
@@ -430,13 +473,8 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
             return self();
         }
 
-        public B setFocusOnOpen(boolean focusOnOpen) {
-            this.focusOnOpen = focusOnOpen;
-            return self();
-        }
-
-        public B setTrapFocus(boolean trapFocus) {
-            this.trapFocus = trapFocus;
+        public B setCaptureFocus(boolean captureFocus) {
+            this.captureFocus = captureFocus;
             return self();
         }
 

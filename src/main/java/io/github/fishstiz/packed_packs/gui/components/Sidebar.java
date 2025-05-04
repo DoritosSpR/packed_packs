@@ -55,8 +55,8 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         }
     }
 
-    public static Builder builder() {
-        return new Builder(new LayoutWrapper<>(LinearLayout.vertical(), MIN_WIDTH, Minecraft.getInstance().getWindow().getHeight()));
+    public static <S extends Screen & ToggleableDialogContainer> Builder builder(S screen) {
+        return new Builder(screen, new LayoutWrapper<>(LinearLayout.vertical(), MIN_WIDTH, Minecraft.getInstance().getWindow().getHeight()));
     }
 
     public static class Builder extends ToggleableDialog.Builder<LayoutWrapper<LinearLayout>, Builder> {
@@ -65,8 +65,8 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         private LayoutSettings headerSettings = LayoutSettings.defaults();
         private int minWidth = MIN_WIDTH;
 
-        protected Builder(LayoutWrapper<LinearLayout> root) {
-            super(root);
+        protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, LayoutWrapper<LinearLayout> root) {
+            super(screen, root);
         }
 
         public Builder setHeaderSettings(LayoutSettings headerSettings) {

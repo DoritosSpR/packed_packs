@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.GradientRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.util.WidgetUtil;
+import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
 import static com.mojang.blaze3d.platform.InputConstants.*;
-import static io.github.fishstiz.fidgetz.util.WidgetUtil.playClickSound;
+import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isMoveModifierActive;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
@@ -266,7 +266,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         public boolean isMouseOverRemove(double mouseX, double mouseY) {
-            return this.isTransferable() && WidgetUtil.containsPoint(
+            return this.isTransferable() && GuiUtil.containsPoint(
                     this.getX() + SPACING,
                     this.getY(),
                     UNSELECT_SPRITE.width / 2,
@@ -277,7 +277,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         public boolean isMouseOverUp(double mouseX, double mouseY) {
-            return this.canMoveUp() && WidgetUtil.containsPoint(
+            return this.canMoveUp() && GuiUtil.containsPoint(
                     this.getX() + SPACING + MOVE_UP_SPRITE.width / 2,
                     this.getY(),
                     MOVE_UP_SPRITE.width / 2,
@@ -288,7 +288,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         public boolean isMouseOverDown(double mouseX, double mouseY) {
-            return this.canMoveDown() && WidgetUtil.containsPoint(
+            return this.canMoveDown() && GuiUtil.containsPoint(
                     this.getX() + SPACING + MOVE_DOWN_SPRITE.width / 2,
                     this.getY() + MOVE_DOWN_SPRITE.height / 2,
                     MOVE_DOWN_SPRITE.width / 2,

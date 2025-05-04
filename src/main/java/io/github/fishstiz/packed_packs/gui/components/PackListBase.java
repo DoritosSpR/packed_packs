@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
-import io.github.fishstiz.fidgetz.util.WidgetUtil;
+import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 
 import static com.google.common.primitives.Ints.contains;
-import static io.github.fishstiz.fidgetz.util.WidgetUtil.playClickSound;
+import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
@@ -496,7 +496,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         @Override
         public boolean isMouseOver(double mouseX, double mouseY) {
-            return WidgetUtil.containsPoint(
+            return GuiUtil.containsPoint(
                     this.getX(),
                     this.getY() - BACKGROUND_OFFSET,
                     this.getWidth(),

@@ -1,59 +1,29 @@
 package io.github.fishstiz.fidgetz.transform.mixin;
 
-import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import net.minecraft.client.gui.components.events.GuiEventListener;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
 import net.minecraft.client.gui.screens.Screen;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
 
-import java.util.List;
+import static com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE;
 
 @Mixin(Screen.class)
 public abstract class ScreenMixin {
-    @WrapMethod(method = "children")
-    public List<? extends GuiEventListener> getUncoveredChildren(Operation<List<? extends GuiEventListener>> original) {
-        return original.call();
-//        var children = original.call();
-//
-//        if (!(this instanceof ToggleableDialogScreen container)) return children;
-//
-//        List<ToggleableDialog<?, ?>> visibleDialogs = container.getVisibleDialogs();
-//        if (visibleDialogs.isEmpty()) return children;
-//
-//        List<GuiEventListener> uncoveredChildren = new ArrayList<>(children);
-//        List<GuiEventListener> sortedChildren = new ArrayList<>();
-//
-//        for (var dialog : visibleDialogs) {
-//            // noinspection Java8CollectionRemoveIf
-//            for (Iterator<GuiEventListener> it = uncoveredChildren.iterator(); it.hasNext(); ) {
-//                GuiEventListener child = it.next();
-//                if (child instanceof LayoutElement widget && dialog.isCovering(widget)) {
-//                    it.remove();
-//                }
-//            }
-//            sortedChildren.add(dialog);
-//            sortedChildren.addAll(dialog.children());
-//        }
-//        sortedChildren.addAll(uncoveredChildren);
-//        return sortedChildren;
+    @WrapOperation(method = "keyPressed", at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/gui/screens/Screen;shouldCloseOnEsc()Z"
+    ))
+    public boolean shouldCloseDialogs(Screen instance, Operation<Boolean> original, int keyCode) {
+        if (this instanceof ToggleableDialogContainer dialogContainer && keyCode == KEY_ESCAPE) {
+            for (var dialog : dialogContainer.getOpenDialogs()) {
+                if (dialog.shouldCloseOnEscape()) {
+                    dialog.setOpen(false);
+                    return false;
+                }
+            }
+        }
+        return original.call(instance);
     }
-//
-//    @WrapMethod(method = "mouse")
-//
-//    @WrapMethod(method = "keyPressed")
-//    public boolean closeDialog(int keyCode, int scanCode, int modifiers, Operation<Boolean> original) {
-//        if (this instanceof ToggleableDialogScreen container) {
-//            List<ToggleableDialog<?, ?>> visibleDialogs = container.getVisibleDialogs();
-//            if (keyCode == InputConstants.KEY_ESCAPE) {
-//                for (var dialog : visibleDialogs) {
-//                    if (dialog.shouldCloseOnEscape()) {
-//                        dialog.setOpen(false);
-//                        return true;
-//                    }
-//                }
-//            }
-//        }
-//
-//        return original.call(keyCode, scanCode, modifiers);
-//    }
 }

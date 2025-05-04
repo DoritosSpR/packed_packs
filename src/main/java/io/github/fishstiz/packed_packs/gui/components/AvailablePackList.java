@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.gui.components;
 import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.util.WidgetUtil;
+import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.github.fishstiz.fidgetz.util.WidgetUtil.playClickSound;
+import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
 import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
@@ -83,13 +83,13 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
             return true;
         }
 
-        public boolean isSelectMouseOver(double mouseX, double mouseY) {
-            return WidgetUtil.containsPoint(this.getX() + SPACING, this.getY(), SELECT_SPRITE.width, SELECT_SPRITE.height, mouseX, mouseY);
+        public boolean isMouseOverSelect(double mouseX, double mouseY) {
+            return GuiUtil.containsPoint(this.getX() + SPACING, this.getY(), SELECT_SPRITE.width, SELECT_SPRITE.height, mouseX, mouseY);
         }
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (isLeftClick(button) && this.isSelectMouseOver(mouseX, mouseY)) {
+            if (isLeftClick(button) && this.isMouseOverSelect(mouseX, mouseY)) {
                 playClickSound();
                 this.transfer();
                 return false;
@@ -104,7 +104,7 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
 
             int x = left + SPACING;
             OVERLAY.render(guiGraphics, x, top, SELECT_SPRITE.width, SELECT_SPRITE.height);
-            pick(!this.isSelectMouseOver(mouseX, mouseY), SELECT_SPRITE, SELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+            pick(!this.isMouseOverSelect(mouseX, mouseY), SELECT_SPRITE, SELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
         }
     }
 }
