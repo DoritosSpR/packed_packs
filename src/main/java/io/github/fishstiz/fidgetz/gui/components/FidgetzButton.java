@@ -9,7 +9,11 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class FidgetzButton<E> extends Button implements Metadata<E> {
+    private final List<Runnable> listeners = new ArrayList<>();
     private E metadata;
 
     protected FidgetzButton(Builder<E, ?> builder) {
@@ -20,6 +24,19 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         if (builder.tooltip != null) {
             this.setTooltip(builder.tooltip);
         }
+    }
+
+    @Override
+    public void onPress() {
+        super.onPress();
+
+        for (var listener : this.listeners) {
+            listener.run();
+        }
+    }
+
+    public void addListener(Runnable listener) {
+        this.listeners.add(listener);
     }
 
     @Override

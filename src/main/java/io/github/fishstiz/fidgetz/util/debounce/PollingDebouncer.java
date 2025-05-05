@@ -1,6 +1,5 @@
 package io.github.fishstiz.fidgetz.util.debounce;
 
-import io.github.fishstiz.fidgetz.util.LogUtil;
 import net.minecraft.Util;
 
 import java.util.function.Consumer;
@@ -33,8 +32,6 @@ public class PollingDebouncer<T> extends Debouncer<T> {
         if (this.pending && Util.getMillis() - this.lastCallTime >= this.delay) {
             try {
                 this.task.accept(this.lastArg);
-            } catch (Exception e) {
-                LogUtil.LOGGER.error("Exception in debounced task: ", e);
             } finally {
                 this.pending = false;
             }

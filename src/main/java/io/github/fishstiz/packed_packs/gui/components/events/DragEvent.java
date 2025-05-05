@@ -24,7 +24,6 @@ public final class DragEvent extends PackListEvent implements Renderable {
     private static final int ICON_OFFSET_X = ICON_SIZE / 2;
     private static final int ICON_OFFSET_Y = ICON_SIZE - OFFSET_Y;
     private static final int NUM_OFFSET_Y = NUM_SIZE - OFFSET_Y + (ICON_SIZE - NUM_SIZE) / 2;
-    private static final double THRESHOLD = 1.0;
     private final ImmutableList<Pack> payload;
     private final Pack trigger;
     private final Sprite sprite;
@@ -72,9 +71,5 @@ public final class DragEvent extends PackListEvent implements Renderable {
         guiGraphics.drawString(font, sizeString, numX + numWidth / 2 - sizeStringWidth / 2, numY + NUM_SIZE / 2 - font.lineHeight / 2, Theme.WHITE.getARGB());
         guiGraphics.renderOutline(iconX, iconY, ICON_SIZE, ICON_SIZE, Theme.WHITE.getARGB());
         guiGraphics.renderOutline(numX, numY, numWidth, NUM_SIZE, Theme.WHITE.getARGB());
-    }
-
-    public static boolean exceedsThreshold(double dragX, double dragY) {
-        return Math.hypot(dragX, dragY) > THRESHOLD;
     }
 }

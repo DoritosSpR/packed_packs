@@ -24,14 +24,14 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
 
         this.active = false;
 
-        this.repositionElements();
+        this.arrangeElements();
     }
 
     public LayoutWrapper(T layout) {
         this(layout, 0, 0);
     }
 
-    public T getLayout() {
+    public T layout() {
         return this.layout;
     }
 
@@ -53,13 +53,6 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
     public void setMinHeight(int minHeight) {
         this.minHeight = minHeight;
         this.setHeight(this.height);
-    }
-
-    public void repositionElements() {
-        this.layout.arrangeElements();
-        this.setPosition(this.layout.getX(), this.layout.getY());
-        this.setWidth(this.layout.getWidth());
-        this.setHeight(this.layout.getHeight());
     }
 
     @Override
@@ -111,7 +104,10 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
 
     @Override
     public void arrangeElements() {
-        this.repositionElements();
+        this.layout.arrangeElements();
+        this.setPosition(this.layout.getX(), this.layout.getY());
+        this.setWidth(this.layout.getWidth());
+        this.setHeight(this.layout.getHeight());
     }
 
     @Override

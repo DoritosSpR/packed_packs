@@ -9,6 +9,7 @@ import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListen
 import io.github.fishstiz.packed_packs.gui.components.events.QueryEvent;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
 public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
@@ -55,8 +56,11 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
 
         this.list.sort(this.sortButton.getValue());
         this.list.hideIncompatible(this.compatButton.getValue());
+        this.getTransferButton().setMessage(Component.literal(">>"));
 
+        header.addFlexChild(this.getSearchField());
         header.addChild(sortButton);
         header.addChild(compatButton);
+        header.addChild(this.getTransferButton());
     }
 }

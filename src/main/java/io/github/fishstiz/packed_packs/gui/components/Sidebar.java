@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.gui.components;
 
 import io.github.fishstiz.fidgetz.gui.components.*;
+import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.shapes.Line;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
@@ -12,7 +13,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
-public class Sidebar extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
+public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
+    private static final int SPACING = 8;
     private static final Sprite DEFAULT_BACKGROUND = new Sprite(
             ResourceLocation.withDefaultNamespace("textures/gui/demo_background.png"),
             Size.square(256),
@@ -21,23 +23,27 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
     );
     private static final int HEADER_SIZE = 20;
     private static final int MIN_WIDTH = 100;
+    private final FidgetzButton<Void> closeButton;
 
     protected Sidebar(Builder builder) {
         super(builder);
 
-        this.getRoot().setMessage(builder.title);
-        this.getRoot().setMinWidth(builder.minWidth);
+        this.root().setMessage(builder.title);
+        this.root().setMinWidth(builder.minWidth);
 
-        LinearLayout header = this.getRoot().getLayout().addChild(LinearLayout.horizontal());
+        LinearLayout header = this.root().layout().addChild(LinearLayout.horizontal());
 
-        header.addChild(FidgetzButton.builder()
+        this.closeButton = header.addChild(FidgetzButton.<Void>builder()
                 .setOnPress(() -> this.setOpen(false))
                 .setDimensions(HEADER_SIZE, HEADER_SIZE)
                 .build(), builder.headerSettings);
 
         Font font = Minecraft.getInstance().font;
+        int titleFontWidth = font.width(builder.title);
+        int titleWidth = MIN_WIDTH > titleFontWidth ? MIN_WIDTH : titleFontWidth + SPACING;
+
         header.addChild(FidgetzText.builder(font)
-                .setDimensions(Math.max(font.width(builder.title), MIN_WIDTH), HEADER_SIZE)
+                .setDimensions(titleWidth, HEADER_SIZE)
                 .setMessage(builder.title)
                 .setShadow(builder.shadow)
                 .setOffsetY(1)
@@ -45,27 +51,33 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
                 .build(), builder.headerSettings);
 
         header.visitWidgets(this::addRenderableWidget);
+        this.repositionElements();
+    }
+
+    public FidgetzButton<Void> getCloseButton() {
+        return this.closeButton;
     }
 
     public void repositionElements() {
-        Screen screen = Minecraft.getInstance().screen;
-        if (screen != null) {
-            this.getRoot().setMinHeight(screen.height);
-            this.getRoot().repositionElements();
-        }
+        this.root().setMinHeight(this.screen.height);
+        this.root().arrangeElements();
     }
 
     public static <S extends Screen & ToggleableDialogContainer> Builder builder(S screen) {
-        return new Builder(screen, new LayoutWrapper<>(LinearLayout.vertical(), MIN_WIDTH, Minecraft.getInstance().getWindow().getHeight()));
+        return new Builder(screen, new LayoutWrapper<>(
+                FlexLayout.vertical(() -> screen.height).spacing(SPACING),
+                MIN_WIDTH,
+                Minecraft.getInstance().getWindow().getHeight()
+        ));
     }
 
-    public static class Builder extends ToggleableDialog.Builder<LayoutWrapper<LinearLayout>, Builder> {
+    public static class Builder extends ToggleableDialog.Builder<LayoutWrapper<FlexLayout>, Builder> {
         private Component title;
         private boolean shadow;
         private LayoutSettings headerSettings = LayoutSettings.defaults();
         private int minWidth = MIN_WIDTH;
 
-        protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, LayoutWrapper<LinearLayout> root) {
+        protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, LayoutWrapper<FlexLayout> root) {
             super(screen, root);
         }
 

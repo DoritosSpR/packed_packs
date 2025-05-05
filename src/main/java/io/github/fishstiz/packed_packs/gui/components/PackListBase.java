@@ -94,6 +94,8 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             }
         }
 
+        this.setFocused(null);
+        this.clearSelection();
         this.queryPacks();
         this.scrollToTop();
     }
@@ -316,6 +318,21 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.select(pack);
     }
 
+    public void transferAll() {
+        List<Pack> payload = new ArrayList<>();
+
+        for (int i = this.queried.size() - 1; i >= 0; i--) {
+            Pack pack = this.queried.get(i);
+            if (this.isTransferable(pack)) {
+                payload.add(pack);
+            }
+        }
+
+        if (!payload.isEmpty()) {
+            this.sendEvent(new RequestTransferEvent(this, payload, this.getLastSelected()));
+        }
+    }
+
     protected void sendEvent(PackListEvent event) {
         this.listener.onEvent(event);
     }
@@ -410,6 +427,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     public abstract class Entry extends AbstractDynamicList<T>.Entry implements PackList.Entry {
+        private static final double DRAG_THRESHOLD = 1.0;
         private static final int DOUBLE_CLICK_DELTA_MS = 200;
         protected static final int SPACING = 2;
         protected static final int BACKGROUND_OFFSET = 1;
@@ -494,6 +512,10 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
         }
 
+        private boolean exceedsDragThreshold(double dragX, double dragY) {
+            return Math.hypot(dragX, dragY) > DRAG_THRESHOLD;
+        }
+
         @Override
         public boolean isMouseOver(double mouseX, double mouseY) {
             return GuiUtil.containsPoint(
@@ -549,7 +571,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             }
             if (this.isSelected()
                 && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE
-                && DragEvent.exceedsThreshold(dragX, dragY)) {
+                && this.exceedsDragThreshold(dragX, dragY)) {
                 PackListBase.this.sendEvent(new DragEvent(
                         PackListBase.this,
                         PackListBase.this.getOrderedSelection().reversed(),

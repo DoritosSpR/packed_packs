@@ -14,10 +14,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public abstract class PackListContainer extends Screen implements PackListEventListener, DragEventHandler {
+public abstract class PackListEventHandler extends Screen implements PackListEventListener, DragEventHandler {
     private DragEvent dragged;
 
-    protected PackListContainer(Component title) {
+    protected PackListEventHandler(Component title) {
         super(title);
     }
 

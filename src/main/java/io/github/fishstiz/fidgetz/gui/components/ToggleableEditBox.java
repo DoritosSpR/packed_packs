@@ -16,6 +16,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import static com.mojang.blaze3d.platform.InputConstants.KEY_LEFT;
+import static com.mojang.blaze3d.platform.InputConstants.KEY_RIGHT;
+
 public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
     private static final int DEFAULT_MAX_LENGTH = 32;
     private final List<Consumer<String>> listeners = new ArrayList<>();
@@ -121,6 +124,18 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
     @Override
     public void onClick(double mouseX, double mouseY) {
         if (this.isEditing()) super.onClick(mouseX, mouseY);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == KEY_LEFT && (this.getValue().isEmpty() || this.getCursorPosition() == 0)) {
+            return false;
+        }
+        if (keyCode == KEY_RIGHT && (this.getValue().isEmpty() || this.getCursorPosition() == this.getValue().length())) {
+            return false;
+        }
+
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override

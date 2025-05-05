@@ -31,12 +31,12 @@ import java.util.function.Consumer;
 import static net.minecraft.client.gui.screens.Screen.findNarratableWidget;
 
 public class ToggleableDialog<T extends LayoutElement> extends AbstractContainerEventHandler implements Renderable, NarratableEntry {
+    protected final Screen screen;
     private final PollingDebouncer<Void> focusOnOpenTask = new PollingDebouncer<>(this::focus, 0);
     private final List<GuiEventListener> children = new ArrayList<>();
     private final List<Renderable> renderables = new ArrayList<>();
     private final List<NarratableEntry> narratables = new ArrayList<>();
     private final List<Consumer<Boolean>> listeners = new ArrayList<>();
-    private final Screen screen;
     private final T root;
     private final float z;
     private final GuiRectangle boundingBox;
@@ -73,7 +73,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         this.root.visitWidgets(this::addRenderableWidget);
     }
 
-    public T getRoot() {
+    public T root() {
         return this.root;
     }
 
@@ -86,14 +86,16 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     }
 
     public void setOpen(boolean open) {
+        boolean previous = this.open;
         this.open = open;
 
-        for (var listener : this.listeners) {
-            listener.accept(open);
-        }
-
-        if (this.focusOnOpen || this.captureFocus) {
-            ObjectsUtil.<Runnable>pick(open, this.focusOnOpenTask, this.focusOnOpenTask::abort).run();
+        if (previous != this.open) {
+            for (var listener : this.listeners) {
+                listener.accept(open);
+            }
+            if (this.focusOnOpen || this.captureFocus) {
+                ObjectsUtil.<Runnable>pick(open, this.focusOnOpenTask, this.focusOnOpenTask::abort).run();
+            }
         }
     }
 

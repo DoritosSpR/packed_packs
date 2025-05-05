@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.transform.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
+import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
 import net.minecraft.client.gui.layouts.LinearLayout;
@@ -26,14 +27,14 @@ public abstract class PackSelectionScreenMixin extends Screen {
     }
 
     @Unique
-    private PackRepository packedPacks$repository;
+    private PackSelectionScreenArgs packedPacks$original;
 
     @Unique
     private FidgetzButton<GridWrapper<LinearLayout>> packedPacks$button;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void setRepository(PackRepository repository, Consumer<PackRepository> output, Path packDir, Component title, CallbackInfo ci) {
-        this.packedPacks$repository = repository;
+        this.packedPacks$original = new PackSelectionScreenArgs(repository, output, packDir, title);
     }
 
     @WrapOperation(method = "init", at = @At(
@@ -48,7 +49,7 @@ public abstract class PackSelectionScreenMixin extends Screen {
 
         this.packedPacks$button = FidgetzButton.<GridWrapper<LinearLayout>>builder()
                 .setDimensions(20, 20)
-                .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(this, this.packedPacks$repository)))
+                .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(this, this.packedPacks$original)))
                 .setMetadata(new GridWrapper<>(original.call(instance, spacing), spacing))
                 .build();
 

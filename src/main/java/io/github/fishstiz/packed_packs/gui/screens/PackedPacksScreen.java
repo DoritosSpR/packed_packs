@@ -1,12 +1,10 @@
 package io.github.fishstiz.packed_packs.gui.screens;
 
-import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
-import io.github.fishstiz.fidgetz.gui.components.ToggleableDialog;
-import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
-import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
+import com.google.common.collect.ImmutableList;
+import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.fidgetz.util.debounce.Debouncer;
 import io.github.fishstiz.fidgetz.util.debounce.ImmediateDebouncer;
+import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.PackRepositoryHelper;
 import io.github.fishstiz.packed_packs.gui.components.*;
 import io.github.fishstiz.packed_packs.gui.layouts.PackLayout;
@@ -15,65 +13,65 @@ import io.github.fishstiz.packed_packs.gui.layouts.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.gui.history.HistoryManager;
 import io.github.fishstiz.packed_packs.gui.history.Restorable;
+import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.transform.mixin.HeaderAndFooterLayoutAccess;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionModel;
+import io.github.fishstiz.packed_packs.util.constants.Constants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
-import net.minecraft.server.packs.repository.PackRepository;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.List;
 
 import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 
-public class PackedPacksScreen extends PackListContainer implements ToggleableDialogContainer, Restorable<PackedPacksScreen.Snapshot> {
+public class PackedPacksScreen extends PackListEventHandler implements ToggleableDialogContainer, Restorable<PackedPacksScreen.Snapshot> {
+    private static final int RELOAD_DELAY_MS = 1000;
     private static final int BUTTON_SIZE = 20;
     private static final int SPACING = 8;
     private static final float DROP_ZONE_Z = 100;
     private static final float SIDEBAR_Z = 200;
     private static final long SEARCH_LISTENER_DELAY_MS = 250;
     private final Screen previous;
+    private final PackSelectionScreenArgs original;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final PackRepositoryHelper repository;
     private final AvailablePacksLayout availablePacks;
     private final CurrentPacksLayout currentPacks;
     private final List<PackList> packLists;
     private final HistoryManager<Snapshot> history;
-    private final Debouncer<String> searchListener;
+    private final ImmediateDebouncer<String> searchListener;
+    private final PollingDebouncer<Void> reloadTask = new PollingDebouncer<>(this::reload, RELOAD_DELAY_MS);
+    private PackSelectionScreen.Watcher watcher;
     private boolean listHeadersOpen = false; // TODO: config
     private Sidebar sidebar;
 
-    public PackedPacksScreen(Screen previous, PackRepository repository) {
+    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original) {
         super(ResourceUtil.getModName());
 
         this.previous = previous;
-        this.repository = new PackRepositoryHelper(repository);
+        this.original = original;
+        this.repository = new PackRepositoryHelper(this.original.repository(), this.original.packDir());
         this.availablePacks = new AvailablePacksLayout(this.repository, this, SPACING);
         this.currentPacks = new CurrentPacksLayout(this.repository, this, SPACING);
         this.packLists = List.of(this.availablePacks.getList(), this.currentPacks.getList());
         this.history = new HistoryManager<>(this.captureState());
         this.searchListener = new ImmediateDebouncer<>(() -> this.history.reset(this.captureState()), SEARCH_LISTENER_DELAY_MS);
-    }
-
-    @Override
-    public void onClose() {
-        if (this.minecraft != null) {
-            if (previous instanceof PackSelectionScreenAccessor packScreen) {
-                ((IPackSelectionModel) packScreen.getModel()).packed_packs$reset();
-                packScreen.invokeReload();
-            }
-            this.minecraft.setScreen(previous);
-        }
+        this.watcher = PackSelectionScreen.Watcher.create(this.original.packDir());
     }
 
     @Override
@@ -96,7 +94,8 @@ public class PackedPacksScreen extends PackListContainer implements ToggleableDi
         header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this::toggleListHeaders).build());
         header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(nameField::toggle).build());
         header.addFlexChild(nameField, false);
-        header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this::onClose).build());
+        header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setMessage(Component.translatable("options.title")).build());
+        header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this::setOriginalScreen).build());
         return header;
     }
 
@@ -111,22 +110,108 @@ public class PackedPacksScreen extends PackListContainer implements ToggleableDi
 
     private FlexLayout createFooter() {
         FlexLayout footer = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        footer.addFlexChild(FidgetzButton.builder() // Apply button
+        FlexLayout firstColumn = FlexLayout.horizontal().spacing(SPACING);
+        FlexLayout secondColumn = firstColumn.copyLayout();
+
+        firstColumn.addFlexChild(FidgetzButton.builder()// open packs folder
+                .setMessage(Component.translatable("pack.openFolder"))
+                .setTooltip(Tooltip.create(Component.translatable("pack.folderInfo")))
+                .setOnPress(this.repository::openDirectory).build());
+        secondColumn.addFlexChild(FidgetzButton.builder() // Apply button
                 .setMessage(ResourceUtil.getText("apply"))
-                .setOnPress(this::commit).build(), false);
-        footer.addFlexChild(FidgetzButton.builder() // Done button
+                .setOnPress(this::commit).build());
+        secondColumn.addFlexChild(FidgetzButton.builder() // Done button
                 .setMessage(CommonComponents.GUI_DONE)
-                .setOnPress(this::onClose).build(), false);
+                .setOnPress(this::onClose).build());
+
+        footer.addFlexChild(firstColumn);
+        footer.addFlexChild(secondColumn);
         return footer;
     }
 
     private void initSidebar() {
-        // TODO: profiles
         this.sidebar = Sidebar.builder(this)
                 .setTitle(ResourceUtil.getText("profile").withColor(Theme.GRAY_800.getARGB()), false) // gray
                 .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
+                .addListener(open -> this.setInitialFocus())
                 .setZ(SIDEBAR_Z)
                 .build();
+
+        LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(SPACING);
+        FlexLayout listHeader = FlexLayout.horizontal(this.sidebar.root()::getWidth).spacing(SPACING);
+        FlexLayout profilesWrapper = FlexLayout.horizontal(this.sidebar.root()::getWidth);
+
+        listHeader.addFlexChild(FidgetzButton.<Void>builder()
+                .setMessage(ResourceUtil.getText("profile.new"))
+                .setOnPress(this::createProfile)
+                .build());
+        listHeader.addFlexChild(FidgetzButton.<Void>builder()
+                .setMessage(ResourceUtil.getText("profile.copy"))
+                .setOnPress(this::copyProfile)
+                .build());
+        listHeader.arrangeElements();
+
+        profilesWrapper.addFlexChild(FidgetzButton.builder().build(), true); // TODO profile list (with delete)
+
+        this.sidebar.root().layout().addChild(listHeader, layoutSettings);
+        this.sidebar.root().layout().addFlexChild(profilesWrapper, true, layoutSettings.copy().paddingBottom(SPACING + 1));
+        this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
+    }
+
+    @Override
+    public void tick() {
+        if (this.watcher != null) {
+            try {
+                if (this.watcher.pollForChanges()) {
+                    this.reloadTask.run();
+                }
+            } catch (IOException e) {
+                Constants.LOGGER.warn("Failed to poll for directory {} changes, stopping", this.original.packDir(), e);
+                this.closeWatcher();
+            }
+        }
+
+        this.reloadTask.poll();
+    }
+
+    private void setOriginalScreen() {
+        if (this.previous instanceof PackSelectionScreen) {
+            this.onClose();
+        } else if (this.minecraft != null) {
+            this.minecraft.setScreen(new PackSelectionScreen(
+                    this.original.repository(),
+                    this.original.output(),
+                    this.original.packDir(),
+                    this.original.title()
+            ));
+        }
+    }
+
+    @Override
+    public void onClose() {
+        if (this.minecraft != null) {
+            if (this.previous instanceof PackSelectionScreenAccessor packScreen) {
+                ((IPackSelectionModel) packScreen.getModel()).packed_packs$reset();
+                packScreen.invokeReload();
+            }
+            this.minecraft.setScreen(this.previous);
+        }
+    }
+
+    @Override
+    public void removed() {
+        this.closeWatcher();
+    }
+
+    private void closeWatcher() {
+        if (this.watcher != null) {
+            try {
+                this.watcher.close();
+                this.watcher = null;
+            } catch (Exception e) {
+                Constants.LOGGER.error("Failed to close pack directory watcher.", e);
+            }
+        }
     }
 
     public int getMaxWidth() {
@@ -156,6 +241,33 @@ public class PackedPacksScreen extends PackListContainer implements ToggleableDi
         this.repository.applyPacks(this.currentPacks.getList().copyPacks());
     }
 
+    public void reload() {
+        this.repository.refresh();
+
+        PackList availableList = this.availablePacks.getList();
+        PackList currentList = this.currentPacks.getList();
+
+        PackRepositoryHelper.PackGroup packs = this.repository.updatePackLists(
+                availableList.copyPacks(),
+                currentList.copyPacks()
+        );
+
+        availableList.replaceState(new PackList.Snapshot(
+                availableList,
+                ImmutableList.copyOf(packs.unselected()),
+                availableList.copySelection(),
+                availableList.copyQuery()
+        ));
+        currentList.replaceState(new PackList.Snapshot(
+                currentList,
+                ImmutableList.copyOf(packs.selected()),
+                currentList.copySelection(),
+                currentList.copyQuery()
+        ));
+
+        this.history.reset(this.captureState());
+    }
+
     public void reset() {
         PackRepositoryHelper.PackGroup packs = this.repository.getPacksByRequirement();
         this.availablePacks.getList().reload(packs.unselected());
@@ -168,6 +280,15 @@ public class PackedPacksScreen extends PackListContainer implements ToggleableDi
         this.availablePacks.getList().reload(packs.unselected());
         this.currentPacks.getList().reload(packs.selected());
         this.history.reset(this.captureState());
+    }
+
+    public void createProfile() { // TODO
+        this.reset();
+        this.sidebar.setOpen(false);
+    }
+
+    public void copyProfile() { // TODO
+        this.sidebar.setOpen(false);
     }
 
     @Override
@@ -196,6 +317,8 @@ public class PackedPacksScreen extends PackListContainer implements ToggleableDi
     @Override
     public void onEvent(PackListEvent event) {
         super.onEvent(event);
+
+        this.sidebar.setOpen(false);
 
         if (event.modifiesTarget()) {
             this.history.push(this.captureState());

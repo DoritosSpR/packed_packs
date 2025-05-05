@@ -3,6 +3,7 @@ package io.github.fishstiz.fidgetz.gui.components;
 import io.github.fishstiz.fidgetz.gui.Metadata;
 import io.github.fishstiz.fidgetz.transform.interfaces.IStringWidget;
 import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.network.chat.Component;
@@ -62,6 +63,10 @@ public class FidgetzText<E> extends StringWidget implements Metadata<E> {
 
     public static <E> Builder<E> builder(Font font) {
         return new Builder<>(font);
+    }
+
+    public static <E> Builder<E> builder() {
+        return builder(Minecraft.getInstance().font);
     }
 
     public static class Builder<E> implements WidgetBuilder<Builder<E>> {

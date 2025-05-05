@@ -3,7 +3,9 @@ package io.github.fishstiz.fidgetz.gui.layouts;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.layouts.Layout;
 import net.minecraft.client.gui.layouts.LayoutElement;
+import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.client.gui.layouts.LinearLayout;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +16,7 @@ public class FlexLayout implements Layout {
     private final List<Child<? extends LayoutElement>> children = new ArrayList<>();
     private final LinearLayout wrappedLayout;
     private final LinearLayout.Orientation orientation;
-    private final IntSupplier maxSize;
+    private final @Nullable IntSupplier maxSize;
     private int maxWidth;
     private int maxHeight;
     private int spacing;
@@ -28,22 +30,47 @@ public class FlexLayout implements Layout {
         this.spacing = spacing;
     }
 
+    public <T extends LayoutElement> T addChild(T child, LayoutSettings layoutSettings) {
+        this.children.add(new Child<>(child, layoutSettings));
+        return this.wrappedLayout.addChild(child, layoutSettings);
+    }
+
     public <T extends LayoutElement> T addChild(T child) {
-        this.children.add(new Child<>(child));
-        return this.wrappedLayout.addChild(child);
+        return this.addChild(child, this.wrappedLayout.newCellSettings());
+    }
+
+    public <T extends AbstractWidget> T addFlexChild(T child, boolean crossAxis, LayoutSettings layoutSettings) {
+        this.children.add(new FlexWidget(child, crossAxis, layoutSettings));
+        return this.wrappedLayout.addChild(child, layoutSettings);
     }
 
     public <T extends AbstractWidget> T addFlexChild(T child, boolean crossAxis) {
-        this.children.add(new FlexWidget(child, crossAxis));
-        return this.wrappedLayout.addChild(child);
+        return this.addFlexChild(child, crossAxis, this.wrappedLayout.newCellSettings());
+    }
+
+    public <T extends AbstractWidget> T addFlexChild(T child) {
+        return this.addFlexChild(child, false, this.wrappedLayout.newCellSettings());
+    }
+
+    public <T extends FlexLayout> T addFlexChild(T child, boolean crossAxis, LayoutSettings layoutSettings) {
+        this.children.add(new NestedFlexLayout(child, crossAxis, layoutSettings));
+        return this.wrappedLayout.addChild(child, layoutSettings);
     }
 
     public <T extends FlexLayout> T addFlexChild(T child, boolean crossAxis) {
-        this.children.add(new NestedFlexLayout(child, crossAxis));
-        return this.wrappedLayout.addChild(child);
+        return this.addFlexChild(child, crossAxis, this.wrappedLayout.newCellSettings());
+    }
+
+    public <T extends FlexLayout> T addFlexChild(T child) {
+        return this.addFlexChild(child, false, this.wrappedLayout.newCellSettings());
+    }
+
+    private int getCurrentMax() {
+        return this.orientation == LinearLayout.Orientation.HORIZONTAL ? this.maxWidth : this.maxHeight;
     }
 
     private int getFlexDistribution() {
+        int padding = 0;
         int totalSize = 0;
         int flexCount = 0;
 
@@ -59,9 +86,15 @@ public class FlexLayout implements Layout {
             if (i < this.children.size() - 1) {
                 totalSize += spacing;
             }
+
+            var layoutSettings = child.layoutSettings.getExposed();
+            padding += this.orientation == LinearLayout.Orientation.HORIZONTAL
+                    ? layoutSettings.paddingLeft + layoutSettings.paddingTop
+                    : layoutSettings.paddingTop + layoutSettings.paddingBottom;
         }
 
-        return flexCount > 0 ? (this.maxSize.getAsInt() - totalSize) / flexCount : 0;
+        int max = this.maxSize != null ? this.maxSize.getAsInt() : this.getCurrentMax();
+        return flexCount > 0 ? (max - padding - totalSize) / flexCount : 0;
     }
 
     @Override
@@ -118,19 +151,33 @@ public class FlexLayout implements Layout {
         return this;
     }
 
+    public FlexLayout copyLayout() {
+        return new FlexLayout(this.orientation, this.maxSize, this.maxWidth, this.maxHeight, this.spacing);
+    }
+
     public static FlexLayout horizontal(IntSupplier maxWidth) {
         return new FlexLayout(LinearLayout.Orientation.HORIZONTAL, maxWidth, maxWidth.getAsInt(), 0, 0);
+    }
+
+    public static FlexLayout horizontal() {
+        return new FlexLayout(LinearLayout.Orientation.HORIZONTAL, null, 0, 0, 0);
     }
 
     public static FlexLayout vertical(IntSupplier maxHeight) {
         return new FlexLayout(LinearLayout.Orientation.VERTICAL, maxHeight, 0, maxHeight.getAsInt(), 0);
     }
 
+    public static FlexLayout vertical() {
+        return new FlexLayout(LinearLayout.Orientation.VERTICAL, null, 0, 0, 0);
+    }
+
     private static class Child<T extends LayoutElement> {
         protected final T element;
+        protected final LayoutSettings layoutSettings;
 
-        protected Child(T element) {
+        protected Child(T element, LayoutSettings layoutSettings) {
             this.element = element;
+            this.layoutSettings = layoutSettings;
         }
 
         protected int getAxisSize(LinearLayout.Orientation orientation) {
@@ -149,8 +196,9 @@ public class FlexLayout implements Layout {
     private abstract static class FlexChild<T extends LayoutElement> extends Child<T> {
         protected final boolean crossAxis;
 
-        protected FlexChild(T element, boolean crossAxis) {
-            super(element);
+        protected FlexChild(T element, boolean crossAxis, LayoutSettings layoutSettings) {
+            super(element, layoutSettings);
+
             this.crossAxis = crossAxis;
         }
 
@@ -174,8 +222,8 @@ public class FlexLayout implements Layout {
     }
 
     private static class FlexWidget extends FlexChild<AbstractWidget> {
-        private FlexWidget(AbstractWidget element, boolean crossAxis) {
-            super(element, crossAxis);
+        private FlexWidget(AbstractWidget element, boolean crossAxis, LayoutSettings layoutSettings) {
+            super(element, crossAxis, layoutSettings);
         }
 
         @Override
@@ -190,8 +238,8 @@ public class FlexLayout implements Layout {
     }
 
     private static class NestedFlexLayout extends FlexChild<FlexLayout> {
-        protected NestedFlexLayout(FlexLayout element, boolean crossAxis) {
-            super(element, crossAxis);
+        protected NestedFlexLayout(FlexLayout element, boolean crossAxis, LayoutSettings layoutSettings) {
+            super(element, crossAxis, layoutSettings);
         }
 
         @Override

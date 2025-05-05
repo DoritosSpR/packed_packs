@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.layouts;
 
+import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.gui.components.PackListBase;
@@ -12,6 +13,7 @@ public abstract class PackLayout<T extends PackListBase<?>> {
     protected final T list;
     private final GridWrapper<FlexLayout> header;
     private ToggleableEditBox<Void> searchField;
+    private FidgetzButton<Void> transferButton;
     private FlexLayout layout;
 
     protected PackLayout(T list, int spacing) {
@@ -30,7 +32,10 @@ public abstract class PackLayout<T extends PackListBase<?>> {
                 .setEditable(true)
                 .addListener(this.list::search)
                 .build();
-        this.header.layout().addFlexChild(searchField, false);
+        this.transferButton = FidgetzButton.<Void>builder()
+                .setWidth(20)
+                .setOnPress(this.list::transferAll)
+                .build();
 
         this.initHeader(this.header.layout());
         this.layout.addChild(this.header.layout());
@@ -44,6 +49,10 @@ public abstract class PackLayout<T extends PackListBase<?>> {
 
     public ToggleableEditBox<Void> getSearchField() {
         return this.searchField;
+    }
+
+    public FidgetzButton<Void> getTransferButton() {
+        return this.transferButton;
     }
 
     public void setHeaderVisibility(boolean visible) {
