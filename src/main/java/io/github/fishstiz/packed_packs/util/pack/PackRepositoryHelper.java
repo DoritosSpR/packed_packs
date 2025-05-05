@@ -1,11 +1,10 @@
-package io.github.fishstiz.packed_packs;
+package io.github.fishstiz.packed_packs.util.pack;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionModel;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
-import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.Pack;
@@ -20,14 +19,12 @@ public class PackRepositoryHelper implements PackIconCache {
     private final Map<String, Pack> availablePacks = new LinkedHashMap<>();
     private final PackRepository repository;
     private final Path packDir;
-    private final Minecraft minecraft;
     private final PackSelectionModel model;
 
     public PackRepositoryHelper(PackRepository repository, Path packDir) {
         this.repository = repository;
         this.packDir = packDir;
-        this.minecraft = Minecraft.getInstance();
-        this.model = new PackSelectionModel(PackRepositoryHelper::_update, this::getIcon, repository, PackRepositoryHelper::_apply);
+        this.model = new PackSelectionModel(PackRepositoryHelper::_update, this::getIcon, this.repository, PackRepositoryHelper::_apply);
         this.populateAvailablePacks();
     }
 
@@ -66,7 +63,7 @@ public class PackRepositoryHelper implements PackIconCache {
         return PackGroup.of(this.getSelectedPacks(), this.getUnselectedPacks());
     }
 
-    public PackGroup updatePackLists(List<Pack> unselected, List<Pack> selected) {
+    public PackGroup validatePacks(List<Pack> unselected, List<Pack> selected) {
         Set<Pack> validPacks = new HashSet<>(this.availablePacks.values());
         Set<Pack> previousUnselected = new HashSet<>(unselected);
         Set<Pack> previousSelected = new HashSet<>(selected);
@@ -112,15 +109,14 @@ public class PackRepositoryHelper implements PackIconCache {
     }
 
     public void refresh() {
+        ((IPackSelectionModel) this.model).packed_packs$reset();
         this.model.findNewPacks();
         this.availablePacks.clear();
         this.populateAvailablePacks();
     }
 
-    public void applyPacks(List<Pack> selected) {
+    public void selectPacks(List<Pack> selected) {
         this.repository.setSelected(Lists.reverse(selected).stream().map(Pack::getId).collect(ImmutableList.toImmutableList()));
-        this.minecraft.options.updateResourcePacks(this.repository);
-        this.refresh(); // todo mixin options and return completablefuture
     }
 
     public void openDirectory() {

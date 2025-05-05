@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.util.pack;
 
 import com.google.common.hash.Hashing;
 import com.mojang.blaze3d.platform.NativeImage;
-import io.github.fishstiz.packed_packs.util.constants.Constants;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
@@ -63,7 +63,7 @@ public interface PackIconCache {
             }
             return packIcon;
         } catch (Exception e) {
-            Constants.LOGGER.warn("Failed to load icon from pack '{}'", pack.getId(), e);
+            PackedPacks.LOGGER.warn("Failed to load icon from pack '{}'", pack.getId(), e);
             return DEFAULT_ICON;
         }
     }

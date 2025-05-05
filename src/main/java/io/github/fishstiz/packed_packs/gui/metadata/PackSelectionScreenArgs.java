@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.metadata;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.PackRepository;
 
@@ -12,4 +13,7 @@ public record PackSelectionScreenArgs(
         Path packDir,
         Component title
 ) {
+    public boolean isResourcePackDir() {
+        return this.packDir == Minecraft.getInstance().getResourcePackDirectory();
+    }
 }

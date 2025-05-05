@@ -5,7 +5,6 @@ import io.github.fishstiz.packed_packs.util.pack.PackUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.List;

@@ -1,7 +1,6 @@
 package io.github.fishstiz.packed_packs.util.pack;
 
-
-import io.github.fishstiz.packed_packs.util.constants.Constants;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.repository.Pack;
 
@@ -22,7 +21,7 @@ public class PackUtil {
             Path path = Minecraft.getInstance().getResourcePackDirectory().resolve(pack.getId().replaceFirst("^file/", ""));
             return Files.getLastModifiedTime(path).toInstant().toEpochMilli();
         } catch (IOException e) {
-            Constants.LOGGER.error("Failed to get age of pack '{}'", pack.getId());
+            PackedPacks.LOGGER.error("Failed to get age of pack '{}'", pack.getId());
             return -1;
         }
     }

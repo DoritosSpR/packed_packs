@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.gui.layouts;
 import io.github.fishstiz.fidgetz.gui.components.CyclicButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleButton;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.gui.components.AvailablePackList;
 import io.github.fishstiz.packed_packs.gui.components.Query;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
@@ -43,7 +44,7 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
                 .setDimensions(20, 20)
                 .addListener(this.list::sort)
                 .addListener(value -> this.sendQueryEvent())
-                .setValue(Query.SortOption.A_Z) // TODO: config
+                .setValue(PackedPacks.CONFIG.getSort())
                 .build();
         this.compatButton = ToggleButton.<Void>builder() // TODO: convert to icons
                 .setMessage(ResourceUtil.getText("hide_incompatible"))
@@ -51,7 +52,7 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
                 .setDimensions(20, 20)
                 .addListener(this.list::hideIncompatible)
                 .addListener(value -> this.sendQueryEvent())
-                .setValue(false) // TODO: config
+                .setValue(PackedPacks.CONFIG.isHideIncompatible())
                 .build();
 
         this.list.sort(this.sortButton.getValue());

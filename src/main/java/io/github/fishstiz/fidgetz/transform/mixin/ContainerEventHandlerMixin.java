@@ -29,28 +29,11 @@ public interface ContainerEventHandlerMixin {
         return this.fidgetz$filterCovered(dialogContainer, children);
     }
 
-    @WrapOperation(method = "nextFocusPathInDirection", at = @At(
+    @WrapOperation(method = {"nextFocusPathInDirection", "nextFocusPathVaguelyInDirection"}, at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/gui/components/events/ContainerEventHandler;children()Ljava/util/List;"
     ))
     private List<? extends GuiEventListener> filterCoveredFromPath(
-            ContainerEventHandler instance,
-            Operation<List<? extends GuiEventListener>> original
-    ) {
-        List<? extends GuiEventListener> children = original.call(instance);
-
-        if (!(this instanceof ToggleableDialogContainer dialogContainer)) {
-            return children;
-        }
-
-        return this.fidgetz$filterCovered(dialogContainer, children);
-    }
-
-    @WrapOperation(method = "nextFocusPathVaguelyInDirection", at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/components/events/ContainerEventHandler;children()Ljava/util/List;"
-    ))
-    private List<? extends GuiEventListener> filterCoveredFromVaguePath(
             ContainerEventHandler instance,
             Operation<List<? extends GuiEventListener>> original
     ) {

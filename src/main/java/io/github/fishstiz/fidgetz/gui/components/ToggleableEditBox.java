@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static com.mojang.blaze3d.platform.InputConstants.KEY_LEFT;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_RIGHT;
@@ -31,11 +32,12 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
         super(builder.font, builder.x, builder.y, builder.width, builder.height, Component.literal(builder.value));
 
         this.hintColor = builder.hintColor != null ? builder.hintColor : ((EditBoxAccess) this).getTextColorUneditable();
-        this.listeners.addAll(builder.listeners);
 
         this.focusedTextColor = builder.textColor != null ? builder.textColor : ((EditBoxAccess) this).getTextColor();
         this.previousValue = builder.value;
         this.metadata = builder.metadata;
+
+        if (builder.filter != null) this.setFilter(builder.filter);
 
         this.setValue(builder.value);
         this.setEditable(builder.editable);
@@ -44,6 +46,7 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
         ((TextRenderer) this).fidgetz$setShadow(builder.textShadow);
         this.updateTextColor();
 
+        this.listeners.addAll(builder.listeners);
         super.setResponder(this::onRespond);
     }
 
@@ -87,7 +90,7 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
     }
 
     @Override
-    public void setResponder(Consumer<String> responder) {
+    public final void setResponder(Consumer<String> responder) {
         LogUtil.logUnsupported("Use addListener instead of setResponder.");
     }
 
@@ -170,6 +173,7 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
         private Integer hintColor;
         private boolean editable = false;
         private int maxLength = DEFAULT_MAX_LENGTH;
+        private Predicate<String> filter;
         private E metadata;
 
         private Builder(Font font) {
@@ -243,6 +247,11 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
 
         public Builder<E> setMaxLength(int maxLength) {
             this.maxLength = maxLength;
+            return this;
+        }
+
+        public Builder<E> setFilter(Predicate<String> filter) {
+            this.filter = filter;
             return this;
         }
 

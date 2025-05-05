@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.util;
 
-import io.github.fishstiz.packed_packs.util.constants.Constants;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -10,15 +10,15 @@ public class ResourceUtil {
     }
 
     public static MutableComponent getModName() {
-        return Component.literal(Constants.MOD_NAME);
+        return Component.literal(PackedPacks.MOD_NAME);
     }
 
     public static MutableComponent getText(String keySuffix, Object... args) {
-        return Component.translatable(Constants.MOD_ID + "." + keySuffix, args);
+        return Component.translatable(PackedPacks.MOD_ID + "." + keySuffix, args);
     }
 
     public static ResourceLocation getResource(String path) {
-        return ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, path);
+        return ResourceLocation.fromNamespaceAndPath(PackedPacks.MOD_ID, path);
     }
 
     public static ResourceLocation getVanillaSprite(String path) {
