@@ -10,6 +10,7 @@ import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.TabOrderedElement;
 import net.minecraft.client.gui.components.events.AbstractContainerEventHandler;
@@ -70,7 +71,6 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
 
         this.setOpen(builder.open);
         this.listeners.addAll(builder.listeners);
-        this.root.visitWidgets(this::addRenderableWidget);
     }
 
     public T root() {
@@ -307,9 +307,18 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     public void focus() {
         if (this.isOpen()) {
             this.screen.clearFocus();
-            ComponentPath path = this.children.isEmpty()
-                    ? ComponentPath.path(this, this.screen)
-                    : ComponentPath.path(this.children.getFirst(), this, this.screen);
+
+            ComponentPath path;
+
+            if (this.children.isEmpty()) {
+                path = ComponentPath.path(this, this.screen);
+            } else {
+                GuiEventListener firstFocusable = this.getFirstFocusable();
+                path = firstFocusable != null
+                        ? ComponentPath.path(firstFocusable, this, this.screen)
+                        : ComponentPath.path(this, this.screen);
+            }
+
             path.applyFocus(true);
         }
     }
@@ -317,12 +326,52 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     @Override
     public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent event) {
         ComponentPath next = super.nextFocusPath(event);
-        if (this.captureFocus && next == null) {
-            return this.children.isEmpty()
+        if (this.isOpen() && this.captureFocus && next == null) {
+            if (this.children.isEmpty()) {
+                return ComponentPath.path(this);
+            }
+
+            GuiEventListener lastFocusable = this.getLastFocusable();
+            GuiEventListener activeChild = this.getFocused() == lastFocusable
+                    ? this.getFirstFocusable()
+                    : lastFocusable;
+
+            return activeChild == null
                     ? ComponentPath.path(this)
-                    : ComponentPath.path(this.children.getFirst(), this);
+                    : ComponentPath.path(activeChild, this);
         }
         return next;
+    }
+
+    private @Nullable GuiEventListener getLastFocusable() {
+        for (int i = this.children.size() - 1; i >= 0; i--) {
+            if (!(this.children.get(i) instanceof AbstractWidget widget) || widget.active) {
+                return this.children.get(i);
+            }
+        }
+        return null;
+    }
+
+    private @Nullable GuiEventListener getFirstFocusable() {
+        for (GuiEventListener child : this.children) {
+            if (!(child instanceof AbstractWidget widget) || widget.active) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public boolean isFocused() {
+        return this.isOpen() && super.isFocused();
+    }
+
+    public boolean isCaptureClick() {
+        return this.captureClick;
+    }
+
+    public boolean isCaptureFocus() {
+        return this.captureFocus;
     }
 
     @Override
@@ -335,9 +384,13 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         return this.isOpen();
     }
 
+    public boolean isHovered() {
+        return this.isOpen() && this.hovered;
+    }
+
     @Override
     public @NotNull NarrationPriority narrationPriority() {
-        return this.isOpen() && this.hovered ? NarrationPriority.HOVERED : NarrationPriority.NONE;
+        return this.isHovered() ? NarrationPriority.HOVERED : NarrationPriority.NONE;
     }
 
     protected Component getUsageNarration() {

@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.gui.components;
+package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;

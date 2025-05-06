@@ -3,11 +3,11 @@
   "packed_packs.profile.empty": "No profiles found.",
   "packed_packs.profile.none": "No Profile",
   "packed_packs.profile.new": "New",
-  "packed_packs.profile.new.info": "Add new Profile.",
+  "packed_packs.profile.new.info": "Add new Profile",
   "packed_packs.profile.unnamed": "Unnamed Profile",
   "packed_packs.profile.edit": "Edit Profile Name",
   "packed_packs.profile.copy": "Copy",
-  "packed_packs.profile.copy.info": "Copy current Profile.",
+  "packed_packs.profile.copy.info": "Copy current Profile",
   "packed_packs.profile.delete": "Delete",
   "packed_packs.profile.delete.info": "Delete Profile",
   "packed_packs.options": "Options",
@@ -22,5 +22,9 @@
   "packed_packs.hide_incompatible": "Hide Incompatible",
   "packed_packs.hide_incompatible.info": "Toggle Incompatible Packs",
   "packed_packs.transfer_all.info": "Transfer All Packs",
-  "packed_packs.original_screen.info": "Original Pack Screen"
+  "packed_packs.original_screen.info": "Original Pack Screen",
+  "packed_packs.resource_packs": "Resource Packs",
+  "packed_packs.options.title": "Packed Packs Options",
+  "packed_packs.options.replace_screen": "Replace Pack Screen",
+  "packed_packs.options.apply_on_close": "Apply Packs on Close"
 }

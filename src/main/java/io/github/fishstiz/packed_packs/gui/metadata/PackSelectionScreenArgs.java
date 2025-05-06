@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.gui.metadata;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.PackRepository;
 
@@ -15,5 +16,9 @@ public record PackSelectionScreenArgs(
 ) {
     public boolean isResourcePackDir() {
         return this.packDir == Minecraft.getInstance().getResourcePackDirectory();
+    }
+
+    public PackSelectionScreen createScreen() {
+        return new PackSelectionScreen(this.repository, this.output, this.packDir, this.title);
     }
 }

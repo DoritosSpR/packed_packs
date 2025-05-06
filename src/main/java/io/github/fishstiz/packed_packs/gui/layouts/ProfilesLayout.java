@@ -28,6 +28,7 @@ public class ProfilesLayout {
     private static final Component NEW_INFO = ResourceUtil.getText("profile.new.info");
     private static final Component COPY_TEXT = ResourceUtil.getText("profile.copy");
     private static final Component COPY_INFO = ResourceUtil.getText("profile.copy.info");
+    private static final int MAX_WIDTH = 150;
     private final Config.Packs config;
     private final Sidebar sidebar;
     private final Supplier<List<Pack>> selectedPacks;
@@ -52,7 +53,7 @@ public class ProfilesLayout {
 
     public ProfilesLayout(Sidebar.Builder sidebar, Config.Packs config, Supplier<List<Pack>> selectedPacks, Consumer<Profile> listener) {
         this.config = config;
-        this.sidebar = sidebar.setTitle(TITLE_TEXT.copy().withColor(Theme.GRAY_800.getARGB()), false).build();
+        this.sidebar = sidebar.setMaxWidth(MAX_WIDTH).setTitle(TITLE_TEXT.copy().withColor(Theme.GRAY_800.getARGB()), false).build();
         this.selectedPacks = selectedPacks;
         this.listener = listener;
         this.profileList = new ProfileList(this.config, this::getProfile, this::removeProfile, this::setProfile);
@@ -64,9 +65,9 @@ public class ProfilesLayout {
 
     public void initContents(int spacing) {
         LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(spacing);
-        FlexLayout firstRow = FlexLayout.horizontal(this.sidebar.root()::getWidth).spacing(spacing);
-        FlexLayout secondRow = FlexLayout.horizontal(this.sidebar.root()::getWidth);
-        FlexLayout thirdRow = FlexLayout.horizontal(this.sidebar.root()::getWidth);
+        FlexLayout firstRow = FlexLayout.horizontal(this::getMaxWidth).spacing(spacing);
+        FlexLayout secondRow = FlexLayout.horizontal(this::getMaxWidth);
+        FlexLayout thirdRow = FlexLayout.horizontal(this::getMaxWidth);
 
         firstRow.addFlexChild(FidgetzButton.<Void>builder()
                 .setMessage(NEW_TEXT)
@@ -84,6 +85,10 @@ public class ProfilesLayout {
         this.sidebar.root().layout().addFlexChild(thirdRow, true, layoutSettings.copy().paddingBottom(spacing + 1));
         this.sidebar.root().layout().arrangeElements();
         this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
+    }
+
+    public int getMaxWidth() {
+        return MAX_WIDTH;
     }
 
     public Sidebar getSidebar() {

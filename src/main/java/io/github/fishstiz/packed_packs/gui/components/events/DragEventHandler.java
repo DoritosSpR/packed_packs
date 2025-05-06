@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
-import io.github.fishstiz.packed_packs.gui.components.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import org.jetbrains.annotations.NotNull;

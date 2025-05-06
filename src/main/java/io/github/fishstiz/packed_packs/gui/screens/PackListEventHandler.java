@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.gui.screens;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
-import io.github.fishstiz.packed_packs.gui.components.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;

@@ -1,11 +1,11 @@
-package io.github.fishstiz.packed_packs.gui.layouts;
+package io.github.fishstiz.packed_packs.gui.layouts.pack;
 
 import io.github.fishstiz.fidgetz.gui.components.CyclicButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleButton;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.gui.components.AvailablePackList;
-import io.github.fishstiz.packed_packs.gui.components.Query;
+import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.components.events.QueryEvent;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
@@ -63,6 +63,7 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
                 .setDimensions(20, 20)
                 .addListener(this.list::hideIncompatible)
                 .addListener(value -> this.sendQueryEvent())
+                .addListener(PackedPacks.CONFIG::setHideIncompatible)
                 .setValue(PackedPacks.CONFIG.isHideIncompatible())
                 .build();
 
@@ -78,6 +79,7 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
 
     private void onCycleSort(Query.SortOption sort) {
         this.sortButton.setTooltip(this.getSortTooltip(sort));
+        PackedPacks.CONFIG.setSort(sort);
     }
 
     private Tooltip getSortTooltip(Query.SortOption sort) {

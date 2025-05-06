@@ -1,7 +1,7 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
 import com.google.common.collect.ImmutableList;
-import io.github.fishstiz.packed_packs.gui.components.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.server.packs.repository.Pack;
 
 import java.util.List;

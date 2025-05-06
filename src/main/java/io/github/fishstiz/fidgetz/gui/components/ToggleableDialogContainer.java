@@ -27,7 +27,11 @@ public interface ToggleableDialogContainer {
         boolean isEnclosed = false;
 
         for (ToggleableDialog<?> dialog : this.getOpenDialogsFromTop()) {
-            if (!isEnclosed && dialog.children().contains(child)) {
+            List<? extends GuiEventListener> children = dialog.children();
+            if (dialog != child && (dialog.isCaptureClick() || dialog.isCaptureFocus()) && !children.contains(child)) {
+                return true;
+            }
+            if (!isEnclosed && children.contains(child)) {
                 isDialogChild = true;
                 break;
             }
@@ -44,7 +48,11 @@ public interface ToggleableDialogContainer {
         boolean isIntersected = false;
 
         for (ToggleableDialog<?> dialog : this.getOpenDialogsFromTop()) {
-            if (!isIntersected && dialog.children().contains(child)) {
+            List<? extends GuiEventListener> children = dialog.children();
+            if (dialog != child && (dialog.isCaptureClick() || dialog.isCaptureFocus()) && !children.contains(child)) {
+                return true;
+            }
+            if (!isIntersected && children.contains(child)) {
                 isDialogChild = true;
                 break;
             }

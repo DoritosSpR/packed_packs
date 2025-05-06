@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.config;
 
-import io.github.fishstiz.packed_packs.gui.components.Query;
+import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -60,7 +60,7 @@ public class Config implements Serializable {
     }
 
     public static class Packs implements Serializable {
-        private boolean replaceOriginal = false;
+        private boolean replaceOriginal = true;
         private Long lastViewed = null;
         private long autoIncrement = 0;
         private final List<Profile> profiles = new ArrayList<>();

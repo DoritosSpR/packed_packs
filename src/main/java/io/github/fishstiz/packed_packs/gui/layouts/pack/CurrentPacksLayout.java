@@ -1,7 +1,7 @@
-package io.github.fishstiz.packed_packs.gui.layouts;
+package io.github.fishstiz.packed_packs.gui.layouts.pack;
 
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.gui.components.CurrentPackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.network.chat.Component;

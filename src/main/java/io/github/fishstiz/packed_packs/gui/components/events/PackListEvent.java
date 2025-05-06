@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
-import io.github.fishstiz.packed_packs.gui.components.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 
 public abstract class PackListEvent {
     protected final PackList target;

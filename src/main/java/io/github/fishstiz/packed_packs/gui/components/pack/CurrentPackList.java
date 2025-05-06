@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.gui.components;
+package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;

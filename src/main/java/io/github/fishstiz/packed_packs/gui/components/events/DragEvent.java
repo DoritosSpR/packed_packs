@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.gui.components.events;
 import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.packed_packs.gui.components.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.client.Minecraft;

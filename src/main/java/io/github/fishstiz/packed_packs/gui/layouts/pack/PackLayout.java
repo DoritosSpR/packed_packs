@@ -1,9 +1,9 @@
-package io.github.fishstiz.packed_packs.gui.layouts;
+package io.github.fishstiz.packed_packs.gui.layouts.pack;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.gui.components.PackListBase;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.gui.components.Tooltip;

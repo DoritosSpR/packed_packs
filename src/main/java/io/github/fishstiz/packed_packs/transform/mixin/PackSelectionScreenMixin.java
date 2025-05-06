@@ -6,6 +6,7 @@ import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
+import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionScreen;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
@@ -21,7 +22,7 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 
 @Mixin(PackSelectionScreen.class)
-public abstract class PackSelectionScreenMixin extends Screen {
+public abstract class PackSelectionScreenMixin extends Screen implements IPackSelectionScreen {
     protected PackSelectionScreenMixin(Component title) {
         super(title);
     }
@@ -31,6 +32,14 @@ public abstract class PackSelectionScreenMixin extends Screen {
 
     @Unique
     private FidgetzButton<GridWrapper<LinearLayout>> packedPacks$button;
+
+    @Unique
+    private Screen packedPacks$previous;
+
+    @Override
+    public void packedPacks$setPrevious(Screen previous) {
+        this.packedPacks$previous = previous;
+    }
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void setRepository(PackRepository repository, Consumer<PackRepository> output, Path packDir, Component title, CallbackInfo ci) {
@@ -47,9 +56,10 @@ public abstract class PackSelectionScreenMixin extends Screen {
             return original.call(instance, spacing);
         }
 
+        Screen previous = this.packedPacks$previous != null ? this.packedPacks$previous : this;
         this.packedPacks$button = FidgetzButton.<GridWrapper<LinearLayout>>builder()
                 .setDimensions(20, 20)
-                .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(this, this.packedPacks$original)))
+                .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(previous, this.packedPacks$original)))
                 .setMetadata(new GridWrapper<>(original.call(instance, spacing), spacing))
                 .build();
 

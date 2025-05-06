@@ -1,8 +1,8 @@
 package io.github.fishstiz.packed_packs.compat.minecraftcursor;
 
 import io.github.fishstiz.minecraftcursor.api.*;
-import io.github.fishstiz.packed_packs.gui.components.AvailablePackList;
-import io.github.fishstiz.packed_packs.gui.components.CurrentPackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 
 public class PackedPacksMinecraftCursor implements MinecraftCursorInitializer {
@@ -27,6 +27,11 @@ public class PackedPacksMinecraftCursor implements MinecraftCursorInitializer {
     }
 
     private CursorType getCursorType(PackedPacksScreen screen, double mouseX, double mouseY) {
+        var options = screen.getOptionsDialog();
+        if (options.isOpen() && !options.isHovered()) {
+            return CursorType.DEFAULT_FORCE;
+        }
+
         return screen.isDraggingSelection() ? CursorType.GRABBING : CursorType.DEFAULT;
     }
 }

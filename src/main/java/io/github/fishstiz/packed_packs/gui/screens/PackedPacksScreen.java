@@ -3,14 +3,22 @@ package io.github.fishstiz.packed_packs.gui.screens;
 import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
+import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.util.debounce.ImmediateDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
+import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
+import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
+import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
+import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionScreen;
+import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.pack.PackRepositoryHelper;
 import io.github.fishstiz.packed_packs.config.Profile;
-import io.github.fishstiz.packed_packs.gui.components.*;
 import io.github.fishstiz.packed_packs.gui.layouts.*;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.gui.history.HistoryManager;
@@ -24,6 +32,7 @@ import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LayoutSettings;
+import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.network.chat.CommonComponents;
@@ -43,16 +52,15 @@ import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 public class PackedPacksScreen extends PackListEventHandler implements ToggleableDialogContainer, Restorable<PackedPacksScreen.Snapshot> {
     private static final Component ACTION_BAR_INFO = ResourceUtil.getText("toggle_actionbar.info");
     private static final Component ORIGINAL_SCREEN_INFO = ResourceUtil.getText("original_screen.info");
-    private static final Component OPTIONS_TEXT = Component.translatable("options.title");
+    private static final Component OPTIONS_TEXT = ResourceUtil.getText("options.title");
     private static final Component OPEN_FOLDER_TEXT = Component.translatable("pack.openFolder");
     private static final Component OPEN_FOLDER_INFO_TEXT = Component.translatable("pack.folderInfo");
     private static final Component APPLY_TEXT = ResourceUtil.getText("apply");
     private static final int BUTTON_SIZE = 20;
     private static final int SPACING = 8;
-    private static final float DROP_ZONE_Z = 100;
-    private static final float SIDEBAR_Z = 200;
-    private static final long RELOAD_DELAY_MS = 1000;
-    private static final long CLEAR_DELAY_MS = 250;
+    private static final float SIDEBAR_Z = 100;
+    private static final float DROP_ZONE_Z = 200;
+    private static final float OPTIONS_Z = 300;
     private final Screen previous;
     private final PackSelectionScreenArgs original;
     private final PackRepositoryHelper repository;
@@ -62,8 +70,13 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private final HistoryManager<Snapshot> history;
     private final Config.Packs packsConfig;
     private final ProfilesLayout profiles;
-    private final ImmediateDebouncer<String> searchListener = new ImmediateDebouncer<>(this::clearHistory, CLEAR_DELAY_MS);
-    private final PollingDebouncer<Void> revalidateTask = new PollingDebouncer<>(this::revalidate, RELOAD_DELAY_MS);
+    private final ImmediateDebouncer<String> searchListener = new ImmediateDebouncer<>(this::clearHistory, 250);
+    private final PollingDebouncer<Void> revalidateTask = new PollingDebouncer<>(this::revalidate, 1000);
+    private final Modal<LinearLayout> options = Modal.builder(this, new OptionsLayout(SPACING).layout())
+            .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
+            .setCaptureFocus(true)
+            .setZ(OPTIONS_Z)
+            .build();
     private PackSelectionScreen.Watcher watcher;
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
 
@@ -91,12 +104,18 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     @Override
     protected void init() {
         this.profiles.initContents(SPACING);
-        this.addWidget(this.profiles.getSidebar());
+        this.profiles.getSidebar().getCloseButton().addListener(this::setInitialFocus);
+
         this.layout.addToHeader(this.createHeader());
         this.layout.addToContents(this.createContents());
         this.layout.addToFooter(this.createFooter());
+
+        this.options.root().visitWidgets(this.options::addRenderableWidget);
+        this.addWidget(this.options);
+        this.addWidget(this.profiles.getSidebar());
         this.layout.visitWidgets(this::addRenderableWidget);
         this.addRenderableOnly(this.profiles.getSidebar());
+        this.addRenderableOnly(this.options);
         this.repositionElements();
     }
 
@@ -115,7 +134,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         header.addChild(FidgetzButton.builder()
                 .setWidth(BUTTON_SIZE)
                 .setMessage(OPTIONS_TEXT)
-                .setTooltip(Tooltip.create(OPTIONS_TEXT)).build()); // TODO: options
+                .setTooltip(Tooltip.create(OPTIONS_TEXT))
+                .setOnPress(this.options::toggle).build());
         header.addChild(FidgetzButton.builder()
                 .setWidth(BUTTON_SIZE)
                 .setTooltip(Tooltip.create(ORIGINAL_SCREEN_INFO))
@@ -180,12 +200,9 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         if (this.previous instanceof PackSelectionScreen) {
             this.onClose();
         } else if (this.minecraft != null) {
-            this.minecraft.setScreen(new PackSelectionScreen(
-                    this.original.repository(),
-                    this.original.output(),
-                    this.original.packDir(),
-                    this.original.title()
-            ));
+            PackSelectionScreen originalScreen = this.original.createScreen();
+            ((IPackSelectionScreen) originalScreen).packedPacks$setPrevious(this.previous);
+            this.minecraft.setScreen(originalScreen);
         }
     }
 
@@ -197,7 +214,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             this.commit();
         }
 
-        if (!this.original.isResourcePackDir() && this.packsConfig.isReplaceOriginal()) {
+        if (!this.original.isResourcePackDir() && !(this.previous instanceof PackSelectionScreen)) {
             this.original.output().accept(this.repository.getRepository());
             return;
         }
@@ -239,11 +256,13 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.layout.arrangeElements();
         ((HeaderAndFooterLayoutAccess) this.layout).getContentsFrame().setY(this.layout.getHeaderHeight());
         this.profiles.getSidebar().repositionElements();
+        this.options.repositionElements();
         this.repositionLists();
     }
 
     public void toggleActionBar() {
         this.showActionBar = !this.showActionBar;
+        PackedPacks.CONFIG.setShowActionBar(this.showActionBar);
         this.repositionLists();
     }
 
@@ -433,7 +452,11 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     @Override
     public List<ToggleableDialog<?>> getDialogs() {
-        return List.of(this.profiles.getSidebar());
+        return List.of(this.profiles.getSidebar(), this.options);
+    }
+
+    public Modal<LinearLayout> getOptionsDialog() {
+        return this.options;
     }
 
     public void clearHistory() {

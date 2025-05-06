@@ -8,7 +8,6 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.layouts.LayoutSettings;
-import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -31,7 +30,8 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
         this.root().setMessage(builder.title);
         this.root().setMinWidth(builder.minWidth);
 
-        LinearLayout header = this.root().layout().addChild(LinearLayout.horizontal());
+        int maxWidth = Math.max(builder.minWidth, builder.maxWidth);
+        FlexLayout header = this.root().layout().addChild(FlexLayout.horizontal(() -> maxWidth));
 
         this.closeButton = header.addChild(FidgetzButton.<Void>builder()
                 .setOnPress(() -> this.setOpen(false))
@@ -41,14 +41,17 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
         Font font = Minecraft.getInstance().font;
         int titleFontWidth = font.width(builder.title);
         int titleWidth = MIN_WIDTH > titleFontWidth ? MIN_WIDTH : titleFontWidth + SPACING;
-
-        header.addChild(FidgetzText.builder(font)
-                .setDimensions(titleWidth, HEADER_SIZE)
-                .setMessage(builder.title)
-                .setShadow(builder.shadow)
-                .setOffsetY(1)
-                .alignLeft()
-                .build(), builder.headerSettings);
+        header.addFlexChild(
+                FidgetzText.builder(font)
+                        .setDimensions(titleWidth, HEADER_SIZE)
+                        .setMessage(builder.title)
+                        .setShadow(builder.shadow)
+                        .setOffsetY(1)
+                        .alignLeft()
+                        .build(),
+                false,
+                builder.headerSettings
+        );
 
         header.visitWidgets(this::addRenderableWidget);
         this.repositionElements();
@@ -76,6 +79,7 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
         private boolean shadow;
         private LayoutSettings headerSettings = LayoutSettings.defaults();
         private int minWidth = MIN_WIDTH;
+        private int maxWidth;
 
         protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, LayoutWrapper<FlexLayout> root) {
             super(screen, root);
@@ -108,6 +112,11 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
 
         public Builder setMinWidth(int minWidth) {
             this.minWidth = minWidth;
+            return this;
+        }
+
+        public Builder setMaxWidth(int maxWidth) {
+            this.maxWidth = maxWidth;
             return this;
         }
 
