@@ -29,10 +29,14 @@ import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccess
 import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionModel;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
+import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.screens.AlertScreen;
+import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.gui.screens.NoticeWithLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.network.chat.CommonComponents;
@@ -43,11 +47,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
+import static io.github.fishstiz.packed_packs.util.pack.PackUtil.*;
 
 public class PackedPacksScreen extends PackListEventHandler implements ToggleableDialogContainer, Restorable<PackedPacksScreen.Snapshot> {
     private static final Component ACTION_BAR_INFO = ResourceUtil.getText("toggle_actionbar.info");
@@ -193,8 +199,48 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     @Override
     public void onFilesDrop(List<Path> packs) {
-        // TODO
+        if (this.minecraft != null) {
+            String packNames = extractPackNames(packs).collect(Collectors.joining(", "));
+            this.minecraft.setScreen(new ConfirmScreen(
+                    this.confirmFileDrop(packs),
+                    Component.translatable("pack.dropConfirm"),
+                    Component.literal(packNames)
+            ));
+        }
     }
+
+    private BooleanConsumer confirmFileDrop(List<Path> packs) {
+        return confirmed -> {
+            if (this.minecraft == null) {
+                return;
+            }
+            if (!confirmed) {
+                this.minecraft.setScreen(this);
+                return;
+            }
+            PackValidation results = validatePaths(packs, createPackDetector());
+
+            if (!results.symlinkWarnings().isEmpty()) {
+                this.minecraft.setScreen(NoticeWithLinkScreen.createPackSymlinkWarningScreen(() -> this.minecraft.setScreen(this)));
+                return;
+            }
+            if (!results.valid().isEmpty()) {
+                PackSelectionScreen.copyPacks(this.minecraft, results.valid(), this.original.packDir());
+                this.revalidate();
+            }
+            if (!results.rejected().isEmpty()) {
+                String rejectedNames = extractPackNames(results.rejected()).collect(Collectors.joining(", "));
+                this.minecraft.setScreen(new AlertScreen(
+                        () -> this.minecraft.setScreen(this),
+                        Component.translatable("pack.dropRejected.title"),
+                        Component.translatable("pack.dropRejected.message", rejectedNames)
+                ));
+                return;
+            }
+            this.minecraft.setScreen(this);
+        };
+    }
+
 
     private void setOriginalScreen() {
         if (this.previous instanceof PackSelectionScreen) {
