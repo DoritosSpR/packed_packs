@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.gui.components;
+package io.github.fishstiz.packed_packs.gui.components.profile;
 
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;

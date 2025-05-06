@@ -61,8 +61,8 @@ public class Config implements Serializable {
 
     public static class Packs implements Serializable {
         private boolean replaceOriginal = false;
-        private Integer lastViewed = null;
-        private int autoIncrement = 0;
+        private Long lastViewed = null;
+        private long autoIncrement = 0;
         private final List<Profile> profiles = new ArrayList<>();
 
         public List<Profile> getProfiles() {
@@ -76,6 +76,10 @@ public class Config implements Serializable {
 
         public void removeProfile(Profile profile) {
             this.profiles.remove(profile);
+
+            if (this.profiles.isEmpty()) {
+                this.autoIncrement = 0;
+            }
         }
 
         public @Nullable Profile getLastViewed() {

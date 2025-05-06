@@ -5,9 +5,11 @@ import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
-import io.github.fishstiz.packed_packs.gui.components.Sidebar;
+import io.github.fishstiz.packed_packs.gui.components.profile.ProfileList;
+import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
@@ -18,11 +20,14 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class ProfilesLayout {
-    private static final Component TITLE_TEXT = ResourceUtil.getText("profile");
+    public static final Component TITLE_TEXT = ResourceUtil.getText("profile");
+    private static final Component EDIT_NAME_TEXT = ResourceUtil.getText("profile.edit");
     private static final Component NO_PROFILE_TEXT = ResourceUtil.getText("profile.none");
     private static final Component UNNAMED_TEXT = ResourceUtil.getText("profile.unnamed");
     private static final Component NEW_TEXT = ResourceUtil.getText("profile.new");
+    private static final Component NEW_INFO = ResourceUtil.getText("profile.new.info");
     private static final Component COPY_TEXT = ResourceUtil.getText("profile.copy");
+    private static final Component COPY_INFO = ResourceUtil.getText("profile.copy.info");
     private final Config.Packs config;
     private final Sidebar sidebar;
     private final Supplier<List<Pack>> selectedPacks;
@@ -36,7 +41,13 @@ public class ProfilesLayout {
     private final FidgetzButton<Void> toggleNameButton = FidgetzButton.<Void>builder()
             .setWidth(20)
             .setOnPress(nameField::toggle)
+            .setTooltip(Tooltip.create(EDIT_NAME_TEXT))
             .build();
+    private final FidgetzButton<Void> noProfileButton = FidgetzButton.<Void>builder()
+            .setMessage(NO_PROFILE_TEXT)
+            .setOnPress(() -> this.setProfile(null))
+            .build();
+    private final ProfileList profileList;
     private @Nullable Profile profile;
 
     public ProfilesLayout(Sidebar.Builder sidebar, Config.Packs config, Supplier<List<Pack>> selectedPacks, Consumer<Profile> listener) {
@@ -44,6 +55,9 @@ public class ProfilesLayout {
         this.sidebar = sidebar.setTitle(TITLE_TEXT.copy().withColor(Theme.GRAY_800.getARGB()), false).build();
         this.selectedPacks = selectedPacks;
         this.listener = listener;
+        this.profileList = new ProfileList(this.config, this::getProfile, this::removeProfile, this::setProfile);
+
+        this.noProfileButton.addListener(() -> this.sidebar.setOpen(false));
 
         this.setProfile(this.config.getLastViewed());
     }
@@ -54,13 +68,16 @@ public class ProfilesLayout {
         FlexLayout secondRow = FlexLayout.horizontal(this.sidebar.root()::getWidth);
         FlexLayout thirdRow = FlexLayout.horizontal(this.sidebar.root()::getWidth);
 
-        firstRow.addFlexChild(FidgetzButton.<Void>builder().setMessage(NEW_TEXT).setOnPress(this::createProfile).build());
-        firstRow.addFlexChild(FidgetzButton.<Void>builder().setMessage(COPY_TEXT).setOnPress(this::copyProfile).build());
-        secondRow.addFlexChild(FidgetzButton.builder().setMessage(NO_PROFILE_TEXT).setOnPress(() -> {
-            this.setProfile(null);
-            this.sidebar.setOpen(false);
-        }).build());
-        thirdRow.addFlexChild(FidgetzButton.builder().build(), true); // TODO profile list (with delete)
+        firstRow.addFlexChild(FidgetzButton.<Void>builder()
+                .setMessage(NEW_TEXT)
+                .setTooltip(Tooltip.create(NEW_INFO))
+                .setOnPress(this::createProfile).build());
+        firstRow.addFlexChild(FidgetzButton.<Void>builder()
+                .setMessage(COPY_TEXT)
+                .setTooltip(Tooltip.create(COPY_INFO))
+                .setOnPress(this::copyProfile).build());
+        secondRow.addFlexChild(this.noProfileButton);
+        thirdRow.addFlexChild(this.profileList, true);
 
         this.sidebar.root().layout().addChild(firstRow, layoutSettings);
         this.sidebar.root().layout().addChild(secondRow, layoutSettings);
@@ -91,6 +108,7 @@ public class ProfilesLayout {
 
             this.profile.setName(name);
         }
+        this.profileList.scheduleRefresh();
     }
 
     private void setProfile(@Nullable Profile profile) {
@@ -102,10 +120,11 @@ public class ProfilesLayout {
 
         this.nameField.setEditable(false);
 
-        boolean active = profile != null;
-        this.nameField.setHint(active ? UNNAMED_TEXT : NO_PROFILE_TEXT);
-        this.nameField.setValue(active ? profile.getName() : "");
-        this.toggleNameButton.active = active;
+        boolean hasProfile = profile != null;
+        this.nameField.setHint(hasProfile ? UNNAMED_TEXT : NO_PROFILE_TEXT);
+        this.nameField.setValue(hasProfile ? profile.getName() : "");
+        this.toggleNameButton.active = hasProfile;
+        this.noProfileButton.active = hasProfile;
 
         this.listener.accept(this.profile);
     }
@@ -119,6 +138,7 @@ public class ProfilesLayout {
         this.config.addProfile(newProfile);
         this.setProfile(newProfile);
         this.sidebar.setOpen(false);
+        this.profileList.refresh();
     }
 
     private void copyProfile() {
@@ -130,6 +150,7 @@ public class ProfilesLayout {
         this.config.addProfile(copiedProfile);
         this.setProfile(copiedProfile);
         this.sidebar.setOpen(false);
+        this.profileList.refresh();
     }
 
     private void removeProfile(Profile profile) {
@@ -137,12 +158,13 @@ public class ProfilesLayout {
             List<Profile> profiles = this.config.getProfiles();
             if (!profiles.isEmpty()) {
                 int index = profiles.indexOf(profile);
-                int previous = index > 0 ? index - 1 : -1;
-                this.setProfile(index != -1 ? profiles.get(previous) : null);
+                Profile previous = (index > 0) ? profiles.get(index - 1) : null;
+                this.setProfile(previous);
             } else {
                 this.setProfile(null);
             }
         }
         this.config.removeProfile(profile);
+        this.profileList.refresh();
     }
 }

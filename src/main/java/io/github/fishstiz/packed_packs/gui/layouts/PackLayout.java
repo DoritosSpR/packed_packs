@@ -6,10 +6,14 @@ import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.gui.components.PackListBase;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class PackLayout<T extends PackListBase<?>> {
+    private static final Component SEARCH_HINT = ResourceUtil.getText("search");
+    private static final Component TRANSFER_INFO = ResourceUtil.getText("transfer_all.info");
     protected final T list;
     private final GridWrapper<FlexLayout> header;
     private ToggleableEditBox<Void> searchField;
@@ -28,13 +32,14 @@ public abstract class PackLayout<T extends PackListBase<?>> {
         this.layout = layout;
 
         this.searchField = ToggleableEditBox.<Void>builder()
-                .setHint(ResourceUtil.getText("search"))
+                .setHint(SEARCH_HINT)
                 .setEditable(true)
                 .addListener(this.list::search)
                 .build();
         this.transferButton = FidgetzButton.<Void>builder()
                 .setWidth(20)
                 .setOnPress(this.list::transferAll)
+                .setTooltip(Tooltip.create(TRANSFER_INFO))
                 .build();
 
         this.initHeader(this.header.layout());

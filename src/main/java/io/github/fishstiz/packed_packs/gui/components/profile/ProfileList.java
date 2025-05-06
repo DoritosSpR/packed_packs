@@ -1,0 +1,135 @@
+package io.github.fishstiz.packed_packs.gui.components.profile;
+
+import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
+import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
+import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.config.Profile;
+import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.constants.Theme;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.narration.NarratableEntry;
+import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
+    private static final int ITEM_HEIGHT = 20;
+    private static final Component EMPTY_TEXT = ResourceUtil.getText("profile.empty");
+    private static final Component DELETE_TEXT = ResourceUtil.getText("profile.delete");
+    private static final Component DELETE_INFO = ResourceUtil.getText("profile.delete.info");
+    private static final int DELAYED_REFRESH_MS = 200;
+    private final PollingDebouncer<Void> debouncedRefresh = new PollingDebouncer<>(this::refresh, DELAYED_REFRESH_MS);
+    private final Config.Packs config;
+    private final Supplier<Profile> selected;
+    private final Consumer<Profile> onDelete;
+    private final Consumer<Profile> onSelect;
+    private List<Profile> profiles;
+
+    public ProfileList(Config.Packs config, Supplier<Profile> selected, Consumer<Profile> onDelete, Consumer<Profile> onSelect) {
+        super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, 0, 0);
+
+        this.config = config;
+        this.selected = selected;
+        this.onDelete = onDelete;
+        this.onSelect = onSelect;
+
+        this.refresh();
+    }
+
+    public void scheduleRefresh() {
+        this.debouncedRefresh.run();
+    }
+
+    public void refresh() {
+        this.clearEntries();
+
+        this.profiles = this.config.getProfiles();
+        for (int i = 0; i < this.profiles.size(); i++) {
+            this.addEntry(new Entry(this.profiles.get(i), i));
+        }
+    }
+
+    @Override
+    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.debouncedRefresh.poll();
+
+        super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+
+        if (this.profiles == null || this.profiles.isEmpty()) {
+            int padding = 8;
+
+            AbstractWidget.renderScrollingString(
+                    guiGraphics,
+                    this.minecraft.font,
+                    EMPTY_TEXT,
+                    this.getX() + padding,
+                    this.getY() + padding,
+                    this.getRight() - padding,
+                    this.getBottom() - padding,
+                    Theme.WHITE.getARGB());
+        }
+    }
+
+    public class Entry extends AbstractDynamicList<Entry>.Entry {
+        private final Profile profile;
+        private final List<Button> children = new ArrayList<>();
+        private final Button selectButton;
+        private final Button deleteButton;
+
+        protected Entry(Profile profile, int index) {
+            super(index);
+
+            this.profile = profile;
+            this.deleteButton = Button.builder(DELETE_TEXT, this::onPressDelete)
+                    .width(this.getHeight())
+                    .tooltip(Tooltip.create(DELETE_INFO))
+                    .build(); // TODO: convert to icons
+            this.selectButton = Button.builder(Component.literal(this.profile.getName()), this::onPressSelect).build();
+            this.children.add(this.deleteButton);
+            this.children.add(this.selectButton);
+        }
+
+        private void onPressDelete(Button button) {
+            ProfileList.this.onDelete.accept(this.profile);
+        }
+
+        private void onPressSelect(Button button) {
+            ProfileList.this.onSelect.accept(this.profile);
+        }
+
+        @Override
+        public void render(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
+            this.selectButton.active = ProfileList.this.selected.get() != this.profile;
+
+            this.deleteButton.setPosition(left, top);
+            this.selectButton.setPosition(left + this.deleteButton.getWidth(), top);
+            this.selectButton.setWidth(width - this.deleteButton.getWidth());
+
+            this.deleteButton.render(guiGraphics, mouseX, mouseY, partialTick);
+            this.selectButton.render(guiGraphics, mouseX, mouseY, partialTick);
+        }
+
+        @Override
+        public @NotNull List<? extends GuiEventListener> children() {
+            return this.children;
+        }
+
+        @Override
+        public @NotNull List<? extends NarratableEntry> narratables() {
+            return this.children;
+        }
+
+        @Override
+        public void visitWidgets(Consumer<AbstractWidget> consumer) {
+            this.children.forEach(consumer);
+        }
+    }
+}

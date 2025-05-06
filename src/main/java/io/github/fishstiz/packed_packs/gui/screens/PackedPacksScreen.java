@@ -7,6 +7,7 @@ import io.github.fishstiz.fidgetz.util.debounce.ImmediateDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
 import io.github.fishstiz.packed_packs.util.pack.PackRepositoryHelper;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.*;
@@ -32,6 +33,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
 import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
@@ -39,9 +41,11 @@ import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 
 public class PackedPacksScreen extends PackListEventHandler implements ToggleableDialogContainer, Restorable<PackedPacksScreen.Snapshot> {
+    private static final Component ACTION_BAR_INFO = ResourceUtil.getText("toggle_actionbar.info");
+    private static final Component ORIGINAL_SCREEN_INFO = ResourceUtil.getText("original_screen.info");
+    private static final Component OPTIONS_TEXT = Component.translatable("options.title");
     private static final Component OPEN_FOLDER_TEXT = Component.translatable("pack.openFolder");
     private static final Component OPEN_FOLDER_INFO_TEXT = Component.translatable("pack.folderInfo");
-    private static final Component OPTIONS_TEXT = Component.translatable("options.title");
     private static final Component APPLY_TEXT = ResourceUtil.getText("apply");
     private static final int BUTTON_SIZE = 20;
     private static final int SPACING = 8;
@@ -98,12 +102,24 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     private FlexLayout createHeader() {
         FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this.profiles.getSidebar()::toggle).build());
-        header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this::toggleActionBar).build());
+        header.addChild(FidgetzButton.builder() // TODO: ICONS
+                .setWidth(BUTTON_SIZE)
+                .setTooltip(Tooltip.create(ProfilesLayout.TITLE_TEXT))
+                .setOnPress(this.profiles.getSidebar()::toggle).build());
+        header.addChild(FidgetzButton.builder()
+                .setWidth(BUTTON_SIZE)
+                .setTooltip(Tooltip.create(ACTION_BAR_INFO))
+                .setOnPress(this::toggleActionBar).build());
         header.addChild(this.profiles.getToggleNameButton());
         header.addFlexChild(this.profiles.getNameField());
-        header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setMessage(OPTIONS_TEXT).build());
-        header.addChild(FidgetzButton.builder().setWidth(BUTTON_SIZE).setOnPress(this::setOriginalScreen).build());
+        header.addChild(FidgetzButton.builder()
+                .setWidth(BUTTON_SIZE)
+                .setMessage(OPTIONS_TEXT)
+                .setTooltip(Tooltip.create(OPTIONS_TEXT)).build()); // TODO: options
+        header.addChild(FidgetzButton.builder()
+                .setWidth(BUTTON_SIZE)
+                .setTooltip(Tooltip.create(ORIGINAL_SCREEN_INFO))
+                .setOnPress(this::setOriginalScreen).build());
         return header;
     }
 
@@ -153,6 +169,11 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             }
         }
         this.revalidateTask.poll();
+    }
+
+    @Override
+    public void onFilesDrop(List<Path> packs) {
+        // TODO
     }
 
     private void setOriginalScreen() {

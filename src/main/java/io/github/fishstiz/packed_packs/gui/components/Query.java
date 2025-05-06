@@ -92,10 +92,10 @@ public class Query {
     }
 
     public enum SortOption implements CyclicButton.Option {
-        A_Z("A-Z", comparing(pack -> pack.getTitle().getString())),
-        Z_A("Z-A", A_Z.getComparator().reversed()),
-        OLDEST(getText("sort.last_updated.reverse"), comparingLong(PackUtil::getLastUpdatedEpochMs)),
-        RECENT(getText("sort.last_updated"), OLDEST.getComparator().reversed());
+        A_Z(getText("sort.a_z"), comparing(pack -> pack.getTitle().getString())),
+        Z_A(getText("sort.z_a"), A_Z.getComparator().reversed()),
+        OLDEST(getText("sort.oldest"), comparingLong(PackUtil::getLastUpdatedEpochMs)),
+        RECENT(getText("sort.recent"), OLDEST.getComparator().reversed());
 
         private final Component component;
         private final Comparator<Pack> comparator;
@@ -103,10 +103,6 @@ public class Query {
         SortOption(Component component, Comparator<Pack> comparator) {
             this.component = component;
             this.comparator = comparator;
-        }
-
-        SortOption(String key, Comparator<Pack> comparator) {
-            this(Component.literal(key), comparator);
         }
 
         @Override

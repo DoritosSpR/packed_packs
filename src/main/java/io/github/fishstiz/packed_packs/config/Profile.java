@@ -9,8 +9,8 @@ import java.util.List;
 
 public class Profile implements Serializable {
     public static final int NAME_MAX_LENGTH = 32;
-    private int id;
-    private String name = "";
+    private long id;
+    private String name;
     private List<String> packIds = new ArrayList<>();
 
     public Profile(String name) {
@@ -22,11 +22,11 @@ public class Profile implements Serializable {
         this.packIds = List.copyOf(packIds);
     }
 
-    void setId(int id) {
+    void setId(long id) {
         this.id = id;
     }
 
-    public int getId() {
+    public long getId() {
         return this.id;
     }
 
