@@ -45,7 +45,7 @@ public interface PackIconCache {
 
                 try {
                     NativeImage nativeImage = NativeImage.read(inputStream);
-                    manager.register(resourceLocation, new DynamicTexture(nativeImage));
+                    manager.register(resourceLocation, new DynamicTexture(resourceLocation::toString, nativeImage));
                     packIcon = resourceLocation;
                 } catch (Throwable e) {
                     if (inputStream != null) {
