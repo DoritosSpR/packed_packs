@@ -3,13 +3,13 @@
   "id": "packed_packs",
   "version": "${version}",
   "name": "Packed Packs",
-  "description": "Organize and pack resource packs.",
+  "description": "Pack packs into profiles with multiple selection, drag and drop, and extended mouse and keyboard controls.",
   "authors": [
     "fishstiz"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "sources": "https://github.com/fishstiz/packed_packs",
+    "issues": "https://github.com/fishstiz/packed_packs/issues"
   },
   "license": "MIT",
   "icon": "assets/packed_packs/icon.png",
@@ -35,10 +35,8 @@
   "accessWidener": "packed_packs.accesswidener",
   "depends": {
     "fabricloader": ">=0.16.10",
-    "minecraft": "~1.21.1",
-    "java": ">=21"
-  },
-  "suggests": {
-    "minecraft-cursor": ">=3.6.0"
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
   }
 }

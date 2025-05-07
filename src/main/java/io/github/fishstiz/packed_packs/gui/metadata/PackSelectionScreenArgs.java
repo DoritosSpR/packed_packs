@@ -15,7 +15,7 @@ public record PackSelectionScreenArgs(
         Component title
 ) {
     public boolean isResourcePackDir() {
-        return this.packDir == Minecraft.getInstance().getResourcePackDirectory();
+        return this.repository == Minecraft.getInstance().getResourcePackRepository();
     }
 
     public PackSelectionScreen createScreen() {

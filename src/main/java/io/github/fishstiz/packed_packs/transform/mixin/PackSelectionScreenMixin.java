@@ -3,6 +3,8 @@ package io.github.fishstiz.packed_packs.transform.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
@@ -62,6 +64,7 @@ public abstract class PackSelectionScreenMixin extends Screen implements IPackSe
         this.packedPacks$button = FidgetzButton.<GridWrapper<LinearLayout>>builder()
                 .makeSquare()
                 .setTooltip(Tooltip.create(ResourceUtil.getModName()))
+                .setSpriteOnly(new Sprite(ResourceUtil.getIcon("packed_packs"), Size.of16()))
                 .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(previous, this.packedPacks$original)))
                 .setMetadata(new GridWrapper<>(original.call(instance, spacing), spacing))
                 .build();

@@ -1,22 +1,22 @@
 # Packed Packs
-Minecraft Fabric mod to easily organize and pack resource packs into profiles.
+Pack packs into profiles with multiple selection, drag and drop, and extended mouse and keyboard controls.
 
 ## Features
 
-- [x] Literal search title
-- [x] Filter out incompatible
-- [x] Sort alphabetically or by last updated
-- [x] Multiple selection
-- [x] Drag and drop selection
-- [x] Keyboard navigation
-- [x] History (undo and redo)
-- [ ] Saved profiles
-- [ ] Simple config
+- Save and load custom profiles.
+- Search by title.
+- Filter out incompatible packs.
+- Sort alphabetically or by last updated.
+- Multiple selection.
+- Drag and drop selection.
+- Additional mouse and keyboard controls.
+- History (undo an redo).
+- Simple configuration.
 
 ### Mouse Controls
 - Hold `Shift` while clicking to select range.
 - Hold `Ctrl` while clicking to add/remove from selection.
-- Double click an entry to quickly transfer it.
+- Double click to quickly transfer a single entry.
 - Click backwards side button to undo.
 - Click forwards side button to redo.
 
@@ -25,7 +25,12 @@ Minecraft Fabric mod to easily organize and pack resource packs into profiles.
 - Navigate out of entries with `Tab`.
 - Press `Space` or `Enter` to transfer selection.
 - Hold `Shift` with up and down arrow keys to select range.
-- Hold `Ctrl` or `Alt` with up and down arrow keys to move selection .
+- Hold `Ctrl` or `Alt` with up and down arrow keys to move selection.
 - Press `Ctrl + Z` to undo.
 - Press `Ctrl + Shift + Z` or `Ctrl + Y` to redo.
 - Type any character to automatically focus search bar.
+
+### Configuration
+- Apply resource packs automatically on close.
+- Replace the default resource pack screen.
+- Replace the default data pack screen.
