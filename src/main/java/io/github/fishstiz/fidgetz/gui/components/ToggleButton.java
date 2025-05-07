@@ -1,5 +1,8 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
@@ -10,12 +13,14 @@ import java.util.function.Consumer;
 public class ToggleButton<E> extends FidgetzButton<E> {
     private final List<Consumer<Boolean>> listeners;
     private final boolean prefixMessage;
+    private final Sprites toggleSprites;
     private Component prefix;
     private boolean value;
 
     protected ToggleButton(ToggleBuilder<E> builder) {
         super(builder);
 
+        this.toggleSprites = builder.toggleSprites;
         this.listeners = builder.listeners;
         this.prefixMessage = builder.prefixMessage;
         this.value = builder.value;
@@ -79,6 +84,21 @@ public class ToggleButton<E> extends FidgetzButton<E> {
         }
     }
 
+    @Override
+    protected boolean hasSprite() {
+        return super.hasSprite() || this.toggleSprites != null;
+    }
+
+    @Override
+    protected void renderSprite(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
+        if (this.toggleSprites == null) {
+            super.renderSprite(guiGraphics, x, y, width, height, partialTick);
+            return;
+        }
+
+        this.toggleSprites.get(this.value, this.active).renderClamped(guiGraphics, x, y, width, height, partialTick);
+    }
+
     public static <E> ToggleBuilder<E> builder() {
         return new ToggleBuilder<>();
     }
@@ -87,6 +107,7 @@ public class ToggleButton<E> extends FidgetzButton<E> {
         private final List<Consumer<Boolean>> listeners = new ArrayList<>();
         private boolean value = false;
         private boolean prefixMessage = true;
+        private Sprites toggleSprites;
 
         protected ToggleBuilder() {
         }
@@ -106,9 +127,28 @@ public class ToggleButton<E> extends FidgetzButton<E> {
             return this;
         }
 
+        public ToggleBuilder<E> setSpriteOnly(Sprites toggleSprites) {
+            this.toggleSprites = toggleSprites;
+            return this;
+        }
+
         @Override
         public ToggleButton<E> build() {
             return new ToggleButton<>(this);
+        }
+    }
+
+    public record Sprites(ButtonSprites toggled, ButtonSprites untoggled) {
+        public static Sprites of(Sprite toggled, Sprite untoggled) {
+            return new Sprites(ButtonSprites.of(toggled), ButtonSprites.of(untoggled));
+        }
+
+        public Sprite get(boolean toggled, boolean active) {
+            return this.get(toggled).get(active);
+        }
+
+        public ButtonSprites get(boolean toggled) {
+            return toggled ? this.toggled : this.untoggled;
         }
     }
 }

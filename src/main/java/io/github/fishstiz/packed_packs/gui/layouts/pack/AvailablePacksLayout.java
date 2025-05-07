@@ -3,6 +3,8 @@ package io.github.fishstiz.packed_packs.gui.layouts.pack;
 import io.github.fishstiz.fidgetz.gui.components.CyclicButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleButton;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
@@ -16,10 +18,6 @@ import org.jetbrains.annotations.NotNull;
 
 public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
     private static final Component SORT_TEXT = ResourceUtil.getText("sort");
-    private static final Tooltip SORT_INFO_A_Z = Tooltip.create(ResourceUtil.getText("sort.a_z"));
-    private static final Tooltip SORT_INFO_Z_A = Tooltip.create(ResourceUtil.getText("sort.z_a"));
-    private static final Tooltip SORT_INFO_RECENT = Tooltip.create(ResourceUtil.getText("sort.recent"));
-    private static final Tooltip SORT_INFO_OLDEST = Tooltip.create(ResourceUtil.getText("sort.oldest"));
     private static final Component COMPAT_TEXT = ResourceUtil.getText("hide_incompatible");
     private static final Component COMPAT_INFO = ResourceUtil.getText("hide_incompatible.info");
     private final PackListEventListener eventListener;
@@ -48,21 +46,22 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
     protected void initHeader(@NotNull FlexLayout header) {
         this.sortButton = CyclicButton.<Query.SortOption, Void>builder(Query.SortOption.values())
                 .setPrefix(SORT_TEXT)
-                .setWidth(60)
-                .setDimensions(20, 20)
-                .addListener(this.list::sort)
+                .makeSquare()
                 .addListener(value -> this.sendQueryEvent())
-                .addListener(this::onCycleSort)
+                .addListener(this.list::sort)
+                .addListener(PackedPacks.CONFIG::setSort)
                 .setValue(PackedPacks.CONFIG.getSort())
-                .setTooltip(this.getSortTooltip(PackedPacks.CONFIG.getSort()))
                 .build();
-        this.compatButton = ToggleButton.<Void>builder() // TODO: convert to icons
+        this.compatButton = ToggleButton.<Void>builder()
                 .setMessage(COMPAT_TEXT)
                 .setTooltip(Tooltip.create(COMPAT_INFO))
-                .setWidth(60)
-                .setDimensions(20, 20)
-                .addListener(this.list::hideIncompatible)
+                .setSpriteOnly(ToggleButton.Sprites.of(
+                        new Sprite(ResourceUtil.getIcon("incompatible_hidden"), Size.of16()),
+                        new Sprite(ResourceUtil.getIcon("incompatible"), Size.of16())
+                ))
+                .makeSquare()
                 .addListener(value -> this.sendQueryEvent())
+                .addListener(this.list::hideIncompatible)
                 .addListener(PackedPacks.CONFIG::setHideIncompatible)
                 .setValue(PackedPacks.CONFIG.isHideIncompatible())
                 .build();
@@ -75,19 +74,5 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
         header.addChild(sortButton);
         header.addChild(compatButton);
         header.addChild(this.getTransferButton());
-    }
-
-    private void onCycleSort(Query.SortOption sort) {
-        this.sortButton.setTooltip(this.getSortTooltip(sort));
-        PackedPacks.CONFIG.setSort(sort);
-    }
-
-    private Tooltip getSortTooltip(Query.SortOption sort) {
-        return switch (sort) {
-            case A_Z -> SORT_INFO_A_Z;
-            case Z_A -> SORT_INFO_Z_A;
-            case OLDEST -> SORT_INFO_OLDEST;
-            case RECENT -> SORT_INFO_RECENT;
-        };
     }
 }

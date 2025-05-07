@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import static io.github.fishstiz.fidgetz.util.GuiUtil.isDescendant;
+
 public interface ToggleableDialogContainer {
     List<ToggleableDialog<?>> getDialogs();
 
@@ -27,11 +29,10 @@ public interface ToggleableDialogContainer {
         boolean isEnclosed = false;
 
         for (ToggleableDialog<?> dialog : this.getOpenDialogsFromTop()) {
-            List<? extends GuiEventListener> children = dialog.children();
-            if (dialog != child && (dialog.isCaptureClick() || dialog.isCaptureFocus()) && !children.contains(child)) {
+            if (dialog != child && (dialog.isCaptureClick() || dialog.isCaptureFocus()) && !isDescendant(dialog, child)) {
                 return true;
             }
-            if (!isEnclosed && children.contains(child)) {
+            if (!isEnclosed && isDescendant(dialog, child)) {
                 isDialogChild = true;
                 break;
             }
@@ -48,11 +49,10 @@ public interface ToggleableDialogContainer {
         boolean isIntersected = false;
 
         for (ToggleableDialog<?> dialog : this.getOpenDialogsFromTop()) {
-            List<? extends GuiEventListener> children = dialog.children();
-            if (dialog != child && (dialog.isCaptureClick() || dialog.isCaptureFocus()) && !children.contains(child)) {
+            if (dialog != child && (dialog.isCaptureClick() || dialog.isCaptureFocus()) && !isDescendant(dialog, child)) {
                 return true;
             }
-            if (!isIntersected && children.contains(child)) {
+            if (!isIntersected && isDescendant(dialog, child)) {
                 isDialogChild = true;
                 break;
             }

@@ -1,6 +1,9 @@
 package io.github.fishstiz.packed_packs.gui.components.profile;
 
 import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
+import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
@@ -8,7 +11,6 @@ import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
@@ -24,9 +26,9 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
     private static final int ITEM_HEIGHT = 20;
     private static final Component EMPTY_TEXT = ResourceUtil.getText("profile.empty");
     private static final Component DELETE_TEXT = ResourceUtil.getText("profile.delete");
-    private static final Component DELETE_INFO = ResourceUtil.getText("profile.delete.info");
-    private static final int DELAYED_REFRESH_MS = 200;
-    private final PollingDebouncer<Void> debouncedRefresh = new PollingDebouncer<>(this::refresh, DELAYED_REFRESH_MS);
+    private static final Tooltip DELETE_INFO = Tooltip.create(ResourceUtil.getText("profile.delete.info"));
+    private static final Sprite TRASH_SPRITE = new Sprite(ResourceUtil.getIcon("trash"), Size.of16());
+    private final PollingDebouncer<Void> debouncedRefresh = new PollingDebouncer<>(this::refresh, 200);
     private final Config.Packs config;
     private final Supplier<Profile> selected;
     private final Consumer<Profile> onDelete;
@@ -66,7 +68,7 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
         if (this.profiles == null || this.profiles.isEmpty()) {
             int padding = 8;
 
-            AbstractWidget.renderScrollingString(
+            renderScrollingString(
                     guiGraphics,
                     this.minecraft.font,
                     EMPTY_TEXT,
@@ -74,35 +76,35 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
                     this.getY() + padding,
                     this.getRight() - padding,
                     this.getBottom() - padding,
-                    Theme.WHITE.getARGB());
+                    Theme.WHITE.getARGB()
+            );
         }
     }
 
     public class Entry extends AbstractDynamicList<Entry>.Entry {
         private final Profile profile;
-        private final List<Button> children = new ArrayList<>();
-        private final Button selectButton;
-        private final Button deleteButton;
+        private final List<FidgetzButton<Void>> children = new ArrayList<>();
+        private final FidgetzButton<Void> selectButton;
+        private final FidgetzButton<Void> deleteButton;
 
         protected Entry(Profile profile, int index) {
             super(index);
 
             this.profile = profile;
-            this.deleteButton = Button.builder(DELETE_TEXT, this::onPressDelete)
-                    .width(this.getHeight())
-                    .tooltip(Tooltip.create(DELETE_INFO))
-                    .build(); // TODO: convert to icons
-            this.selectButton = Button.builder(Component.literal(this.profile.getName()), this::onPressSelect).build();
+            this.deleteButton = FidgetzButton.<Void>builder()
+                    .makeSquare(this.getHeight())
+                    .setMessage(DELETE_TEXT)
+                    .setTooltip(DELETE_INFO)
+                    .setSpriteOnly(TRASH_SPRITE)
+                    .setOnPress(() -> ProfileList.this.onDelete.accept(this.profile))
+                    .build();
+            this.selectButton = FidgetzButton.<Void>builder()
+                    .setMessage(Component.literal(this.profile.getName()))
+                    .setOnPress(() -> ProfileList.this.onSelect.accept(this.profile))
+                    .build();
+
             this.children.add(this.deleteButton);
             this.children.add(this.selectButton);
-        }
-
-        private void onPressDelete(Button button) {
-            ProfileList.this.onDelete.accept(this.profile);
-        }
-
-        private void onPressSelect(Button button) {
-            ProfileList.this.onSelect.accept(this.profile);
         }
 
         @Override

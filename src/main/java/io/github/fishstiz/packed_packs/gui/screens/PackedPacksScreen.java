@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.util.debounce.ImmediateDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
@@ -62,7 +64,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private static final Component OPEN_FOLDER_TEXT = Component.translatable("pack.openFolder");
     private static final Component OPEN_FOLDER_INFO_TEXT = Component.translatable("pack.folderInfo");
     private static final Component APPLY_TEXT = ResourceUtil.getText("apply");
-    private static final int BUTTON_SIZE = 20;
     private static final int SPACING = 8;
     private static final float SIDEBAR_Z = 100;
     private static final float DROP_ZONE_Z = 200;
@@ -71,9 +72,9 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private final PackSelectionScreenArgs original;
     private final PackRepositoryHelper repository;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
+    private final HistoryManager<Snapshot> history = new HistoryManager<>();
     private final AvailablePacksLayout availablePacks;
     private final CurrentPacksLayout currentPacks;
-    private final HistoryManager<Snapshot> history;
     private final Config.Packs packsConfig;
     private final ProfilesLayout profiles;
     private final ImmediateDebouncer<String> searchListener = new ImmediateDebouncer<>(this::clearHistory, 250);
@@ -94,7 +95,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.repository = new PackRepositoryHelper(this.original.repository(), this.original.packDir());
         this.availablePacks = new AvailablePacksLayout(this.repository, this, SPACING);
         this.currentPacks = new CurrentPacksLayout(this.repository, this, SPACING);
-        this.history = new HistoryManager<>(this.captureState());
         this.packsConfig = this.original.isResourcePackDir() ? PackedPacks.CONFIG.getResourcepacks() : PackedPacks.CONFIG.getDatapacks();
         this.profiles = new ProfilesLayout(Sidebar.builder(this)
                 .setZ(SIDEBAR_Z)
@@ -109,42 +109,50 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     @Override
     protected void init() {
-        this.profiles.initContents(SPACING);
-        this.profiles.getSidebar().getCloseButton().addListener(this::setInitialFocus);
-
         this.layout.addToHeader(this.createHeader());
         this.layout.addToContents(this.createContents());
         this.layout.addToFooter(this.createFooter());
 
+        this.profiles.initContents(SPACING);
+        this.profiles.getSidebar().getCloseButton().addListener(this::setInitialFocus);
+
         this.options.root().visitWidgets(this.options::addRenderableWidget);
+
         this.addWidget(this.options);
         this.addWidget(this.profiles.getSidebar());
         this.layout.visitWidgets(this::addRenderableWidget);
         this.addRenderableOnly(this.profiles.getSidebar());
         this.addRenderableOnly(this.options);
+
+        this.clearHistory();
         this.repositionElements();
     }
 
     private FlexLayout createHeader() {
         FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        header.addChild(FidgetzButton.builder() // TODO: ICONS
-                .setWidth(BUTTON_SIZE)
+        header.addChild(FidgetzButton.builder()
+                .makeSquare()
+                .setMessage(ProfilesLayout.TITLE_TEXT)
                 .setTooltip(Tooltip.create(ProfilesLayout.TITLE_TEXT))
+                .setSpriteOnly(new Sprite(ResourceUtil.getIcon("hamburger"), Size.of16()))
                 .setOnPress(this.profiles.getSidebar()::toggle).build());
         header.addChild(FidgetzButton.builder()
-                .setWidth(BUTTON_SIZE)
+                .makeSquare()
                 .setTooltip(Tooltip.create(ACTION_BAR_INFO))
+                .setSpriteOnly(new Sprite(ResourceUtil.getIcon("filter"), Size.of16()))
                 .setOnPress(this::toggleActionBar).build());
         header.addChild(this.profiles.getToggleNameButton());
         header.addFlexChild(this.profiles.getNameField());
         header.addChild(FidgetzButton.builder()
-                .setWidth(BUTTON_SIZE)
+                .makeSquare()
                 .setMessage(OPTIONS_TEXT)
                 .setTooltip(Tooltip.create(OPTIONS_TEXT))
+                .setSpriteOnly(new Sprite(ResourceUtil.getIcon("gear"), Size.of16()))
                 .setOnPress(this.options::toggle).build());
         header.addChild(FidgetzButton.builder()
-                .setWidth(BUTTON_SIZE)
+                .makeSquare()
                 .setTooltip(Tooltip.create(ORIGINAL_SCREEN_INFO))
+                .setSpriteOnly(new Sprite(ResourceUtil.getIcon("exit"), Size.of16()))
                 .setOnPress(this::setOriginalScreen).build());
         return header;
     }
@@ -240,7 +248,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             this.minecraft.setScreen(this);
         };
     }
-
 
     private void setOriginalScreen() {
         if (this.previous instanceof PackSelectionScreen) {
@@ -362,8 +369,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         } else {
             this.reset();
         }
-        this.clearSearchField(this.availablePacks);
-        this.clearSearchField(this.currentPacks);
+        this.availablePacks.getSearchField().setValue("");
+        this.currentPacks.getSearchField().setValue("");
     }
 
     private void applyProfile(@NotNull Profile profile) {
@@ -418,12 +425,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     @Override
     public float getDroppableZ() {
         return DROP_ZONE_Z;
-    }
-
-    public void clearSearchField(PackLayout<?> packLayout) {
-        if (packLayout.getSearchField() != null) {
-            packLayout.getSearchField().setValue("");
-        }
     }
 
     public @Nullable PackLayout<?> getLayoutFromSelectedList() {

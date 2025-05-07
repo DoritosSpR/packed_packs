@@ -5,10 +5,12 @@ import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.shapes.Line;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
@@ -20,7 +22,7 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
             Line.zero(247),
             Line.zero(165)
     );
-    private static final int HEADER_SIZE = 20;
+    private static final Sprite CLOSE_SPRITE = new Sprite(ResourceUtil.getIcon("cross"), Size.of16());
     private static final int MIN_WIDTH = 100;
     private final FidgetzButton<Void> closeButton;
 
@@ -33,17 +35,22 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
         int maxWidth = Math.max(builder.minWidth, builder.maxWidth);
         FlexLayout header = this.root().layout().addChild(FlexLayout.horizontal(() -> maxWidth));
 
-        this.closeButton = header.addChild(FidgetzButton.<Void>builder()
-                .setOnPress(() -> this.setOpen(false))
-                .setDimensions(HEADER_SIZE, HEADER_SIZE)
-                .build(), builder.headerSettings);
+        this.closeButton = header.addChild(
+                FidgetzButton.<Void>builder()
+                        .makeSquare()
+                        .setMessage(CommonComponents.GUI_DONE)
+                        .setSpriteOnly(CLOSE_SPRITE)
+                        .setOnPress(() -> this.setOpen(false))
+                        .build(),
+                builder.headerSettings
+        );
 
         Font font = Minecraft.getInstance().font;
         int titleFontWidth = font.width(builder.title);
         int titleWidth = MIN_WIDTH > titleFontWidth ? MIN_WIDTH : titleFontWidth + SPACING;
         header.addFlexChild(
                 FidgetzText.builder(font)
-                        .setDimensions(titleWidth, HEADER_SIZE)
+                        .setDimensions(titleWidth, this.closeButton.getHeight())
                         .setMessage(builder.title)
                         .setShadow(builder.shadow)
                         .setOffsetY(1)

@@ -1,6 +1,7 @@
 package io.github.fishstiz.fidgetz.util;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
@@ -13,6 +14,18 @@ public class GuiUtil {
     public static final List<GuiEventListener> EMPTY_CHILDREN = List.of();
 
     private GuiUtil() {
+    }
+
+    public static boolean isDescendant(ContainerEventHandler container, GuiEventListener listener) {
+        for (GuiEventListener child : container.children()) {
+            if (child == listener) {
+                return true;
+            }
+            if (child instanceof ContainerEventHandler parent && isDescendant(parent, listener)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void playClickSound() {

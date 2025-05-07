@@ -11,10 +11,6 @@ public class HistoryManager<T extends Snapshot<T>> {
     private final Deque<Snapshot<T>> history = new ArrayDeque<>();
     private final Deque<Snapshot<T>> undone = new ArrayDeque<>();
 
-    public HistoryManager(Snapshot<T> initialState) {
-        this.push(initialState);
-    }
-
     public void push(Snapshot<T> snapshot) {
         if (snapshot == null) {
             return;

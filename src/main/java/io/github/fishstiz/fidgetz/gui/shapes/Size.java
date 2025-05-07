@@ -5,6 +5,10 @@ public record Size(int width, int height) {
         return new Size(size, size);
     }
 
+    public static Size of16() {
+        return square(16);
+    }
+
     public static Size of32() {
         return square(32);
     }

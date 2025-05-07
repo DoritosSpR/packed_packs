@@ -52,4 +52,14 @@ public class Sprite implements RenderableRect {
     public void render(GuiGraphics guiGraphics, int x, int y) {
         this.render(guiGraphics, x, y, this.width, this.height, 0);
     }
+
+    public void renderClamped(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
+        int drawWidth = Math.min(width, this.width);
+        int drawHeight = Math.min(height, this.height);
+
+        int offsetX = (width - drawWidth) / 2;
+        int offsetY = (height - drawHeight) / 2;
+
+        this.render(guiGraphics, x + offsetX, y + offsetY, drawWidth, drawHeight, partialTick);
+    }
 }

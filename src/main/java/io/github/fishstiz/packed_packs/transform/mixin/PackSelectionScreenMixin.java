@@ -7,6 +7,8 @@ import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionScreen;
+import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
@@ -58,7 +60,8 @@ public abstract class PackSelectionScreenMixin extends Screen implements IPackSe
 
         Screen previous = this.packedPacks$previous != null ? this.packedPacks$previous : this;
         this.packedPacks$button = FidgetzButton.<GridWrapper<LinearLayout>>builder()
-                .setDimensions(20, 20)
+                .makeSquare()
+                .setTooltip(Tooltip.create(ResourceUtil.getModName()))
                 .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(previous, this.packedPacks$original)))
                 .setMetadata(new GridWrapper<>(original.call(instance, spacing), spacing))
                 .build();

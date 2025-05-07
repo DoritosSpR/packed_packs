@@ -1,5 +1,8 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -61,6 +64,7 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
                 ? this.prefix.copy().append(": ").append(this.getValue().text())
                 : this.getValue().text()
         );
+        this.setTooltip(this.getValue().tooltip());
     }
 
     private void informListeners() {
@@ -72,6 +76,24 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
 
     public void addListener(Consumer<T> listener) {
         this.listeners.add(listener);
+    }
+
+    @Override
+    protected boolean hasSprite() {
+        return super.hasSprite() || this.getValue() instanceof SpriteOption;
+    }
+
+    @Override
+    protected void renderSprite(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
+        if (!(this.getValue() instanceof SpriteOption spriteOption)) {
+            super.renderSprite(guiGraphics, x, y, width, height, partialTick);
+            return;
+        }
+
+        ButtonSprites sprites = spriteOption.sprites();
+        if (sprites != null) {
+            sprites.get(this.active).renderClamped(guiGraphics, x, y, width, height, partialTick);
+        }
     }
 
     public static <E> Builder<Option, E> builder(Component... components) {
@@ -119,12 +141,19 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
         }
     }
 
-    @FunctionalInterface
     public interface Option {
         @NotNull Component text();
+
+        default @Nullable Tooltip tooltip() {
+            return null;
+        }
 
         static Option create(Component component) {
             return () -> component;
         }
+    }
+
+    public interface SpriteOption extends Option {
+        @Nullable ButtonSprites sprites();
     }
 }

@@ -21,6 +21,10 @@ public class ResourceUtil {
         return ResourceLocation.fromNamespaceAndPath(PackedPacks.MOD_ID, path);
     }
 
+    public static ResourceLocation getIcon(String icon) {
+        return getResource("textures/gui/sprites/icon/").withSuffix(icon + ".png");
+    }
+
     public static ResourceLocation getVanillaSprite(String path) {
         return ResourceLocation.withDefaultNamespace("textures/gui/sprites/" + path + ".png");
     }

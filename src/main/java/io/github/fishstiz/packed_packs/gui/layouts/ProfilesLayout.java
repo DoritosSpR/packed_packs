@@ -3,6 +3,9 @@ package io.github.fishstiz.packed_packs.gui.layouts;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.profile.ProfileList;
@@ -40,9 +43,13 @@ public class ProfilesLayout {
             .addListener(this::onNameChange)
             .build();
     private final FidgetzButton<Void> toggleNameButton = FidgetzButton.<Void>builder()
-            .setWidth(20)
-            .setOnPress(nameField::toggle)
+            .makeSquare()
             .setTooltip(Tooltip.create(EDIT_NAME_TEXT))
+            .setSpriteOnly(new ButtonSprites(
+                    new Sprite(ResourceUtil.getIcon("edit"), Size.of16()),
+                    new Sprite(ResourceUtil.getIcon("edit_inactive"), Size.of16()))
+            )
+            .setOnPress(nameField::toggle)
             .build();
     private final FidgetzButton<Void> noProfileButton = FidgetzButton.<Void>builder()
             .setMessage(NO_PROFILE_TEXT)
@@ -59,8 +66,6 @@ public class ProfilesLayout {
         this.profileList = new ProfileList(this.config, this::getProfile, this::removeProfile, this::setProfile);
 
         this.noProfileButton.addListener(() -> this.sidebar.setOpen(false));
-
-        this.setProfile(this.config.getLastViewed());
     }
 
     public void initContents(int spacing) {
@@ -85,6 +90,8 @@ public class ProfilesLayout {
         this.sidebar.root().layout().addFlexChild(thirdRow, true, layoutSettings.copy().paddingBottom(spacing + 1));
         this.sidebar.root().layout().arrangeElements();
         this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
+
+        this.setProfile(this.config.getLastViewed());
     }
 
     public int getMaxWidth() {

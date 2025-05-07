@@ -37,7 +37,7 @@ public abstract class PackLayout<T extends PackListBase<?>> {
                 .addListener(this.list::search)
                 .build();
         this.transferButton = FidgetzButton.<Void>builder()
-                .setWidth(20)
+                .makeSquare()
                 .setOnPress(this.list::transferAll)
                 .setTooltip(Tooltip.create(TRANSFER_INFO))
                 .build();
