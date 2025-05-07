@@ -3,7 +3,7 @@
   "id": "packed_packs",
   "version": "${version}",
   "name": "Packed Packs",
-  "description": "Organize and pack resource packs.",
+  "description": "Pack packs into profiles with multiple selection, drag and drop, and extended mouse and keyboard controls.",
   "authors": [
     "fishstiz"
   ],
@@ -36,9 +36,7 @@
   "depends": {
     "fabricloader": ">=0.16.10",
     "minecraft": "~1.21.1",
-    "java": ">=21"
-  },
-  "suggests": {
-    "minecraft-cursor": ">=3.6.0"
+    "java": ">=21",
+    "fabric-api": "*"
   }
 }
