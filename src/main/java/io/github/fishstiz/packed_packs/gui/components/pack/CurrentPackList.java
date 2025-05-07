@@ -110,23 +110,31 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         if (this.scrolling || this.isQueried() || payload.isEmpty()) {
             return false;
         }
+
+        int dropIndex = this.getDropIndex(mouseY);
+        if (dropIndex > -1 && this.getEntry(dropIndex).canMove()) {
+            return false;
+        }
+
         if (source != this) {
             return source.isTransferable(trigger);
         }
+
         if (trigger.isFixedPosition() || this.isMouserOverSelection(payload, mouseX, mouseY)) {
             return false;
         }
 
         int[] indices = this.getIndicesFromSelection(payload);
+
         if (indices.length == 0) {
             return false;
         }
+
         if (hasGap(indices)) {
             return true;
         }
 
         Arrays.sort(indices);
-        int dropIndex = this.getDropIndex(mouseY);
         int lastSelectionIndex = indices[indices.length - 1];
 
         if (!this.packs.isEmpty()) {
@@ -218,7 +226,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         @Override
         public boolean isTransferable() {
-            return !this.pack.isRequired();
+            return !this.pack.isRequired() && !this.pack.isFixedPosition();
         }
 
         private int getDownIndex() {
@@ -235,8 +243,12 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             return -1;
         }
 
+        private boolean canMove() {
+            return CurrentPackList.this.isQueried() || this.pack.isFixedPosition();
+        }
+
         public boolean canMoveDown() {
-            if (CurrentPackList.this.isQueried()) return false;
+            if (this.canMove()) return false;
 
             int size = CurrentPackList.this.packs.size();
 
@@ -252,7 +264,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         public boolean canMoveUp() {
-            if (CurrentPackList.this.isQueried()) return false;
+            if (this.canMove()) return false;
 
             if (this.isSelected()) {
                 List<Pack> selection = CurrentPackList.this.getOrderedSelection();

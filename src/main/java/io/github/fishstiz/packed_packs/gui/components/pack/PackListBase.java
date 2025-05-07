@@ -172,7 +172,12 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     @Override
     public void add(Pack pack) {
         if (pack != null && !this.packs.contains(pack)) {
-            this.packs.addFirst(pack);
+            int index = 0;
+            for (Pack p : this.packs) {
+                if (!p.isFixedPosition()) break;
+                index++;
+            }
+            this.packs.add(index, pack);
             this.queryPacks();
         }
     }
@@ -192,6 +197,8 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     @Override
     public boolean move(Pack pack, int to) {
+        if (pack.isFixedPosition()) return false;
+
         int from = this.packs.indexOf(pack);
         if (from == -1 || to < 0 || to >= this.packs.size() || from == to) {
             return false;
@@ -570,6 +577,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 return false;
             }
             if (this.isSelected()
+                && !this.pack.isFixedPosition()
                 && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE
                 && this.exceedsDragThreshold(dragX, dragY)) {
                 PackListBase.this.sendEvent(new DragEvent(
