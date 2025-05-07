@@ -27,22 +27,34 @@ public abstract class AbstractDynamicList<T extends AbstractDynamicList<T>.Entry
     }
 
     @Override
-    protected int getScrollbarPosition() {
+    protected int scrollBarX() {
         return this.getRight() - this.scrollbarOffset;
     }
 
+    public int getMaxPosition() {
+        return this.getItemCount() * this.itemHeight + this.offsetY;
+    }
+
     @Override
-    public int getMaxScroll() {
+    public int maxScrollAmount() {
         return Math.max(0, this.getMaxPosition() - (this.getBottom() - (this.getY() + this.offsetY * 2)) + (this.rowGap * getItemCount()) - this.rowGap);
     }
 
+    public void setClampedScrollAmount(double scrollAmount) {
+        this.setScrollAmount(Math.clamp(scrollAmount, 0d, this.maxScrollAmount()));
+    }
+
+    public void clampScrollAmount() {
+        this.setClampedScrollAmount(this.scrollAmount());
+    }
+
     @Override
-    protected int getRowTop(int index) {
-        return this.getY() + this.offsetY + (this.itemHeight + this.rowGap) * index - (int) this.getScrollAmount();
+    public int getRowTop(int index) {
+        return this.getY() + this.offsetY + (this.itemHeight + this.rowGap) * index - (int) this.scrollAmount();
     }
 
     protected int getRowIndex(double y) {
-        int index = ((int) Math.floor(y - this.getY() - this.offsetY) + (int) this.getScrollAmount()) / (this.itemHeight + this.rowGap);
+        int index = ((int) Math.floor(y - this.getY() - this.offsetY) + (int) this.scrollAmount()) / (this.itemHeight + this.rowGap);
         return index >= 0 && index < this.getItemCount() ? index : -1;
     }
 

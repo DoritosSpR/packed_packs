@@ -4,6 +4,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.shapes.Line;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 
 public class Sprite implements RenderableRect {
@@ -40,10 +41,11 @@ public class Sprite implements RenderableRect {
     @Override
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
         guiGraphics.blit(
+                RenderType::guiTextured,
                 this.location,
                 x, y,
-                width, height,
                 this.u.start(), this.v.start(),
+                width, height,
                 this.u.length(), this.v.length(),
                 this.width, this.height
         );

@@ -68,6 +68,11 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
         return this.closeButton;
     }
 
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return this.isMouseOverBounds(mouseX, mouseY);
+    }
+
     public void repositionElements() {
         this.root().setMinHeight(this.screen.height);
         this.root().arrangeElements();

@@ -162,7 +162,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
 
     @Override
     public final void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.hovered = this.isMouseOver(mouseX, mouseY);
+        this.hovered = this.isMouseOverBounds(mouseX, mouseY);
 
         this.focusOnOpenTask.poll();
 
@@ -207,8 +207,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         return false;
     }
 
-    @Override
-    public boolean isMouseOver(double mouseX, double mouseY) {
+    public boolean isMouseOverBounds(double mouseX, double mouseY) {
         if (!this.isOpen()) {
             return false;
         }
@@ -216,6 +215,11 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
             return true;
         }
         return this.getChildAt(mouseX, mouseY).isPresent();
+    }
+
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return this.isOpen();
     }
 
     @Override
@@ -237,7 +241,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
                 child.setFocused(false);
             }
         }
-        if (hoveredChild.isPresent() || this.isMouseOver(mouseX, mouseY)) {
+        if (hoveredChild.isPresent() || this.isMouseOverBounds(mouseX, mouseY)) {
             return true;
         }
         if (this.autoClose && this.isValidClickButton(button) &&

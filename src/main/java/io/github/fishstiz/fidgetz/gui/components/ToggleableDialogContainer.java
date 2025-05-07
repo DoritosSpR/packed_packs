@@ -1,5 +1,6 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 
 import java.util.ArrayList;
@@ -8,7 +9,7 @@ import java.util.List;
 
 import static io.github.fishstiz.fidgetz.util.GuiUtil.isDescendant;
 
-public interface ToggleableDialogContainer {
+public interface ToggleableDialogContainer extends ContainerEventHandler {
     List<ToggleableDialog<?>> getDialogs();
 
     default ArrayList<ToggleableDialog<?>> getOpenDialogs() {
@@ -56,7 +57,7 @@ public interface ToggleableDialogContainer {
                 isDialogChild = true;
                 break;
             }
-            if (!isIntersected && dialog != child && dialog.isMouseOver(px, py) && dialog.intersects(child)) {
+            if (!isIntersected && dialog != child && dialog.isMouseOverBounds(px, py) && dialog.intersects(child)) {
                 isIntersected = true;
             }
         }
@@ -68,5 +69,20 @@ public interface ToggleableDialogContainer {
         ArrayList<ToggleableDialog<?>> dialogs = this.getOpenDialogs();
         dialogs.sort(Comparator.<ToggleableDialog<?>, Float>comparing(ToggleableDialog::getZ).reversed());
         return dialogs;
+    }
+
+    @Override
+    default boolean mouseClicked(double mouseX, double mouseY, int button) {
+        for (GuiEventListener guieventlistener : this.children()) {
+            if (guieventlistener.mouseClicked(mouseX, mouseY, button)) {
+                this.setFocused(guieventlistener);
+                if (button == 0) {
+                    this.setDragging(true);
+                }
+
+                return true;
+            }
+        }
+        return false;
     }
 }

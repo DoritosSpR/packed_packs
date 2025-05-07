@@ -69,7 +69,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     }
 
     private void scrollStep(MoveDirection direction, float partialTick) {
-        double scrollAmount = this.getScrollAmount();
+        double scrollAmount = this.scrollAmount();
         if (direction.isUp()) {
             scrollAmount -= SCROLL_STEP * partialTick;
         } else if (direction.isDown()) {
@@ -198,10 +198,10 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         int bottom = this.getBottom();
 
         if (this.isMouseOver(mouseX, mouseY)) {
-            double scrollAmount = this.getScrollAmount();
+            double scrollAmount = this.scrollAmount();
 
             int scrollDownY = bottom - this.itemHeight;
-            if (scrollAmount < this.getMaxScroll() && mouseY >= scrollDownY) {
+            if (scrollAmount < this.maxScrollAmount() && mouseY >= scrollDownY) {
                 SCROLL_DOWN.render(guiGraphics, x, scrollDownY, width, this.itemHeight);
                 this.scrollStep(MoveDirection.DOWN, partialTick);
             } else if (scrollAmount > 0 && mouseY <= y + this.itemHeight) {

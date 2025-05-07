@@ -481,7 +481,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (super.mouseClicked(mouseX, mouseY, button)) {
+        if (ToggleableDialogContainer.super.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
         if (isClickForward(button)) {
