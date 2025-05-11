@@ -106,6 +106,18 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         return false;
     }
 
+    public void insertDrop(Pack pack, int index) {
+        if (pack != null) {
+            int previous = this.packs.indexOf(pack);
+            if (previous != -1 && previous < index) {
+                index--;
+            }
+            this.packs.remove(pack);
+            this.packs.add(Math.clamp(index, 0, this.packs.size()), pack);
+            this.queryPacks();
+        }
+    }
+
     private boolean canDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         if (this.scrolling || this.isQueried() || payload.isEmpty()) {
             return false;
@@ -159,19 +171,19 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         if (source == this) {
             List<Pack> movable = new ArrayList<>(payload);
             movable.removeIf(Pack::isFixedPosition);
-            return this.move(this.orderSelection(movable), dropIndex) ? payload : null;
+            return this.moveAll(this.orderSelection(movable), dropIndex) ? payload : null;
         }
 
         this.clearSelection();
         List<Pack> dropped = new ArrayList<>();
         for (Pack selected : payload) {
             if (source.isTransferable(selected)) {
-                source.remove(selected);
                 dropped.add(selected);
-                this.insert(selected, dropIndex);
+                this.insertDrop(selected, dropIndex);
                 this.select(selected);
             }
         }
+        source.removeAll(dropped);
         this.select(trigger);
 
         return dropped;
