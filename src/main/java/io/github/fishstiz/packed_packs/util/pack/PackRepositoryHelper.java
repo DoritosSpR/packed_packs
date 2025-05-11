@@ -9,10 +9,10 @@ import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
-import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class PackRepositoryHelper implements PackIconCache {
     private final Map<String, ResourceLocation> cachedIcons = new HashMap<>();
@@ -24,7 +24,10 @@ public class PackRepositoryHelper implements PackIconCache {
     public PackRepositoryHelper(PackRepository repository, Path packDir) {
         this.repository = repository;
         this.packDir = packDir;
-        this.model = new PackSelectionModel(PackRepositoryHelper::_update, this::getIcon, this.repository, PackRepositoryHelper::_apply);
+
+        // Fabric API workaround
+        this.model = new PackSelectionModel(PackRepositoryHelper::_update, PackRepositoryHelper::_getIcon, this.repository, PackRepositoryHelper::_apply);
+
         this.populateAvailablePacks();
     }
 
@@ -124,10 +127,28 @@ public class PackRepositoryHelper implements PackIconCache {
     }
 
     @Override
-    public @NotNull ResourceLocation getIcon(Pack pack) {
-        return pack != null
-                ? this.cachedIcons.computeIfAbsent(pack.getId(), string -> PackIconCache.loadPackIcon(pack))
-                : PackIconCache.DEFAULT_ICON;
+    public void getOrLoad(Pack pack, Consumer<ResourceLocation> iconCallback) {
+        ResourceLocation cachedIcon = this.cachedIcons.get(pack.getId());
+
+        if (cachedIcon != null) {
+            iconCallback.accept(cachedIcon);
+        } else {
+            iconCallback.accept(DEFAULT_ICON);
+            PackIconCache.loadPackIcon(pack).thenAcceptAsync(location -> {
+                this.cachedIcons.put(pack.getId(), location);
+                iconCallback.accept(location);
+            });
+        }
+    }
+
+    public record PackGroup(ImmutableList<Pack> selected, ImmutableList<Pack> unselected) {
+        private static PackGroup of(List<Pack> selected, List<Pack> unselected) {
+            return new PackGroup(ImmutableList.copyOf(selected), ImmutableList.copyOf(unselected));
+        }
+    }
+
+    private static ResourceLocation _getIcon(Pack pack) {
+        return DEFAULT_ICON; // placeholder
     }
 
     private static void _update() {
@@ -136,11 +157,5 @@ public class PackRepositoryHelper implements PackIconCache {
 
     private static void _apply(PackRepository repository) {
         // placeholder
-    }
-
-    public record PackGroup(ImmutableList<Pack> selected, ImmutableList<Pack> unselected) {
-        private static PackGroup of(List<Pack> selected, List<Pack> unselected) {
-            return new PackGroup(ImmutableList.copyOf(selected), ImmutableList.copyOf(unselected));
-        }
     }
 }
