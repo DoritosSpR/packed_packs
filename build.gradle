@@ -1,6 +1,6 @@
 plugins {
     id 'fabric-loom' version '1.10-SNAPSHOT'
-    id 'maven-publish'
+    id "me.modmuss50.mod-publish-plugin" version "0.8.4"
 }
 
 version = project.mod_version
@@ -91,20 +91,40 @@ jar {
     }
 }
 
-// configure the maven publication
-publishing {
-    publications {
-        create("mavenJava", MavenPublication) {
-            artifactId = project.archives_base_name
-            from components.java
-        }
+Properties secrets = new Properties()
+File secretsFile = project.rootProject.file('local.properties')
+
+if (secretsFile.exists()) {
+    secrets.load(secretsFile.newDataInputStream())
+}
+
+publishMods {
+    file = remapJar.archiveFile
+    additionalFiles.from(remapSourcesJar.archiveFile)
+    changelog = file("CHANGELOG.md").text
+    displayName = "$mod_name v$mod_version"
+    type = BETA
+    modLoaders.add("fabric")
+
+    github {
+        accessToken = secrets.getProperty("GITHUB_TOKEN")
+        repository = "fishstiz/packed_packs"
+        commitish = "mc/$minecraft_version"
+        tagName = "v$mod_version"
     }
 
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
+    modrinth {
+        accessToken = secrets.getProperty("MODRINTH_TOKEN")
+        projectId = "8Pq6Exn2"
+        minecraftVersions.add(minecraft_version)
+        requires("fabric-api")
+    }
+
+    curseforge {
+        accessToken = secrets.getProperty("CURSEFORGE_TOKEN")
+        projectId = "1260514"
+        minecraftVersions.add(minecraft_version)
+        clientRequired = true
+        requires("fabric-api")
     }
 }
