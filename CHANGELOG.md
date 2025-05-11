@@ -1,0 +1,6 @@
+- Add compatibility with Resourcify
+- Set default value of "replace original screen" to false
+- Removed new profile button and replaced text of copy profile button to "new".
+- Improved performance when transferring many packs at once.
+- Pack icons are now loaded in background.
+- Fixed available packs list containing selected packs when changing profiles.
