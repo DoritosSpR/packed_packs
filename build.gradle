@@ -20,6 +20,17 @@ repositories {
         url = "https://maven.terraformersmc.com/"
     }
     maven { url = "https://raw.githubusercontent.com/fishstiz/maven/m2" }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
 }
 
 dependencies {
@@ -33,6 +44,7 @@ dependencies {
     modImplementation "com.terraformersmc:modmenu:$modmenu_version"
     modCompileOnly "io.github.fishstiz:minecraft-cursor-fabric-api:$mccursor_version"
     modLocalRuntime "io.github.fishstiz:minecraft-cursor-fabric:$mccursor_version"
+    modCompileOnly "maven.modrinth:resourcify:$resourcify_version"
 }
 
 
