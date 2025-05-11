@@ -5,7 +5,6 @@ import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -28,7 +27,7 @@ public final class DragEvent extends PackListEvent implements Renderable {
     private final Pack trigger;
     private final Sprite sprite;
 
-    public DragEvent(PackList target, List<Pack> selection, Pack trigger, PackIconCache iconCache) {
+    public DragEvent(PackList target, List<Pack> selection, Pack trigger, Sprite sprite) {
         super(target);
 
         if (selection.isEmpty()) {
@@ -37,7 +36,7 @@ public final class DragEvent extends PackListEvent implements Renderable {
 
         this.payload = ImmutableList.copyOf(selection);
         this.trigger = trigger;
-        this.sprite = Sprite.of32(iconCache.getIcon(trigger));
+        this.sprite = sprite;
     }
 
     @Override

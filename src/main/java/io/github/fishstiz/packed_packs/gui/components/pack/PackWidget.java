@@ -10,42 +10,35 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.MultiLineLabel;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.Nullable;
-
-import static java.util.Objects.requireNonNullElse;
 
 class PackWidget extends AbstractWidget {
     private static final int DESCRIPTION_LINES = 2;
-    private static final Sprite DEFAULT_SPRITE = Sprite.of32(PackIconCache.DEFAULT_ICON);
     private final Pack pack;
-    private final FidgetzText<?> title = FidgetzText.builder(Minecraft.getInstance().font)
+    private final PackIconCache iconCache;
+    private final FidgetzText<?> title = FidgetzText.builder()
             .setHeight(Minecraft.getInstance().font.lineHeight)
             .setColor(ChatFormatting.WHITE.getColor())
             .alignLeft()
             .build();
     private MultiLineLabel description;
-    private Sprite sprite;
+    private Sprite sprite = Sprite.of32(PackIconCache.DEFAULT_ICON);
     private final int spacing;
+    private boolean lazyLoaded = false;
 
-    PackWidget(Pack pack, int x, int y, int width, int height, int spacing) {
+    PackWidget(Pack pack, PackIconCache iconCache, int x, int y, int width, int height, int spacing) {
         super(x, y, width, height, pack.getTitle());
 
         this.pack = pack;
+        this.iconCache = iconCache;
         this.title.setMessage(pack.getTitle());
         this.spacing = spacing;
 
         this.cacheDescription();
     }
 
-    public @Nullable ResourceLocation getIcon() {
-        return this.sprite != null ? this.sprite.location : null;
-    }
-
-    public void setIcon(ResourceLocation icon) {
-        if (icon == null) return;
-        this.sprite = Sprite.of32(icon);
+    public Sprite getSprite() {
+        return this.sprite;
     }
 
     private int getIconSize() {
@@ -76,10 +69,15 @@ class PackWidget extends AbstractWidget {
     }
 
     protected void renderSprite(GuiGraphics guiGraphics, float partialTick) {
+        if (!this.lazyLoaded) { // lazy loads icon as this is not called if not in view
+            this.lazyLoaded = true;
+            this.iconCache.getOrLoad(this.pack, icon -> this.sprite = Sprite.of32(icon));
+        }
+
         int x = this.getX() + this.spacing;
         int y = this.getY();
         int size = this.getIconSize();
-        requireNonNullElse(this.sprite, DEFAULT_SPRITE).render(guiGraphics, x, y, size, size, partialTick);
+        this.sprite.render(guiGraphics, x, y, size, size, partialTick);
     }
 
     @Override

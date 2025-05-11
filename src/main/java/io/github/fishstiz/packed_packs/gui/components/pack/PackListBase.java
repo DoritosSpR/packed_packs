@@ -470,6 +470,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             this.pack = pack;
             this.packWidget = new PackWidget(
                     this.pack,
+                    PackListBase.this.iconCache,
                     this.getX(),
                     PackListBase.this.getRowTop(this.index),
                     this.getWidth(),
@@ -601,7 +602,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                         PackListBase.this,
                         PackListBase.this.getOrderedSelection().reversed(),
                         this.pack,
-                        PackListBase.this.iconCache
+                        this.packWidget.getSprite()
                 ));
                 return true;
             }
@@ -646,10 +647,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         private void renderWidget(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            if (this.packWidget.getIcon() == null) { // lazy loads icon as render is not called if entry is not visible
-                this.packWidget.setIcon(PackListBase.this.iconCache.getIcon(this.pack));
-            }
-
             this.packWidget.setPosition(left, top);
             this.packWidget.setWidth(width);
             this.packWidget.render(guiGraphics, mouseX, mouseY, partialTick);

@@ -12,59 +12,62 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.resources.IoSupplier;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.InputStream;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 @FunctionalInterface
 public interface PackIconCache {
     ResourceLocation DEFAULT_ICON = ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png");
 
-    @NotNull ResourceLocation getIcon(Pack pack);
+    void getOrLoad(Pack pack, Consumer<ResourceLocation> iconCallback);
 
     /**
      * Copied from {@link PackSelectionScreen#loadPackIcon(TextureManager, Pack)}
      */
     @SuppressWarnings("all")
-    static ResourceLocation loadPackIcon(Pack pack) {
-        try {
-            final TextureManager manager = Minecraft.getInstance().getTextureManager();
-            ResourceLocation packIcon;
-            try (PackResources packResources = pack.open()) {
-                IoSupplier<InputStream> ioSupplier = packResources.getRootResource("pack.png");
+    static CompletableFuture<ResourceLocation> loadPackIcon(Pack pack) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                ResourceLocation packIcon;
+                try (PackResources packResources = pack.open()) {
+                    IoSupplier<InputStream> ioSupplier = packResources.getRootResource("pack.png");
 
-                if (ioSupplier == null) {
-                    return DEFAULT_ICON;
-                }
-
-                String id = pack.getId();
-                ResourceLocation resourceLocation = ResourceLocation.withDefaultNamespace(
-                        "pack/" + Util.sanitizeName(id, ResourceLocation::validPathChar) + "/" + Hashing.sha1().hashUnencodedChars(id) + "/icon"
-                );
-                InputStream inputStream = ioSupplier.get();
-
-                try {
-                    NativeImage nativeImage = NativeImage.read(inputStream);
-                    manager.register(resourceLocation, new DynamicTexture(nativeImage));
-                    packIcon = resourceLocation;
-                } catch (Throwable e) {
-                    if (inputStream != null) {
-                        try {
-                            inputStream.close();
-                        } catch (Throwable e2) {
-                            e.addSuppressed(e2);
-                        }
+                    if (ioSupplier == null) {
+                        return DEFAULT_ICON;
                     }
-                    throw e;
+
+                    String id = pack.getId();
+                    ResourceLocation resourceLocation = ResourceLocation.withDefaultNamespace(
+                            "pack/" + Util.sanitizeName(id, ResourceLocation::validPathChar) + "/" + Hashing.sha1().hashUnencodedChars(id) + "/icon"
+                    );
+                    InputStream inputStream = ioSupplier.get();
+
+                    try {
+                        NativeImage nativeImage = NativeImage.read(inputStream);
+                        TextureManager manager = Minecraft.getInstance().getTextureManager();
+                        Minecraft.getInstance().execute(() -> manager.register(resourceLocation, new DynamicTexture(nativeImage)));
+                        packIcon = resourceLocation;
+                    } catch (Throwable e) {
+                        if (inputStream != null) {
+                            try {
+                                inputStream.close();
+                            } catch (Throwable e2) {
+                                e.addSuppressed(e2);
+                            }
+                        }
+                        throw e;
+                    }
+                    if (inputStream != null) {
+                        inputStream.close();
+                    }
                 }
-                if (inputStream != null) {
-                    inputStream.close();
-                }
+                return packIcon;
+            } catch (Exception e) {
+                PackedPacks.LOGGER.warn("Failed to load icon from pack '{}'", pack.getId(), e);
+                return DEFAULT_ICON;
             }
-            return packIcon;
-        } catch (Exception e) {
-            PackedPacks.LOGGER.warn("Failed to load icon from pack '{}'", pack.getId(), e);
-            return DEFAULT_ICON;
-        }
+        });
     }
 }
