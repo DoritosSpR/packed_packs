@@ -60,10 +60,11 @@ public class Config implements Serializable {
     }
 
     public static class Packs implements Serializable {
-        private boolean replaceOriginal = true;
-        private Long lastViewed = null;
+        private boolean replaceOriginal = false;
+        private @Nullable Long lastViewed = null;
         private long autoIncrement = 0;
         private final List<Profile> profiles = new ArrayList<>();
+        private transient @Nullable Profile lastViewedProfile;
 
         public List<Profile> getProfiles() {
             return List.copyOf(this.profiles);
@@ -85,11 +86,12 @@ public class Config implements Serializable {
         public @Nullable Profile getLastViewed() {
             if (this.lastViewed == null) return null;
 
-            Profile lastViewedProfile = null;
-            for (Profile profile : this.profiles) {
-                if (profile.getId() == this.lastViewed) {
-                    lastViewedProfile = profile;
-                    break;
+            if (this.lastViewedProfile == null) {
+                for (Profile profile : this.profiles) {
+                    if (profile.getId() == this.lastViewed) {
+                        this.lastViewedProfile = profile;
+                        break;
+                    }
                 }
             }
 
@@ -98,6 +100,7 @@ public class Config implements Serializable {
 
         public void setLastViewed(@Nullable Profile lastViewed) {
             this.lastViewed = lastViewed != null ? lastViewed.getId() : null;
+            this.lastViewedProfile = lastViewed;
         }
 
         public boolean isReplaceOriginal() {
