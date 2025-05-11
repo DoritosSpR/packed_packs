@@ -17,17 +17,21 @@ import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.testNullable
 public interface PackList extends ContainerEventHandler, Restorable<PackList.Snapshot> {
     void add(Pack pack);
 
-    void insert(Pack pack, int index);
+    void addAll(List<Pack> packs);
 
     boolean move(Pack pack, int index);
 
-    boolean move(List<Pack> packs, int index);
+    boolean moveAll(List<Pack> packs, int index);
 
     void remove(Pack pack);
+
+    void removeAll(List<Pack> packs);
 
     void unselect(Pack pack);
 
     void select(Pack pack);
+
+    void selectAll(List<Pack> packs);
 
     void selectExclusive(Pack pack);
 

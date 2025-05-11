@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,13 +61,9 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
         }
 
         destination.clearSelection();
-        for (Pack pack : event.payload()) {
-            if (source.isTransferable(pack)) {
-                source.remove(pack);
-                destination.add(pack);
-                destination.select(pack);
-            }
-        }
+        source.removeAll(event.payload());
+        destination.addAll(event.payload());
+        destination.selectAll(event.payload());
         destination.select(event.trigger());
 
         this.transferFocus(source, destination);
