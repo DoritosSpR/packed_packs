@@ -9,6 +9,7 @@ import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.util.debounce.ImmediateDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
@@ -86,6 +87,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             .build();
     private PackSelectionScreen.Watcher watcher;
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
+    private boolean initialized = false;
 
     public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original) {
         super(ResourceUtil.getModName());
@@ -108,6 +110,13 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     }
 
     @Override
+    public void added() {
+        if (this.initialized) {
+            this.revalidateTask.run();
+        }
+    }
+
+    @Override
     protected void init() {
         this.layout.addToHeader(this.createHeader());
         this.layout.addToContents(this.createContents());
@@ -126,6 +135,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
         this.clearHistory();
         this.repositionElements();
+
+        this.initialized = true;
     }
 
     private FlexLayout createHeader() {
@@ -143,6 +154,9 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                 .setOnPress(this::toggleActionBar).build());
         header.addChild(this.profiles.getToggleNameButton());
         header.addFlexChild(this.profiles.getNameField());
+
+        ModAdditions.appendHeader(this.original.createScreen(), this.original.title(), header);
+
         header.addChild(FidgetzButton.builder()
                 .makeSquare()
                 .setMessage(OPTIONS_TEXT)
