@@ -44,16 +44,17 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
     protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         if (this.isInvalidDrop(source, payload, trigger)) return null;
 
-        this.clearSelection();
         List<Pack> dropped = new ArrayList<>();
-        for (Pack selected : payload) {
-            if (source.isTransferable(selected)) {
-                source.remove(selected);
-                dropped.add(selected);
-                this.add(selected);
-                this.select(selected);
+        for (Pack pack : payload) {
+            if (source.isTransferable(pack)) {
+                dropped.add(pack);
             }
         }
+
+        this.clearSelection();
+        source.removeAll(dropped);
+        this.addAll(dropped);
+        this.selectAll(dropped);
         this.select(trigger);
         ofNullable(this.getEntry(trigger)).ifPresent(this::ensureVisible);
 

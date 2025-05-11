@@ -169,8 +169,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
     }
 
-    @Override
-    public void add(Pack pack) {
+    private void addPack(Pack pack) {
         if (pack != null && !this.packs.contains(pack)) {
             int index = 0;
             for (Pack p : this.packs) {
@@ -178,21 +177,21 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 index++;
             }
             this.packs.add(index, pack);
-            this.queryPacks();
         }
     }
 
     @Override
-    public void insert(Pack pack, int index) {
-        if (pack != null) {
-            int previous = this.packs.indexOf(pack);
-            if (previous != -1 && previous < index) {
-                index--;
-            }
-            this.packs.remove(pack);
-            this.packs.add(Math.clamp(index, 0, this.packs.size()), pack);
-            this.queryPacks();
+    public void add(Pack pack) {
+        this.addPack(pack);
+        this.queryPacks();
+    }
+
+    @Override
+    public void addAll(List<Pack> packs) {
+        for (Pack pack : packs) {
+            this.addPack(pack);
         }
+        this.queryPacks();
     }
 
     @Override
@@ -212,7 +211,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
-    public boolean move(List<Pack> selection, int to) {
+    public boolean moveAll(List<Pack> selection, int to) {
         if (selection == null || selection.isEmpty() || to < 0 || to > this.packs.size()) {
             return false;
         }
@@ -233,13 +232,24 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         return true;
     }
 
-    @Override
-    public void remove(Pack pack) {
-        if (this.packs.remove(pack)) {
-            this.selection.remove(pack);
-            this.queryPacks();
+    private void removePack(Pack pack) {
+        if (this.packs.remove(pack) && this.selection.remove(pack)) {
             this.setFocused(null);
         }
+    }
+
+    @Override
+    public void remove(Pack pack) {
+        this.removePack(pack);
+        this.queryPacks();
+    }
+
+    @Override
+    public void removeAll(List<Pack> packs) {
+        for (Pack pack : packs) {
+            this.removePack(pack);
+        }
+        this.queryPacks();
     }
 
     public @Nullable Pack getLastSelected() {
@@ -280,6 +290,13 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             T entry = this.getEntry(pack);
             this.setFocused(entry);
             this.setSelected(entry);
+        }
+    }
+
+    @Override
+    public void selectAll(List<Pack> packs) {
+        for (Pack pack : packs) {
+            this.select(pack);
         }
     }
 
