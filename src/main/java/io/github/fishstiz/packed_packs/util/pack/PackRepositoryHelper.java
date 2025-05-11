@@ -86,6 +86,8 @@ public class PackRepositoryHelper implements PackIconCache {
             }
         }
 
+        unselectedPacks.removeIf(new HashSet<>(selectedPacks)::contains);
+
         return PackGroup.of(selectedPacks, unselectedPacks);
     }
 

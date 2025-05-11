@@ -30,7 +30,6 @@ public class ProfilesLayout {
     private static final Component NEW_TEXT = ResourceUtil.getText("profile.new");
     private static final Component NEW_INFO = ResourceUtil.getText("profile.new.info");
     private static final Component COPY_TEXT = ResourceUtil.getText("profile.copy");
-    private static final Component COPY_INFO = ResourceUtil.getText("profile.copy.info");
     private static final int MAX_WIDTH = 150;
     private final Config.Packs config;
     private final Sidebar sidebar;
@@ -70,24 +69,18 @@ public class ProfilesLayout {
 
     public void initContents(int spacing) {
         LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(spacing);
-        FlexLayout firstRow = FlexLayout.horizontal(this::getMaxWidth).spacing(spacing);
-        FlexLayout secondRow = FlexLayout.horizontal(this::getMaxWidth);
-        FlexLayout thirdRow = FlexLayout.horizontal(this::getMaxWidth);
+        FlexLayout actions = FlexLayout.horizontal(this::getMaxWidth).spacing(spacing);
+        FlexLayout list = FlexLayout.horizontal(this::getMaxWidth);
 
-        firstRow.addFlexChild(FidgetzButton.<Void>builder()
+        actions.addFlexChild(this.noProfileButton);
+        actions.addFlexChild(FidgetzButton.<Void>builder()
                 .setMessage(NEW_TEXT)
                 .setTooltip(Tooltip.create(NEW_INFO))
-                .setOnPress(this::createProfile).build());
-        firstRow.addFlexChild(FidgetzButton.<Void>builder()
-                .setMessage(COPY_TEXT)
-                .setTooltip(Tooltip.create(COPY_INFO))
                 .setOnPress(this::copyProfile).build());
-        secondRow.addFlexChild(this.noProfileButton);
-        thirdRow.addFlexChild(this.profileList, true);
+        list.addFlexChild(this.profileList, true);
 
-        this.sidebar.root().layout().addChild(firstRow, layoutSettings);
-        this.sidebar.root().layout().addChild(secondRow, layoutSettings);
-        this.sidebar.root().layout().addFlexChild(thirdRow, true, layoutSettings.copy().paddingBottom(spacing + 1));
+        this.sidebar.root().layout().addChild(actions, layoutSettings);
+        this.sidebar.root().layout().addFlexChild(list, true, layoutSettings.copy().paddingBottom(spacing + 1));
         this.sidebar.root().layout().arrangeElements();
         this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
 
@@ -143,14 +136,6 @@ public class ProfilesLayout {
 
     public @Nullable Profile getProfile() {
         return this.profile;
-    }
-
-    private void createProfile() {
-        Profile newProfile = new Profile(UNNAMED_TEXT.getString());
-        this.config.addProfile(newProfile);
-        this.setProfile(newProfile);
-        this.sidebar.setOpen(false);
-        this.profileList.refresh();
     }
 
     private void copyProfile() {
