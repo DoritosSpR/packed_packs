@@ -104,7 +104,10 @@ public class Query {
             if (builtInFirst != builtInSecond) return builtInFirst ? 1 : -1;
             return first.getTitle().getString().compareTo(second.getTitle().getString());
         }),
-        A_Z("sort.a_z", "sort_a_z", comparing(pack -> pack.getTitle().getString())),
+        A_Z("sort.a_z", "sort_a_z", comparing(
+                pack -> normalizeTitle(pack.getTitle().getString()),
+                String.CASE_INSENSITIVE_ORDER
+        )),
         Z_A("sort.z_a", "sort_z_a", A_Z.getComparator().reversed()),
         RECENT("sort.recent", "sort_recent", comparingLong(PackUtil::getLastUpdatedEpochMs).reversed()),
         OLDEST("sort.oldest", "sort_oldest", comparingLong(PackUtil::getLastUpdatedEpochMs));
@@ -139,5 +142,11 @@ public class Query {
         public @Nullable ButtonSprites sprites() {
             return this.sprites;
         }
+    }
+
+    private static String normalizeTitle(String title) {
+        return title
+                .replaceAll("§.", "") // remove formatting
+                .trim();
     }
 }
