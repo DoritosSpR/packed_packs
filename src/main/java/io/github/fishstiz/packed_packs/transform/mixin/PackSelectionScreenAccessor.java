@@ -13,4 +13,7 @@ public interface PackSelectionScreenAccessor {
 
     @Invoker("reload")
     void invokeReload();
+
+    @Invoker("closeWatcher")
+    void invokeCloseWatcher();
 }
