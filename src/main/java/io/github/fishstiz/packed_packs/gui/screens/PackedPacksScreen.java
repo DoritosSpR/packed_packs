@@ -105,15 +105,22 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                 this.currentPacks.getList()::copyPacks,
                 this::onProfileChange
         );
-
-        this.watcher = PackSelectionScreen.Watcher.create(this.original.packDir());
     }
 
     @Override
     public void added() {
         if (this.initialized) {
-            this.revalidateTask.run();
+            this.revalidate();
+            this.createWatcher();
         }
+    }
+
+    @Override
+    public void removed() {
+        this.closeWatcher();
+        this.updateProfile(this.profiles.getProfile());
+        this.packsConfig.setLastViewed(this.profiles.getProfile());
+        PackedPacks.CONFIG.save();
     }
 
     @Override
@@ -136,6 +143,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.clearHistory();
         this.repositionElements();
 
+        this.createWatcher();
         this.initialized = true;
     }
 
@@ -155,7 +163,13 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         header.addChild(this.profiles.getToggleNameButton());
         header.addFlexChild(this.profiles.getNameField());
 
-        ModAdditions.appendHeader(this.original.createScreen(), this.original.title(), header);
+        if (this.previous instanceof PackSelectionScreen packScreen) {
+            ModAdditions.appendHeader(packScreen, this.original.title(), header);
+        } else {
+            PackSelectionScreen packScreen = this.original.createScreen();
+            ((PackSelectionScreenAccessor) packScreen).invokeCloseWatcher();
+            ModAdditions.appendHeader(packScreen, this.original.title(), header);
+        }
 
         header.addChild(FidgetzButton.builder()
                 .makeSquare()
@@ -294,12 +308,10 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.minecraft.setScreen(this.previous);
     }
 
-    @Override
-    public void removed() {
-        this.closeWatcher();
-        this.updateProfile(this.profiles.getProfile());
-        this.packsConfig.setLastViewed(this.profiles.getProfile());
-        PackedPacks.CONFIG.save();
+    private void createWatcher() {
+        if (this.watcher == null) {
+            this.watcher = PackSelectionScreen.Watcher.create(this.original.packDir());
+        }
     }
 
     private void closeWatcher() {
