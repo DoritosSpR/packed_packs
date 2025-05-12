@@ -5,7 +5,7 @@ import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.resourcify.ResourcifyButtons;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
@@ -16,10 +16,10 @@ public class ModAdditions {
     private ModAdditions() {
     }
 
-    public static void appendHeader(Screen screen, Component title, FlexLayout header) {
+    public static void appendHeader(PackSelectionScreen packScreen, Component title, FlexLayout header) {
         if (LOADER.isModLoaded("resourcify")) {
             try {
-                List<? extends Button> resourcifyButtons = ResourcifyButtons.getButtons(screen, title);
+                List<? extends Button> resourcifyButtons = ResourcifyButtons.getButtons(packScreen, title);
                 if (resourcifyButtons != null) {
                     for (Button button : resourcifyButtons) {
                         header.addChild(button);
