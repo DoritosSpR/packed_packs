@@ -11,7 +11,7 @@ import java.util.List;
 public class Config implements Serializable {
     private boolean showActionBar = false;
     private boolean hideIncompatible = false;
-    private Query.SortOption sort = Query.SortOption.A_Z;
+    private Query.SortOption sort = Query.SortOption.VANILLA;
     private final ResourcePacks resourcepacks = new ResourcePacks();
     private final Packs datapacks = new Packs();
     transient File file;

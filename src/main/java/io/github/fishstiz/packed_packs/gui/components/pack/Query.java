@@ -9,6 +9,7 @@ import io.github.fishstiz.packed_packs.util.pack.PackUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -97,6 +98,12 @@ public class Query {
     }
 
     public enum SortOption implements CyclicButton.SpriteOption {
+        VANILLA("sort.vanilla", "sort_vanilla", (first, second) -> {
+            boolean builtInFirst = first.getPackSource() == PackSource.BUILT_IN;
+            boolean builtInSecond = second.getPackSource() == PackSource.BUILT_IN;
+            if (builtInFirst != builtInSecond) return builtInFirst ? 1 : -1;
+            return first.getTitle().getString().compareTo(second.getTitle().getString());
+        }),
         A_Z("sort.a_z", "sort_a_z", comparing(pack -> pack.getTitle().getString())),
         Z_A("sort.z_a", "sort_z_a", A_Z.getComparator().reversed()),
         RECENT("sort.recent", "sort_recent", comparingLong(PackUtil::getLastUpdatedEpochMs).reversed()),
