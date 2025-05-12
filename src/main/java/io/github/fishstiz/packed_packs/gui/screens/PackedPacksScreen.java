@@ -359,10 +359,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         list.replaceState(new PackList.Snapshot(list, packs, list.copySelection(), list.copyQuery()));
     }
 
-    public void refresh() {
-        this.repository.refresh();
-    }
-
     public void revalidate() {
         this.repository.refresh();
         PackList availableList = this.availablePacks.getList();
