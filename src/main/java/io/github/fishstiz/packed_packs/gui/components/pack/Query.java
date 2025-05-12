@@ -70,7 +70,7 @@ public class Query {
             packs.removeIf(pack -> !pack.getCompatibility().isCompatible());
         }
         if (this.search != null && !this.search.isEmpty()) {
-            packs.removeIf(pack -> !pack.getTitle().getString().toLowerCase().contains(this.search.toLowerCase()));
+            packs.removeIf(pack -> !normalizeTitle(pack.getTitle().getString()).toLowerCase().contains(this.search.toLowerCase()));
         }
         if (this.sort != null) {
             packs.sort(this.sort.getComparator());
