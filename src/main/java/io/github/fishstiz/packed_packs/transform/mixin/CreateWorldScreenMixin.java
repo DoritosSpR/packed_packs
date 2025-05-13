@@ -6,6 +6,7 @@ import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.PackRepository;
@@ -33,6 +34,11 @@ public abstract class CreateWorldScreenMixin {
     ))
     public @Nullable Screen replaceScreen(@Nullable Screen guiScreen, @Local(ordinal = 0) Pair<Path, PackRepository> pair) {
         if (!PackedPacks.CONFIG.getDatapacks().isReplaceOriginal()) return guiScreen;
+
+        if (guiScreen instanceof PackSelectionScreen packScreen) {
+            ((PackSelectionScreenAccessor) packScreen).invokeCloseWatcher();
+        }
+
         return new PackedPacksScreen((CreateWorldScreen) (Object) this, new PackSelectionScreenArgs(
                 pair.getSecond(),
                 repository -> this.tryApplyNewDataPacks(repository, true, this::openDataPackSelectionScreen),

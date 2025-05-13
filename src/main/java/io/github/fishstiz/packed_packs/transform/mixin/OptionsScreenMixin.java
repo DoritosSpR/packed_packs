@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.transform.mixin;
 
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
@@ -10,7 +11,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.PackRepository;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(OptionsScreen.class)
 public abstract class OptionsScreenMixin extends Screen {
@@ -21,8 +21,8 @@ public abstract class OptionsScreenMixin extends Screen {
         super(title);
     }
 
-    @ModifyReturnValue(method = "method_47631", at = @At("RETURN"))
-    public Screen replaceScreen(Screen original) {
+    @WrapMethod(method = "method_47631")
+    public Screen replaceScreen(Operation<Screen> original) {
         if (PackedPacks.CONFIG.getResourcepacks().isReplaceOriginal() && this.minecraft != null) {
             return new PackedPacksScreen((OptionsScreen) (Object) this, new PackSelectionScreenArgs(
                     this.minecraft.getResourcePackRepository(),
@@ -31,6 +31,6 @@ public abstract class OptionsScreenMixin extends Screen {
                     Component.translatable("resourcePack.title")
             ));
         }
-        return original;
+        return original.call();
     }
 }
