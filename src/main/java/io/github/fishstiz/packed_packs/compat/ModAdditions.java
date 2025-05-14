@@ -2,28 +2,36 @@ package io.github.fishstiz.packed_packs.compat;
 
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.compat.etf.ETFButton;
 import io.github.fishstiz.packed_packs.compat.resourcify.ResourcifyButtons;
 import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsWidget;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
+import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.repository.Pack;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class ModAdditions {
     private ModAdditions() {
     }
 
-    public static void addToHeader(PackSelectionScreen packScreen, Component title, FlexLayout header) {
-        Mod.RESOURCIFY.wrapError(packScreen, title, header, (screen, component, layout) -> {
-            List<? extends Button> resourcifyButtons = ResourcifyButtons.getButtons(screen, component);
+    public static void addToHeader(
+            FlexLayout header,
+            PackedPacksScreen screen,
+            PackSelectionScreen originalScreen,
+            Component originalTitle
+    ) {
+        Mod.ETF.wrapError(header, screen, (layout, previous) -> layout.addChild(ETFButton.getButton(previous)));
+        Mod.RESOURCIFY.wrapError(header, originalScreen, originalTitle, (layout, packScreen, title) -> {
+            List<? extends Button> resourcifyButtons = ResourcifyButtons.getButtons(packScreen, title);
             if (resourcifyButtons != null) {
                 for (Button button : resourcifyButtons) {
                     layout.addChild(button);
@@ -32,9 +40,9 @@ public class ModAdditions {
         });
     }
 
-    public static void addToEntry(PackListBase<?>.Entry packListEntry, Pack pack) {
-        Mod.RESPACKOPTS.wrapError(packListEntry, pack, (entry, p) -> {
-            RespackoptsWidget respackOptsWidget = RespackoptsWidget.create(entry, p);
+    public static void addToEntry(PackListBase<?>.Entry packListEntry) {
+        Mod.RESPACKOPTS.wrapError(packListEntry, entry -> {
+            RespackoptsWidget respackOptsWidget = RespackoptsWidget.create(entry, entry.getPack());
             if (respackOptsWidget != null) {
                 entry.prependWidget(respackOptsWidget);
                 entry.addRenderableOnly(respackOptsWidget);
@@ -54,7 +62,8 @@ public class ModAdditions {
 
     public enum Mod {
         RESOURCIFY("resourcify"),
-        RESPACKOPTS("respackopts");
+        RESPACKOPTS("respackopts"),
+        ETF("entity_texture_features");
 
         private final boolean loaded;
         private final String id;
@@ -85,6 +94,16 @@ public class ModAdditions {
                 this.logError();
             }
             return defaultValue;
+        }
+
+        public <T> void wrapError(T arg, Consumer<T> consumer) {
+            try {
+                if (this.isLoaded()) {
+                    consumer.accept(arg);
+                }
+            } catch (LinkageError | Exception e) {
+                this.logError();
+            }
         }
 
         public <T1, T2> void wrapError(T1 arg1, T2 arg2, BiConsumer<T1, T2> consumer) {
