@@ -1,0 +1,181 @@
+package io.github.fishstiz.packed_packs.compat.respackopts;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
+import io.github.fishstiz.packed_packs.compat.ModAdditions;
+import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
+import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
+import io.gitlab.jfronny.respackopts.RespackoptsClient;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.gui.layouts.LayoutElement;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.packs.PackSelectionModel;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackCompatibility;
+import net.minecraft.server.packs.repository.PackSource;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
+import java.util.WeakHashMap;
+
+public class RespackoptsWidget extends AbstractButton {
+    private static final Map<Pack, PackSelectionModel.Entry> MODELS = new WeakHashMap<>();
+    private final ResourcePackEntryWidget wrapped;
+    private final PackSelectionModel.Entry model;
+    private final LayoutElement container;
+
+    private RespackoptsWidget(LayoutElement container, ResourcePackEntryWidget wrapped, PackSelectionModel.Entry model) {
+        super(0, 0, 0, 0, Component.literal(ModAdditions.Mod.RESPACKOPTS.getId()));
+
+        this.container = container;
+        this.wrapped = wrapped;
+        this.model = model;
+    }
+
+    public static @Nullable RespackoptsWidget create(LayoutElement container, Pack pack) {
+        for (ResourcePackEntryWidget widget : ResourcePackEntryWidget.WIDGETS) {
+            PackSelectionModel.Entry model = MODELS.computeIfAbsent(pack, RespackoptsWidget::createModel);
+            if (widget.isVisible(model, isSelectable(pack))) {
+                return new RespackoptsWidget(container, widget, model);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void onPress() {
+        this.wrapped.onClick(this.model);
+    }
+
+    @Override
+    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        int width = this.wrapped.getWidth(this.model);
+        int height = this.wrapped.getHeight(this.model, this.container.getHeight());
+        int marginRight = this.wrapped.getXMargin(this.model);
+
+        this.setWidth(width);
+        this.setHeight(height);
+        this.setX((this.container.getX() + this.container.getWidth()) - width - marginRight);
+        this.setY(this.container.getY() + (this.container.getHeight() - height) / 2);
+
+        this.isHovered = guiGraphics.containsPointInScissor(mouseX, mouseY) && this.isMouseOver(mouseX, mouseY);
+
+        PoseStack poseStack = guiGraphics.pose();
+        poseStack.pushPose();
+        poseStack.translate(0, 0, 1f);
+        this.wrapped.render(this.model, guiGraphics, this.getX(), this.getY(), this.isHovered, partialTick);
+        poseStack.popPose();
+    }
+
+    @Override
+    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+        // unsupported
+    }
+
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        boolean isMouseOver = super.isMouseOver(mouseX, mouseY);
+        boolean isCoveredAtPoint = false;
+
+        if (Minecraft.getInstance().screen instanceof ToggleableDialogContainer dialogContainer) {
+            isCoveredAtPoint = dialogContainer.isChildCoveredAtPoint(this, mouseX, mouseY);
+        }
+
+        return isMouseOver && !isCoveredAtPoint;
+    }
+
+    public static boolean isForceReload() {
+        return RespackoptsClient.forcePackReload;
+    }
+
+    /**
+     * Copied from {@code TransferableSelectionList.Entry#showHoverOverlay()}
+     */
+    private static boolean isSelectable(Pack pack) {
+        return !pack.isFixedPosition() || !pack.isRequired();
+    }
+
+    private static PackSelectionModel.Entry createModel(Pack pack) {
+        return new PackSelectionModel.Entry() {
+            @Override
+            public @NotNull ResourceLocation getIconTexture() {
+                return PackIconCache.DEFAULT_ICON;
+            }
+
+            @Override
+            public @NotNull PackCompatibility getCompatibility() {
+                return pack.getCompatibility();
+            }
+
+            @Override
+            public @NotNull String getId() {
+                return pack.getId();
+            }
+
+            @Override
+            public @NotNull Component getTitle() {
+                return pack.getTitle();
+            }
+
+            @Override
+            public @NotNull Component getDescription() {
+                return pack.getDescription();
+            }
+
+            @Override
+            public @NotNull PackSource getPackSource() {
+                return pack.getPackSource();
+            }
+
+            @Override
+            public boolean isFixedPosition() {
+                return pack.isFixedPosition();
+            }
+
+            @Override
+            public boolean isRequired() {
+                return pack.isRequired();
+            }
+
+            @Override
+            public void select() {
+                // no-op
+            }
+
+            @Override
+            public void unselect() {
+                // no-op
+            }
+
+            @Override
+            public void moveUp() {
+                // no-op
+            }
+
+            @Override
+            public void moveDown() {
+                // no-op
+            }
+
+            @Override
+            public boolean isSelected() {
+                return false;
+            }
+
+            @Override
+            public boolean canMoveUp() {
+                return false;
+            }
+
+            @Override
+            public boolean canMoveDown() {
+                return false;
+            }
+        };
+    }
+}
