@@ -481,7 +481,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                     PackListBase.this.itemHeight,
                     SPACING
             ));
-            ModAdditions.addToEntry(this, this.pack);
+            ModAdditions.addToEntry(this);
         }
 
         public <U extends GuiEventListener & Renderable> U addRenderableWidget(U widget) {

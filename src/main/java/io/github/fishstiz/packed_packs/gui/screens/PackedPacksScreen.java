@@ -164,11 +164,11 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         header.addFlexChild(this.profiles.getNameField());
 
         if (this.previous instanceof PackSelectionScreen packScreen) {
-            ModAdditions.addToHeader(packScreen, this.original.title(), header);
+            ModAdditions.addToHeader(header, this, packScreen, this.original.title());
         } else {
             PackSelectionScreen packScreen = this.original.createScreen();
             ((PackSelectionScreenAccessor) packScreen).invokeCloseWatcher();
-            ModAdditions.addToHeader(packScreen, this.original.title(), header);
+            ModAdditions.addToHeader(header, this, packScreen, this.original.title());
         }
 
         header.addChild(FidgetzButton.builder()
