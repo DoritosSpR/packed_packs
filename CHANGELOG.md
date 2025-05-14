@@ -1,6 +1,2 @@
-- Added vanilla sort ([#2](https://github.com/fishstiz/packed_packs/issues/2))
-- Alphabetical sorting now ignores case and § formatting.
-- Searching now ignores § formatting in title.
-- Fixed delayed revalidation when packed packs screen is readded
-- Fixed directory watcher closing and not reinitializing when readded.
-- Fixed directory watcher of original screen being initialized when packed packs screen initializes.
+- Add compatibility with Respackopts ([#1](https://github.com/fishstiz/packed_packs/issues/1))
+- Fixed directory watcher of original screen being initialized if replace original screen is true.
