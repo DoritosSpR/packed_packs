@@ -19,6 +19,7 @@ class PackWidget extends AbstractWidget {
     private final FidgetzText<?> title = FidgetzText.builder()
             .setHeight(Minecraft.getInstance().font.lineHeight)
             .setColor(ChatFormatting.WHITE.getColor())
+            .setShadow(true)
             .alignLeft()
             .build();
     private MultiLineLabel description;
