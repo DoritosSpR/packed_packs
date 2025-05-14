@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
+import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
@@ -12,6 +13,7 @@ import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.Util;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.navigation.FocusNavigationEvent;
@@ -458,6 +460,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         protected static final ColoredRect OVERLAY = new ColoredRect(Theme.WHITE.withAlpha(0.25F));
         protected static final ColoredRect SELECTED_OVERLAY = new ColoredRect(Theme.BLUE_500.withAlpha(0.25F));
         protected final List<GuiEventListener> children = new ArrayList<>();
+        protected final List<Renderable> renderables = new ArrayList<>();
         protected final List<NarratableEntry> narratables = new ArrayList<>();
         protected final Pack pack;
         private final PackWidget packWidget;
@@ -468,7 +471,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             super(index);
 
             this.pack = pack;
-            this.packWidget = new PackWidget(
+            this.packWidget = this.addRenderableWidget(new PackWidget(
                     this.pack,
                     PackListBase.this.iconCache,
                     this.getX(),
@@ -476,9 +479,26 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                     this.getWidth(),
                     PackListBase.this.itemHeight,
                     SPACING
-            );
-            this.children.add(this.packWidget);
-            this.narratables.add(this.packWidget);
+            ));
+            ModAdditions.addToEntry(this, this.pack);
+        }
+
+        public <U extends GuiEventListener & Renderable> U addRenderableWidget(U widget) {
+            this.children.add(widget);
+            this.renderables.add(widget);
+            if (widget instanceof NarratableEntry narratable) this.narratables.add(narratable);
+            return widget;
+        }
+
+        public <U extends GuiEventListener> U prependWidget(U widget) {
+            this.children.addFirst(widget);
+            if (widget instanceof NarratableEntry narratable) this.narratables.addFirst(narratable);
+            return widget;
+        }
+
+        public <U extends Renderable> U addRenderableOnly(U renderable) {
+            this.renderables.add(renderable);
+            return renderable;
         }
 
         @Override
@@ -554,6 +574,9 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if (super.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
             if (isLeftClick(button) && this.isMouseOver(mouseX, mouseY)) {
                 if (!isRangeModifierActive() && !isSelectModifierActive() && this.handleDoubleClick()) {
                     return true;
@@ -649,7 +672,10 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         private void renderWidget(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
             this.packWidget.setPosition(left, top);
             this.packWidget.setWidth(width);
-            this.packWidget.render(guiGraphics, mouseX, mouseY, partialTick);
+
+            for (Renderable renderable : this.renderables) {
+                renderable.render(guiGraphics, mouseX, mouseY, partialTick);
+            }
 
             this.renderSelection(guiGraphics, top, left, width, height);
             this.renderForeground(guiGraphics, top, left, width, height, mouseX, mouseY, hovering, partialTick);

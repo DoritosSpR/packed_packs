@@ -164,11 +164,11 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         header.addFlexChild(this.profiles.getNameField());
 
         if (this.previous instanceof PackSelectionScreen packScreen) {
-            ModAdditions.appendHeader(packScreen, this.original.title(), header);
+            ModAdditions.addToHeader(packScreen, this.original.title(), header);
         } else {
             PackSelectionScreen packScreen = this.original.createScreen();
             ((PackSelectionScreenAccessor) packScreen).invokeCloseWatcher();
-            ModAdditions.appendHeader(packScreen, this.original.title(), header);
+            ModAdditions.addToHeader(packScreen, this.original.title(), header);
         }
 
         header.addChild(FidgetzButton.builder()
@@ -291,12 +291,18 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     public void onClose() {
         if (this.minecraft == null) return;
 
-        if (!(this.packsConfig instanceof Config.ResourcePacks resourcePacks) || resourcePacks.isApplyOnClose()) {
+        Config.ResourcePacks resourceConfig = this.packsConfig instanceof Config.ResourcePacks resources ? resources : null;
+        String requestor = ModAdditions.shouldCommit();
+
+        if (requestor != null) {
+            this.commit();
+            PackedPacks.LOGGER.info("[packed_packs] Commiting packs on close at the request of mod '{}'.", requestor);
+        } else if (resourceConfig == null || resourceConfig.isApplyOnClose()) {
             this.commit();
         }
 
-        if (!this.original.isResourcePackDir() && !(this.previous instanceof PackSelectionScreen)) {
-            this.original.output().accept(this.repository.getRepository());
+        if (resourceConfig == null && !(this.previous instanceof PackSelectionScreen)) {
+            this.original.output().accept(this.repository.getRepository()); // validate datapacks
             return;
         }
 
@@ -350,8 +356,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.updateProfile(this.profiles.getProfile());
         this.repository.selectPacks(this.currentPacks.getList().copyPacks());
 
-        if (this.original.isResourcePackDir() && this.minecraft != null) {
-            this.minecraft.options.updateResourcePacks(this.repository.getRepository());
+        if (this.original.isResourcePackDir()) {
+            this.original.output().accept(this.repository.getRepository());
         }
     }
 
