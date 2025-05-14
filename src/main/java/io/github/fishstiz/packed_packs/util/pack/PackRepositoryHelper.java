@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionModel;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.Pack;
@@ -14,12 +15,13 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
 
-public class PackRepositoryHelper implements PackIconCache {
+public class PackRepositoryHelper implements PackAssets {
     private final Map<String, ResourceLocation> cachedIcons = new HashMap<>();
     private final Map<String, Pack> availablePacks = new LinkedHashMap<>();
     private final PackRepository repository;
     private final Path packDir;
     private final PackSelectionModel model;
+    private final boolean resourcePacks;
 
     public PackRepositoryHelper(PackRepository repository, Path packDir) {
         this.repository = repository;
@@ -27,6 +29,8 @@ public class PackRepositoryHelper implements PackIconCache {
 
         // Fabric API workaround
         this.model = new PackSelectionModel(PackRepositoryHelper::_update, PackRepositoryHelper::_getIcon, this.repository, PackRepositoryHelper::_apply);
+
+        this.resourcePacks = this.repository == Minecraft.getInstance().getResourcePackRepository();
 
         this.populateAvailablePacks();
     }
@@ -129,18 +133,27 @@ public class PackRepositoryHelper implements PackIconCache {
     }
 
     @Override
-    public void getOrLoad(Pack pack, Consumer<ResourceLocation> iconCallback) {
+    public void getOrLoadIcon(Pack pack, Consumer<ResourceLocation> iconCallback) {
         ResourceLocation cachedIcon = this.cachedIcons.get(pack.getId());
 
         if (cachedIcon != null) {
             iconCallback.accept(cachedIcon);
         } else {
-            iconCallback.accept(DEFAULT_ICON);
-            PackIconCache.loadPackIcon(pack).thenAcceptAsync(location -> {
+            PackAssets.loadPackIcon(pack).thenAcceptAsync(location -> {
                 this.cachedIcons.put(pack.getId(), location);
                 iconCallback.accept(location);
             });
         }
+    }
+
+    @Override
+    public boolean isResourcePacks() {
+        return this.resourcePacks;
+    }
+
+    @Override
+    public Path getDirectory() {
+        return this.packDir;
     }
 
     public record PackGroup(ImmutableList<Pack> selected, ImmutableList<Pack> unselected) {

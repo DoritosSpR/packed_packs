@@ -95,9 +95,9 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.previous = previous;
         this.original = original;
         this.repository = new PackRepositoryHelper(this.original.repository(), this.original.packDir());
-        this.availablePacks = new AvailablePacksLayout(this.original.packDir(), this.repository, this, SPACING);
-        this.currentPacks = new CurrentPacksLayout(this.original.packDir(), this.repository, this, SPACING);
-        this.packsConfig = this.original.isResourcePackDir() ? PackedPacks.CONFIG.getResourcepacks() : PackedPacks.CONFIG.getDatapacks();
+        this.availablePacks = new AvailablePacksLayout(this.repository, this, SPACING);
+        this.currentPacks = new CurrentPacksLayout(this.repository, this, SPACING);
+        this.packsConfig = this.repository.isResourcePacks() ? PackedPacks.CONFIG.getResourcepacks() : PackedPacks.CONFIG.getDatapacks();
         this.profiles = new ProfilesLayout(Sidebar.builder(this)
                 .setZ(SIDEBAR_Z)
                 .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1)),
@@ -163,13 +163,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         header.addChild(this.profiles.getToggleNameButton());
         header.addFlexChild(this.profiles.getNameField());
 
-        if (this.previous instanceof PackSelectionScreen packScreen) {
-            ModAdditions.addToHeader(header, this, packScreen, this.original.title());
-        } else {
-            PackSelectionScreen packScreen = this.original.createScreen();
-            ((PackSelectionScreenAccessor) packScreen).invokeCloseWatcher();
-            ModAdditions.addToHeader(header, this, packScreen, this.original.title());
-        }
+        PackSelectionScreen packSelectionScreen = this.previous instanceof PackSelectionScreen s ? s : this.original.createDummy();
+        ModAdditions.addToHeader(this.repository.isResourcePacks(), header, packSelectionScreen);
 
         header.addChild(FidgetzButton.builder()
                 .makeSquare()
@@ -203,7 +198,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                 .setTooltip(Tooltip.create(OPEN_FOLDER_INFO_TEXT))
                 .setOnPress(this.repository::openDirectory).build());
 
-        if (this.original.isResourcePackDir()) {
+        if (this.repository.isResourcePacks()) {
             secondColumn.addFlexChild(FidgetzButton.builder().setMessage(APPLY_TEXT).setOnPress(this::commit).build());
         }
 
@@ -292,7 +287,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         if (this.minecraft == null) return;
 
         Config.ResourcePacks resourceConfig = this.packsConfig instanceof Config.ResourcePacks resources ? resources : null;
-        String requestor = ModAdditions.shouldCommit();
+        String requestor = ModAdditions.shouldCommit(this.repository.isResourcePacks());
 
         if (requestor != null) {
             this.commit();
@@ -356,7 +351,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.updateProfile(this.profiles.getProfile());
         this.repository.selectPacks(this.currentPacks.getList().copyPacks());
 
-        if (this.original.isResourcePackDir()) {
+        if (this.repository.isResourcePacks()) {
             this.original.output().accept(this.repository.getRepository());
         }
     }

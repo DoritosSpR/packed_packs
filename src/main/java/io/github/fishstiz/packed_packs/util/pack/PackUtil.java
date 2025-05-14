@@ -7,11 +7,14 @@ import net.minecraft.server.packs.repository.PackDetector;
 import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
+
+import static com.google.common.io.Files.getFileExtension;
+import static java.nio.file.Files.getLastModifiedTime;
 
 public class PackUtil {
     private PackUtil() {
@@ -36,11 +39,35 @@ public class PackUtil {
 
         try {
             Path path = getPath(directory, pack);
-            return Files.getLastModifiedTime(path).toInstant().toEpochMilli();
+            return getLastModifiedTime(path).toInstant().toEpochMilli();
         } catch (IOException e) {
             PackedPacks.LOGGER.error("Failed to get age of pack '{}'", pack.getId());
             return -1;
         }
+    }
+
+    public static boolean renamePackFile(Path directory, Pack pack, String name) {
+        if (!isFile(pack)) {
+            return false;
+        }
+
+        String filename = getFileName(pack);
+        if (filename == null) {
+            return false;
+        }
+
+        String fileExtension = getFileExtension(filename);
+
+        if (!fileExtension.isEmpty()) {
+            name = name + "." + fileExtension;
+        }
+
+        File destination = directory.resolve(name).toFile();
+        if (destination.exists()) {
+            return false;
+        }
+
+        return getPath(directory, pack).toFile().renameTo(destination);
     }
 
     public static Stream<String> extractPackNames(Collection<Path> paths) {

@@ -9,7 +9,7 @@ import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
-import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
+import io.github.fishstiz.packed_packs.util.pack.PackAssets;
 import net.minecraft.Util;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
@@ -21,7 +21,6 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.file.Path;
 import java.util.*;
 import java.util.function.BiConsumer;
 
@@ -39,14 +38,14 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     private final List<Pack> queried = new ArrayList<>();
     private final List<Pack> selection = new ArrayList<>();
     private final PackListEventListener listener;
-    private final PackIconCache iconCache;
+    private final PackAssets packAssets;
     private final Query query;
 
-    protected PackListBase(Path packDir, PackIconCache iconCache, PackListEventListener listener) {
+    protected PackListBase(PackAssets packAssets, PackListEventListener listener) {
         super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, OFFSET_Y, ROW_GAP);
 
-        this.query = new Query(packDir);
-        this.iconCache = iconCache;
+        this.query = new Query(packAssets.getDirectory());
+        this.packAssets = packAssets;
         this.listener = listener;
         this.queryPacks();
     }
@@ -475,14 +474,14 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             this.pack = pack;
             this.packWidget = this.addRenderableWidget(new PackWidget(
                     this.pack,
-                    PackListBase.this.iconCache,
+                    PackListBase.this.packAssets,
                     this.getX(),
                     PackListBase.this.getRowTop(this.index),
                     this.getWidth(),
                     PackListBase.this.itemHeight,
                     SPACING
             ));
-            ModAdditions.addToEntry(this);
+            ModAdditions.addToEntry(PackListBase.this.packAssets.isResourcePacks(), this);
         }
 
         public <U extends GuiEventListener & Renderable> U addRenderableWidget(U widget) {

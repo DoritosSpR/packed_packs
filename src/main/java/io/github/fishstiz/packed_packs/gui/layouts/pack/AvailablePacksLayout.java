@@ -11,12 +11,10 @@ import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.components.events.QueryEvent;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
-import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
+import io.github.fishstiz.packed_packs.util.pack.PackAssets;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
-
-import java.nio.file.Path;
 
 public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
     private static final Component SORT_TEXT = ResourceUtil.getText("sort");
@@ -26,8 +24,8 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
     private CyclicButton<Query.SortOption, Void> sortButton;
     private ToggleButton<Void> compatButton;
 
-    public AvailablePacksLayout(Path packDir, PackIconCache iconCache, PackListEventListener listener, int spacing) {
-        super(new AvailablePackList(packDir, iconCache, listener), spacing);
+    public AvailablePacksLayout(PackAssets packAssets, PackListEventListener listener, int spacing) {
+        super(new AvailablePackList(packAssets, listener), spacing);
 
         this.eventListener = listener;
     }
