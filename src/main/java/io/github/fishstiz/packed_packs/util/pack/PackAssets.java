@@ -14,14 +14,18 @@ import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.resources.IoSupplier;
 
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-@FunctionalInterface
-public interface PackIconCache {
+public interface PackAssets {
     ResourceLocation DEFAULT_ICON = ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png");
 
-    void getOrLoad(Pack pack, Consumer<ResourceLocation> iconCallback);
+    void getOrLoadIcon(Pack pack, Consumer<ResourceLocation> iconCallback);
+
+    boolean isResourcePacks();
+
+    Path getDirectory();
 
     /**
      * Copied from {@link PackSelectionScreen#loadPackIcon(TextureManager, Pack)}
