@@ -8,13 +8,12 @@ import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
-import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
+import io.github.fishstiz.packed_packs.util.pack.PackAssets;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,8 +43,8 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     private static final double SCROLL_STEP = 10;
     private boolean scrolling;
 
-    public CurrentPackList(Path packDir, PackIconCache iconCache, PackListEventListener listener) {
-        super(packDir, iconCache, listener);
+    public CurrentPackList(PackAssets packAssets, PackListEventListener listener) {
+        super(packAssets, listener);
     }
 
     @Override

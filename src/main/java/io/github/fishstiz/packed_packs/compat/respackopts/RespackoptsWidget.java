@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.compat.respackopts;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
-import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
+import io.github.fishstiz.packed_packs.util.pack.PackAssets;
 import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
 import io.gitlab.jfronny.respackopts.RespackoptsClient;
 import net.minecraft.client.Minecraft;
@@ -104,7 +104,7 @@ public class RespackoptsWidget extends AbstractButton {
         return new PackSelectionModel.Entry() {
             @Override
             public @NotNull ResourceLocation getIconTexture() {
-                return PackIconCache.DEFAULT_ICON;
+                return PackAssets.DEFAULT_ICON;
             }
 
             @Override

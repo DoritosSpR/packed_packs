@@ -6,13 +6,12 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
+import io.github.fishstiz.packed_packs.util.pack.PackAssets;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,8 +27,8 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
     private static final Theme DROP_ZONE_THEME = Theme.RED_700;
     private static final ColoredRect DROP_ZONE = new ColoredRect(DROP_ZONE_THEME.withAlpha(0.25f));
 
-    public AvailablePackList(Path packDir, PackIconCache iconCache, PackListEventListener listener) {
-        super(packDir, iconCache, listener);
+    public AvailablePackList(PackAssets packAssets, PackListEventListener listener) {
+        super(packAssets, listener);
     }
 
     @Override

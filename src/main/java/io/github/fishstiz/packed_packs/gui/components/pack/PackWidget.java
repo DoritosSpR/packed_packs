@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
+import io.github.fishstiz.packed_packs.util.pack.PackAssets;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,7 +15,7 @@ import net.minecraft.server.packs.repository.Pack;
 class PackWidget extends AbstractWidget {
     private static final int DESCRIPTION_LINES = 2;
     private final Pack pack;
-    private final PackIconCache iconCache;
+    private final PackAssets packAssets;
     private final FidgetzText<?> title = FidgetzText.builder()
             .setHeight(Minecraft.getInstance().font.lineHeight)
             .setColor(ChatFormatting.WHITE.getColor())
@@ -23,15 +23,15 @@ class PackWidget extends AbstractWidget {
             .alignLeft()
             .build();
     private MultiLineLabel description;
-    private Sprite sprite = Sprite.of32(PackIconCache.DEFAULT_ICON);
+    private Sprite sprite = Sprite.of32(PackAssets.DEFAULT_ICON);
     private final int spacing;
     private boolean lazyLoaded = false;
 
-    PackWidget(Pack pack, PackIconCache iconCache, int x, int y, int width, int height, int spacing) {
+    PackWidget(Pack pack, PackAssets packAssets, int x, int y, int width, int height, int spacing) {
         super(x, y, width, height, pack.getTitle());
 
         this.pack = pack;
-        this.iconCache = iconCache;
+        this.packAssets = packAssets;
         this.title.setMessage(pack.getTitle());
         this.spacing = spacing;
 
@@ -72,7 +72,7 @@ class PackWidget extends AbstractWidget {
     protected void renderSprite(GuiGraphics guiGraphics, float partialTick) {
         if (!this.lazyLoaded) { // lazy loads icon as this is not called if not in view
             this.lazyLoaded = true;
-            this.iconCache.getOrLoad(this.pack, icon -> this.sprite = Sprite.of32(icon));
+            this.packAssets.getOrLoadIcon(this.pack, icon -> this.sprite = Sprite.of32(icon));
         }
 
         int x = this.getX() + this.spacing;
