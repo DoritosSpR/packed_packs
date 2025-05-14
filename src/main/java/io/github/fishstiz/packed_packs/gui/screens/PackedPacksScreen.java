@@ -95,8 +95,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.previous = previous;
         this.original = original;
         this.repository = new PackRepositoryHelper(this.original.repository(), this.original.packDir());
-        this.availablePacks = new AvailablePacksLayout(this.repository, this, SPACING);
-        this.currentPacks = new CurrentPacksLayout(this.repository, this, SPACING);
+        this.availablePacks = new AvailablePacksLayout(this.original.packDir(), this.repository, this, SPACING);
+        this.currentPacks = new CurrentPacksLayout(this.original.packDir(), this.repository, this, SPACING);
         this.packsConfig = this.original.isResourcePackDir() ? PackedPacks.CONFIG.getResourcepacks() : PackedPacks.CONFIG.getDatapacks();
         this.profiles = new ProfilesLayout(Sidebar.builder(this)
                 .setZ(SIDEBAR_Z)

@@ -12,6 +12,7 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,8 +28,8 @@ public final class AvailablePackList extends PackListBase<AvailablePackList.Entr
     private static final Theme DROP_ZONE_THEME = Theme.RED_700;
     private static final ColoredRect DROP_ZONE = new ColoredRect(DROP_ZONE_THEME.withAlpha(0.25f));
 
-    public AvailablePackList(PackIconCache iconCache, PackListEventListener listener) {
-        super(iconCache, listener);
+    public AvailablePackList(Path packDir, PackIconCache iconCache, PackListEventListener listener) {
+        super(packDir, iconCache, listener);
     }
 
     @Override

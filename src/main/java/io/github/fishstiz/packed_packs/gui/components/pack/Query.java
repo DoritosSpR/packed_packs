@@ -13,22 +13,24 @@ import net.minecraft.server.packs.repository.PackSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-import static java.util.Comparator.comparing;
-import static java.util.Comparator.comparingLong;
-
 public class Query {
+    private final Path packDir;
     private boolean hideIncompatible = false;
     private SortOption sort;
     private String search;
 
-    Query() {
+    Query(Path packDir) {
+        this.packDir = packDir;
     }
 
-    Query(boolean hideIncompatible, SortOption sort, String search) {
+    Query(Path packDir, boolean hideIncompatible, SortOption sort, String search) {
+        this(packDir);
+
         this.hideIncompatible = hideIncompatible;
         this.sort = sort;
         this.search = search;
@@ -73,7 +75,7 @@ public class Query {
             packs.removeIf(pack -> !normalizeTitle(pack.getTitle().getString()).toLowerCase().contains(this.search.toLowerCase()));
         }
         if (this.sort != null) {
-            packs.sort(this.sort.getComparator());
+            packs.sort(this.sort.createComparator(this.packDir));
         }
     }
 
@@ -82,7 +84,7 @@ public class Query {
     }
 
     public Query copy() {
-        return new Query(this.hideIncompatible, this.sort, this.search);
+        return new Query(this.packDir, this.hideIncompatible, this.sort, this.search);
     }
 
     public boolean isHideIncompatible() {
@@ -104,24 +106,33 @@ public class Query {
             if (builtInFirst != builtInSecond) return builtInFirst ? 1 : -1;
             return first.getTitle().getString().compareTo(second.getTitle().getString());
         }),
-        A_Z("sort.a_z", "sort_a_z", comparing(
+        A_Z("sort.a_z", "sort_a_z", Comparator.comparing(
                 pack -> normalizeTitle(pack.getTitle().getString()),
                 String.CASE_INSENSITIVE_ORDER
         )),
-        Z_A("sort.z_a", "sort_z_a", A_Z.getComparator().reversed()),
-        RECENT("sort.recent", "sort_recent", comparingLong(PackUtil::getLastUpdatedEpochMs).reversed()),
-        OLDEST("sort.oldest", "sort_oldest", comparingLong(PackUtil::getLastUpdatedEpochMs));
+        Z_A("sort.z_a", "sort_z_a", A_Z.createComparator(null).reversed()),
+        RECENT("sort.recent", "sort_recent", ComparatorFactory.createDynamic((Path directory) ->
+                Comparator.<Pack>comparingLong(pack -> PackUtil.getLastUpdatedEpochMs(directory, pack)).reversed()
+        )),
+        OLDEST("sort.oldest", "sort_oldest", ComparatorFactory.createDynamic((Path directory) ->
+                RECENT.createComparator(directory).reversed()
+        ));
 
         private final Component component;
         private final Tooltip tooltip;
         private final ButtonSprites sprites;
-        private final Comparator<Pack> comparator;
+        private final ComparatorFactory<?> comparatorFactory;
+        private Comparator<Pack> cachedComparator;
 
-        SortOption(String key, String icon, Comparator<Pack> comparator) {
+        <T> SortOption(String key, String icon, ComparatorFactory<T> comparatorFactory) {
             this.component = ResourceUtil.getText(key);
             this.tooltip = Tooltip.create(this.component);
             this.sprites = ButtonSprites.of(new Sprite(ResourceUtil.getIcon(icon), Size.of16()));
-            this.comparator = comparator;
+            this.comparatorFactory = comparatorFactory;
+        }
+
+        SortOption(String key, String icon, Comparator<Pack> comparator) {
+            this(key, icon, arg -> comparator);
         }
 
         @Override
@@ -129,8 +140,20 @@ public class Query {
             return this.component;
         }
 
-        public @NotNull Comparator<Pack> getComparator() {
-            return this.comparator;
+        public <T> @NotNull Comparator<Pack> createComparator(T arg) {
+            if (this.cachedComparator != null) {
+                return this.cachedComparator;
+            }
+
+            @SuppressWarnings("unchecked")
+            ComparatorFactory<T> factory = (ComparatorFactory<T>) this.comparatorFactory;
+            Comparator<Pack> comparator = factory.createComparator(arg);
+
+            if (!factory.isDynamic()) {
+                this.cachedComparator = comparator;
+            }
+
+            return comparator;
         }
 
         @Override
@@ -141,6 +164,29 @@ public class Query {
         @Override
         public @Nullable ButtonSprites sprites() {
             return this.sprites;
+        }
+
+        @FunctionalInterface
+        private interface ComparatorFactory<T> {
+            Comparator<Pack> createComparator(T arg);
+
+            default boolean isDynamic() {
+                return false;
+            }
+
+            static <T> ComparatorFactory<T> createDynamic(ComparatorFactory<T> factory) {
+                return new ComparatorFactory<>() {
+                    @Override
+                    public Comparator<Pack> createComparator(T arg) {
+                        return factory.createComparator(arg);
+                    }
+
+                    @Override
+                    public boolean isDynamic() {
+                        return true;
+                    }
+                };
+            }
         }
     }
 
