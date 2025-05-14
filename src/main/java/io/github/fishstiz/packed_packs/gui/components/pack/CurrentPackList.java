@@ -14,6 +14,7 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,8 +44,8 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     private static final double SCROLL_STEP = 10;
     private boolean scrolling;
 
-    public CurrentPackList(PackIconCache iconCache, PackListEventListener listener) {
-        super(iconCache, listener);
+    public CurrentPackList(Path packDir, PackIconCache iconCache, PackListEventListener listener) {
+        super(packDir, iconCache, listener);
     }
 
     @Override

@@ -22,6 +22,7 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.BiConsumer;
 
@@ -40,11 +41,12 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     private final List<Pack> selection = new ArrayList<>();
     private final PackListEventListener listener;
     private final PackIconCache iconCache;
-    private final Query query = new Query();
+    private final Query query;
 
-    protected PackListBase(PackIconCache iconCache, PackListEventListener listener) {
+    protected PackListBase(Path packDir, PackIconCache iconCache, PackListEventListener listener) {
         super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, OFFSET_Y, ROW_GAP);
 
+        this.query = new Query(packDir);
         this.iconCache = iconCache;
         this.listener = listener;
         this.queryPacks();

@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackDetector;
 import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,13 +17,25 @@ public class PackUtil {
     private PackUtil() {
     }
 
-    public static long getLastUpdatedEpochMs(Pack pack) {
-        if (!pack.getId().matches("^file/.*")) {
+    public static boolean isFile(Pack pack) {
+        return pack.getId().matches("^file/.*");
+    }
+
+    public static @Nullable String getFileName(Pack pack) {
+        return isFile(pack) ? pack.getId().replaceFirst("^file/", "") : null;
+    }
+
+    public static Path getPath(Path dir, Pack pack) {
+        return dir.resolve(Objects.requireNonNull(getFileName(pack)));
+    }
+
+    public static long getLastUpdatedEpochMs(Path directory, Pack pack) {
+        if (!isFile(pack)) {
             return -1;
         }
 
         try {
-            Path path = Minecraft.getInstance().getResourcePackDirectory().resolve(pack.getId().replaceFirst("^file/", ""));
+            Path path = getPath(directory, pack);
             return Files.getLastModifiedTime(path).toInstant().toEpochMilli();
         } catch (IOException e) {
             PackedPacks.LOGGER.error("Failed to get age of pack '{}'", pack.getId());
