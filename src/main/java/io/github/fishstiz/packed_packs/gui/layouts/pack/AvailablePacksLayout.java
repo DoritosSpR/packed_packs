@@ -16,6 +16,8 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Path;
+
 public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
     private static final Component SORT_TEXT = ResourceUtil.getText("sort");
     private static final Component COMPAT_TEXT = ResourceUtil.getText("hide_incompatible");
@@ -24,8 +26,8 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
     private CyclicButton<Query.SortOption, Void> sortButton;
     private ToggleButton<Void> compatButton;
 
-    public AvailablePacksLayout(PackIconCache iconCache, PackListEventListener listener, int spacing) {
-        super(new AvailablePackList(iconCache, listener), spacing);
+    public AvailablePacksLayout(Path packDir, PackIconCache iconCache, PackListEventListener listener, int spacing) {
+        super(new AvailablePackList(packDir, iconCache, listener), spacing);
 
         this.eventListener = listener;
     }

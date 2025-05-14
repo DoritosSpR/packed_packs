@@ -7,9 +7,11 @@ import io.github.fishstiz.packed_packs.util.pack.PackIconCache;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Path;
+
 public final class CurrentPacksLayout extends PackLayout<CurrentPackList> {
-    public CurrentPacksLayout(PackIconCache iconCache, PackListEventListener listener, int spacing) {
-        super(new CurrentPackList(iconCache, listener), spacing);
+    public CurrentPacksLayout(Path packDir, PackIconCache iconCache, PackListEventListener listener, int spacing) {
+        super(new CurrentPackList(packDir, iconCache, listener), spacing);
     }
 
     @Override
