@@ -2,13 +2,15 @@ package io.github.fishstiz.packed_packs.compat;
 
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.compat.etf.ETFButton;
+import io.github.fishstiz.packed_packs.compat.etf.ETFButtonFactory;
 import io.github.fishstiz.packed_packs.compat.resourcify.ResourcifyButtons;
 import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsWidget;
+import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFactory;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.jetbrains.annotations.Nullable;
@@ -24,7 +26,10 @@ public class ModAdditions {
 
     public static void addToHeader(boolean resourcePacks, FlexLayout header, PackSelectionScreen original) {
         if (resourcePacks) {
-            Mod.ETF.wrapError(header, Minecraft.getInstance().screen, (layout, previous) -> layout.addChild(ETFButton.getButton(previous)));
+            Screen currentScreen = Minecraft.getInstance().screen;
+
+            Mod.ETF.wrapError(header, currentScreen, (layout, previous) -> layout.addChild(ETFButtonFactory.create(previous)));
+            Mod.VTD.wrapError(header, currentScreen, (layout, previous) -> layout.addChild(VTDButtonFactory.create(previous)));
         }
 
         Mod.RESOURCIFY.wrapError(header, original, original.getTitle(), (layout, packScreen, title) -> {
@@ -61,7 +66,8 @@ public class ModAdditions {
     public enum Mod {
         RESOURCIFY("resourcify"),
         RESPACKOPTS("respackopts"),
-        ETF("entity_texture_features");
+        ETF("entity_texture_features"),
+        VTD("vt_downloader");
 
         private final boolean loaded;
         private final String id;
@@ -79,8 +85,8 @@ public class ModAdditions {
             return this.loaded;
         }
 
-        private void logError() {
-            PackedPacks.LOGGER.warn("[packed_packs] Error occurred while applying compatibility for mod '{}'", this.getId());
+        private void logError(Throwable e) {
+            PackedPacks.LOGGER.warn("[packed_packs] Error occurred while applying compatibility for mod '{}'", this.getId(), e);
         }
 
         public <T> T wrapError(Supplier<T> supplier, T defaultValue) {
@@ -89,7 +95,7 @@ public class ModAdditions {
                     return supplier.get();
                 }
             } catch (LinkageError | Exception e) {
-                this.logError();
+                this.logError(e);
             }
             return defaultValue;
         }
@@ -100,7 +106,7 @@ public class ModAdditions {
                     consumer.accept(arg);
                 }
             } catch (LinkageError | Exception e) {
-                this.logError();
+                this.logError(e);
             }
         }
 
@@ -110,7 +116,7 @@ public class ModAdditions {
                     consumer.accept(arg1, arg2);
                 }
             } catch (LinkageError | Exception e) {
-                this.logError();
+                this.logError(e);
             }
         }
 
@@ -120,7 +126,7 @@ public class ModAdditions {
                     consumer.accept(arg1, arg2, arg3);
                 }
             } catch (LinkageError | Exception e) {
-                this.logError();
+                this.logError(e);
             }
         }
     }
