@@ -18,6 +18,7 @@ import java.util.List;
 public class FidgetzButton<E> extends Button implements Metadata<E> {
     private final List<Runnable> listeners = new ArrayList<>();
     private final ButtonSprites sprites;
+    private final Integer focusedBorder;
     private E metadata;
 
     protected FidgetzButton(Builder<E, ?> builder) {
@@ -25,6 +26,7 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
 
         this.metadata = builder.metadata;
         this.sprites = builder.sprites;
+        this.focusedBorder = builder.focusedBorder;
 
         if (builder.tooltip != null) {
             this.setTooltip(builder.tooltip);
@@ -62,6 +64,10 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         this.sprites.get(this.active).renderClamped(guiGraphics, x, y, width, height, partialTick);
     }
 
+    protected void renderBorder(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
+        guiGraphics.renderOutline(x, y, width, height, this.focusedBorder);
+    }
+
     @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.isHovered = this.isMouseOver(mouseX, mouseY);
@@ -75,6 +81,10 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
             int spriteY = this.getY() + (this.getHeight() - spriteHeight) / 2;
 
             this.renderSprite(guiGraphics, spriteX, spriteY, spriteWidth, spriteHeight, partialTick);
+        }
+
+        if (this.isHoveredOrFocused() && this.focusedBorder != null) {
+            this.renderBorder(guiGraphics, this.getX(), this.getY(), this.getWidth(), this.getHeight(), partialTick);
         }
     }
 
@@ -109,6 +119,7 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         private Component message = Component.empty();
         private Tooltip tooltip;
         private ButtonSprites sprites;
+        private Integer focusedBorder;
         private OnPress onPress = btn -> {
         };
         private E metadata;
@@ -190,6 +201,11 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
 
         public B setSpriteOnly(Sprite sprite) {
             this.sprites = ButtonSprites.of(sprite);
+            return self();
+        }
+
+        public B setFocusedBorder(Integer hoverBorder) {
+            this.focusedBorder = hoverBorder;
             return self();
         }
 
