@@ -1,2 +1,4 @@
-- Add compatibility with Respackopts ([#1](https://github.com/fishstiz/packed_packs/issues/1))
-- Fixed directory watcher of original screen being initialized if replace original screen is true.
+- Added text shadow to title ([#7](https://github.com/fishstiz/packed_packs/issues/7)).
+- Added compatibility with ETF ([#5](https://github.com/fishstiz/packed_packs/issues/5)).
+- Added partial compatibility with VTDownloader (no pencil button) ([#6](https://github.com/fishstiz/packed_packs/issues/6)). 
+- Fixed date modified sort not working on data packs.
