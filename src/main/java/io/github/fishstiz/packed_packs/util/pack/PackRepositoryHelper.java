@@ -71,28 +71,31 @@ public class PackRepositoryHelper implements PackAssets {
     }
 
     public PackGroup validatePacks(List<Pack> unselected, List<Pack> selected) {
+        Set<Pack> seen = new HashSet<>();
         Set<Pack> validPacks = new HashSet<>(this.availablePacks.values());
-        Set<Pack> previousUnselected = new HashSet<>(unselected);
-        Set<Pack> previousSelected = new HashSet<>(selected);
-        List<Pack> unselectedPacks = new ArrayList<>(unselected);
-        List<Pack> selectedPacks = new ArrayList<>(selected);
+        List<Pack> validSelected = new ArrayList<>(selected.size());
+        List<Pack> validUnselected = new ArrayList<>(unselected.size());
 
-        unselectedPacks.retainAll(validPacks);
-        selectedPacks.retainAll(validPacks);
-
+        for (Pack pack : selected) {
+            if (validPacks.contains(pack) && seen.add(pack)) {
+                validSelected.add(pack);
+            }
+        }
+        for (Pack pack : unselected) {
+            if (validPacks.contains(pack) && seen.add(pack)) {
+                validUnselected.add(pack);
+            }
+        }
         for (Pack pack : validPacks) {
-            if (!previousSelected.contains(pack) && !previousUnselected.contains(pack)) {
+            if (seen.add(pack)) {
                 if (pack.isRequired()) {
-                    selectedPacks.add(pack);
+                    validSelected.add(pack);
                 } else {
-                    unselectedPacks.add(pack);
+                    validUnselected.add(pack);
                 }
             }
         }
-
-        unselectedPacks.removeIf(new HashSet<>(selectedPacks)::contains);
-
-        return PackGroup.of(selectedPacks, unselectedPacks);
+        return PackGroup.of(validSelected, validUnselected);
     }
 
     public List<Pack> getPacksById(List<String> packIds) {
