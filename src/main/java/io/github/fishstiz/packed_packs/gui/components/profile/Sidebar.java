@@ -2,7 +2,6 @@ package io.github.fishstiz.packed_packs.gui.components.profile;
 
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.fidgetz.gui.shapes.Line;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
@@ -12,18 +11,13 @@ import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+
+import static io.github.fishstiz.fidgetz.util.DrawUtil.DEMO_BACKGROUND;
 
 public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
     private static final int SPACING = 8;
-    private static final Sprite DEFAULT_BACKGROUND = new Sprite(
-            ResourceLocation.withDefaultNamespace("textures/gui/demo_background.png"),
-            Size.square(256),
-            Line.zero(247),
-            Line.zero(165)
-    );
-    private static final Sprite CLOSE_SPRITE = new Sprite(ResourceUtil.getIcon("cross"), Size.of16());
     private static final int MIN_WIDTH = 100;
+    private static final Sprite CLOSE_SPRITE = new Sprite(ResourceUtil.getIcon("cross"), Size.of16());
     private final FidgetzButton<Void> closeButton;
 
     protected Sidebar(Builder builder) {
@@ -90,6 +84,8 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
 
         protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, LayoutWrapper<FlexLayout> root) {
             super(screen, root);
+
+            this.background = DEMO_BACKGROUND;
         }
 
         public Builder setHeaderSettings(LayoutSettings headerSettings) {
@@ -129,10 +125,6 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
 
         @Override
         public Sidebar build() {
-            if (this.background == null) {
-                this.setBackground(DEFAULT_BACKGROUND);
-            }
-
             return new Sidebar(this);
         }
     }
