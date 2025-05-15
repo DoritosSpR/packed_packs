@@ -88,7 +88,7 @@ public class PackUtil {
         };
     }
 
-    public static PackValidation validatePaths(List<Path> packs, PackDetector<Path> packDetector) {
+    public static PathValidationResults validatePaths(List<Path> packs, PackDetector<Path> packDetector) {
         List<Path> valid = new ArrayList<>(packs.size());
         Set<Path> rejected = new HashSet<>(packs);
         List<ForbiddenSymlinkInfo> symlinkWarnings = new ArrayList<>();
@@ -106,9 +106,9 @@ public class PackUtil {
                 PackedPacks.LOGGER.warn("Failed to check {} for packs", path, e);
             }
         }
-        return new PackValidation(valid, rejected, symlinkWarnings);
+        return new PathValidationResults(valid, rejected, symlinkWarnings);
     }
 
-    public record PackValidation(List<Path> valid, Set<Path> rejected, List<ForbiddenSymlinkInfo> symlinkWarnings) {
+    public record PathValidationResults(List<Path> valid, Set<Path> rejected, List<ForbiddenSymlinkInfo> symlinkWarnings) {
     }
 }
