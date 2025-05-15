@@ -451,7 +451,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         for (Pack selected : snapshot.selection()) {
             this.select(selected);
         }
-        this.scrollToLastSelected();
     }
 
     public abstract class Entry extends AbstractDynamicList<T>.Entry implements PackList.Entry, ContainerEventHandlerPatch {
@@ -573,7 +572,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (ContainerEventHandlerPatch.super.mouseClicked(mouseX, mouseY, button)) {
-                return true;
+                return false;
             }
             if (isLeftClick(button) && this.isMouseOver(mouseX, mouseY)) {
                 if (!isRangeModifierActive() && !isSelectModifierActive() && this.handleDoubleClick()) {
