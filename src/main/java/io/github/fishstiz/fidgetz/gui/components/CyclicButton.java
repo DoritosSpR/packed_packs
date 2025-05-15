@@ -1,6 +1,7 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
@@ -11,10 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT;
+
 public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButton<E> {
     private final @Nullable Component prefix;
     private final List<Consumer<T>> listeners;
     private final T[] options;
+    private final boolean allowReverseClick;
     private int value = 0;
 
     private CyclicButton(Builder<T, E> builder) {
@@ -23,6 +27,7 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
         this.listeners = builder.listeners;
         this.options = builder.options;
         this.prefix = builder.prefix;
+        this.allowReverseClick = builder.allowReverseClick;
 
         this.setValueSilently(builder.value);
     }
@@ -55,6 +60,12 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
     @Override
     public void onPress() {
         this.value = this.value >= this.options.length - 1 ? 0 : this.value + 1;
+        this.updateMessage();
+        this.informListeners();
+    }
+
+    public void onReversePress() {
+        this.value = this.value <= 0 ? this.options.length - 1 : this.value - 1;
         this.updateMessage();
         this.informListeners();
     }
@@ -96,6 +107,21 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
         }
     }
 
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.allowReverseClick && isValidReverseClick(button) && this.isMouseOver(mouseX, mouseY)) {
+            this.playDownSound(Minecraft.getInstance().getSoundManager());
+            this.onReversePress();
+            return true;
+        }
+
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    protected static boolean isValidReverseClick(int button) {
+        return button == MOUSE_BUTTON_RIGHT;
+    }
+
     public static <E> Builder<Option, E> builder(Component... components) {
         Option[] options = new Option[components.length];
 
@@ -115,6 +141,7 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
         private final T[] options;
         private T value;
         private Component prefix;
+        private boolean allowReverseClick = true;
 
         private Builder(T[] options) {
             this.options = options;
@@ -127,6 +154,11 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
 
         public Builder<T, E> setPrefix(Component prefix) {
             this.prefix = prefix;
+            return this;
+        }
+
+        public Builder<T, E> disableReverseClick() {
+            this.allowReverseClick = false;
             return this;
         }
 
