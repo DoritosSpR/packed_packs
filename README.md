@@ -1,7 +1,9 @@
-# Packed Packs
+# 📦 Packed Packs
 Pack packs into profiles with multiple selection, drag and drop, and extended mouse and keyboard controls.
 
-## Features
+![packed_packs_demo_compressed](https://github.com/user-attachments/assets/6f7995cc-665d-4989-976c-d07ee2ca1ecf)
+
+## 🚩 Features
 
 - Save and load custom profiles.
 - Search by title.
@@ -13,14 +15,14 @@ Pack packs into profiles with multiple selection, drag and drop, and extended mo
 - History (undo an redo).
 - Simple configuration.
 
-### Mouse Controls
+### 🖱️ Mouse Controls
 - Hold `Shift` while clicking to select range.
 - Hold `Ctrl` while clicking to add/remove from selection.
 - Double click to quickly transfer a single entry.
 - Click backwards side button to undo.
 - Click forwards side button to redo.
 
-### Keyboard Controls
+### ⌨️ Keyboard Controls
 - Navigate entries with arrow keys.
 - Navigate out of entries with `Tab`.
 - Press `Space` or `Enter` to transfer selection.
@@ -30,7 +32,7 @@ Pack packs into profiles with multiple selection, drag and drop, and extended mo
 - Press `Ctrl + Shift + Z` or `Ctrl + Y` to redo.
 - Type any character to automatically focus search bar.
 
-### Configuration
+### ⚙️ Configuration
 - Apply resource packs automatically on close.
 - Replace the default resource pack screen.
 - Replace the default data pack screen.
