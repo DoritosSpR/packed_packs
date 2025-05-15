@@ -250,7 +250,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                 this.minecraft.setScreen(this);
                 return;
             }
-            PackValidation results = validatePaths(packs, createPackDetector());
+            PathValidationResults results = validatePaths(packs, createPackDetector());
 
             if (!results.symlinkWarnings().isEmpty()) {
                 this.minecraft.setScreen(NoticeWithLinkScreen.createPackSymlinkWarningScreen(() -> this.minecraft.setScreen(this)));
