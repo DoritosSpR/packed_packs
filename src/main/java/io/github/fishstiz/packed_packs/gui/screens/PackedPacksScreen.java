@@ -51,6 +51,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
@@ -361,13 +362,14 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     }
 
     public void revalidate() {
-        this.repository.refresh();
-        PackList availableList = this.availablePacks.getList();
-        PackList currentList = this.currentPacks.getList();
-        PackRepositoryHelper.PackGroup packs = this.repository.validatePacks(availableList.copyPacks(), currentList.copyPacks());
-        this.replacePacks(availableList, packs.unselected());
-        this.replacePacks(currentList, packs.selected());
-        this.clearHistory();
+        CompletableFuture.runAsync(this.repository::refresh).thenRunAsync(() -> {
+            PackList availableList = this.availablePacks.getList();
+            PackList currentList = this.currentPacks.getList();
+            PackRepositoryHelper.PackGroup packs = this.repository.validatePacks(availableList.copyPacks(), currentList.copyPacks());
+            this.replacePacks(availableList, packs.unselected());
+            this.replacePacks(currentList, packs.selected());
+            this.clearHistory();
+        }, this.minecraft);
     }
 
     public void reset() {
