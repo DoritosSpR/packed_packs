@@ -85,13 +85,18 @@ class PackWidget extends AbstractWidget {
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.renderSprite(guiGraphics, partialTick);
 
-        this.title.setY(this.getY());
+        int lineHeight = Minecraft.getInstance().font.lineHeight;
+        int totalContentHeight = lineHeight + spacing + (lineHeight * DESCRIPTION_LINES);
+        int startY = this.getY() + (this.getHeight() - totalContentHeight) / 2;
+
+        this.title.setY(startY);
         this.title.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+
         this.description.renderLeftAligned(
                 guiGraphics,
                 this.title.getX(),
-                this.title.getBottom() + this.spacing,
-                Minecraft.getInstance().font.lineHeight,
+                startY + lineHeight + this.spacing,
+                lineHeight,
                 Theme.GRAY_500.getARGB()
         );
     }
