@@ -545,6 +545,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.availablePacks.getCompatButton().setValueSilently(snapshot.availablePacks.query().isHideIncompatible());
         snapshot.availablePacks.validate(validPacks).restore();
         snapshot.currentPacks.validate(validPacks).restore();
+        this.availablePacks.getList().scrollToLastSelected();
+        this.currentPacks.getList().scrollToLastSelected();
     }
 
     public record Snapshot(
