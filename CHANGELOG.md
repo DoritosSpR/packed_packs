@@ -1,4 +1,5 @@
-- Added text shadow to title ([#7](https://github.com/fishstiz/packed_packs/issues/7)).
-- Added compatibility with ETF ([#5](https://github.com/fishstiz/packed_packs/issues/5)).
-- Added partial compatibility with VTDownloader (no pencil button) ([#6](https://github.com/fishstiz/packed_packs/issues/6)). 
-- Fixed date modified sort not working on data packs.
+- Improved performance when returning to the packed packs screen from other mod screens.
+  - Also preserved scroll state (if screen supports returning) rather than scrolling to last selected.
+- Added right-click functionality to the sort button to cycle in reverse ([#4](https://github.com/fishstiz/packed_packs/issues/4)).
+- Correctly scaled background texture of saved profiles sidebar.
+- Updated icon.
