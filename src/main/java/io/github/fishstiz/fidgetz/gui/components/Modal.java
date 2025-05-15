@@ -1,11 +1,9 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
-import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.gui.shapes.Line;
-import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import net.minecraft.client.gui.layouts.Layout;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.resources.ResourceLocation;
+
+import static io.github.fishstiz.fidgetz.util.DrawUtil.DEMO_BACKGROUND;
 
 public class Modal<T extends Layout> extends ToggleableDialog<LayoutWrapper<T>> {
     private static final int MIN_SIZE = 50;
@@ -25,23 +23,14 @@ public class Modal<T extends Layout> extends ToggleableDialog<LayoutWrapper<T>> 
     }
 
     public static class Builder<T extends Layout> extends ToggleableDialog.Builder<LayoutWrapper<T>, Builder<T>> {
-        private static final Sprite DEFAULT_BACKGROUND = new Sprite(
-                ResourceLocation.withDefaultNamespace("textures/gui/demo_background.png"),
-                Size.square(256),
-                Line.zero(247),
-                Line.zero(165)
-        );
-
         protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, LayoutWrapper<T> root) {
             super(screen, root);
+
+            this.background = DEMO_BACKGROUND;
         }
 
         @Override
         public Modal<T> build() {
-            if (this.background == null) {
-                this.background = DEFAULT_BACKGROUND;
-            }
-
             return new Modal<>(this);
         }
     }
