@@ -18,7 +18,7 @@ import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionScreen;
+import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.pack.PackRepositoryHelper;
 import io.github.fishstiz.packed_packs.config.Profile;
@@ -29,7 +29,6 @@ import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.transform.mixin.HeaderAndFooterLayoutAccess;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionModel;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
@@ -278,7 +277,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             this.onClose();
         } else if (this.minecraft != null) {
             PackSelectionScreen originalScreen = this.original.createScreen();
-            ((IPackSelectionScreen) originalScreen).packedPacks$setPrevious(this.previous);
+            ((PackSelectionScreenAccessor) originalScreen).packedPacks$setPrevious(this.previous);
             this.minecraft.setScreen(originalScreen);
         }
     }
@@ -303,7 +302,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         }
 
         if (this.previous instanceof PackSelectionScreenAccessor packScreen) {
-            ((IPackSelectionModel) packScreen.getModel()).packed_packs$reset();
+            ((PackSelectionModelAccessor) packScreen.getModel()).packed_packs$reset();
             packScreen.invokeReload();
         }
 

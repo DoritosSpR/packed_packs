@@ -3,7 +3,6 @@ package io.github.fishstiz.fidgetz.gui.components;
 import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
 import io.github.fishstiz.fidgetz.transform.mixin.EditBoxAccess;
 import io.github.fishstiz.fidgetz.gui.Metadata;
-import io.github.fishstiz.fidgetz.transform.interfaces.TextRenderer;
 import io.github.fishstiz.fidgetz.util.LogUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -43,7 +42,7 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
         this.setEditable(builder.editable);
         this.setHint(builder.hint);
         this.setMaxLength(builder.maxLength);
-        ((TextRenderer) this).fidgetz$setShadow(builder.textShadow);
+        ((EditBoxAccess) this).fidgetz$setShadow(builder.textShadow);
         this.updateTextColor();
 
         this.listeners.addAll(builder.listeners);
