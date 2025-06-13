@@ -1,6 +1,5 @@
 package io.github.fishstiz.packed_packs.transform.mixin;
 
-import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionModel;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
@@ -12,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Mixin(PackSelectionModel.class)
-public abstract class PackSelectionModelMixin implements IPackSelectionModel {
+public abstract class PackSelectionModelMixin implements PackSelectionModelAccessor {
     @Shadow
     @Final
     List<Pack> unselected;

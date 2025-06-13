@@ -8,7 +8,6 @@ import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionScreen;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LinearLayout;
@@ -26,7 +25,7 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 
 @Mixin(PackSelectionScreen.class)
-public abstract class PackSelectionScreenMixin extends Screen implements IPackSelectionScreen {
+public abstract class PackSelectionScreenMixin extends Screen implements PackSelectionScreenAccessor {
     protected PackSelectionScreenMixin(Component title) {
         super(title);
     }
