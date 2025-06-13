@@ -2,7 +2,6 @@ package io.github.fishstiz.packed_packs.util.pack;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionModel;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -121,7 +120,7 @@ public class PackRepositoryHelper implements PackAssets {
     }
 
     public void refresh() {
-        ((IPackSelectionModel) this.model).packed_packs$reset();
+        ((PackSelectionModelAccessor) this.model).packed_packs$reset();
         this.model.findNewPacks();
         this.availablePacks.clear();
         this.populateAvailablePacks();

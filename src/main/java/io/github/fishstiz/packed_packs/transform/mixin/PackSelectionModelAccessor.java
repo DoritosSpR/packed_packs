@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.transform.mixin;
 
+import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionModel;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.server.packs.repository.Pack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,7 +17,7 @@ import java.util.List;
  * </a>
  */
 @Mixin(PackSelectionModel.class)
-public interface PackSelectionModelAccessor {
+public interface PackSelectionModelAccessor extends IPackSelectionModel {
     @Accessor("selected")
     List<Pack> getSelectedPacks();
 

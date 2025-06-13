@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.transform.mixin;
 
+import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionScreen;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import org.spongepowered.asm.mixin.Mixin;
@@ -7,7 +8,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(PackSelectionScreen.class)
-public interface PackSelectionScreenAccessor {
+public interface PackSelectionScreenAccessor extends IPackSelectionScreen {
     @Accessor("model")
     PackSelectionModel getModel();
 

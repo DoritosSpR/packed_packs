@@ -18,7 +18,7 @@ public class StringWidgetMixin implements IStringWidget {
     private float alignX;
 
     @Unique
-    private boolean fidgetz$shadow = true;
+    private Boolean fidgetz$shadow;
 
     @Unique
     private int fidgetz$offsetY = 0;
@@ -30,7 +30,7 @@ public class StringWidgetMixin implements IStringWidget {
 
     @Override
     public boolean fidgetz$hasShadow() {
-        return this.fidgetz$shadow;
+        return this.fidgetz$shadow != null && this.fidgetz$shadow;
     }
 
     @Override
@@ -48,6 +48,8 @@ public class StringWidgetMixin implements IStringWidget {
             target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;III)I"
     ))
     public int drawShadow(GuiGraphics guiGraphics, Font font, FormattedCharSequence text, int x, int y, int color, Operation<Integer> original) {
-        return guiGraphics.drawString(font, text, x, y + this.fidgetz$offsetY, color, this.fidgetz$hasShadow());
+        return this.fidgetz$shadow != null
+                ? guiGraphics.drawString(font, text, x, y + this.fidgetz$offsetY, color, this.fidgetz$hasShadow())
+                : original.call(guiGraphics, font, text, x, y, color);
     }
 }

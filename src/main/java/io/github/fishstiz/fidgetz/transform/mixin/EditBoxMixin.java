@@ -4,7 +4,6 @@ import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
-import io.github.fishstiz.fidgetz.transform.interfaces.TextRenderer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -19,8 +18,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import static io.github.fishstiz.fidgetz.util.DrawUtil.renderScrollingStringLeftAlign;
 
 @Mixin(EditBox.class)
-public abstract class EditBoxMixin extends AbstractWidget implements TextRenderer {
-    public EditBoxMixin(int x, int y, int width, int height, Component message) {
+public abstract class EditBoxMixin extends AbstractWidget implements EditBoxAccess {
+    protected EditBoxMixin(int x, int y, int width, int height, Component message) {
         super(x, y, width, height, message);
     }
 
