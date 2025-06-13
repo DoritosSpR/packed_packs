@@ -1,7 +1,6 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
@@ -39,7 +38,6 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     private final List<NarratableEntry> narratables = new ArrayList<>();
     private final List<Consumer<Boolean>> listeners = new ArrayList<>();
     private final T root;
-    private final float z;
     private final GuiRectangle boundingBox;
     private final RenderableRect backdrop;
     private final RenderableRect background;
@@ -57,7 +55,6 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     protected ToggleableDialog(Builder<T, ?> builder) {
         this.screen = builder.screen;
         this.root = builder.root;
-        this.z = builder.z;
         this.boundingBox = builder.boundingBox;
         this.backdrop = builder.backdrop;
         this.background = builder.background;
@@ -75,10 +72,6 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
 
     public T root() {
         return this.root;
-    }
-
-    public float getZ() {
-        return this.z;
     }
 
     public void toggle() {
@@ -172,18 +165,12 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
             int width = this.boundingBox.getWidth();
             int height = this.boundingBox.getHeight();
 
-            PoseStack poseStack = guiGraphics.pose();
-            poseStack.pushPose();
-            poseStack.translate(0, 0, this.z);
-
             this.renderBackdrop(guiGraphics, 0, 0, this.screen.width, this.screen.height, mouseX, mouseY, partialTick);
             this.renderBackground(guiGraphics, x, y, width, height, mouseX, mouseY, partialTick);
             for (Renderable renderable : this.renderables) {
                 renderable.render(guiGraphics, mouseX, mouseY, partialTick);
             }
             this.renderForeground(guiGraphics, x, y, width, height, mouseX, mouseY, partialTick);
-
-            poseStack.popPose();
         }
     }
 
@@ -442,7 +429,6 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         protected boolean closeOnEscape = true;
         protected boolean captureClick = false;
         protected boolean captureFocus = false;
-        protected float z = 1;
 
         protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, T root) {
             this.screen = screen;
@@ -534,11 +520,6 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
 
         public B setCaptureFocus(boolean captureFocus) {
             this.captureFocus = captureFocus;
-            return self();
-        }
-
-        public B setZ(float z) {
-            this.z = z;
             return self();
         }
 

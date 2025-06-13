@@ -1,6 +1,5 @@
 package io.github.fishstiz.packed_packs.compat.respackopts;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.util.pack.PackAssets;
@@ -65,11 +64,7 @@ public class RespackoptsWidget extends AbstractButton {
 
         this.isHovered = guiGraphics.containsPointInScissor(mouseX, mouseY) && this.isMouseOver(mouseX, mouseY);
 
-        PoseStack poseStack = guiGraphics.pose();
-        poseStack.pushPose();
-        poseStack.translate(0, 0, 1f);
         this.wrapped.render(this.model, guiGraphics, this.getX(), this.getY(), this.isHovered, partialTick);
-        poseStack.popPose();
     }
 
     @Override

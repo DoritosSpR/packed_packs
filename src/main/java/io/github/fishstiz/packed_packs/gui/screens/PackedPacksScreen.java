@@ -66,9 +66,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private static final Component OPEN_FOLDER_INFO_TEXT = Component.translatable("pack.folderInfo");
     private static final Component APPLY_TEXT = ResourceUtil.getText("apply");
     private static final int SPACING = 8;
-    private static final float SIDEBAR_Z = 100;
-    private static final float DROP_ZONE_Z = 200;
-    private static final float OPTIONS_Z = 300;
     private final Screen previous;
     private final PackSelectionScreenArgs original;
     private final PackRepositoryHelper repository;
@@ -83,7 +80,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private final Modal<LinearLayout> options = Modal.builder(this, new OptionsLayout(SPACING).layout())
             .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
             .setCaptureFocus(true)
-            .setZ(OPTIONS_Z)
             .build();
     private PackSelectionScreen.Watcher watcher;
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
@@ -99,7 +95,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.currentPacks = new CurrentPacksLayout(this.repository, this, SPACING);
         this.packsConfig = this.repository.isResourcePacks() ? PackedPacks.CONFIG.getResourcepacks() : PackedPacks.CONFIG.getDatapacks();
         this.profiles = new ProfilesLayout(Sidebar.builder(this)
-                .setZ(SIDEBAR_Z)
                 .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1)),
                 this.packsConfig,
                 this.currentPacks.getList()::copyPacks,
@@ -444,11 +439,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         if (event.modifiesTarget()) {
             this.history.push(this.captureState());
         }
-    }
-
-    @Override
-    public float getDroppableZ() {
-        return DROP_ZONE_Z;
     }
 
     public @Nullable PackLayout<?> getLayoutFromSelectedList() {

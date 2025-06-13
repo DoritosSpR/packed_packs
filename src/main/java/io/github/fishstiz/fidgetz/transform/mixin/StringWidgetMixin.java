@@ -45,11 +45,13 @@ public class StringWidgetMixin implements IStringWidget {
 
     @WrapOperation(method = "renderWidget", at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;III)I"
+            target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;III)V"
     ))
-    public int drawShadow(GuiGraphics guiGraphics, Font font, FormattedCharSequence text, int x, int y, int color, Operation<Integer> original) {
-        return this.fidgetz$shadow != null
-                ? guiGraphics.drawString(font, text, x, y + this.fidgetz$offsetY, color, this.fidgetz$hasShadow())
-                : original.call(guiGraphics, font, text, x, y, color);
+    public void drawShadow(GuiGraphics guiGraphics, Font font, FormattedCharSequence text, int x, int y, int color, Operation<Integer> original) {
+        if (this.fidgetz$shadow != null) {
+            guiGraphics.drawString(font, text, x, y + this.fidgetz$offsetY, color, this.fidgetz$hasShadow());
+        } else {
+            original.call(guiGraphics, font, text, x, y, color);
+        }
     }
 }

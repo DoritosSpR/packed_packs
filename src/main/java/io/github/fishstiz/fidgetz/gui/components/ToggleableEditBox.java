@@ -42,7 +42,7 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
         this.setEditable(builder.editable);
         this.setHint(builder.hint);
         this.setMaxLength(builder.maxLength);
-        ((EditBoxAccess) this).fidgetz$setShadow(builder.textShadow);
+        this.setTextShadow(builder.textShadow);
         this.updateTextColor();
 
         this.listeners.addAll(builder.listeners);

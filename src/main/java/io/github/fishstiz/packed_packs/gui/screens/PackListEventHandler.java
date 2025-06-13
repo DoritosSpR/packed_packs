@@ -1,6 +1,5 @@
 package io.github.fishstiz.packed_packs.gui.screens;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.client.gui.ComponentPath;
@@ -117,19 +116,11 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
 
         DragEvent event = this.getDragged();
         if (event != null) {
-            PoseStack poseStack = guiGraphics.pose();
-            poseStack.pushPose();
-            poseStack.translate(0, 0, this.getDroppableZ());
-
             for (PackList list : this.getPackLists()) {
                 list.renderDroppableZone(guiGraphics, event.target(), event.payload(), event.trigger(), mouseX, mouseY, partialTick);
             }
 
-            poseStack.translate(0, 0, 1f);
-
             event.render(guiGraphics, mouseX, mouseY, partialTick);
-
-            poseStack.popPose();
         }
     }
 

@@ -3,7 +3,6 @@ package io.github.fishstiz.fidgetz.gui.components;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import static io.github.fishstiz.fidgetz.util.GuiUtil.isDescendant;
@@ -28,7 +27,7 @@ public interface ToggleableDialogContainer extends ContainerEventHandlerPatch {
         boolean isDialogChild = false;
         boolean isEnclosed = false;
 
-        for (ToggleableDialog<?> dialog : this.getOpenDialogsFromTop()) {
+        for (ToggleableDialog<?> dialog : this.getOpenDialogs()) {
             if (dialog != child && (dialog.isCaptureClick() || dialog.isCaptureFocus()) && !isDescendant(dialog, child)) {
                 return true;
             }
@@ -48,7 +47,7 @@ public interface ToggleableDialogContainer extends ContainerEventHandlerPatch {
         boolean isDialogChild = false;
         boolean isIntersected = false;
 
-        for (ToggleableDialog<?> dialog : this.getOpenDialogsFromTop()) {
+        for (ToggleableDialog<?> dialog : this.getOpenDialogs()) {
             if (dialog != child && (dialog.isCaptureClick() || dialog.isCaptureFocus()) && !isDescendant(dialog, child)) {
                 return true;
             }
@@ -62,11 +61,5 @@ public interface ToggleableDialogContainer extends ContainerEventHandlerPatch {
         }
 
         return !isDialogChild && isIntersected;
-    }
-
-    private List<ToggleableDialog<?>> getOpenDialogsFromTop() {
-        ArrayList<ToggleableDialog<?>> dialogs = this.getOpenDialogs();
-        dialogs.sort(Comparator.<ToggleableDialog<?>, Float>comparing(ToggleableDialog::getZ).reversed());
-        return dialogs;
     }
 }

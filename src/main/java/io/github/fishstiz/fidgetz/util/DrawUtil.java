@@ -22,7 +22,7 @@ public class DrawUtil {
     private DrawUtil() {
     }
 
-    public static int renderScrollingStringLeftAlign(
+    public static void renderScrollingStringLeftAlign(
             GuiGraphics guiGraphics,
             Font font,
             Component text,
@@ -45,16 +45,14 @@ public class DrawUtil {
             double scrollOffset = Mth.lerp(scrollFactor, 0.0, overflowWidth);
 
             guiGraphics.enableScissor(startX, startY, endX, endY);
-            int width = guiGraphics.drawString(font, text, startX - (int) scrollOffset, textY, color, shadow);
+            guiGraphics.drawString(font, text, startX - (int) scrollOffset, textY, color, shadow);
             guiGraphics.disableScissor();
-
-            return width;
         } else {
-            return guiGraphics.drawString(font, text, startX, textY, color, shadow);
+            guiGraphics.drawString(font, text, startX, textY, color, shadow);
         }
     }
 
-    public static int renderScrollingStringLeftAlign(
+    public static void renderScrollingStringLeftAlign(
             GuiGraphics guiGraphics,
             Font font,
             Component text,
@@ -64,6 +62,6 @@ public class DrawUtil {
             int endY,
             int color
     ) {
-        return renderScrollingStringLeftAlign(guiGraphics, font, text, startX, startY, endX, endY, color, true);
+        renderScrollingStringLeftAlign(guiGraphics, font, text, startX, startY, endX, endY, color, true);
     }
 }

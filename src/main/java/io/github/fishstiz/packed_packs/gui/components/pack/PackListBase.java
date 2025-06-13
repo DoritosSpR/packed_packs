@@ -1,7 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
 import io.github.fishstiz.fidgetz.gui.components.ContainerEventHandlerPatch;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
@@ -435,6 +434,18 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
+    protected void renderListItems(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.renderListItems(guiGraphics, mouseX, mouseY, partialTick);
+
+        Entry focused = this.getFocused();
+        if (focused != null && focused.isFocused()) {
+            int outlineTop = focused.getY() - Entry.BACKGROUND_OFFSET * 2;
+            int outlineHeight = focused.getHeight() + Entry.BACKGROUND_OFFSET * 4;
+            guiGraphics.renderOutline(focused.getX(), outlineTop, focused.getWidth(), outlineHeight, Theme.WHITE.getARGB());
+        }
+    }
+
+    @Override
     public void replaceState(@NotNull Snapshot snapshot) {
         this.packs.clear();
 
@@ -654,13 +665,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 int outlineTop = top - BACKGROUND_OFFSET * 2;
                 int outlineHeight = height + BACKGROUND_OFFSET * 4;
 
-                if (this.isFocused()) {
-                    PoseStack poseStack = guiGraphics.pose();
-                    poseStack.pushPose();
-                    poseStack.translate(0, 0, 1f);
-                    guiGraphics.renderOutline(left, outlineTop, width, outlineHeight, Theme.WHITE.getARGB());
-                    poseStack.popPose();
-                } else {
+                if (!this.isFocused()) {
                     guiGraphics.renderOutline(left, outlineTop, width, outlineHeight, Theme.BLUE_500.getARGB());
                 }
             }

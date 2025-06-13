@@ -3,7 +3,7 @@ package io.github.fishstiz.fidgetz.gui.renderables.sprites;
 import io.github.fishstiz.fidgetz.gui.shapes.Line;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.ResourceLocation;
 
 public class RepeatingSprite extends Sprite {
@@ -31,7 +31,7 @@ public class RepeatingSprite extends Sprite {
                 int tileHeight = Math.min(this.v.length(), height - drawY);
 
                 guiGraphics.blit(
-                        RenderType::guiTextured,
+                        RenderPipelines.GUI_TEXTURED,
                         this.location,
                         x + drawX, y + drawY,
                         this.u.start(), this.v.start(),

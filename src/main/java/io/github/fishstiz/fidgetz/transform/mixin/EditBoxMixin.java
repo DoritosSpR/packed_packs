@@ -12,7 +12,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 import static io.github.fishstiz.fidgetz.util.DrawUtil.renderScrollingStringLeftAlign;
@@ -29,27 +28,14 @@ public abstract class EditBoxMixin extends AbstractWidget implements EditBoxAcce
     @Shadow
     public abstract String getValue();
 
-    @Unique
-    private boolean fidgetz$shadow = true;
-
-    @Override
-    public boolean fidgetz$hasShadow() {
-        return this.fidgetz$shadow;
-    }
-
-    @Override
-    public void fidgetz$setShadow(boolean shadow) {
-        this.fidgetz$shadow = shadow;
-    }
-
     @WrapOperation(method = "renderWidget", at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;III)I",
+            target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;IIIZ)V",
             ordinal = 0
     ))
-    public int drawScrollingString(GuiGraphics guiGraphics, Font font, FormattedCharSequence text, int x, int y, int color, Operation<Integer> original) {
+    public void drawScrollingString(GuiGraphics guiGraphics, Font font, FormattedCharSequence text, int x, int y, int color, boolean shadow, Operation<Integer> original) {
         if ((EditBox) (Object) this instanceof ToggleableEditBox && !this.isEditable()) {
-            return renderScrollingStringLeftAlign(
+            renderScrollingStringLeftAlign(
                     guiGraphics,
                     font,
                     Component.literal(this.getValue()),
@@ -58,30 +44,20 @@ public abstract class EditBoxMixin extends AbstractWidget implements EditBoxAcce
                     this.getRight(),
                     this.getBottom(),
                     color,
-                    this.fidgetz$hasShadow()
+                    shadow
             );
+            return;
         }
 
-        return original.call(guiGraphics, font, text, x, y, color);
+        original.call(guiGraphics, font, text, x, y, color, shadow);
     }
 
     @WrapWithCondition(method = "renderWidget", at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;III)I",
+            target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;IIIZ)V",
             ordinal = 1
     ))
-    public boolean isToggled(GuiGraphics instance, Font font, FormattedCharSequence text, int x, int y, int color) {
+    public boolean isToggled(GuiGraphics instance, Font font, FormattedCharSequence text, int x, int y, int color, boolean shadow) {
         return !((EditBox) (Object) this instanceof ToggleableEditBox) || this.isEditable();
-    }
-
-    @WrapOperation(method = "renderWidget", at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;III)I"
-    ))
-    public int drawHintShadow(GuiGraphics instance, Font font, Component text, int x, int y, int color, Operation<Integer> original) {
-        if (!((EditBox) (Object) this instanceof ToggleableEditBox)) {
-            return original.call(instance, font, text, x, y, color);
-        }
-        return instance.drawString(font, text, x, y, color, this.fidgetz$hasShadow());
     }
 }
