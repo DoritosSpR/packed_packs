@@ -98,9 +98,10 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.availablePacks = new AvailablePacksLayout(this.repository, this, SPACING);
         this.currentPacks = new CurrentPacksLayout(this.repository, this, SPACING);
         this.packsConfig = this.repository.isResourcePacks() ? PackedPacks.CONFIG.getResourcepacks() : PackedPacks.CONFIG.getDatapacks();
-        this.profiles = new ProfilesLayout(Sidebar.builder(this)
-                .setZ(SIDEBAR_Z)
-                .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1)),
+        this.profiles = new ProfilesLayout(
+                Sidebar.builder(this)
+                        .setZ(SIDEBAR_Z)
+                        .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1)),
                 this.packsConfig,
                 this.currentPacks.getList()::copyPacks,
                 this::onProfileChange
@@ -149,34 +150,46 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     private FlexLayout createHeader() {
         FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        header.addChild(FidgetzButton.builder()
-                .makeSquare()
-                .setMessage(ProfilesLayout.TITLE_TEXT)
-                .setTooltip(Tooltip.create(ProfilesLayout.TITLE_TEXT))
-                .setSpriteOnly(new Sprite(ResourceUtil.getIcon("hamburger"), Size.of16()))
-                .setOnPress(this.profiles.getSidebar()::toggle).build());
-        header.addChild(FidgetzButton.builder()
-                .makeSquare()
-                .setTooltip(Tooltip.create(ACTION_BAR_INFO))
-                .setSpriteOnly(new Sprite(ResourceUtil.getIcon("filter"), Size.of16()))
-                .setOnPress(this::toggleActionBar).build());
+        header.addChild(
+                FidgetzButton.builder()
+                        .makeSquare()
+                        .setMessage(ProfilesLayout.TITLE_TEXT)
+                        .setTooltip(Tooltip.create(ProfilesLayout.TITLE_TEXT))
+                        .setSpriteOnly(new Sprite(ResourceUtil.getIcon("hamburger"), Size.of16()))
+                        .setOnPress(this.profiles.getSidebar()::toggle)
+                        .build()
+        );
+        header.addChild(
+                FidgetzButton.builder()
+                        .makeSquare()
+                        .setTooltip(Tooltip.create(ACTION_BAR_INFO))
+                        .setSpriteOnly(new Sprite(ResourceUtil.getIcon("filter"), Size.of16()))
+                        .setOnPress(this::toggleActionBar)
+                        .build()
+        );
         header.addChild(this.profiles.getToggleNameButton());
         header.addFlexChild(this.profiles.getNameField());
 
         PackSelectionScreen packSelectionScreen = this.previous instanceof PackSelectionScreen s ? s : this.original.createDummy();
         ModAdditions.addToHeader(this.repository.isResourcePacks(), header, packSelectionScreen);
 
-        header.addChild(FidgetzButton.builder()
-                .makeSquare()
-                .setMessage(OPTIONS_TEXT)
-                .setTooltip(Tooltip.create(OPTIONS_TEXT))
-                .setSpriteOnly(new Sprite(ResourceUtil.getIcon("gear"), Size.of16()))
-                .setOnPress(this.options::toggle).build());
-        header.addChild(FidgetzButton.builder()
-                .makeSquare()
-                .setTooltip(Tooltip.create(ORIGINAL_SCREEN_INFO))
-                .setSpriteOnly(new Sprite(ResourceUtil.getIcon("exit"), Size.of16()))
-                .setOnPress(this::setOriginalScreen).build());
+        header.addChild(
+                FidgetzButton.builder()
+                        .makeSquare()
+                        .setMessage(OPTIONS_TEXT)
+                        .setTooltip(Tooltip.create(OPTIONS_TEXT))
+                        .setSpriteOnly(new Sprite(ResourceUtil.getIcon("gear"), Size.of16()))
+                        .setOnPress(this.options::toggle)
+                        .build()
+        );
+        header.addChild(
+                FidgetzButton.builder()
+                        .makeSquare()
+                        .setTooltip(Tooltip.create(ORIGINAL_SCREEN_INFO))
+                        .setSpriteOnly(new Sprite(ResourceUtil.getIcon("exit"), Size.of16()))
+                        .setOnPress(this::setOriginalScreen)
+                        .build()
+        );
         return header;
     }
 
@@ -194,9 +207,13 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         FlexLayout firstColumn = FlexLayout.horizontal().spacing(SPACING);
         FlexLayout secondColumn = firstColumn.copyLayout();
 
-        firstColumn.addFlexChild(FidgetzButton.builder().setMessage(OPEN_FOLDER_TEXT)
-                .setTooltip(Tooltip.create(OPEN_FOLDER_INFO_TEXT))
-                .setOnPress(this.repository::openDirectory).build());
+        firstColumn.addFlexChild(
+                FidgetzButton.builder()
+                        .setMessage(OPEN_FOLDER_TEXT)
+                        .setTooltip(Tooltip.create(OPEN_FOLDER_INFO_TEXT))
+                        .setOnPress(this.repository::openDirectory)
+                        .build()
+        );
 
         if (this.repository.isResourcePacks()) {
             secondColumn.addFlexChild(FidgetzButton.builder().setMessage(APPLY_TEXT).setOnPress(this::commit).build());
