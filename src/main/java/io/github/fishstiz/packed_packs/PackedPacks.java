@@ -13,7 +13,8 @@ public class PackedPacks {
     public static final Config CONFIG = ConfigLoader.load(FabricLoader.getInstance()
             .getConfigDir()
             .resolve(MOD_ID + ".json")
-            .toFile());
+            .toFile()
+    );
 
     private PackedPacks() {
     }

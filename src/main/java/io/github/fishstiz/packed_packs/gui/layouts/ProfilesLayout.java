@@ -73,10 +73,13 @@ public class ProfilesLayout {
         FlexLayout list = FlexLayout.horizontal(this::getMaxWidth);
 
         actions.addFlexChild(this.noProfileButton);
-        actions.addFlexChild(FidgetzButton.<Void>builder()
-                .setMessage(NEW_TEXT)
-                .setTooltip(Tooltip.create(NEW_INFO))
-                .setOnPress(this::copyProfile).build());
+        actions.addFlexChild(
+                FidgetzButton.<Void>builder()
+                        .setMessage(NEW_TEXT)
+                        .setTooltip(Tooltip.create(NEW_INFO))
+                        .setOnPress(this::copyProfile)
+                        .build()
+        );
         list.addFlexChild(this.profileList, true);
 
         this.sidebar.root().layout().addChild(actions, layoutSettings);
