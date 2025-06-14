@@ -35,7 +35,7 @@ public class ModAdditions {
         Mod.RESOURCIFY.wrapError(header, original, original.getTitle(), (layout, packScreen, title) -> {
             List<? extends Button> resourcifyButtons = ResourcifyButtons.getButtons(packScreen, title);
             if (resourcifyButtons != null) {
-                for (Button button : resourcifyButtons) {
+                for (Button button : resourcifyButtons.reversed()) { // buttons are manually positioned in reverse
                     layout.addChild(button);
                 }
             }
