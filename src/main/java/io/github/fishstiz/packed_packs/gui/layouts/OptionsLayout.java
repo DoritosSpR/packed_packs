@@ -20,29 +20,44 @@ public class OptionsLayout {
         LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(spacing).paddingTop(spacing);
 
         Config.ResourcePacks resourceConfig = PackedPacks.CONFIG.getResourcepacks();
-        this.layout.addChild(FidgetzText.<Void>builder()
-                .setMessage(ResourceUtil.getText("resource_packs").withColor(labelColor))
-                .build(), layoutSettings.copy().paddingTop((spacing * 2) - spacing / 2));
-        this.layout.addChild(ToggleButton.<Void>builder()
-                .setMessage(REPLACE_SCREEN_TEXT)
-                .setValue(resourceConfig.isReplaceOriginal())
-                .setOnPress(() -> resourceConfig.setReplaceOriginal(!resourceConfig.isReplaceOriginal()))
-                .build(), layoutSettings);
-        this.layout.addChild(ToggleButton.<Void>builder()
-                .setMessage(ResourceUtil.getText("options.apply_on_close"))
-                .setValue(resourceConfig.isApplyOnClose())
-                .setOnPress(() -> resourceConfig.setApplyOnClose(!resourceConfig.isApplyOnClose()))
-                .build(), layoutSettings);
+        this.layout.addChild(
+                FidgetzText.<Void>builder()
+                        .setMessage(ResourceUtil.getText("resource_packs").withColor(labelColor))
+                        .build(),
+                layoutSettings.copy().paddingTop((spacing * 2) - spacing / 2)
+        );
+        this.layout.addChild(
+                ToggleButton.<Void>builder()
+                        .setMessage(REPLACE_SCREEN_TEXT)
+                        .setValue(resourceConfig.isReplaceOriginal())
+                        .setOnPress(() -> resourceConfig.setReplaceOriginal(!resourceConfig.isReplaceOriginal()))
+                        .build(),
+                layoutSettings
+        );
+        this.layout.addChild(
+                ToggleButton.<Void>builder()
+                        .setMessage(ResourceUtil.getText("options.apply_on_close"))
+                        .setValue(resourceConfig.isApplyOnClose())
+                        .setOnPress(() -> resourceConfig.setApplyOnClose(!resourceConfig.isApplyOnClose()))
+                        .build(),
+                layoutSettings
+        );
 
         Config.Packs dataConfig = PackedPacks.CONFIG.getDatapacks();
-        this.layout.addChild(FidgetzText.<Void>builder()
-                .setMessage(Component.translatable("selectWorld.dataPacks").withColor(labelColor))
-                .build(), layoutSettings.copy().paddingTop(spacing * 2));
-        this.layout.addChild(ToggleButton.<Void>builder()
-                .setValue(dataConfig.isReplaceOriginal())
-                .setOnPress(() -> dataConfig.setReplaceOriginal(!dataConfig.isReplaceOriginal()))
-                .setMessage(REPLACE_SCREEN_TEXT)
-                .build(), layoutSettings.copy().paddingBottom((spacing * 2) - spacing / 2));
+        this.layout.addChild(
+                FidgetzText.<Void>builder()
+                        .setMessage(Component.translatable("selectWorld.dataPacks").withColor(labelColor))
+                        .build(),
+                layoutSettings.copy().paddingTop(spacing * 2)
+        );
+        this.layout.addChild(
+                ToggleButton.<Void>builder()
+                        .setValue(dataConfig.isReplaceOriginal())
+                        .setOnPress(() -> dataConfig.setReplaceOriginal(!dataConfig.isReplaceOriginal()))
+                        .setMessage(REPLACE_SCREEN_TEXT)
+                        .build(),
+                layoutSettings.copy().paddingBottom((spacing * 2) - spacing / 2)
+        );
 
         this.layout.arrangeElements();
     }
