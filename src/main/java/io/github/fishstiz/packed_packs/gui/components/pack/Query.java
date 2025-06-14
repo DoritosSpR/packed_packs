@@ -6,6 +6,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.pack.PackUtil;
+import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
@@ -101,8 +102,8 @@ public class Query {
 
     public enum SortOption implements CyclicButton.SpriteOption {
         VANILLA("sort.vanilla", "sort_vanilla", (first, second) -> {
-            boolean builtInFirst = first.getPackSource() == PackSource.BUILT_IN;
-            boolean builtInSecond = second.getPackSource() == PackSource.BUILT_IN;
+            boolean builtInFirst = isBuiltIn(first.getPackSource());
+            boolean builtInSecond = isBuiltIn(second.getPackSource());
             if (builtInFirst != builtInSecond) return builtInFirst ? 1 : -1;
             return first.getTitle().getString().compareTo(second.getTitle().getString());
         }),
@@ -188,6 +189,11 @@ public class Query {
                 };
             }
         }
+    }
+
+    private static boolean isBuiltIn(PackSource packSource) {
+        //noinspection UnstableApiUsage
+        return packSource == PackSource.BUILT_IN || packSource instanceof BuiltinModResourcePackSource;
     }
 
     private static String normalizeTitle(String title) {
