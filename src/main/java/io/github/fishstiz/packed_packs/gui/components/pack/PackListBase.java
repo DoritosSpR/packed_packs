@@ -434,6 +434,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return this.isValidClickButton(button) && super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
     protected void renderListItems(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.renderListItems(guiGraphics, mouseX, mouseY, partialTick);
 
