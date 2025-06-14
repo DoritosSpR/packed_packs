@@ -435,6 +435,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return this.isValidClickButton(button) && super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
     public void replaceState(@NotNull Snapshot snapshot) {
         this.packs.clear();
 
