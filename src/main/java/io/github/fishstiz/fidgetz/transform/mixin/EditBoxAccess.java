@@ -1,6 +1,5 @@
 package io.github.fishstiz.fidgetz.transform.mixin;
 
-import io.github.fishstiz.fidgetz.transform.interfaces.IStringWidget;
 import io.github.fishstiz.fidgetz.transform.interfaces.ITextRenderer;
 import net.minecraft.client.gui.components.EditBox;
 import org.spongepowered.asm.mixin.Mixin;
@@ -8,7 +7,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(EditBox.class)
-public interface EditBoxAccess extends IStringWidget, ITextRenderer {
+public interface EditBoxAccess extends ITextRenderer {
     @Accessor("textColor")
     int getTextColor();
 
