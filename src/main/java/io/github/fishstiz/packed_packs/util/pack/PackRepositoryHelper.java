@@ -56,7 +56,7 @@ public class PackRepositoryHelper implements PackAssets {
 
         for (Pack pack : this.availablePacks.values()) {
             if (pack.isRequired()) {
-                required.add(pack);
+                pack.getDefaultPosition().insert(required, pack, Pack::selectionConfig, true);
             } else {
                 optional.add(pack);
             }
@@ -88,7 +88,7 @@ public class PackRepositoryHelper implements PackAssets {
         for (Pack pack : validPacks) {
             if (seen.add(pack)) {
                 if (pack.isRequired()) {
-                    validSelected.add(pack);
+                    pack.getDefaultPosition().insert(validSelected, pack, Pack::selectionConfig, true);
                 } else {
                     validUnselected.add(pack);
                 }
