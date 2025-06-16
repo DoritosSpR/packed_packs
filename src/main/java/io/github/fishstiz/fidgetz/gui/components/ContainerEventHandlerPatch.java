@@ -13,7 +13,7 @@ public interface ContainerEventHandlerPatch extends ContainerEventHandler {
     @Override
     default boolean mouseClicked(double mouseX, double mouseY, int button) {
         for (GuiEventListener guieventlistener : this.children()) {
-            if (guieventlistener.isMouseOver(mouseX, mouseY) && guieventlistener.mouseClicked(mouseX, mouseY, button)) {
+            if (guieventlistener.mouseClicked(mouseX, mouseY, button)) {
                 this.setFocused(guieventlistener);
                 if (button == 0) {
                     this.setDragging(true);
