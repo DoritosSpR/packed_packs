@@ -35,7 +35,7 @@
   "accessWidener": "packed_packs.accesswidener",
   "depends": {
     "fabricloader": ">=0.16.10",
-    "minecraft": "1.21.6-rc.1",
+    "minecraft": "1.21.6",
     "java": ">=21",
     "fabric-api": "*"
   }
