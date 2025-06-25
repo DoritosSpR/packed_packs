@@ -1,5 +1,1 @@
-- Added **1.21.6** support.
-- Reversed resourcify buttons ([#10](https://github.com/fishstiz/packed_packs/issues/10)).
-- Fixed forward and reverse side buttons not triggering undo/redo when hovering over the pack list ([#12](https://github.com/fishstiz/packed_packs/issues/12)).
-- Fixed vanilla sort not placing built-in Fabric resource packs at the bottom ([#13](https://github.com/fishstiz/packed_packs/issues/13)).
-- Fixed profiles not respecting pack position when revalidating (e.g. when a server pack is added).
+- Bump versions
