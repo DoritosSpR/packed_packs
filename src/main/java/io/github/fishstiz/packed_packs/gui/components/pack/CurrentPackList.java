@@ -124,7 +124,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         int dropIndex = this.getDropIndex(mouseY);
-        if (dropIndex > -1 && this.getEntry(dropIndex).canMove()) {
+        if (dropIndex > -1 && this.getEntry(dropIndex).isFixed()) {
             return false;
         }
 
@@ -255,12 +255,12 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             return -1;
         }
 
-        private boolean canMove() {
+        private boolean isFixed() {
             return CurrentPackList.this.isQueried() || this.pack.isFixedPosition();
         }
 
         public boolean canMoveDown() {
-            if (this.canMove()) return false;
+            if (this.isFixed()) return false;
 
             int size = CurrentPackList.this.packs.size();
 
@@ -276,7 +276,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         public boolean canMoveUp() {
-            if (this.canMove()) return false;
+            if (this.isFixed()) return false;
 
             if (this.isSelected()) {
                 List<Pack> selection = CurrentPackList.this.getOrderedSelection();
