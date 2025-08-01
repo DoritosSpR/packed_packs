@@ -634,7 +634,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         @Override
         public void renderBack(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTick) {
-            if (!this.pack.getCompatibility().isCompatible()) {
+            if (!this.pack.getCompatibility().isCompatible() && !PackListBase.this.packAssets.getConfig().isIncompatibleWarningsHidden()) {
                 int backgroundTop = this.getY() - BACKGROUND_OFFSET;
                 int backgroundLeft = this.getX() + BACKGROUND_OFFSET;
                 int backgroundBottom = backgroundTop + this.getHeight() + BACKGROUND_OFFSET * 2;

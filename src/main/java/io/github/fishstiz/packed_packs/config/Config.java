@@ -61,6 +61,7 @@ public class Config implements Serializable {
 
     public static class Packs implements Serializable {
         private boolean replaceOriginal = false;
+        private boolean hideIncompatibleWarnings = false;
         private @Nullable Long lastViewed = null;
         private long autoIncrement = 0;
         private final List<Profile> profiles = new ArrayList<>();
@@ -109,6 +110,14 @@ public class Config implements Serializable {
 
         public void setReplaceOriginal(boolean replaceOriginal) {
             this.replaceOriginal = replaceOriginal;
+        }
+
+        public boolean isIncompatibleWarningsHidden() {
+            return this.hideIncompatibleWarnings;
+        }
+
+        public void setHideIncompatibleWarnings(boolean hidden) {
+            this.hideIncompatibleWarnings = hidden;
         }
     }
 
