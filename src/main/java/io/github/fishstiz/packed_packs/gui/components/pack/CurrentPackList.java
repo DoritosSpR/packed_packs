@@ -238,7 +238,7 @@ public final class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         @Override
         public boolean isTransferable() {
-            return !this.pack.isRequired() && !this.pack.isFixedPosition();
+            return !this.pack.isRequired();
         }
 
         private int getDownIndex() {
