@@ -382,6 +382,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             PackList availableList = this.availablePacks.getList();
             PackList currentList = this.currentPacks.getList();
             PackRepositoryHelper.PackGroup packs = this.repository.validatePacks(availableList.copyPacks(), currentList.copyPacks());
+            this.repository.clearIconCache();
             this.replacePacks(availableList, packs.unselected());
             this.replacePacks(currentList, packs.selected());
             this.clearHistory();
