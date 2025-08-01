@@ -478,6 +478,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         protected static final ColoredRect SELECTED_OVERLAY = new ColoredRect(Theme.BLUE_500.withAlpha(0.25F));
         protected final List<GuiEventListener> children = new ArrayList<>();
         protected final List<Renderable> renderables = new ArrayList<>();
+        protected final List<Renderable> topRenderables = new ArrayList<>();
         protected final List<NarratableEntry> narratables = new ArrayList<>();
         protected final Pack pack;
         private final PackWidget packWidget;
@@ -507,6 +508,21 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return widget;
         }
 
+        public <U extends GuiEventListener> U prependWidget(U widget) {
+            this.children.addFirst(widget);
+            if (widget instanceof NarratableEntry narratable) this.narratables.add(narratable);
+            return widget;
+        }
+
+        public <U extends Renderable> U addTopRenderableOnly(U renderable) {
+            this.topRenderables.add(renderable);
+            return renderable;
+        }
+
+        /**
+         * @deprecated z plane removed in GUI
+         */
+        @Deprecated(since = "mc1.21.6")
         public <U extends GuiEventListener & Renderable> U prependRenderableWidget(U widget) {
             this.children.addFirst(widget);
             this.renderables.addFirst(widget);
@@ -676,6 +692,12 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             }
         }
 
+        protected void renderTop(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+            for (Renderable renderable : this.topRenderables) {
+                renderable.render(guiGraphics, mouseX, mouseY, partialTick);
+            }
+        }
+
         private void renderWidget(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
             this.packWidget.setPosition(left, top);
             this.packWidget.setWidth(width);
@@ -686,6 +708,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
             this.renderSelection(guiGraphics, top, left, width, height);
             this.renderForeground(guiGraphics, top, left, width, height, mouseX, mouseY, hovering, partialTick);
+            this.renderTop(guiGraphics, mouseX, mouseY, partialTick);
         }
 
         @Override
