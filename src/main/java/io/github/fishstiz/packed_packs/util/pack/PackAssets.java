@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.util.pack;
 import com.google.common.hash.Hashing;
 import com.mojang.blaze3d.platform.NativeImage;
 import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Config;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
@@ -26,6 +27,10 @@ public interface PackAssets {
     boolean isResourcePacks();
 
     Path getDirectory();
+
+    default Config.Packs getConfig() {
+        return this.isResourcePacks() ? PackedPacks.CONFIG.getResourcepacks() : PackedPacks.CONFIG.getDatapacks();
+    }
 
     /**
      * Copied from {@link PackSelectionScreen#loadPackIcon(TextureManager, Pack)}
