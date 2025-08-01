@@ -144,8 +144,12 @@ public class PackRepositoryHelper implements PackAssets {
             PackAssets.loadPackIcon(pack).thenAcceptAsync(location -> {
                 this.cachedIcons.put(pack.getId(), location);
                 iconCallback.accept(location);
-            });
+            }, Minecraft.getInstance());
         }
+    }
+
+    public void clearIconCache() {
+        this.cachedIcons.clear();
     }
 
     @Override
