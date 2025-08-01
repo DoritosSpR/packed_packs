@@ -26,5 +26,7 @@
   "packed_packs.resource_packs": "Resource Packs",
   "packed_packs.options.title": "Packed Packs Options",
   "packed_packs.options.replace_screen": "Replace Pack Screen",
-  "packed_packs.options.apply_on_close": "Apply Packs on Close"
+  "packed_packs.options.apply_on_close": "Apply Packs on Close",
+  "packed_packs.options.hide_incompatible_warnings": "Hide Incompatible Warnings",
+  "packed_packs.options.hide_incompatible_warnings.info": "Hides the red background on incompatible packs."
 }
