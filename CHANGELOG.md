@@ -1,6 +1,7 @@
-- Added option to remove red background on incompatible packs ([#15](https://github.com/fishstiz/packed_packs/issues/15))
-- Fixed being unable to disable fixed position packs ([#16](https://github.com/fishstiz/packed_packs/issues/16))
-- Fixed pack icons not updating in real time due to caching
-
-For **1.21.6** and above:
-- Fixed incorrect rendering order for the Respackopts button from the Respackopts mod.
+- Added folder support ([#14](https://github.com/fishstiz/packed_packs/issues/14)). Pack your packed packs even further! 
+  - Just create a folder and place your packs there, Packed Packs will detect it automatically.
+  - Folders behave like regular packs. They take up a row in the pack lists and you can move them around.
+  - Folders also have a special button to let you view and reorder the packs inside.
+  - Add a `pack.png` at the folder root to set a custom icon.
+  - Only discovers folders one level deep for now.
+- There will probably be some bugs, feedback is appreciated.
