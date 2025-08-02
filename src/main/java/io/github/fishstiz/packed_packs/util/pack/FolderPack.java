@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public final class FolderPack extends Pack implements NestedPack {
-    public static final String FOLDER_CONFIG_FILENAME = "folder.json";
+    public static final String FOLDER_CONFIG_FILENAME = "packed_packs.manifest.json";
     public static final Component FOLDER_DESCRIPTION = ResourceUtil.getText("folder");
     public static final PackSource FOLDER_SOURCE = PackSource.create(
             name -> Component.translatable(
