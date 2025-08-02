@@ -12,6 +12,7 @@ Pack resource and data packs into profiles with multiple selection, drag and dro
 -   Sort alphabetically or by last updated.
 -   Additional mouse and keyboard controls.
 -   History (undo and redo).
+-   (BETA) Folder Support
 
 ### 🖱️ Mouse Controls
 - Hold <kbd>Shift</kbd> while clicking to select range.
@@ -24,13 +25,20 @@ Pack resource and data packs into profiles with multiple selection, drag and dro
 - Navigate entries with <kbd>↑</kbd> and <kbd>↓</kbd> arrow keys.
 - Navigate out of entries with <kbd>Tab</kbd>.
 - Press <kbd>Space</kbd> or <kbd>Enter</kbd> to transfer selection.
-- Hold <kbd>Shift</kbd> with <kbd>Up</kbd> and <kbd>Down</kbd> arrow keys to select range.
-- Hold <kbd>Ctrl</kbd> or <kbd>Alt</kbd> with <kbd>Up</kbd> and <kbd>Down</kbd> arrow keys to move selection.
+- Hold <kbd>Shift</kbd> with <kbd>↑</kbd> and <kbd>↓</kbd> arrow keys to select range.
+- Hold <kbd>Ctrl</kbd> or <kbd>Alt</kbd> with <kbd>↑</kbd> and <kbd>↓</kbd> arrow keys to move selection.
 - Press <kbd>Ctrl</kbd> + <kbd>Z</kbd> to undo.
 - Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd> or <kbd>Ctrl</kbd> + <kbd>Y</kbd> to redo.
 - Type any character to automatically focus search bar.
 
+### 📂 Folder Support (BETA)
+- Folders with resource packs will automatically be detected.
+- Folders behave like regular packs. They take up a row of space and you can move them around.
+- View and reorder contents of folders.
+- Add a `pack.png` at the folder root to set a custom icon.
+- Only discovers folders one level deep.
+
 ### ⚙️ Configuration
 - Apply resource packs automatically on close.
-- Replace the default resource pack screen.
-- Replace the default data pack screen.
+- Replace the default resourcepack & datapack screens.
+- Remove the red background on incompatible packs.
