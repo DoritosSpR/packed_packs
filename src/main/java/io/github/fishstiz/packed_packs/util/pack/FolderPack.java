@@ -56,7 +56,10 @@ public final class FolderPack extends Pack implements NestedPack {
                 if (configIoSupplier == null) {
                     throw new IOException();
                 }
-                return ConfigLoader.load(configIoSupplier.get(), Folder.class);
+
+                try (InputStream inputStream = configIoSupplier.get()) {
+                    return ConfigLoader.load(inputStream, Folder.class);
+                }
             } catch (IOException e) {
                 return new Folder();
             }
