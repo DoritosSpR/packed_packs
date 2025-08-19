@@ -1,7 +1,10 @@
 package io.github.fishstiz.packed_packs.util.lang;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class ObjectsUtil {
@@ -32,10 +35,18 @@ public class ObjectsUtil {
         return null;
     }
 
+    @SafeVarargs
+    @SuppressWarnings("varargs")
+    public static <E> @NotNull E firstNonNullOrDefault(@NotNull E defaultValue, E... args) {
+        E value = firstNonNull(args);
+        return value != null ? value : Objects.requireNonNull(defaultValue);
+    }
+
     public static <E> boolean testNullable(@Nullable E obj, Predicate<E> predicate) {
-        if (obj == null) {
-            return false;
-        }
-        return predicate.test(obj);
+        return obj != null && predicate.test(obj);
+    }
+
+    public static <T, R> @Nullable R mapOrNull(T obj, Function<T, R> mapper) {
+        return obj != null ? mapper.apply(obj) : null;
     }
 }
