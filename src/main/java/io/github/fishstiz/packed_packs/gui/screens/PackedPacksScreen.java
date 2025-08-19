@@ -456,7 +456,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     @Override
     public @NotNull List<PackList> getPackLists() {
-        return List.of(this.availablePacks.getList(), this.currentPacks.getList(), this.folderDialog.root());
+        return List.of(this.folderDialog.root(), this.availablePacks.getList(), this.currentPacks.getList());
     }
 
     @Override
@@ -613,10 +613,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     @Override
     public List<ToggleableDialog<?>> getDialogs() {
         return List.of(this.profiles.getSidebar(), this.folderDialog, this.options);
-    }
-
-    public Modal<LinearLayout> getOptionsDialog() {
-        return this.options;
     }
 
     public void clearHistory() {
