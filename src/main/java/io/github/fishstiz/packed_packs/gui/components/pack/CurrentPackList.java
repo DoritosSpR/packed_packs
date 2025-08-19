@@ -118,7 +118,8 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
     }
 
-    private boolean canDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+    @Override
+    public boolean canDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         if (this.scrolling || this.isQueried() || payload.isEmpty() || (source != this && source instanceof FolderPackList)) {
             return false;
         }
@@ -229,6 +230,10 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         guiGraphics.renderOutline(x, y, width, height, DROP_THEME.getARGB());
+    }
+
+    public boolean isScrolling() {
+        return this.scrolling;
     }
 
     public class Entry extends PackListBase<Entry>.Entry {
