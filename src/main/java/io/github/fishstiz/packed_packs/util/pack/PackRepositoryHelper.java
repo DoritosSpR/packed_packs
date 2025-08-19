@@ -100,12 +100,12 @@ public class PackRepositoryHelper implements PackAssets {
         List<Pack> validUnselected = new ArrayList<>(unselected.size());
 
         for (Pack pack : selected) {
-            if (validPacks.contains(pack) && seen.add(pack)) {
+            if (validPacks.contains(pack) && (seen.add(pack) || pack instanceof FolderPack)) {
                 validSelected.add(pack);
             }
         }
         for (Pack pack : unselected) {
-            if (validPacks.contains(pack) && seen.add(pack)) {
+            if (validPacks.contains(pack) && (seen.add(pack) || pack instanceof FolderPack)) {
                 validUnselected.add(pack);
             }
         }
@@ -245,22 +245,23 @@ public class PackRepositoryHelper implements PackAssets {
     public List<Pack> groupByFolders(List<Pack> flatPacks) {
         if (this.folderPacks.isEmpty()) return flatPacks;
 
+        Map<String, String> packToFolder = new Object2ObjectOpenHashMap<>();
+        for (Map.Entry<String, List<Pack>> entry : this.folderPacks.entrySet()) {
+            for (Pack pack : entry.getValue()) {
+                packToFolder.put(pack.getId(), entry.getKey());
+            }
+        }
+
         Set<String> seenFolders = new ObjectOpenHashSet<>();
-        Set<String> nestedPackIds = new ObjectOpenHashSet<>();
-        List<Pack> grouped = new ArrayList<>();
+        List<Pack> grouped = new ArrayList<>(flatPacks.size());
 
         for (Pack pack : flatPacks) {
-            for (Map.Entry<String, List<Pack>> entry : this.folderPacks.entrySet()) {
-                if (entry.getValue().contains(pack)) {
-                    String folderId = entry.getKey();
-                    if (seenFolders.add(folderId)) {
-                        grouped.add(this.availablePacks.get(folderId));
-                    }
-                    nestedPackIds.add(pack.getId());
-                    break;
+            String folderId = packToFolder.get(pack.getId());
+            if (folderId != null) {
+                if (seenFolders.add(folderId)) {
+                    grouped.add(this.availablePacks.get(folderId));
                 }
-            }
-            if (!nestedPackIds.contains(pack.getId())) {
+            } else {
                 grouped.add(pack);
             }
         }
