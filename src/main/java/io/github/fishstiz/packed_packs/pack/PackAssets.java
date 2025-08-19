@@ -1,9 +1,10 @@
-package io.github.fishstiz.packed_packs.util.pack;
+package io.github.fishstiz.packed_packs.pack;
 
 import com.google.common.hash.Hashing;
 import com.mojang.blaze3d.platform.NativeImage;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;

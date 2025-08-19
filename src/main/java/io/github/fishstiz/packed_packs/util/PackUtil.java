@@ -1,64 +1,35 @@
-package io.github.fishstiz.packed_packs.util.pack;
+package io.github.fishstiz.packed_packs.util;
 
 import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.transform.interfaces.NestedPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackDetector;
+import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class PackUtil {
     public static final String FILE_PREFIX = "file/";
-    public static final String FILE_PREFIX_REGEX = "^" + Pattern.quote(FILE_PREFIX);
     public static final String DIRECTORY_DELIMITER = "/";
 
     private PackUtil() {
     }
 
-    public static boolean isFile(Pack pack) {
-        return pack.getId().startsWith(FILE_PREFIX);
-    }
-
-    public static String getSubdirectoryName(Pack pack) {
-        return StringUtils.substringBetween(pack.getId(), DIRECTORY_DELIMITER);
-    }
-
-    public static String getFileName(String packId) {
-        return packId.replaceFirst(FILE_PREFIX_REGEX, "");
-    }
-
-    public static String getFileName(Pack pack) {
-        return ((NestedPack) pack).packed_packs$nestedPack()
-                ? pack.getId().replaceFirst(FILE_PREFIX_REGEX + ".*" + Pattern.quote(DIRECTORY_DELIMITER), "")
-                : getFileName(pack.getId());
-    }
-
-    public static Path getPath(Path root, String packId) {
-        return root.resolve(getFileName(packId));
-    }
-
-    public static Path getPath(Path root, Pack pack) {
-        return ((NestedPack) pack).packed_packs$nestedPack()
-                ? root.resolve(getSubdirectoryName(pack)).resolve(getFileName(pack))
-                : getPath(root, getFileName(pack));
-    }
-
-    public static long getLastUpdatedEpochMs(Path root, Pack pack) {
-        if (!isFile(pack)) {
+    public static long getLastUpdatedEpochMs(Pack pack) {
+        Path path = ((IPack) pack).packed_packs$getPath();
+        if (path == null) {
             return -1;
         }
 
         try {
-            Path path = getPath(root, pack);
             return Files.getLastModifiedTime(path).toInstant().toEpochMilli();
         } catch (IOException e) {
             PackedPacks.LOGGER.error("Failed to get age of pack '{}'", pack.getId());
@@ -74,8 +45,13 @@ public class PackUtil {
         return Files.isRegularFile(path.resolve(PackResources.PACK_META));
     }
 
-    public static PackDetector<Path> createPackDetector() {
-        return new PackDetector<>(Minecraft.getInstance().directoryValidator()) {
+    public static boolean isBuiltIn(Pack pack) {
+        PackSource packSource = pack.getPackSource();
+        return packSource == PackSource.BUILT_IN || packSource instanceof BuiltinModResourcePackSource;
+    }
+
+    public static PathValidationResults validatePaths(List<Path> packs) {
+        PackDetector<Path> packDetector = new PackDetector<>(Minecraft.getInstance().directoryValidator()) {
             @Override
             protected Path createZipPack(Path path) {
                 return path;
@@ -86,9 +62,7 @@ public class PackUtil {
                 return path;
             }
         };
-    }
 
-    public static PathValidationResults validatePaths(List<Path> packs, PackDetector<Path> packDetector) {
         List<Path> valid = new ArrayList<>(packs.size());
         Set<Path> rejected = new HashSet<>(packs);
         List<ForbiddenSymlinkInfo> symlinkWarnings = new ArrayList<>();
@@ -109,7 +83,10 @@ public class PackUtil {
         return new PathValidationResults(valid, rejected, symlinkWarnings);
     }
 
-    public record PathValidationResults(List<Path> valid, Set<Path> rejected,
-                                        List<ForbiddenSymlinkInfo> symlinkWarnings) {
+    public record PathValidationResults(
+            List<Path> valid,
+            Set<Path> rejected,
+            List<ForbiddenSymlinkInfo> symlinkWarnings
+    ) {
     }
 }

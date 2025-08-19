@@ -11,7 +11,7 @@ import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.components.events.QueryEvent;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
-import io.github.fishstiz.packed_packs.util.pack.PackAssets;
+import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;

@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.util.pack.PackAssets;
+import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
