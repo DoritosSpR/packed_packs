@@ -108,7 +108,7 @@ publishMods {
     additionalFiles.from(remapSourcesJar.archiveFile)
     changelog = file("CHANGELOG.md").text
     displayName = "$mod_name v$mod_version"
-    type = BETA
+    type = STABLE
     modLoaders.add("fabric")
 
     github {
