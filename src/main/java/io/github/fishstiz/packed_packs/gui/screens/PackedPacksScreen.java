@@ -133,7 +133,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.layout.addToContents(this.createContents());
         this.layout.addToFooter(this.createFooter());
 
-        this.folderDialog.addRenderableWidget(this.folderDialog.root().getCloseButton());
+        this.folderDialog.addWidget(this.folderDialog.root().getCloseButton());
         this.folderDialog.root().visitWidgets(this.folderDialog::addRenderableWidget);
 
         this.profiles.initContents(SPACING);
