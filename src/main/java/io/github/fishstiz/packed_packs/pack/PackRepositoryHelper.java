@@ -1,10 +1,12 @@
-package io.github.fishstiz.packed_packs.util.pack;
+package io.github.fishstiz.packed_packs.pack;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.github.fishstiz.packed_packs.config.Folder;
-import io.github.fishstiz.packed_packs.transform.interfaces.NestedPack;
+import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
+import io.github.fishstiz.packed_packs.util.PackUtil;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
@@ -179,11 +181,12 @@ public class PackRepositoryHelper implements PackAssets {
      */
     private void populateAvailablePacks(Collection<Pack> packs) {
         for (Pack pack : packs) {
-            if (((NestedPack) pack).packed_packs$nestedPack()) {
-                String folderName = PackUtil.getSubdirectoryName(pack);
+            if (((IPack) pack).packed_packs$nestedPack()) {
+                Path folderPath = Objects.requireNonNull(((IPack) pack).packed_packs$getPath()).getParent();
+                String folderName = folderPath.getFileName().toString();
                 String folderId = PackUtil.FILE_PREFIX + folderName;
                 if (!this.availablePacks.containsKey(folderId)) {
-                    FolderPack folderPack = new FolderPack(folderId, folderName, this.packDir);
+                    FolderPack folderPack = new FolderPack(folderId, folderName, folderPath);
                     this.folderConfigs.put(folderId, folderPack.loadConfig());
                     this.availablePacks.put(folderId, folderPack);
                 }

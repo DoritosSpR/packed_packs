@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.gui.layouts.pack;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
-import io.github.fishstiz.packed_packs.util.pack.PackAssets;
+import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
