@@ -13,6 +13,7 @@ import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListen
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
+import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import io.github.fishstiz.packed_packs.util.pack.FolderPack;
 import io.github.fishstiz.packed_packs.util.pack.PackAssets;
 import net.minecraft.Util;
@@ -433,8 +434,15 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        Entry entry = this.getEntry(this.getLastSelected());
+        if (entry != null
+            && entry.getPack() instanceof FolderPack folderPack
+            && this.selection.size() == 1
+            && isExpandFolder(keyCode, modifiers)) {
+            this.openFolder(folderPack);
+            return true;
+        }
         if (isTransfer(keyCode, modifiers)) {
-            Entry entry = this.getEntry(this.getLastSelected());
             if (entry != null && entry.transfer()) {
                 playClickSound();
             }
@@ -462,6 +470,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     @Override
     public void replaceState(@NotNull Snapshot snapshot) {
+        Pack focused = ObjectsUtil.mapOrNull(this.getFocused(), PackList.Entry::getPack);
         this.packs.clear();
 
         for (Pack pack : snapshot.packs()) {
@@ -477,6 +486,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         for (Pack selected : snapshot.selection()) {
             this.select(selected);
         }
+        this.setFocused(this.getEntry(focused));
     }
 
     public abstract class Entry extends AbstractDynamicList<T>.Entry implements PackList.Entry, ContainerEventHandlerPatch {

@@ -476,7 +476,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private void onFolderOpen(FolderOpenEvent event) {
         this.folderDialog.root().reload(this.repository.getNestedPacks(event.opened()));
         this.folderDialog.root().setFolderPack(event.opened());
-        this.folderDialog.root().setFrame(event.target());
+        this.folderDialog.root().setParent(event.target());
         this.folderDialog.setBoundingBox(event.target());
         this.folderDialog.setOpen(true);
     }
@@ -490,6 +490,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             if (folder != null) {
                 folder.setPacks(this.repository.validateAndOrderNestedPacks(folderPack, event.target().copyPacks()));
                 folderPack.saveConfig(folder);
+                this.focusList(ObjectsUtil.firstNonNullOrDefault(this.availablePacks.getList(), this.folderDialog.root().getParent()));
             }
         }
     }

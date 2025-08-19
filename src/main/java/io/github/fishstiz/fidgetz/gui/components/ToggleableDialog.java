@@ -328,8 +328,12 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
 
     @Override
     public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent event) {
+        if (!this.isOpen()) {
+            return null;
+        }
+
         ComponentPath next = super.nextFocusPath(event);
-        if (this.isOpen() && this.captureFocus && next == null) {
+        if (this.captureFocus && next == null) {
             if (this.children.isEmpty()) {
                 return ComponentPath.path(this);
             }
