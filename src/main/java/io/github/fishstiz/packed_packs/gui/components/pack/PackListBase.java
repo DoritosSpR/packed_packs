@@ -371,11 +371,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.listener.onEvent(event);
     }
 
-    protected abstract @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> selection, Pack trigger, double mouseX, double mouseY);
+    protected abstract @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY);
 
     @Override
-    public final void drop(PackList source, ImmutableList<Pack> selection, Pack trigger, double mouseX, double mouseY) {
-        List<Pack> dropped = this.handleDrop(source, selection, trigger, mouseX, mouseY);
+    public final void drop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+        List<Pack> dropped = this.handleDrop(source, payload, trigger, mouseX, mouseY);
         if (dropped != null && !dropped.isEmpty()) {
             if (source != this) {
                 this.sendEvent(new DropEvent(source, this, dropped));

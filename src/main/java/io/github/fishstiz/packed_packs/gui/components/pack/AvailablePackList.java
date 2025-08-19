@@ -41,6 +41,11 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
     }
 
     @Override
+    public boolean canDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+        return this.isMouseOver(mouseX, mouseY) && !this.isInvalidDrop(source, payload, trigger);
+    }
+
+    @Override
     protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         if (this.isInvalidDrop(source, payload, trigger)) return null;
 
