@@ -19,11 +19,7 @@ import net.minecraft.server.packs.repository.PackSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
-import java.util.WeakHashMap;
-
 public class RespackoptsWidget extends AbstractButton {
-    private static final Map<Pack, PackSelectionModel.Entry> MODELS = new WeakHashMap<>();
     private final ResourcePackEntryWidget wrapped;
     private final PackSelectionModel.Entry model;
     private final LayoutElement container;
@@ -38,7 +34,7 @@ public class RespackoptsWidget extends AbstractButton {
 
     public static @Nullable RespackoptsWidget create(LayoutElement container, Pack pack) {
         for (ResourcePackEntryWidget widget : ResourcePackEntryWidget.WIDGETS) {
-            PackSelectionModel.Entry model = MODELS.computeIfAbsent(pack, RespackoptsWidget::createModel);
+            PackSelectionModel.Entry model = new PackModelEntry(pack);
             if (widget.isVisible(model, isSelectable(pack))) {
                 return new RespackoptsWidget(container, widget, model);
             }
@@ -95,82 +91,80 @@ public class RespackoptsWidget extends AbstractButton {
         return !pack.isFixedPosition() || !pack.isRequired();
     }
 
-    private static PackSelectionModel.Entry createModel(Pack pack) {
-        return new PackSelectionModel.Entry() {
-            @Override
-            public @NotNull ResourceLocation getIconTexture() {
-                return PackAssets.DEFAULT_ICON;
-            }
+    private record PackModelEntry(Pack pack) implements PackSelectionModel.Entry {
+        @Override
+        public @NotNull ResourceLocation getIconTexture() {
+            return PackAssets.DEFAULT_ICON;
+        }
 
-            @Override
-            public @NotNull PackCompatibility getCompatibility() {
-                return pack.getCompatibility();
-            }
+        @Override
+        public @NotNull PackCompatibility getCompatibility() {
+            return pack.getCompatibility();
+        }
 
-            @Override
-            public @NotNull String getId() {
-                return pack.getId();
-            }
+        @Override
+        public @NotNull String getId() {
+            return pack.getId();
+        }
 
-            @Override
-            public @NotNull Component getTitle() {
-                return pack.getTitle();
-            }
+        @Override
+        public @NotNull Component getTitle() {
+            return pack.getTitle();
+        }
 
-            @Override
-            public @NotNull Component getDescription() {
-                return pack.getDescription();
-            }
+        @Override
+        public @NotNull Component getDescription() {
+            return pack.getDescription();
+        }
 
-            @Override
-            public @NotNull PackSource getPackSource() {
-                return pack.getPackSource();
-            }
+        @Override
+        public @NotNull PackSource getPackSource() {
+            return pack.getPackSource();
+        }
 
-            @Override
-            public boolean isFixedPosition() {
-                return pack.isFixedPosition();
-            }
+        @Override
+        public boolean isFixedPosition() {
+            return pack.isFixedPosition();
+        }
 
-            @Override
-            public boolean isRequired() {
-                return pack.isRequired();
-            }
+        @Override
+        public boolean isRequired() {
+            return pack.isRequired();
+        }
 
-            @Override
-            public void select() {
-                // no-op
-            }
+        @Override
+        public void select() {
+            // no-op
+        }
 
-            @Override
-            public void unselect() {
-                // no-op
-            }
+        @Override
+        public void unselect() {
+            // no-op
+        }
 
-            @Override
-            public void moveUp() {
-                // no-op
-            }
+        @Override
+        public void moveUp() {
+            // no-op
+        }
 
-            @Override
-            public void moveDown() {
-                // no-op
-            }
+        @Override
+        public void moveDown() {
+            // no-op
+        }
 
-            @Override
-            public boolean isSelected() {
-                return false;
-            }
+        @Override
+        public boolean isSelected() {
+            return false;
+        }
 
-            @Override
-            public boolean canMoveUp() {
-                return false;
-            }
+        @Override
+        public boolean canMoveUp() {
+            return false;
+        }
 
-            @Override
-            public boolean canMoveDown() {
-                return false;
-            }
-        };
+        @Override
+        public boolean canMoveDown() {
+            return false;
+        }
     }
 }

@@ -1,6 +1,6 @@
 package io.github.fishstiz.fidgetz.transform.interfaces;
 
-public interface IStringWidget extends ITextRenderer {
+public interface IStringWidget {
     void fidgetz$setAlignX(float horizontalAlignment);
 
     void fidgetz$setOffsetY(int offsetY);
