@@ -7,6 +7,8 @@ public class NineSliceSprite extends Sprite {
     private final Sprite[][] slices = new Sprite[3][3];
     private final int[] widths = new int[3];
     private final int[] heights = new int[3];
+    private final int baseWidth;
+    private final int baseHeight;
 
     public NineSliceSprite(Sprite base) {
         super(base.location, base.width, base.height, base.u, base.v);
@@ -48,10 +50,18 @@ public class NineSliceSprite extends Sprite {
         this.widths[2] = this.slices[0][2].u.length();  // right border width
         this.heights[0] = this.slices[0][0].v.length(); // top border height
         this.heights[2] = this.slices[2][0].v.length(); // bottom border height
+
+        this.baseWidth = base.u.length();
+        this.baseHeight = base.v.length();
     }
 
     @Override
     public void render(GuiGraphics g, int x, int y, int width, int height, float partialTick) {
+        if (width == baseWidth && height == baseHeight) {
+            slices[1][1].render(g, x, y, width, height, partialTick);
+            return;
+        }
+
         widths[1] = Math.max(width - widths[0] - widths[2], 0);
         heights[1] = Math.max(height - heights[0] - heights[2], 0);
 
@@ -59,8 +69,12 @@ public class NineSliceSprite extends Sprite {
         for (int row = 0; row < 3; row++) {
             int xPos = x;
             for (int col = 0; col < 3; col++) {
-                slices[row][col].render(g, xPos, yPos, widths[col], heights[row], partialTick);
-                xPos += widths[col];
+                int w = widths[col];
+                int h = heights[row];
+                if (w > 0 && h > 0) {
+                    slices[row][col].render(g, xPos, yPos, w, h, partialTick);
+                }
+                xPos += w;
             }
             yPos += heights[row];
         }

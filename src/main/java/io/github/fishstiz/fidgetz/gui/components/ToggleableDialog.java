@@ -231,7 +231,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return this.isOpen();
+        return (this.isOpen() && (this.isCaptureClick() || this.isCaptureFocus())) || this.isMouseOverBounds(mouseX, mouseY);
     }
 
     @Override
