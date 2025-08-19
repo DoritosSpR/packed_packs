@@ -6,7 +6,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.util.pack.PackAssets;
+import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
