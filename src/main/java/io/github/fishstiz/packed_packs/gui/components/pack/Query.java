@@ -5,13 +5,11 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
-import io.github.fishstiz.packed_packs.util.pack.FolderPack;
-import io.github.fishstiz.packed_packs.util.pack.PackUtil;
-import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;
+import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
+import io.github.fishstiz.packed_packs.util.PackUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
-import net.minecraft.server.packs.repository.PackSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,7 +75,7 @@ public class Query {
             packs.removeIf(pack -> !normalizeTitle(pack.getTitle().getString()).toLowerCase().contains(this.search.toLowerCase()));
         }
         if (this.sort != null) {
-            packs.sort(this.sort.createComparator(this.packDir));
+            packs.sort(this.sort.comparator);
         }
     }
 
@@ -103,8 +101,8 @@ public class Query {
 
     public enum SortOption implements CyclicButton.SpriteOption {
         VANILLA("sort.vanilla", "sort_vanilla", (first, second) -> {
-            boolean builtInFirst = isBuiltIn(first.getPackSource());
-            boolean builtInSecond = isBuiltIn(second.getPackSource());
+            boolean builtInFirst = PackUtil.isBuiltIn(first);
+            boolean builtInSecond = PackUtil.isBuiltIn(second);
             if (builtInFirst != builtInSecond) return builtInFirst ? 1 : -1;
             return first.getTitle().getString().compareTo(second.getTitle().getString());
         }),
@@ -112,50 +110,25 @@ public class Query {
                 pack -> normalizeTitle(pack.getTitle().getString()),
                 String.CASE_INSENSITIVE_ORDER
         )),
-        Z_A("sort.z_a", "sort_z_a", A_Z.createComparator(null).reversed()),
-        RECENT("sort.recent", "sort_recent", ComparatorFactory.createDynamic((Path directory) ->
-                Comparator.<Pack>comparingLong(pack -> PackUtil.getLastUpdatedEpochMs(directory, pack)).reversed()
-        )),
-        OLDEST("sort.oldest", "sort_oldest", ComparatorFactory.createDynamic((Path directory) ->
-                RECENT.createComparator(directory).reversed()
-        ));
+        Z_A("sort.z_a", "sort_z_a", A_Z.comparator.reversed()),
+        RECENT("sort.recent", "sort_recent", Comparator.comparingLong(PackUtil::getLastUpdatedEpochMs).reversed()),
+        OLDEST("sort.oldest", "sort_oldest", RECENT.comparator.reversed());
 
         private final Component component;
         private final Tooltip tooltip;
         private final ButtonSprites sprites;
-        private final ComparatorFactory<?> comparatorFactory;
-        private Comparator<Pack> cachedComparator;
+        private final Comparator<Pack> comparator;
 
-        <T> SortOption(String key, String icon, ComparatorFactory<T> comparatorFactory) {
+        SortOption(String key, String icon, Comparator<Pack> comparator) {
             this.component = ResourceUtil.getText(key);
             this.tooltip = Tooltip.create(this.component);
             this.sprites = ButtonSprites.of(new Sprite(ResourceUtil.getIcon(icon), Size.of16()));
-            this.comparatorFactory = comparatorFactory;
-        }
-
-        SortOption(String key, String icon, Comparator<Pack> comparator) {
-            this(key, icon, arg -> comparator);
+            this.comparator = folderFirst(comparator);
         }
 
         @Override
         public @NotNull Component text() {
             return this.component;
-        }
-
-        public <T> @NotNull Comparator<Pack> createComparator(T arg) {
-            if (this.cachedComparator != null) {
-                return this.cachedComparator;
-            }
-
-            @SuppressWarnings("unchecked")
-            ComparatorFactory<T> factory = (ComparatorFactory<T>) this.comparatorFactory;
-            Comparator<Pack> comparator = ComparatorFactory.folderFirst(factory.createComparator(arg));
-
-            if (!factory.isDynamic()) {
-                this.cachedComparator = comparator;
-            }
-
-            return comparator;
         }
 
         @Override
@@ -168,39 +141,9 @@ public class Query {
             return this.sprites;
         }
 
-        @FunctionalInterface
-        private interface ComparatorFactory<T> {
-            Comparator<Pack> createComparator(T arg);
-
-            default boolean isDynamic() {
-                return false;
-            }
-
-            static Comparator<Pack> folderFirst(Comparator<Pack> base) {
-                return Comparator
-                        .comparing((Pack pack) -> !(pack instanceof FolderPack))
-                        .thenComparing(base);
-            }
-
-            static <T> ComparatorFactory<T> createDynamic(ComparatorFactory<T> factory) {
-                return new ComparatorFactory<>() {
-                    @Override
-                    public Comparator<Pack> createComparator(T arg) {
-                        return factory.createComparator(arg);
-                    }
-
-                    @Override
-                    public boolean isDynamic() {
-                        return true;
-                    }
-                };
-            }
+        static Comparator<Pack> folderFirst(Comparator<Pack> base) {
+            return Comparator.comparing((Pack pack) -> !(pack instanceof FolderPack)).thenComparing(base);
         }
-    }
-
-    private static boolean isBuiltIn(PackSource packSource) {
-        //noinspection UnstableApiUsage
-        return packSource == PackSource.BUILT_IN || packSource instanceof BuiltinModResourcePackSource;
     }
 
     private static String normalizeTitle(String title) {

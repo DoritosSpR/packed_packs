@@ -23,8 +23,8 @@ import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.util.pack.FolderPack;
-import io.github.fishstiz.packed_packs.util.pack.PackRepositoryHelper;
+import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
+import io.github.fishstiz.packed_packs.pack.PackRepositoryHelper;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.layouts.*;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
@@ -60,7 +60,7 @@ import java.util.stream.Collectors;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
-import static io.github.fishstiz.packed_packs.util.pack.PackUtil.*;
+import static io.github.fishstiz.packed_packs.util.PackUtil.*;
 
 public class PackedPacksScreen extends PackListEventHandler implements ToggleableDialogContainer, Restorable<PackedPacksScreen.Snapshot> {
     private static final Component ACTION_BAR_INFO = ResourceUtil.getText("toggle_actionbar.info");
@@ -278,7 +278,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                 this.minecraft.setScreen(this);
                 return;
             }
-            PathValidationResults results = validatePaths(packs, createPackDetector());
+            PathValidationResults results = validatePaths(packs);
 
             if (!results.symlinkWarnings().isEmpty()) {
                 this.minecraft.setScreen(NoticeWithLinkScreen.createPackSymlinkWarningScreen(() -> this.minecraft.setScreen(this)));
