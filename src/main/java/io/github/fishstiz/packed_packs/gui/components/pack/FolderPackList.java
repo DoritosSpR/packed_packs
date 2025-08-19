@@ -21,7 +21,7 @@ public class FolderPackList extends CurrentPackList {
     private static final int HEADER_HEIGHT = 16;
     private final FidgetzButton<Void> closeButton;
     private final int spacing;
-    private PackList frame;
+    private PackList parent;
     private FolderPack folderPack;
     private Sprite sprite;
 
@@ -52,16 +52,16 @@ public class FolderPackList extends CurrentPackList {
     }
 
     private void updateBounds() {
-        if (this.frame != null) {
-            int frameX = this.frame.getX();
-            int frameY = this.frame.getY();
-            int frameWidth = this.frame.getWidth();
-            int frameHeight = this.frame.getHeight();
+        if (this.parent != null) {
+            int parentX = this.parent.getX();
+            int parentY = this.parent.getY();
+            int parentWidth = this.parent.getWidth();
+            int parentHeight = this.parent.getHeight();
 
-            int left = frameX + this.spacing;
-            int top = frameY + this.spacing;
-            int right = (frameX + frameWidth) - this.spacing;
-            int bottom = (frameY + frameHeight) - this.spacing;
+            int left = parentX + this.spacing;
+            int top = parentY + this.spacing;
+            int right = (parentX + parentWidth) - this.spacing;
+            int bottom = (parentY + parentHeight) - this.spacing;
 
             this.closeButton.setPosition(left, top);
             this.setPosition(left, top + HEADER_HEIGHT + this.spacing);
@@ -71,11 +71,11 @@ public class FolderPackList extends CurrentPackList {
     }
 
     private void renderFolderInfo(GuiGraphics guiGraphics, float partialTick) {
-        if (this.frame != null && this.sprite != null && this.folderPack != null) {
-            int frameX = this.frame.getX();
-            int left = frameX + this.spacing;
-            int top = this.frame.getY() + this.spacing;
-            int right = (frameX + this.frame.getWidth()) - this.spacing;
+        if (this.parent != null && this.sprite != null && this.folderPack != null) {
+            int parentX = this.parent.getX();
+            int left = parentX + this.spacing;
+            int top = this.parent.getY() + this.spacing;
+            int right = (parentX + this.parent.getWidth()) - this.spacing;
 
             this.closeButton.setPosition(left, top);
             this.sprite.renderClamped(guiGraphics, left, top, CLOSE_SPRITE.width, CLOSE_SPRITE.height, partialTick);
@@ -99,9 +99,13 @@ public class FolderPackList extends CurrentPackList {
         this.renderFolderInfo(guiGraphics, partialTick);
     }
 
-    public void setFrame(PackList frame) {
-        this.frame = frame;
+    public void setParent(PackList parent) {
+        this.parent = parent;
         this.updateBounds();
+    }
+
+    public @Nullable PackList getParent() {
+        return this.parent;
     }
 
     public void setFolderPack(FolderPack folderPack) {

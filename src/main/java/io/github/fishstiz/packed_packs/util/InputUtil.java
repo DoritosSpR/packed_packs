@@ -42,6 +42,10 @@ public class InputUtil {
         return modifiers == 0 && (keyCode == KEY_SPACE || keyCode == KEY_RETURN);
     }
 
+    public static boolean isExpandFolder(int keyCode, int modifiers) {
+        return modifiers == 0 && keyCode == KEY_RETURN;
+    }
+
     public static boolean isRangeModifierActive() {
         return hasShiftDown();
     }
