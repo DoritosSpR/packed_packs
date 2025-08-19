@@ -107,6 +107,10 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         return GuiUtil.containsPoint(this, mouseX, mouseY) && this.isUncovered(mouseX, mouseY);
     }
 
+    public void setHovered(boolean hovered) {
+        this.isHovered = hovered;
+    }
+
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
         return super.isMouseOver(mouseX, mouseY) && this.isUncovered(mouseX, mouseY);

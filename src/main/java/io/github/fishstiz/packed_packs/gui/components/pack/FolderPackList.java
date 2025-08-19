@@ -70,7 +70,7 @@ public class FolderPackList extends CurrentPackList {
         }
     }
 
-    private void renderFolderInfo(GuiGraphics guiGraphics, float partialTick) {
+    private void renderFolderInfo(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (this.parent != null && this.sprite != null && this.folderPack != null) {
             int parentX = this.parent.getX();
             int left = parentX + this.spacing;
@@ -79,6 +79,8 @@ public class FolderPackList extends CurrentPackList {
 
             this.closeButton.setPosition(left, top);
             this.sprite.renderClamped(guiGraphics, left, top, CLOSE_SPRITE.width, CLOSE_SPRITE.height, partialTick);
+
+            this.closeButton.setHovered(this.closeButton.isMouseOver(mouseX, mouseY));
             if (this.closeButton.isHovered()) {
                 PackListBase.Entry.OVERLAY.render(guiGraphics, left, top, CLOSE_SPRITE.width, CLOSE_SPRITE.height);
                 CLOSE_SPRITE.renderClamped(guiGraphics, left, top, CLOSE_SPRITE.width, CLOSE_SPRITE.height, partialTick);
@@ -96,7 +98,7 @@ public class FolderPackList extends CurrentPackList {
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.updateBounds();
         super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
-        this.renderFolderInfo(guiGraphics, partialTick);
+        this.renderFolderInfo(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     public void setParent(PackList parent) {
