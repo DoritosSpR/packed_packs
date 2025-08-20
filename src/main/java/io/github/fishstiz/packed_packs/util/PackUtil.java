@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.util;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackResources;
@@ -12,8 +13,7 @@ import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.*;
 
 public class PackUtil {
@@ -67,7 +67,12 @@ public class PackUtil {
 
     public static boolean isBuiltIn(Pack pack) {
         PackSource packSource = pack.getPackSource();
+        //noinspection UnstableApiUsage
         return packSource == PackSource.BUILT_IN || packSource instanceof BuiltinModResourcePackSource;
+    }
+
+    public static boolean isNonPackDirectory(Path path) {
+        return Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && !hasMcmeta(path);
     }
 
     public static PathValidationResults validatePaths(List<Path> packs) {
@@ -83,24 +88,39 @@ public class PackUtil {
             }
         };
 
-        List<Path> valid = new ArrayList<>(packs.size());
-        Set<Path> rejected = new HashSet<>(packs);
-        List<ForbiddenSymlinkInfo> symlinkWarnings = new ArrayList<>();
-
+        PathValidationResults results = new PathValidationResults(packs);
         for (Path path : packs) {
             try {
-                Path detectedPack = packDetector.detectPackResources(path, symlinkWarnings);
-                if (detectedPack == null) {
-                    PackedPacks.LOGGER.warn("Path {} does not seem like pack", path);
-                } else {
-                    valid.add(detectedPack);
-                    rejected.remove(detectedPack);
+                if (!isNonPackDirectory(path)) {
+                    if (validatePath(path, packDetector, results.symlinkWarnings)) {
+                        results.addValid(path);
+                    }
+                    continue;
+                }
+
+                try (DirectoryStream<Path> paths = Files.newDirectoryStream(path)) {
+                    for (Path child : paths) {
+                        if (validatePath(child, packDetector, results.symlinkWarnings)) {
+                            results.addValid(path);
+                            break;
+                        }
+                    }
                 }
             } catch (IOException e) {
                 PackedPacks.LOGGER.warn("Failed to check {} for packs", path, e);
             }
         }
-        return new PathValidationResults(valid, rejected, symlinkWarnings);
+
+        return results;
+    }
+
+    private static boolean validatePath(Path path, PackDetector<Path> packDetector, List<ForbiddenSymlinkInfo> symlinkWarnings) throws IOException {
+        Path detectedPack = packDetector.detectPackResources(path, symlinkWarnings);
+        if (detectedPack == null) {
+            PackedPacks.LOGGER.warn("Path {} does not seem like pack", path);
+            return false;
+        }
+        return true;
     }
 
     public record PathValidationResults(
@@ -108,5 +128,13 @@ public class PackUtil {
             Set<Path> rejected,
             List<ForbiddenSymlinkInfo> symlinkWarnings
     ) {
+        private PathValidationResults(Collection<Path> packs) {
+            this(new ArrayList<>(packs.size()), new ObjectOpenHashSet<>(packs), new ArrayList<>());
+        }
+
+        private void addValid(Path path) {
+            this.valid.add(path);
+            this.rejected.remove(path);
+        }
     }
 }
