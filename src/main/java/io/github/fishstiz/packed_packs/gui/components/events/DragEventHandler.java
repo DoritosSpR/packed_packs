@@ -54,7 +54,8 @@ public interface DragEventHandler extends ContainerEventHandler {
         return ContainerEventHandler.super.mouseReleased(mouseX, mouseY, button);
     }
 
+    @Deprecated(since = "mc1.21.6")
     default float getDroppableZ() {
-        return 100;
+        return 1f;
     }
 }

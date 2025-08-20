@@ -50,7 +50,8 @@ public class ModAdditions {
             Mod.RESPACKOPTS.wrapError(packListEntry, entry -> {
                 RespackoptsWidget respackOptsWidget = RespackoptsWidget.create(entry, entry.getPack());
                 if (respackOptsWidget != null) {
-                    entry.prependRenderableWidget(respackOptsWidget);
+                    entry.prependWidget(respackOptsWidget);
+                    entry.addTopRenderableOnly(respackOptsWidget);
                 }
             });
         }

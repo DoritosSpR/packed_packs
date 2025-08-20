@@ -126,9 +126,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
             }
 
             poseStack.translate(0, 0, 1f);
-
             event.render(guiGraphics, mouseX, mouseY, partialTick);
-
             poseStack.popPose();
         }
     }
