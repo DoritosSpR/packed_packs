@@ -60,7 +60,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     public @Nullable T getEntry(@Nullable Pack pack) {
         if (pack == null) return null;
         for (T entry : this.children()) {
-            if (entry.pack == pack) return entry;
+            if (Objects.equals(entry.pack, pack)) return entry;
         }
         return null;
     }
@@ -576,7 +576,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         public boolean isSelectedLast() {
-            return PackListBase.this.getLastSelected() == this.pack;
+            return ObjectsUtil.mapOrDefault(PackListBase.this.getLastSelected(), false, p -> Objects.equals(p, this.pack));
         }
 
         private boolean sendSelection() {
