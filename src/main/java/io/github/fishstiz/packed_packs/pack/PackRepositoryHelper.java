@@ -2,11 +2,13 @@ package io.github.fishstiz.packed_packs.pack;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Runnables;
 import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.util.PackUtil;
+import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
@@ -16,6 +18,7 @@ import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
+import org.apache.commons.lang3.function.Consumers;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -39,7 +42,7 @@ public class PackRepositoryHelper implements PackAssets {
         this.packDir = packDir;
 
         // Fabric API workaround
-        this.model = new PackSelectionModel(PackRepositoryHelper::_update, PackRepositoryHelper::_getIcon, this.repository, PackRepositoryHelper::_apply);
+        this.model = new PackSelectionModel(Runnables.doNothing(), PackAssets::getDefaultIcon, this.repository, Consumers.nop());
 
         this.resourcePacks = this.repository == Minecraft.getInstance().getResourcePackRepository();
 
@@ -144,6 +147,7 @@ public class PackRepositoryHelper implements PackAssets {
                 result.add(pack);
             }
         }
+
         this.folderPacks.put(folderPack.getId(), result);
         return result;
     }
@@ -153,24 +157,12 @@ public class PackRepositoryHelper implements PackAssets {
     }
 
     public List<Pack> getPacksById(List<String> packIds, Map<String, Pack> source) {
-        List<Pack> packs = new ArrayList<>();
-        for (String id : packIds) {
-            Pack pack = source.get(id);
-            if (pack != null) {
-                packs.add(pack);
-            }
-        }
-        return packs;
+        return CollectionsUtil.lookup(packIds, source);
     }
 
     public List<Pack> getPacksById(List<String> packIds, List<Pack> source) {
-        Map<String, Pack> sourceMap = new Object2ObjectOpenHashMap<>();
-        for (Pack pack : source) {
-            sourceMap.put(pack.getId(), pack);
-        }
-        return this.getPacksById(packIds, sourceMap);
+        return CollectionsUtil.lookup(packIds, CollectionsUtil.toMap(source, Pack::getId));
     }
-
 
     public List<Pack> getPacksById(List<String> packIds) {
         return this.getPacksById(packIds, this.availablePacks);
@@ -183,8 +175,8 @@ public class PackRepositoryHelper implements PackAssets {
         for (Pack pack : packs) {
             if (((IPack) pack).packed_packs$nestedPack()) {
                 Path folderPath = Objects.requireNonNull(((IPack) pack).packed_packs$getPath()).getParent();
-                String folderName = folderPath.getFileName().toString();
-                String folderId = PackUtil.FILE_PREFIX + folderName;
+                String folderName = PackUtil.generatePackName(folderPath);
+                String folderId = PackUtil.generatePackId(folderName);
                 if (!this.availablePacks.containsKey(folderId)) {
                     FolderPack folderPack = new FolderPack(folderId, folderName, folderPath);
                     this.folderConfigs.put(folderId, folderPack.loadConfig());
@@ -215,8 +207,7 @@ public class PackRepositoryHelper implements PackAssets {
      * @param selected grouped list of selected packs
      */
     public void selectPacks(List<Pack> selected) {
-        List<Pack> flattened = this.flattenPacks(selected);
-        this.repository.setSelected(Lists.reverse(flattened).stream().map(Pack::getId).collect(ImmutableList.toImmutableList()));
+        this.repository.setSelected(Lists.reverse(this.flattenPacks(selected)).stream().map(Pack::getId).collect(ImmutableList.toImmutableList()));
     }
 
     /**
@@ -324,17 +315,5 @@ public class PackRepositoryHelper implements PackAssets {
         private static PackGroup of(List<Pack> selected, List<Pack> unselected) {
             return new PackGroup(ImmutableList.copyOf(selected), ImmutableList.copyOf(unselected));
         }
-    }
-
-    private static ResourceLocation _getIcon(Pack pack) {
-        return DEFAULT_ICON; // placeholder
-    }
-
-    private static void _update() {
-        // placeholder
-    }
-
-    private static void _apply(PackRepository repository) {
-        // placeholder
     }
 }

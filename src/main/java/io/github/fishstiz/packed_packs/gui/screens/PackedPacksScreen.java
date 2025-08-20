@@ -20,6 +20,7 @@ import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
+import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
@@ -54,7 +55,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
@@ -258,11 +258,10 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     @Override
     public void onFilesDrop(List<Path> packs) {
         if (this.minecraft != null) {
-            String packNames = extractPackNames(packs).collect(Collectors.joining(", "));
             this.minecraft.setScreen(new ConfirmScreen(
                     this.confirmFileDrop(packs),
                     Component.translatable("pack.dropConfirm"),
-                    Component.literal(packNames)
+                    Component.literal(PackUtil.joinPackNames(packs))
             ));
         }
     }
@@ -287,7 +286,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                 this.revalidate();
             }
             if (!results.rejected().isEmpty()) {
-                String rejectedNames = extractPackNames(results.rejected()).collect(Collectors.joining(", "));
+                String rejectedNames = PackUtil.joinPackNames(results.rejected());
                 this.minecraft.setScreen(new AlertScreen(
                         () -> this.minecraft.setScreen(this),
                         Component.translatable("pack.dropRejected.title"),

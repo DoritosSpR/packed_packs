@@ -489,7 +489,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         private static final Tooltip FOLDER_OPEN_INFO = Tooltip.create(FolderPack.FOLDER_OPEN_TEXT);
         protected static final int SPACING = 2;
         protected static final int BACKGROUND_OFFSET = 1;
-        protected static final ColoredRect OVERLAY = new ColoredRect(Theme.WHITE.withAlpha(0.25F));
         protected static final ColoredRect SELECTED_OVERLAY = new ColoredRect(Theme.BLUE_500.withAlpha(0.25F));
         protected final List<GuiEventListener> children = new ArrayList<>();
         protected final List<Renderable> renderables = new ArrayList<>();
@@ -723,7 +722,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 int overlayLeft = this.getX() + BACKGROUND_OFFSET;
                 int overlayWidth = this.getWidth() - BACKGROUND_OFFSET * 2;
                 int overlayHeight = this.getHeight() + BACKGROUND_OFFSET * 2;
-                pick(isSelectedLast(), OVERLAY, SELECTED_OVERLAY).render(guiGraphics, overlayLeft, overlayTop, overlayWidth, overlayHeight);
+                pick(isSelectedLast(), GuiConstants.WHITE_OVERLAY, SELECTED_OVERLAY).render(guiGraphics, overlayLeft, overlayTop, overlayWidth, overlayHeight);
             }
             if (this.isSelected() || this.isFocused()) {
                 int outlineTop = top - BACKGROUND_OFFSET * 2;

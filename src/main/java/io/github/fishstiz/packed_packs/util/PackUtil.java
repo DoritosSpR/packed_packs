@@ -2,6 +2,7 @@ package io.github.fishstiz.packed_packs.util;
 
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackResources;
@@ -14,13 +15,28 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Stream;
 
 public class PackUtil {
-    public static final String FILE_PREFIX = "file/";
-    public static final String DIRECTORY_DELIMITER = "/";
+    private static final String FILE_PREFIX = "file/"; // Changing these will break profiles with folder packs
+    private static final String DELIMITER = "/";
 
     private PackUtil() {
+    }
+
+    public static String generatePackName(Path path) {
+        return path.getFileName().toString();
+    }
+
+    public static String generatePackId(String name) {
+        return FILE_PREFIX + name;
+    }
+
+    public static String generatePackId(Path path) {
+        return generatePackId(generatePackName(path));
+    }
+
+    public static String generateNestedPackId(Path path) {
+        return FILE_PREFIX + generatePackName(path.getParent()) + DELIMITER + generatePackName(path);
     }
 
     public static long getLastUpdatedEpochMs(Pack pack) {
@@ -37,8 +53,12 @@ public class PackUtil {
         }
     }
 
-    public static Stream<String> extractPackNames(Collection<Path> paths) {
-        return paths.stream().map(Path::getFileName).map(Path::toString);
+    public static List<String> extractPackIds(Collection<Pack> packs) {
+        return CollectionsUtil.extractNonNull(packs, Pack::getId);
+    }
+
+    public static String joinPackNames(Collection<Path> paths) {
+        return String.join(", ", CollectionsUtil.extractNonNull(paths, PackUtil::generatePackName));
     }
 
     public static boolean hasMcmeta(Path path) {

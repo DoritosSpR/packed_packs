@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.config;
 
+import io.github.fishstiz.packed_packs.util.PackUtil;
 import net.minecraft.server.packs.repository.Pack;
 
 import java.io.Serializable;
@@ -10,11 +11,7 @@ public class Folder implements Serializable {
     private List<String> packIds = new ArrayList<>();
 
     public void setPacks(List<Pack> packs) {
-        List<String> ids = new ArrayList<>();
-        for (Pack pack : packs) {
-            if (pack != null) ids.add(pack.getId());
-        }
-        this.packIds = ids;
+        this.packIds = PackUtil.extractPackIds(packs);
     }
 
     public List<String> getPackIds() {
