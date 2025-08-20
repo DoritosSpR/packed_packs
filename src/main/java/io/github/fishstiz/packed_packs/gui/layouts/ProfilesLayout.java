@@ -11,6 +11,7 @@ import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.profile.ProfileList;
 import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LayoutSettings;
@@ -67,9 +68,9 @@ public class ProfilesLayout {
         this.noProfileButton.addListener(() -> this.sidebar.setOpen(false));
     }
 
-    public void initContents(int spacing) {
-        LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(spacing);
-        FlexLayout actions = FlexLayout.horizontal(this::getMaxWidth).spacing(spacing);
+    public void initContents() {
+        LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(GuiConstants.SPACING);
+        FlexLayout actions = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
         FlexLayout list = FlexLayout.horizontal(this::getMaxWidth);
 
         actions.addFlexChild(this.noProfileButton);
@@ -83,7 +84,7 @@ public class ProfilesLayout {
         list.addFlexChild(this.profileList, true);
 
         this.sidebar.root().layout().addChild(actions, layoutSettings);
-        this.sidebar.root().layout().addFlexChild(list, true, layoutSettings.copy().paddingBottom(spacing + 1));
+        this.sidebar.root().layout().addFlexChild(list, true, layoutSettings.copy().paddingBottom(GuiConstants.SPACING + 1));
         this.sidebar.root().layout().arrangeElements();
         this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
 

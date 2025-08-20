@@ -13,15 +13,15 @@ import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Folder;
-import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
-import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
-import io.github.fishstiz.packed_packs.gui.components.pack.FolderPackList;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.*;
 import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
+import io.github.fishstiz.fidgetz.gui.components.ContextMenu;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackOptions;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
+import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.pack.PackRepositoryHelper;
@@ -69,10 +69,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private static final Component OPEN_FOLDER_TEXT = Component.translatable("pack.openFolder");
     private static final Component OPEN_FOLDER_INFO_TEXT = Component.translatable("pack.folderInfo");
     private static final Component APPLY_TEXT = ResourceUtil.getText("apply");
-    private static final int SPACING = 8;
-    private static final float SIDEBAR_Z = 100;
-    private static final float DROP_ZONE_Z = 200;
-    private static final float OPTIONS_Z = 300;
     private final Screen previous;
     private final PackSelectionScreenArgs original;
     private final PackRepositoryHelper repository;
@@ -85,11 +81,13 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private final ImmediateDebouncer<String> searchListener = new ImmediateDebouncer<>(this::clearHistory, 250);
     private final PollingDebouncer<Void> revalidateTask = new PollingDebouncer<>(this::revalidate, 1000);
     private final ToggleableDialog<FolderPackList> folderDialog;
-    private final Modal<LinearLayout> options = Modal.builder(this, new OptionsLayout(SPACING).layout())
+    private final Modal<LinearLayout> options = Modal.builder(this, new OptionsLayout().layout())
             .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
             .setCaptureFocus(true)
-            .setZ(OPTIONS_Z)
             .build();
+    private final ContextMenu contextMenu = ContextMenu.builder(this).build();
+    private final List<ToggleableDialog<?>> dialogs;
+    private final List<PackList> packLists;
     private PackSelectionScreen.Watcher watcher;
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
     private boolean initialized = false;
@@ -100,19 +98,25 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.previous = previous;
         this.original = original;
         this.repository = new PackRepositoryHelper(this.original.repository(), this.original.packDir());
-        this.availablePacks = new AvailablePacksLayout(this.repository, this, SPACING);
-        this.currentPacks = new CurrentPacksLayout(this.repository, this, SPACING);
+        this.availablePacks = new AvailablePacksLayout(this.repository, this);
+        this.currentPacks = new CurrentPacksLayout(this.repository, this);
         this.packsConfig = this.repository.getConfig();
         this.profiles = new ProfilesLayout(
-                Sidebar.builder(this).setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1)),
+                Sidebar.builder(this).setHeaderSettings(
+                        LayoutSettings.defaults().paddingLeft(GuiConstants.SPACING).paddingTop(GuiConstants.SPACING - 1)
+                ),
                 this.packsConfig,
                 this.currentPacks.getList()::copyPacks,
                 this::onProfileChange
         );
-        this.folderDialog = ToggleableDialog.builder(this, new FolderPackList(this.repository, this, SPACING))
+        this.folderDialog = ToggleableDialog.builder(this, new FolderPackList(this.repository, this))
                 .setBackground(DrawUtil.DEMO_BACKGROUND)
-                .addListener(this::onCloseFolderDialog)
+                .addListener(this::onFolderDialogToggle)
                 .build();
+        this.folderDialog.root().visible = false;
+
+        this.dialogs = List.of(this.options, this.contextMenu, this.profiles.getSidebar(), this.folderDialog);
+        this.packLists = List.of(this.folderDialog.root(), this.availablePacks.getList(), this.currentPacks.getList());
     }
 
     @Override
@@ -139,18 +143,18 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
         this.folderDialog.addWidget(this.folderDialog.root().getCloseButton());
         this.folderDialog.root().visitWidgets(this.folderDialog::addRenderableWidget);
-
-        this.profiles.initContents(SPACING);
+        this.profiles.initContents();
         this.profiles.getSidebar().getCloseButton().addListener(this::setInitialFocus);
-
         this.options.root().visitWidgets(this.options::addRenderableWidget);
 
         this.addWidget(this.options);
+        this.addWidget(this.contextMenu);
         this.addWidget(this.profiles.getSidebar());
         this.addWidget(this.folderDialog);
         this.layout.visitWidgets(this::addRenderableWidget);
         this.addRenderableOnly(this.folderDialog);
         this.addRenderableOnly(this.profiles.getSidebar());
+        this.addRenderableOnly(this.contextMenu);
         this.addRenderableOnly(this.options);
 
         this.clearHistory();
@@ -161,7 +165,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     }
 
     private FlexLayout createHeader() {
-        FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
+        FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
         header.addChild(
                 FidgetzButton.builder()
                         .makeSquare()
@@ -206,17 +210,17 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     }
 
     private FlexLayout createContents() {
-        FlexLayout contents = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        this.availablePacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING), false));
-        this.currentPacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING), false));
+        FlexLayout contents = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
+        this.availablePacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(GuiConstants.SPACING), false));
+        this.currentPacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(GuiConstants.SPACING), false));
         this.currentPacks.getSearchField().addListener(this.searchListener);
         this.availablePacks.getSearchField().addListener(this.searchListener);
         return contents;
     }
 
     private FlexLayout createFooter() {
-        FlexLayout footer = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        FlexLayout firstColumn = FlexLayout.horizontal().spacing(SPACING);
+        FlexLayout footer = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
+        FlexLayout firstColumn = FlexLayout.horizontal().spacing(GuiConstants.SPACING);
         FlexLayout secondColumn = firstColumn.copyLayout();
 
         firstColumn.addFlexChild(
@@ -239,7 +243,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     }
 
     public int getMaxWidth() {
-        return this.width - SPACING * 2;
+        return this.width - GuiConstants.SPACING * 2;
     }
 
     @Override
@@ -456,16 +460,17 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     @Override
     public @NotNull List<PackList> getPackLists() {
-        return List.of(this.folderDialog.root(), this.availablePacks.getList(), this.currentPacks.getList());
+        return this.packLists;
     }
 
     @Override
-    public @NotNull PackList getDestination(PackList source) {
-        return switch (source) {
-            case AvailablePackList ignore -> this.currentPacks.getList();
-            case CurrentPackList ignore -> this.availablePacks.getList();
-            default -> throw new IllegalStateException("Unexpected value: " + source);
-        };
+    public @Nullable PackList getDestination(PackList source) {
+        if (source == this.availablePacks.getList()) {
+            return this.currentPacks.getList();
+        } else if (source == this.currentPacks.getList()) {
+            return this.availablePacks.getList();
+        }
+        return null;
     }
 
     @Override
@@ -474,6 +479,28 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
         if (destination == currentPacks.getList()) {
             currentPacks.getList().scrollToLastSelected();
+        }
+    }
+
+    private void handleContextMenuRequest(RequestContextMenuEvent event) {
+        boolean folder = event.trigger() instanceof FolderPack;
+        var packOptions = ObjectsUtil.pick(folder, PackOptions.FOLDER, PackOptions.FILE).get(event.trigger());
+        if (packOptions.length > 0) {
+            if (folder) {
+                ContextMenu.SimpleOption openOption = new ContextMenu.SimpleOption(
+                        FolderPack.FOLDER_OPEN_TEXT,
+                        () -> this.onEvent(FolderOpenEvent.fromContextMenu(event))
+                );
+                ContextMenu.Option[] allOptions = new ContextMenu.Option[packOptions.length + 1];
+                allOptions[0] = openOption;
+                System.arraycopy(packOptions, 0, allOptions, 1, packOptions.length);
+
+                this.contextMenu.open(event.mouseX(), event.mouseY(), allOptions);
+            } else {
+                this.contextMenu.open(event.mouseX(), event.mouseY(), packOptions);
+            }
+        } else {
+            this.contextMenu.setOpen(false);
         }
     }
 
@@ -499,9 +526,12 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         }
     }
 
-    private void onCloseFolderDialog(boolean open) {
-        if (!open && this.folderDialog != null && this.folderDialog.root() != null) {
-            this.onEvent(new FolderCloseEvent(this.folderDialog.root()));
+    private void onFolderDialogToggle(boolean open) {
+        if (this.folderDialog != null && this.folderDialog.root() != null) {
+            this.folderDialog.root().visible = open;
+            if (!open) {
+                this.onEvent(new FolderCloseEvent(this.folderDialog.root()));
+            }
         }
     }
 
@@ -511,7 +541,9 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
         this.profiles.getSidebar().setOpen(false);
 
-        if (event instanceof FolderOpenEvent folderOpenEvent) {
+        if (event instanceof RequestContextMenuEvent contextMenuEvent) {
+            this.handleContextMenuRequest(contextMenuEvent);
+        } else if (event instanceof FolderOpenEvent folderOpenEvent) {
             this.onFolderOpen(folderOpenEvent);
         } else if (event instanceof FolderCloseEvent folderChangeEvent) {
             this.onFolderClose(folderChangeEvent);
@@ -522,11 +554,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         if (event.modifiesTarget() && event.target() != this.folderDialog.root()) {
             this.history.push(this.captureState());
         }
-    }
-
-    @Override
-    public float getDroppableZ() {
-        return DROP_ZONE_Z;
     }
 
     public @Nullable PackLayout<?> getLayoutFromSelectedList() {
@@ -613,7 +640,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     @Override
     public List<ToggleableDialog<?>> getDialogs() {
-        return List.of(this.profiles.getSidebar(), this.folderDialog, this.options);
+        return this.dialogs;
     }
 
     public void clearHistory() {

@@ -7,11 +7,12 @@ import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
 
 public class LayoutWrapper<T extends Layout> extends AbstractWidget implements Layout {
-    private final T layout;
+    private T layout;
     private int minWidth;
     private int minHeight;
 
@@ -29,6 +30,11 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
 
     public LayoutWrapper(T layout) {
         this(layout, 0, 0);
+    }
+
+    public void setLayout(@NotNull T layout) {
+        this.layout = layout;
+        this.arrangeElements();
     }
 
     public T layout() {
