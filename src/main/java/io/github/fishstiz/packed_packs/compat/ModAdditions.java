@@ -51,7 +51,7 @@ public class ModAdditions {
                 RespackoptsWidget respackOptsWidget = RespackoptsWidget.create(entry, entry.getPack());
                 if (respackOptsWidget != null) {
                     entry.prependWidget(respackOptsWidget);
-                    entry.addRenderableOnly(respackOptsWidget);
+                    entry.addTopRenderableOnly(respackOptsWidget);
                 }
             });
         }

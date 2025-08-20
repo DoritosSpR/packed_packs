@@ -573,11 +573,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return widget;
         }
 
-        public <U extends Renderable> U addRenderableOnly(U renderable) {
-            this.renderables.add(renderable);
-            return renderable;
-        }
-
         @Override
         public Pack getPack() {
             return this.pack;
