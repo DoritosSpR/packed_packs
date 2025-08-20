@@ -7,9 +7,16 @@ import org.jetbrains.annotations.Nullable;
 public final class FolderCloseEvent extends PackListEvent {
     private final FolderPack folderPack;
 
-    public FolderCloseEvent(FolderPackList target) {
+    public FolderCloseEvent(FolderPackList target, @Nullable FolderPack folderPack) {
         super(target);
-        this.folderPack = target.getFolderPack();
+        this.folderPack = folderPack;
+    }
+
+    public static FolderCloseEvent fromContextMenu(RequestContextMenuEvent event) {
+        if (event.target() instanceof FolderPackList folderPackList && event.trigger() instanceof FolderPack folderPack) {
+            return new FolderCloseEvent(folderPackList, folderPack);
+        }
+        throw new IllegalArgumentException("Context menu event not triggered from folder pack.");
     }
 
     public @Nullable FolderPack folderPack() {

@@ -2,9 +2,7 @@ package io.github.fishstiz.packed_packs.gui.components.profile;
 
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.fidgetz.gui.shapes.Size;
-import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.layouts.LayoutSettings;
@@ -17,7 +15,6 @@ import static io.github.fishstiz.fidgetz.util.DrawUtil.DEMO_BACKGROUND;
 public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
     private static final int SPACING = 8;
     private static final int MIN_WIDTH = 100;
-    private static final Sprite CLOSE_SPRITE = new Sprite(ResourceUtil.getIcon("cross"), Size.of16());
     private final FidgetzButton<Void> closeButton;
 
     protected Sidebar(Builder builder) {
@@ -33,7 +30,7 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
                 FidgetzButton.<Void>builder()
                         .makeSquare()
                         .setMessage(CommonComponents.GUI_DONE)
-                        .setSpriteOnly(CLOSE_SPRITE)
+                        .setSprite(GuiConstants.CROSS_SPRITE)
                         .setOnPress(() -> this.setOpen(false))
                         .build(),
                 builder.headerSettings

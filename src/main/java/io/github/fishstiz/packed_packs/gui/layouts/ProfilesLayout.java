@@ -45,7 +45,7 @@ public class ProfilesLayout {
     private final FidgetzButton<Void> toggleNameButton = FidgetzButton.<Void>builder()
             .makeSquare()
             .setTooltip(Tooltip.create(EDIT_NAME_TEXT))
-            .setSpriteOnly(new ButtonSprites(
+            .setSprite(new ButtonSprites(
                     new Sprite(ResourceUtil.getIcon("edit"), Size.of16()),
                     new Sprite(ResourceUtil.getIcon("edit_inactive"), Size.of16()))
             )

@@ -55,7 +55,7 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
         this.compatButton = ToggleButton.<Void>builder()
                 .setMessage(COMPAT_TEXT)
                 .setTooltip(Tooltip.create(COMPAT_INFO))
-                .setSpriteOnly(ToggleButton.Sprites.of(
+                .setSprite(ToggleButton.Sprites.of(
                         new Sprite(ResourceUtil.getIcon("incompatible_hidden"), Size.of16()),
                         new Sprite(ResourceUtil.getIcon("incompatible"), Size.of16())
                 ))

@@ -1,0 +1,142 @@
+package io.github.fishstiz.packed_packs.gui.components.pack;
+
+import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
+import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
+import io.github.fishstiz.fidgetz.gui.components.ToggleableDialog;
+import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
+import io.github.fishstiz.fidgetz.util.DrawUtil;
+import io.github.fishstiz.packed_packs.gui.components.events.FolderCloseEvent;
+import io.github.fishstiz.packed_packs.gui.components.events.PackListEvent;
+import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.gui.components.events.RequestContextMenuEvent;
+import io.github.fishstiz.packed_packs.pack.PackAssets;
+import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
+import io.github.fishstiz.packed_packs.util.InputUtil;
+import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import org.jetbrains.annotations.Nullable;
+
+public class FolderDialog extends ToggleableDialog<FolderPackList> {
+    private static final int HEADER_HEIGHT = 16;
+    private final FidgetzButton<Void> closeButton;
+    private final FidgetzText<Void> folderTitle;
+    private Sprite folderSprite = Sprite.of16(PackAssets.DEFAULT_FOLDER_ICON);
+    private PackList parent;
+    private FolderPack folderPack;
+
+    private FolderDialog(Builder builder) {
+        super(builder);
+
+        this.root().visible = false;
+
+        this.closeButton = this.addRenderableWidget(
+                FidgetzButton.<Void>builder()
+                        .setOnPress(() -> this.sendEvent(new FolderCloseEvent(this.root(), this.folderPack)))
+                        .makeSquare(GuiConstants.CROSS_SPRITE.width)
+                        .spriteOnly()
+                        .build()
+        );
+        this.folderTitle = this.addRenderableWidget(
+                FidgetzText.<Void>builder()
+                        .setHeight(GuiConstants.CROSS_SPRITE.height)
+                        .setOffsetY(1)
+                        .setShadow(true)
+                        .alignLeft()
+                        .build()
+        );
+
+        this.addListener(open -> {
+            this.root().visible = open;
+            if (!open) this.sendEvent(new FolderCloseEvent(this.root(), this.folderPack));
+        });
+    }
+
+    private void updateBounds() {
+        GuiRectangle bounds = this.getBoundingBox();
+        int parentX = bounds.getX();
+        int parentY = bounds.getY();
+        int parentWidth = bounds.getWidth();
+        int parentHeight = bounds.getHeight();
+
+        int left = parentX + GuiConstants.SPACING;
+        int top = parentY + GuiConstants.SPACING;
+        int right = (parentX + parentWidth) - GuiConstants.SPACING;
+        int bottom = (parentY + parentHeight) - GuiConstants.SPACING;
+
+        this.root().setPosition(left, top + HEADER_HEIGHT + GuiConstants.SPACING);
+        this.root().setWidth(right - left);
+        this.root().setHeight(bottom - this.root().getY());
+        this.closeButton.setPosition(left, top);
+        this.folderTitle.setPosition(left + this.closeButton.getWidth() + GuiConstants.SPACING, top);
+        this.folderTitle.setWidth(bounds.getRight() - this.folderTitle.getX() - GuiConstants.SPACING * 2);
+    }
+
+    public void updateFolder(PackList parent, FolderPack folderPack, PackAssets packAssets) {
+        this.parent = parent;
+        this.folderPack = folderPack;
+        this.folderTitle.setMessage(folderPack.getTitle());
+        packAssets.getOrLoadIcon(folderPack, icon -> this.folderSprite = Sprite.of16(icon));
+
+        this.setBoundingBox(parent);
+        this.updateBounds();
+    }
+
+    @Override
+    protected void renderBackground(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
+        this.updateBounds();
+        super.renderBackground(guiGraphics, x, y, width, height, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    protected void renderForeground(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
+        int left = this.closeButton.getX();
+        int top = this.closeButton.getY();
+        this.folderSprite.renderClamped(guiGraphics, left, top, GuiConstants.CROSS_SPRITE.width, GuiConstants.CROSS_SPRITE.height, partialTick);
+
+        if (this.closeButton.isHovered()) {
+            GuiConstants.WHITE_OVERLAY.render(guiGraphics, left, top, GuiConstants.CROSS_SPRITE.width, GuiConstants.CROSS_SPRITE.height);
+            GuiConstants.CROSS_SPRITE.render(guiGraphics, left, top);
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (InputUtil.isRightClick(button) && !this.root().isMouseOver(mouseX, mouseY) && this.isMouseOver(mouseX, mouseY)) {
+            this.sendEvent(new RequestContextMenuEvent(this.root(), this.folderPack, mouseX, mouseY));
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    public @Nullable PackList getParent() {
+        return this.parent;
+    }
+
+    public @Nullable FolderPack getFolderPack() {
+        return this.folderPack;
+    }
+
+    private void sendEvent(PackListEvent event) {
+        ((PackListEventListener) this.screen).onEvent(event);
+    }
+
+    public static <S extends Screen & ToggleableDialogContainer & PackListEventListener> FolderDialog build(S screen, PackAssets packAssets) {
+        return new Builder(screen, new FolderPackList(packAssets, screen))
+                .setBackground(DrawUtil.DEMO_BACKGROUND)
+                .build();
+    }
+
+    private static class Builder extends ToggleableDialog.Builder<FolderPackList, Builder> {
+        protected <S extends Screen & ToggleableDialogContainer & PackListEventListener> Builder(S screen, FolderPackList root) {
+            super(screen, root);
+        }
+
+        @Override
+        public FolderDialog build() {
+            return new FolderDialog(this);
+        }
+    }
+}
