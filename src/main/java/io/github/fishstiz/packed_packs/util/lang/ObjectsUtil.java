@@ -46,7 +46,11 @@ public class ObjectsUtil {
         return obj != null && predicate.test(obj);
     }
 
+    public static <T, R> R mapOrDefault(T obj, R defaultValue, Function<T, R> mapper) {
+        return obj != null ? mapper.apply(obj) : defaultValue;
+    }
+
     public static <T, R> @Nullable R mapOrNull(T obj, Function<T, R> mapper) {
-        return obj != null ? mapper.apply(obj) : null;
+        return mapOrDefault(obj, null, mapper);
     }
 }

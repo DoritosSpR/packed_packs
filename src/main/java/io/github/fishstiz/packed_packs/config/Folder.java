@@ -10,8 +10,13 @@ import java.util.List;
 public class Folder implements Serializable {
     private List<String> packIds = new ArrayList<>();
 
-    public void setPacks(List<Pack> packs) {
-        this.packIds = PackUtil.extractPackIds(packs);
+    public boolean setPacks(List<Pack> packs) {
+        List<String> newPackIds = PackUtil.extractPackIds(packs);
+        if (!this.packIds.equals(newPackIds)) {
+            this.packIds =  newPackIds;
+            return true;
+        }
+        return false;
     }
 
     public List<String> getPackIds() {

@@ -93,6 +93,16 @@ public class PackRepositoryHelper implements PackAssets {
         return validatePacks(this.groupByFolders(unselected), this.groupByFolders(selected));
     }
 
+    private void addValidPacks(List<Pack> source, Set<Pack> seen, ObjectOpenHashSet<Pack> validPacks, List<Pack> target) {
+        for (Pack pack : source) {
+            Pack validPack = validPacks.get(pack); // metadata can change
+            // Folder packs can show up in both columns in case user messes around in original screen. PackListBase ignores duplicates anyway.
+            if (validPack != null && (seen.add(pack) || pack instanceof FolderPack)) {
+                target.add(validPack);
+            }
+        }
+    }
+
     /**
      * @param unselected grouped list of unselected packs
      * @param selected   grouped list of selected packs
@@ -100,26 +110,19 @@ public class PackRepositoryHelper implements PackAssets {
      */
     public PackGroup validatePacks(List<Pack> unselected, List<Pack> selected) {
         Set<Pack> seen = new ObjectOpenHashSet<>();
-        Set<Pack> validPacks = new ObjectOpenHashSet<>(this.availablePacks.values());
+        ObjectOpenHashSet<Pack> validPacks = new ObjectOpenHashSet<>(this.availablePacks.values());
         List<Pack> validSelected = new ArrayList<>(selected.size());
         List<Pack> validUnselected = new ArrayList<>(unselected.size());
 
-        for (Pack pack : selected) {
-            if (validPacks.contains(pack) && (seen.add(pack) || pack instanceof FolderPack)) {
-                validSelected.add(pack);
-            }
-        }
-        for (Pack pack : unselected) {
-            if (validPacks.contains(pack) && (seen.add(pack) || pack instanceof FolderPack)) {
-                validUnselected.add(pack);
-            }
-        }
-        for (Pack pack : validPacks) {
-            if (seen.add(pack)) {
-                if (pack.isRequired()) {
-                    pack.getDefaultPosition().insert(validSelected, pack, Pack::selectionConfig, true);
+        this.addValidPacks(selected, seen, validPacks, validSelected);
+        this.addValidPacks(unselected, seen, validPacks, validUnselected);
+
+        for (Pack validPack : validPacks) {
+            if (seen.add(validPack)) {
+                if (validPack.isRequired()) {
+                    validPack.getDefaultPosition().insert(validSelected, validPack, Pack::selectionConfig, true);
                 } else {
-                    validUnselected.add(pack);
+                    validUnselected.add(validPack);
                 }
             }
         }
@@ -128,32 +131,29 @@ public class PackRepositoryHelper implements PackAssets {
 
     /**
      * @param folderPack  the folder pack
-     * @param nestedPacks the nested packs that define the preferred order
+     * @param orderedPacks the nested packs that define the preferred order
      * @return a validated and ordered list of all packs under the folder pack
      */
-    public List<Pack> validateAndOrderNestedPacks(FolderPack folderPack, List<Pack> nestedPacks) {
-        List<Pack> validAll = this.folderPacks.get(folderPack.getId());
-        Set<Pack> validSet = new ObjectOpenHashSet<>(validAll);
+    public List<Pack> validateAndOrderNestedPacks(FolderPack folderPack, List<Pack> orderedPacks) {
+        List<Pack> orderedValidPacks = this.folderPacks.get(folderPack.getId());
+        ObjectOpenHashSet<Pack> validPacks = new ObjectOpenHashSet<>(orderedValidPacks);
         Set<Pack> seen = new ObjectOpenHashSet<>();
-        List<Pack> result = new ArrayList<>();
+        List<Pack> finalOrderedPacks = new ArrayList<>();
 
-        for (Pack pack : nestedPacks) {
-            if (validSet.contains(pack) && seen.add(pack)) {
-                result.add(pack);
-            }
-        }
-        for (Pack pack : validAll) {
-            if (seen.add(pack)) {
-                result.add(pack);
+        this.addValidPacks(orderedPacks, seen, validPacks, finalOrderedPacks);
+
+        for (Pack validPack : orderedValidPacks) {
+            if (seen.add(validPack)) {
+                finalOrderedPacks.add(validPack);
             }
         }
 
-        this.folderPacks.put(folderPack.getId(), result);
-        return result;
+        this.folderPacks.put(folderPack.getId(), finalOrderedPacks);
+        return finalOrderedPacks;
     }
 
-    public List<Pack> validateAndOrderNestedPackIds(FolderPack folderPack, List<String> nestedPacks) {
-        return this.validateAndOrderNestedPacks(folderPack, this.getPacksById(nestedPacks, this.folderPacks.get(folderPack.getId())));
+    public List<Pack> validateAndOrderNestedPackIds(FolderPack folderPack, List<String> orderedPacks) {
+        return this.validateAndOrderNestedPacks(folderPack, this.getPacksById(orderedPacks, this.folderPacks.get(folderPack.getId())));
     }
 
     public List<Pack> getPacksById(List<String> packIds, Map<String, Pack> source) {
