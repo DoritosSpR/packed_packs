@@ -1,8 +1,9 @@
 package io.github.fishstiz.packed_packs.util.lang;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+
+import java.util.*;
+import java.util.function.Function;
 
 public class CollectionsUtil {
     private CollectionsUtil() {
@@ -12,5 +13,32 @@ public class CollectionsUtil {
     @SuppressWarnings("varargs")
     public static <E> List<E> mutableListOf(E... elements) {
         return new ArrayList<>(Arrays.asList(elements));
+    }
+
+    public static <K, V> List<V> lookup(Collection<K> keys, Map<K, V> source) {
+        List<V> result = new ArrayList<>();
+        for (K key : keys) {
+            V v = source.get(key);
+            if (v != null) result.add(v);
+        }
+        return result;
+    }
+
+    public static <T, K> Map<K, T> toMap(Collection<T> collection, Function<T, K> keyFn) {
+        Map<K, T> map = new Object2ObjectOpenHashMap<>();
+        for (T item : collection) {
+            map.put(keyFn.apply(item), item);
+        }
+        return map;
+    }
+
+    public static <T, R> List<R> extractNonNull(Collection<T> collection, Function<T, R> mapper) {
+        List<R> result = new ArrayList<>();
+        for (T item : collection) {
+            if (item != null) {
+                result.add(mapper.apply(item));
+            }
+        }
+        return result;
     }
 }
