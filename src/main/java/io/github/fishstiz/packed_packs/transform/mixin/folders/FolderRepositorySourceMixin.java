@@ -27,8 +27,6 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -57,7 +55,7 @@ public abstract class FolderRepositorySourceMixin {
             @Local(argsOnly = true) BiConsumer<Path, Pack.ResourcesSupplier> output,
             @Share("suppressLog") LocalBooleanRef suppressLogRef
     ) {
-        if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && !PackUtil.hasMcmeta(path)) {
+        if (PackUtil.isNonPackDirectory(path)) {
             suppressLogRef.set(true);
             boolean isRoot = !IS_SUBDIRECTORY.get();
             try {
