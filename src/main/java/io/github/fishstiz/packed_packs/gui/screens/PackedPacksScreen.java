@@ -114,6 +114,10 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.folderDialog = FolderDialog.build(this, this.repository);
         this.dialogs = List.of(this.options, this.contextMenu, this.profiles.getSidebar(), this.folderDialog);
         this.packLists = List.of(this.folderDialog.root(), this.availablePacks.getList(), this.currentPacks.getList());
+
+        for (int i = 0; i < this.dialogs.size(); i++) {
+            this.dialogs.get(i).setZ((this.dialogs.size() - i));
+        }
     }
 
     @Override
@@ -605,6 +609,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        this.setDragged(null);
         if (isRightClick(button)) {
             this.openContextMenu((int) mouseX, (int) mouseY);
             return true;

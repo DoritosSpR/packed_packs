@@ -40,7 +40,6 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     private final List<NarratableEntry> narratables = new ArrayList<>();
     private final List<Consumer<Boolean>> listeners = new ArrayList<>();
     private final T root;
-    private final float z;
     private final RenderableRect backdrop;
     private final RenderableRect background;
     private final boolean autoClose;
@@ -54,6 +53,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     private GuiRectangle boundingBox;
     private boolean open = false;
     private boolean hovered;
+    private float z;
 
     protected ToggleableDialog(Builder<T, ?> builder) {
         this.screen = builder.screen;
@@ -78,6 +78,12 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         return this.root;
     }
 
+    @Deprecated(since = "mc1.21.6")
+    public void setZ(float z) {
+        this.z = z;
+    }
+
+    @Deprecated(since = "mc1.21.6")
     public float getZ() {
         return this.z;
     }
