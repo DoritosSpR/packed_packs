@@ -55,7 +55,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
         PackList source = event.target();
         PackList destination = this.getDestination(source);
 
-        if (event.payload().isEmpty()) {
+        if (destination == null || event.payload().isEmpty()) {
             return;
         }
 
@@ -95,7 +95,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
 
     protected abstract @NotNull List<PackList> getPackLists();
 
-    protected abstract @NotNull PackList getDestination(PackList source);
+    protected abstract @Nullable PackList getDestination(PackList source);
 
     @Override
     public void onEvent(PackListEvent event) {

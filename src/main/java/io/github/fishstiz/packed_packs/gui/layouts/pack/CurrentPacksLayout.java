@@ -8,8 +8,8 @@ import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
 public final class CurrentPacksLayout extends PackLayout<CurrentPackList> {
-    public CurrentPacksLayout(PackAssets packAssets, PackListEventListener listener, int spacing) {
-        super(new CurrentPackList(packAssets, listener), spacing);
+    public CurrentPacksLayout(PackAssets packAssets, PackListEventListener listener) {
+        super(new CurrentPackList(packAssets, listener));
     }
 
     @Override

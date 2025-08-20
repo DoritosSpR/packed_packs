@@ -11,7 +11,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 
 public class OptionsScreen extends Screen {
-    private static final int SPACING = 8;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final Screen previous;
     private LinearLayout body;
@@ -25,7 +24,7 @@ public class OptionsScreen extends Screen {
     @Override
     protected void init() {
         this.layout.addTitleHeader(this.title, this.font);
-        this.body = this.layout.addToContents(new OptionsLayout(SPACING, Theme.WHITE.getARGB()).layout());
+        this.body = this.layout.addToContents(new OptionsLayout(Theme.WHITE.getARGB()).layout());
         this.layout.addToFooter(FidgetzButton.builder().setMessage(CommonComponents.GUI_DONE).setOnPress(this::onClose).build());
         this.layout.visitWidgets(this::addRenderableWidget);
         this.repositionElements();

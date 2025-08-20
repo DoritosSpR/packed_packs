@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class FolderPack extends Pack implements IPack {
+    public static final Component FOLDER_OPEN_TEXT = ResourceUtil.getText("folder.open");
     public static final Component FOLDER_DESCRIPTION = ResourceUtil.getText("folder");
     public static final PackSource FOLDER_SOURCE = PackSource.create(
             name -> Component.translatable(
