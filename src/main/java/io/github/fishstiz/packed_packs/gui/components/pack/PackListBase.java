@@ -6,13 +6,11 @@ import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
 import io.github.fishstiz.fidgetz.gui.components.ContainerEventHandlerPatch;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
-import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.transform.mixin.gui.AbstractSelectionListAccessor;
-import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
@@ -488,7 +486,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     public abstract class Entry extends AbstractDynamicList<T>.Entry implements PackList.Entry {
         private static final double DRAG_THRESHOLD = 1.0;
         private static final int DOUBLE_CLICK_DELTA_MS = 200;
-        private static final Sprite FOLDER_BUTTON_SPRITE = new Sprite(ResourceUtil.getIcon("hamburger"), Size.of16());
         private static final Tooltip FOLDER_OPEN_INFO = Tooltip.create(FolderPack.FOLDER_OPEN_TEXT);
         protected static final int SPACING = 2;
         protected static final int BACKGROUND_OFFSET = 1;
@@ -524,7 +521,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                                 .setTooltip(FOLDER_OPEN_INFO)
                                 .setHeight(this.getHeight() / 3)
                                 .makeSquare()
-                                .setSpriteOnly(FOLDER_BUTTON_SPRITE)
+                                .setSprite(GuiConstants.HAMBURGER_SPRITE)
                                 .setOnPress(btn -> {
                                     btn.setFocused(false);
                                     PackListBase.this.openFolder(folderPack);

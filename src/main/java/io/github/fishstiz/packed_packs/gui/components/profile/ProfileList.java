@@ -95,7 +95,7 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
                     .makeSquare(this.getHeight())
                     .setMessage(DELETE_TEXT)
                     .setTooltip(DELETE_INFO)
-                    .setSpriteOnly(TRASH_SPRITE)
+                    .setSprite(TRASH_SPRITE)
                     .setOnPress(() -> ProfileList.this.onDelete.accept(this.profile))
                     .build();
             this.selectButton = FidgetzButton.<Void>builder()
