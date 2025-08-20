@@ -7,6 +7,7 @@ import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
@@ -20,14 +21,12 @@ public class FolderPackList extends CurrentPackList {
     private static final Sprite CLOSE_SPRITE = new Sprite(ResourceUtil.getIcon("cross"), Size.of16());
     private static final int HEADER_HEIGHT = 16;
     private final FidgetzButton<Void> closeButton;
-    private final int spacing;
     private PackList parent;
     private FolderPack folderPack;
     private Sprite sprite;
 
-    public FolderPackList(PackAssets packAssets, PackListEventListener listener, int spacing) {
+    public FolderPackList(PackAssets packAssets, PackListEventListener listener) {
         super(packAssets, listener);
-        this.spacing = spacing;
         this.closeButton = FidgetzButton.<Void>builder()
                 .setOnPress(() -> this.sendEvent(new FolderCloseEvent(this)))
                 .makeSquare(CLOSE_SPRITE.width)
@@ -58,13 +57,13 @@ public class FolderPackList extends CurrentPackList {
             int parentWidth = this.parent.getWidth();
             int parentHeight = this.parent.getHeight();
 
-            int left = parentX + this.spacing;
-            int top = parentY + this.spacing;
-            int right = (parentX + parentWidth) - this.spacing;
-            int bottom = (parentY + parentHeight) - this.spacing;
+            int left = parentX + GuiConstants.SPACING;
+            int top = parentY + GuiConstants.SPACING;
+            int right = (parentX + parentWidth) - GuiConstants.SPACING;
+            int bottom = (parentY + parentHeight) - GuiConstants.SPACING;
 
             this.closeButton.setPosition(left, top);
-            this.setPosition(left, top + HEADER_HEIGHT + this.spacing);
+            this.setPosition(left, top + HEADER_HEIGHT + GuiConstants.SPACING);
             this.setWidth(right - left);
             this.setHeight(bottom - this.getY());
         }
@@ -73,9 +72,9 @@ public class FolderPackList extends CurrentPackList {
     private void renderFolderInfo(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (this.parent != null && this.sprite != null && this.folderPack != null) {
             int parentX = this.parent.getX();
-            int left = parentX + this.spacing;
-            int top = this.parent.getY() + this.spacing;
-            int right = (parentX + this.parent.getWidth()) - this.spacing;
+            int left = parentX + GuiConstants.SPACING;
+            int top = this.parent.getY() + GuiConstants.SPACING;
+            int right = (parentX + this.parent.getWidth()) - GuiConstants.SPACING;
 
             this.closeButton.setPosition(left, top);
             this.sprite.renderClamped(guiGraphics, left, top, CLOSE_SPRITE.width, CLOSE_SPRITE.height, partialTick);
@@ -87,7 +86,7 @@ public class FolderPackList extends CurrentPackList {
             }
 
             var font = Minecraft.getInstance().font;
-            int startX = left + CLOSE_SPRITE.width + this.spacing;
+            int startX = left + CLOSE_SPRITE.width + GuiConstants.SPACING;
             int endY = top + HEADER_HEIGHT;
 
             DrawUtil.renderScrollingStringLeftAlign(guiGraphics, font, this.folderPack.getTitle(), startX, top, right, endY, Theme.GRAY_800.getARGB(), false);

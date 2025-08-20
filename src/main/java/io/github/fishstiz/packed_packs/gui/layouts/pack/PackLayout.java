@@ -6,6 +6,7 @@ import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.network.chat.Component;
@@ -20,9 +21,9 @@ public abstract class PackLayout<T extends PackListBase<?>> {
     private FidgetzButton<Void> transferButton;
     private FlexLayout layout;
 
-    protected PackLayout(T list, int spacing) {
+    protected PackLayout(T list) {
         this.list = list;
-        this.header = new GridWrapper<>(FlexLayout.horizontal(this.list::getWidth).spacing(spacing), spacing);
+        this.header = new GridWrapper<>(FlexLayout.horizontal(this.list::getWidth).spacing(GuiConstants.SPACING), GuiConstants.SPACING);
     }
 
     protected void initHeader(@NotNull FlexLayout header) {

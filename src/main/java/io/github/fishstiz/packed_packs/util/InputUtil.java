@@ -16,6 +16,10 @@ public class InputUtil {
         return button == MOUSE_BUTTON_LEFT;
     }
 
+    public static boolean isRightClick(int button) {
+        return button == MOUSE_BUTTON_RIGHT;
+    }
+
     public static boolean isClickBack(int button) {
         return button == MOUSE_BUTTON_BACK;
     }
