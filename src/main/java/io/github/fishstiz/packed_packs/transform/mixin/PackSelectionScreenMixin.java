@@ -63,7 +63,7 @@ public abstract class PackSelectionScreenMixin extends Screen implements PackSel
         this.packedPacks$button = FidgetzButton.<GridWrapper<LinearLayout>>builder()
                 .makeSquare()
                 .setTooltip(Tooltip.create(ResourceUtil.getModName()))
-                .setSpriteOnly(new Sprite(ResourceUtil.getIcon("packed_packs"), Size.of16()))
+                .setSprite(new Sprite(ResourceUtil.getIcon("packed_packs"), Size.of16()))
                 .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(previous, this.packedPacks$original)))
                 .setMetadata(new GridWrapper<>(original.call(instance, spacing), spacing))
                 .build();

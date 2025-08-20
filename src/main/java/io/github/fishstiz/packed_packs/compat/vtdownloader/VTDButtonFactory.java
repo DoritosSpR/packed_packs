@@ -22,7 +22,7 @@ public class VTDButtonFactory {
         return FidgetzButton.<Void>builder()
                 .makeSquare()
                 .setTooltip(Tooltip.create(VTD_MESSAGE))
-                .setSpriteOnly(VTD_ICON)
+                .setSprite(VTD_ICON)
                 .setFocusedBorder(Theme.WHITE.getARGB())
                 .setOnPress(ModScreenFactory.createScreenSetter(
                         VTD_SCREEN_NAME,

@@ -37,12 +37,12 @@ public class SpriteButton<E> extends FidgetzButton<E> {
         }
 
         @Override
-        public Builder<E> setSpriteOnly(Sprite sprite) {
+        public Builder<E> setSprite(Sprite sprite) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Builder<E> setSpriteOnly(ButtonSprites sprites) {
+        public Builder<E> setSprite(ButtonSprites sprites) {
             throw new UnsupportedOperationException();
         }
 
