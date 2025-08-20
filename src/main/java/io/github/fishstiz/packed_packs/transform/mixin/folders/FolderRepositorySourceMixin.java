@@ -94,9 +94,7 @@ public abstract class FolderRepositorySourceMixin {
     ))
     private PackLocationInfo addDirInNestedPackId(PackLocationInfo location, @Local(argsOnly = true) Path path) {
         if (IS_SUBDIRECTORY.get()) {
-            String folderName = nameFromPath(path.getParent()) + PackUtil.DIRECTORY_DELIMITER;
-            String id = PackUtil.FILE_PREFIX + folderName + nameFromPath(path);
-            return new PackLocationInfo(id, location.title(), location.source(), location.knownPackInfo());
+            return new PackLocationInfo(PackUtil.generateNestedPackId(path), location.title(), location.source(), location.knownPackInfo());
         }
         return location;
     }
@@ -112,11 +110,6 @@ public abstract class FolderRepositorySourceMixin {
 
     @Shadow
     public static void discoverPacks(Path folder, DirectoryValidator validator, BiConsumer<Path, Pack.ResourcesSupplier> output) throws IOException {
-        throw new AssertionError();
-    }
-
-    @Shadow
-    private static String nameFromPath(Path path) {
         throw new AssertionError();
     }
 }

@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.config;
 
+import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.server.packs.repository.Pack;
 
@@ -43,11 +44,7 @@ public class Profile implements Serializable {
     }
 
     public void setPacks(List<Pack> packs) {
-        List<String> ids = new ArrayList<>();
-        for (Pack pack : packs) {
-            if (pack != null) ids.add(pack.getId());
-        }
-        this.packIds = ids;
+        this.packIds = PackUtil.extractPackIds(packs);
     }
 
     public Profile copy() {
