@@ -127,7 +127,7 @@ public class ToggleButton<E> extends FidgetzButton<E> {
             return this;
         }
 
-        public ToggleBuilder<E> setSpriteOnly(Sprites toggleSprites) {
+        public ToggleBuilder<E> setSprite(Sprites toggleSprites) {
             this.toggleSprites = toggleSprites;
             return this;
         }

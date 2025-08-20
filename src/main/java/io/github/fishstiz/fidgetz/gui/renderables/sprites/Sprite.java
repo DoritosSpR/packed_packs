@@ -38,6 +38,10 @@ public class Sprite implements RenderableRect {
         return new Sprite(location, Size.of32());
     }
 
+    public static Sprite of16(ResourceLocation location) {
+        return new Sprite(location, Size.of16());
+    }
+
     @Override
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
         guiGraphics.blit(

@@ -20,6 +20,7 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
     private final List<Runnable> listeners = new ArrayList<>();
     private final ButtonSprites sprites;
     private final Integer focusedBorder;
+    private final boolean spriteOnly;
     private E metadata;
 
     protected FidgetzButton(Builder<E, ?> builder) {
@@ -27,6 +28,7 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
 
         this.metadata = builder.metadata;
         this.sprites = builder.sprites;
+        this.spriteOnly = builder.spriteOnly;
         this.focusedBorder = builder.focusedBorder;
 
         if (builder.tooltip != null) {
@@ -73,7 +75,9 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.isHovered = this.containsPoint(mouseX, mouseY);
 
-        super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+        if (!this.spriteOnly) {
+            super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+        }
 
         if (this.hasSprite()) {
             int spriteWidth = this.getWidth();
@@ -107,10 +111,6 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         return GuiUtil.containsPoint(this, mouseX, mouseY) && this.isUncovered(mouseX, mouseY);
     }
 
-    public void setHovered(boolean hovered) {
-        this.isHovered = hovered;
-    }
-
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
         return super.isMouseOver(mouseX, mouseY) && this.isUncovered(mouseX, mouseY);
@@ -128,6 +128,7 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         private Component message = Component.empty();
         private Tooltip tooltip;
         private ButtonSprites sprites;
+        private boolean spriteOnly = false;
         private Integer focusedBorder;
         private OnPress onPress = btn -> {
         };
@@ -203,13 +204,18 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
             return self();
         }
 
-        public B setSpriteOnly(ButtonSprites sprites) {
+        public B setSprite(ButtonSprites sprites) {
             this.sprites = sprites;
             return self();
         }
 
-        public B setSpriteOnly(Sprite sprite) {
+        public B setSprite(Sprite sprite) {
             this.sprites = ButtonSprites.of(sprite);
+            return self();
+        }
+
+        public B spriteOnly() {
+            this.spriteOnly = true;
             return self();
         }
 
