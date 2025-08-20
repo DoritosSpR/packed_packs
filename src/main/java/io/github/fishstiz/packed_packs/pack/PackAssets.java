@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.repository.Pack;
@@ -27,6 +28,7 @@ public interface PackAssets {
     String ICON_FILENAME = "pack.png";
     ResourceLocation DEFAULT_FOLDER_ICON = ResourceUtil.getResource("textures/misc/unknown_folder.png");
     ResourceLocation DEFAULT_ICON = ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png");
+    Component OPEN_LOCATION_TEXT = ResourceUtil.getText("file.open");
 
     void getOrLoadIcon(Pack pack, Consumer<ResourceLocation> iconCallback);
 

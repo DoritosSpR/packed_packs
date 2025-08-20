@@ -24,8 +24,8 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
     private CyclicButton<Query.SortOption, Void> sortButton;
     private ToggleButton<Void> compatButton;
 
-    public AvailablePacksLayout(PackAssets packAssets, PackListEventListener listener, int spacing) {
-        super(new AvailablePackList(packAssets, listener), spacing);
+    public AvailablePacksLayout(PackAssets packAssets, PackListEventListener listener) {
+        super(new AvailablePackList(packAssets, listener));
 
         this.eventListener = listener;
     }

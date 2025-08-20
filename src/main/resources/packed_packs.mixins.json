@@ -15,6 +15,7 @@
     "PackSelectionScreenAccessor",
     "PackSelectionScreenMixin",
     "folders.FolderRepositorySourceMixin",
-    "folders.PackMixin"
+    "folders.PackMixin",
+    "gui.AbstractSelectionListAccessor"
   ]
 }

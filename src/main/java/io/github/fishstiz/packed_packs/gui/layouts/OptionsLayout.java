@@ -5,6 +5,7 @@ import io.github.fishstiz.fidgetz.gui.components.ToggleButton;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LayoutSettings;
@@ -19,7 +20,8 @@ public class OptionsLayout {
     private static final Config.Packs DATAPACKS = PackedPacks.CONFIG.getDatapacks();
     private final LinearLayout layout;
 
-    public OptionsLayout(int spacing, int labelColor) {
+    public OptionsLayout(int labelColor) {
+        final int spacing = GuiConstants.SPACING;
         this.layout = LinearLayout.vertical();
         LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(spacing).paddingTop(spacing);
 
@@ -85,8 +87,8 @@ public class OptionsLayout {
         this.layout.arrangeElements();
     }
 
-    public OptionsLayout(int spacing) {
-        this(spacing, DEFAULT_LABEL_COLOR);
+    public OptionsLayout() {
+        this(DEFAULT_LABEL_COLOR);
     }
 
     public LinearLayout layout() {

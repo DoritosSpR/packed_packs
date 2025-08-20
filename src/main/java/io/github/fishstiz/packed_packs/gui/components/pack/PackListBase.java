@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
+import io.github.fishstiz.fidgetz.gui.components.ContainerEventHandlerPatch;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
@@ -10,6 +11,7 @@ import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.transform.mixin.gui.AbstractSelectionListAccessor;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
@@ -37,7 +39,7 @@ import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
-public abstract class PackListBase<T extends PackListBase<T>.Entry> extends AbstractDynamicList<T> implements PackList {
+public abstract class PackListBase<T extends PackListBase<T>.Entry> extends AbstractDynamicList<T> implements PackList, ContainerEventHandlerPatch {
     protected static final int OFFSET_Y = 2;
     protected static final int ITEM_HEIGHT = 32;
     protected static final int ROW_GAP = 3;
@@ -452,6 +454,17 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.isValidMouseClick(button)) {
+            this.updateScrollingState(mouseX, mouseY, button);
+        }
+        if (!this.isMouseOver(mouseX, mouseY)) {
+            return false;
+        }
+        return ContainerEventHandlerPatch.super.mouseClickedAt(mouseX, mouseY, button) || ((AbstractSelectionListAccessor) this).packed_packs$scrolling();
+    }
+
+    @Override
     public void replaceState(@NotNull Snapshot snapshot) {
         Pack focused = ObjectsUtil.mapOrNull(this.getFocused(), PackList.Entry::getPack);
         this.packs.clear();
@@ -476,6 +489,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         private static final double DRAG_THRESHOLD = 1.0;
         private static final int DOUBLE_CLICK_DELTA_MS = 200;
         private static final Sprite FOLDER_BUTTON_SPRITE = new Sprite(ResourceUtil.getIcon("hamburger"), Size.of16());
+        private static final Tooltip FOLDER_OPEN_INFO = Tooltip.create(FolderPack.FOLDER_OPEN_TEXT);
         protected static final int SPACING = 2;
         protected static final int BACKGROUND_OFFSET = 1;
         protected static final ColoredRect OVERLAY = new ColoredRect(Theme.WHITE.withAlpha(0.25F));
@@ -507,7 +521,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             if (this.pack instanceof FolderPack folderPack) {
                 this.folderWidget = this.addTopRenderableOnly(this.prependWidget(
                         FidgetzButton.<Void>builder()
-                                .setTooltip(Tooltip.create(ResourceUtil.getText("folder.open")))
+                                .setTooltip(FOLDER_OPEN_INFO)
                                 .setHeight(this.getHeight() / 3)
                                 .makeSquare()
                                 .setSpriteOnly(FOLDER_BUTTON_SPRITE)
@@ -632,22 +646,28 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             if (super.mouseClicked(mouseX, mouseY, button)) {
                 return false;
             }
-            if (isLeftClick(button) && this.isMouseOver(mouseX, mouseY)) {
-                if (!isRangeModifierActive() && !isSelectModifierActive() && this.handleDoubleClick()) {
+            if (this.isMouseOver(mouseX, mouseY)) {
+                if (isRightClick(button)) {
+                    PackListBase.this.sendEvent(new RequestContextMenuEvent(PackListBase.this, this.pack, mouseX, mouseY));
                     return true;
                 }
-                if (isRangeModifierActive()) {
-                    this.fireClickEvent(PackListBase::selectRange, MouseSelectionState.SELECTING_MANY);
-                } else if (isSelectModifierActive()) {
-                    this.fireClickEvent(PackListBase::selectToggle, MouseSelectionState.SELECTING_MANY);
-                } else if (!this.isSelected()) {
-                    this.fireClickEvent(PackListBase::selectExclusive, MouseSelectionState.SELECTING_ONE);
-                } else if (this.isSelected() && !this.isSelectedLast()) {
-                    this.fireClickEvent(PackListBase::select, MouseSelectionState.SELECTING_ONE);
-                } else {
-                    this.mouseSelectionState = MouseSelectionState.SELECTING_ONE;
+                if (isLeftClick(button)) {
+                    if (!isRangeModifierActive() && !isSelectModifierActive() && this.handleDoubleClick()) {
+                        return false;
+                    }
+                    if (isRangeModifierActive()) {
+                        this.fireClickEvent(PackListBase::selectRange, MouseSelectionState.SELECTING_MANY);
+                    } else if (isSelectModifierActive()) {
+                        this.fireClickEvent(PackListBase::selectToggle, MouseSelectionState.SELECTING_MANY);
+                    } else if (!this.isSelected()) {
+                        this.fireClickEvent(PackListBase::selectExclusive, MouseSelectionState.SELECTING_ONE);
+                    } else if (this.isSelected() && !this.isSelectedLast()) {
+                        this.fireClickEvent(PackListBase::select, MouseSelectionState.SELECTING_ONE);
+                    } else {
+                        this.mouseSelectionState = MouseSelectionState.SELECTING_ONE;
+                    }
+                    return true;
                 }
-                return true;
             }
             this.mouseSelectionState = MouseSelectionState.INACTIVE;
             return false;

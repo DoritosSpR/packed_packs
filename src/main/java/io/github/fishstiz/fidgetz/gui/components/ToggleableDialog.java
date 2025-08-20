@@ -121,6 +121,12 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         return child;
     }
 
+    protected void clearWidgets() {
+        this.children.clear();
+        this.renderables.clear();
+        this.narratables.clear();
+    }
+
     @Override
     public @NotNull List<? extends GuiEventListener> children() {
         return this.isOpen() ? List.copyOf(this.children) : GuiUtil.EMPTY_CHILDREN;
