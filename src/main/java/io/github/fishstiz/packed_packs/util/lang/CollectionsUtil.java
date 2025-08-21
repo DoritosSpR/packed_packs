@@ -12,7 +12,7 @@ public class CollectionsUtil {
     @SafeVarargs
     @SuppressWarnings("varargs")
     public static <E> List<E> mutableListOf(E... elements) {
-        return new ArrayList<>(Arrays.asList(elements));
+        return new ArrayList<>(List.of(elements));
     }
 
     public static <K, V> List<V> lookup(Collection<K> keys, Map<K, V> source) {

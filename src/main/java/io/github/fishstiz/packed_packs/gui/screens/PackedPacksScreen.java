@@ -497,7 +497,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                         : new ContextMenu.SimpleOption(FolderPack.FOLDER_OPEN_TEXT, () -> this.onEvent(FolderOpenEvent.fromContextMenu(event)))
                 );
             }
-            this.contextMenu.open(event.mouseX(), event.mouseY(), packOptions);
+            this.contextMenu.open((int) event.mouseX(), (int) event.mouseY(), packOptions);
         } else {
             this.contextMenu.setOpen(false);
         }
