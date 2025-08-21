@@ -20,9 +20,9 @@ public class PackWatcher implements AutoCloseable {
         if (Files.notExists(rootPath) || !Files.isDirectory(rootPath)) {
             return;
         }
-
-        this.roots.add(rootPath);
-        this.watchDirRecursive(rootPath, 0);
+        if (this.roots.add(rootPath)) {
+            this.watchDirRecursive(rootPath, 0);
+        }
     }
 
     private void watchDirRecursive(Path dir, int currentDepth) throws IOException {
