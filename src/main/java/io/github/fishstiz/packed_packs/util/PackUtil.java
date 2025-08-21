@@ -1,12 +1,15 @@
 package io.github.fishstiz.packed_packs.util;
 
+import com.google.common.hash.Hashing;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
+import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackDetector;
@@ -14,11 +17,14 @@ import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
 public class PackUtil {
-    private static final String FILE_PREFIX = "file/"; // Changing these will break profiles with folder packs
+    // Changing these fields would be breaking changes
+    private static final String ADDITIONAL_FILE_PREFIX = "packed_packs$$$additional_folder/";
+    private static final String FILE_PREFIX = "file/";
     private static final String DELIMITER = "/";
 
     private PackUtil() {
@@ -28,16 +34,44 @@ public class PackUtil {
         return path.getFileName().toString();
     }
 
-    public static String generatePackId(String name) {
-        return FILE_PREFIX + name;
+    public static String generatePackId(String name, String... afterPrefix) {
+        return appendNonNull(new StringBuilder(FILE_PREFIX), afterPrefix)
+                .append(name)
+                .toString();
     }
 
-    public static String generatePackId(Path path) {
-        return generatePackId(generatePackName(path));
+    public static String generatePackId(Path path, String... afterPrefix) {
+        return generatePackId(generatePackName(path), afterPrefix);
     }
 
-    public static String generateNestedPackId(Path path) {
-        return FILE_PREFIX + generatePackName(path.getParent()) + DELIMITER + generatePackName(path);
+    public static String generateNestedPackId(Path path, String... afterPrefix) {
+        return appendNonNull(new StringBuilder(FILE_PREFIX), afterPrefix)
+                .append(generatePackName(path.getParent()))
+                .append(DELIMITER)
+                .append(generatePackName(path))
+                .toString();
+    }
+
+    public static String generateAdditionalFilePrefix(Path path) {
+        String hash = Hashing.sha256()
+                .hashString(path.toString(), StandardCharsets.UTF_8)
+                .toString()
+                .substring(0, 16);
+
+        return ADDITIONAL_FILE_PREFIX + hash + DELIMITER;
+    }
+
+    private static StringBuilder appendNonNull(StringBuilder sb, String... strings) {
+        if (strings != null) {
+            for (String string : strings) {
+                if (string != null) sb.append(string);
+            }
+        }
+        return sb;
+    }
+
+    public static PackLocationInfo replicateLocationInfo(PackLocationInfo info, String id) {
+        return new PackLocationInfo(id, info.title(), info.source(), info.knownPackInfo());
     }
 
     public static long getLastUpdatedEpochMs(Pack pack) {
@@ -78,6 +112,34 @@ public class PackUtil {
 
     public static boolean isNonPackDirectory(Path path) {
         return Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && !hasMcmeta(path);
+    }
+
+    public static Path resolveRelativePath(String input, Path baseDir) {
+        Path path = Paths.get(input);
+        if (!path.isAbsolute()) {
+            path = baseDir.resolve(path).normalize();
+        } else {
+            path = path.normalize();
+        }
+        return baseDir.relativize(path);
+    }
+
+    public static List<Path> mapValidDirectories(List<String> paths) {
+        if (paths == null || paths.isEmpty()) return Collections.emptyList();
+
+        return CollectionsUtil.extractNonNull(paths, path -> {
+            try {
+                Path resolved = PackUtil.resolveRelativePath(path, FabricLoader.getInstance().getGameDir());
+                if (Files.exists(resolved, LinkOption.NOFOLLOW_LINKS) && Files.isDirectory(resolved, LinkOption.NOFOLLOW_LINKS)) {
+                    return resolved;
+                } else {
+                    PackedPacks.LOGGER.error("[packed_packs] Path is not a valid directory: '{}', ignoring.", path);
+                }
+            } catch (Exception e) {
+                PackedPacks.LOGGER.error("[packed_packs] Failed to resolve path: '{}', ignoring.", path, e);
+            }
+            return null;
+        });
     }
 
     public static PathValidationResults validatePaths(List<Path> packs) {

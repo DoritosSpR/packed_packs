@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.config;
 
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
+import net.minecraft.server.packs.PackType;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -51,6 +52,13 @@ public class Config implements Serializable {
         return datapacks;
     }
 
+    public Packs get(PackType packType) {
+        return switch (packType) {
+            case CLIENT_RESOURCES -> this.getResourcepacks();
+            case SERVER_DATA -> this.getDatapacks();
+        };
+    }
+
     public void save() {
         if (this.file != null) {
             ConfigLoader.save(this, file);
@@ -62,6 +70,7 @@ public class Config implements Serializable {
     public static class Packs implements Serializable {
         private boolean replaceOriginal = false;
         private boolean hideIncompatibleWarnings = false;
+        private final List<String> additionalFolders = new ArrayList<>();
         private @Nullable Long lastViewed = null;
         private long autoIncrement = 0;
         private final List<Profile> profiles = new ArrayList<>();
@@ -118,6 +127,10 @@ public class Config implements Serializable {
 
         public void setHideIncompatibleWarnings(boolean hidden) {
             this.hideIncompatibleWarnings = hidden;
+        }
+
+        public List<String> getAdditionalFolders() {
+            return List.copyOf(this.additionalFolders);
         }
     }
 

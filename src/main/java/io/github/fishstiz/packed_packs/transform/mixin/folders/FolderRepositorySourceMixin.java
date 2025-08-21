@@ -5,18 +5,22 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
+import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.util.PackUtil;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.PackLocationInfo;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.FolderRepositorySource;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackDetector;
 import net.minecraft.world.level.validation.DirectoryValidator;
 import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
 import org.slf4j.Logger;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -29,17 +33,53 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 @Mixin(FolderRepositorySource.class)
 public abstract class FolderRepositorySourceMixin {
+    @Shadow
+    @Final
+    private PackType packType;
+
     @Unique
     private static final ThreadLocal<Boolean> IS_SUBDIRECTORY = ThreadLocal.withInitial(() -> false);
 
+    @Unique
+    private static final ThreadLocal<Path> ADDITIONAL_PATH = new ThreadLocal<>();
+
     @Inject(method = "loadPacks", at = @At("RETURN"))
-    private void resetSubdirectoryFlag(Consumer<Pack> consumer, CallbackInfo ci) {
+    private void ensureRemoveThreadLocals(Consumer<Pack> consumer, CallbackInfo ci) {
         IS_SUBDIRECTORY.remove();
+        ADDITIONAL_PATH.remove();
+    }
+
+    @WrapOperation(method = "loadPacks", at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/server/packs/repository/FolderRepositorySource;discoverPacks(Ljava/nio/file/Path;Lnet/minecraft/world/level/validation/DirectoryValidator;Ljava/util/function/BiConsumer;)V"
+    ))
+    private void loadPacksFromAdditionalPaths(Path folder, DirectoryValidator validator, BiConsumer<Path, Pack.ResourcesSupplier> output, Operation<Void> original) {
+        original.call(folder, validator, output);
+
+        List<String> additionalFolders = PackedPacks.CONFIG.get(this.packType).getAdditionalFolders();
+        if (!additionalFolders.isEmpty()) {
+            Set<Path> seen = new ObjectOpenHashSet<>();
+            for (Path additionalFolder : PackUtil.mapValidDirectories(additionalFolders)) {
+                try {
+                    Path normalized = additionalFolder.toAbsolutePath().normalize();
+                    ADDITIONAL_PATH.set(normalized);
+
+                    if (seen.add(normalized)) {
+                        original.call(additionalFolder, validator, output);
+                    } else {
+                        PackedPacks.LOGGER.warn("[packed_packs] Duplicate path found: '{}', ignoring", additionalFolder);
+                    }
+                } finally {
+                    ADDITIONAL_PATH.remove();
+                }
+            }
+        }
     }
 
     @WrapOperation(method = "discoverPacks", at = @At(
@@ -84,25 +124,39 @@ public abstract class FolderRepositorySourceMixin {
         if (!suppressLogRef.get() && !(o instanceof Path p && (p.endsWith(FolderResources.FOLDER_CONFIG_FILENAME) || p.endsWith(PackAssets.ICON_FILENAME)))) {
             original.call(instance, s, o);
         }
+        suppressLogRef.set(false);
     }
 
     @ModifyArg(method = "method_45272", at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/server/packs/repository/Pack;readMetaAndCreate(Lnet/minecraft/server/packs/PackLocationInfo;Lnet/minecraft/server/packs/repository/Pack$ResourcesSupplier;Lnet/minecraft/server/packs/PackType;Lnet/minecraft/server/packs/PackSelectionConfig;)Lnet/minecraft/server/packs/repository/Pack;"
     ))
-    private PackLocationInfo addDirInNestedPackId(PackLocationInfo location, @Local(argsOnly = true) Path path) {
-        if (IS_SUBDIRECTORY.get()) {
-            return new PackLocationInfo(PackUtil.generateNestedPackId(path), location.title(), location.source(), location.knownPackInfo());
+    private PackLocationInfo uniquifyPackIds(PackLocationInfo location, @Local(argsOnly = true) Path path, @Share("additionalPrefix") LocalRef<String> additionalPrefixRef) {
+        Path additionalFolder = ADDITIONAL_PATH.get();
+        String additionalPrefix = null;
+
+        if (additionalFolder != null) {
+            additionalPrefix = PackUtil.generateAdditionalFilePrefix(additionalFolder);
+            additionalPrefixRef.set(additionalPrefix);
         }
+        if (IS_SUBDIRECTORY.get()) {
+            return PackUtil.replicateLocationInfo(location, PackUtil.generateNestedPackId(path, additionalPrefix));
+        }
+        if (additionalPrefix != null) {
+            return PackUtil.replicateLocationInfo(location, PackUtil.generatePackId(path, additionalPrefix));
+        }
+
         return location;
     }
 
     @ModifyArg(method = "method_45272", at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V"))
-    private Object bindDirToNestedPack(Object arg, @Local(argsOnly = true) Path path) {
+    private Object bindDirToNestedPack(Object arg, @Local(argsOnly = true) Path path, @Share("additionalPrefix") LocalRef<String> additionalPrefixRef) {
         if (arg instanceof IPack pack) {
             pack.packed_packs$setNestedPack(IS_SUBDIRECTORY.get());
             pack.packed_packs$setPath(path);
+            pack.packed_packs$setAdditionalPrefix(additionalPrefixRef.get());
         }
+        additionalPrefixRef.set(null);
         return arg;
     }
 
