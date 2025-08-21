@@ -19,6 +19,7 @@ import io.github.fishstiz.packed_packs.gui.components.pack.PackOptions;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
+import io.github.fishstiz.packed_packs.pack.PackWatcher;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
@@ -88,7 +89,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private final ContextMenu contextMenu = ContextMenu.builder(this).build();
     private final List<ToggleableDialog<?>> dialogs;
     private final List<PackList> packLists;
-    private PackSelectionScreen.Watcher watcher;
+    private PackWatcher watcher;
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
     private boolean initialized = false;
 
@@ -337,7 +338,13 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     private void createWatcher() {
         if (this.watcher == null) {
-            this.watcher = PackSelectionScreen.Watcher.create(this.original.packDir());
+            try {
+                this.watcher = new PackWatcher();
+                this.watcher.addRoot(this.repository.getDirectory());
+            } catch (IOException e) {
+                PackedPacks.LOGGER.error("Failed to initialize pack directory watcher.", e);
+                this.closeWatcher();
+            }
         }
     }
 
@@ -347,7 +354,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                 this.watcher.close();
                 this.watcher = null;
             } catch (Exception e) {
-                PackedPacks.LOGGER.error("Failed to close watcher for pack directory '{}'.", this.original.packDir(), e);
+                PackedPacks.LOGGER.error("Failed to close watcher for pack directory.", e);
             }
         }
     }
