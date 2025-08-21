@@ -6,6 +6,7 @@ import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
@@ -15,6 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.server.packs.resources.IoSupplier;
 
 import java.io.InputStream;
@@ -29,6 +31,15 @@ public interface PackAssets {
     ResourceLocation DEFAULT_FOLDER_ICON = ResourceUtil.getResource("textures/misc/unknown_folder.png");
     ResourceLocation DEFAULT_ICON = ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png");
     Component OPEN_LOCATION_TEXT = ResourceUtil.getText("file.open");
+    PackSource SOURCE = PackSource.create(
+            name -> Component.translatable(
+                            "pack.nameAndSource",
+                            name,
+                            ResourceUtil.getModName().withStyle(ChatFormatting.YELLOW)
+                    )
+                    .withStyle(ChatFormatting.GRAY),
+            false
+    );
 
     void getOrLoadIcon(Pack pack, Consumer<ResourceLocation> iconCallback);
 

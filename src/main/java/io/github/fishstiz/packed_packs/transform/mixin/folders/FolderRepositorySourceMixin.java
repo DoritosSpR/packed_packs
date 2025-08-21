@@ -17,6 +17,7 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.FolderRepositorySource;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackDetector;
+import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.world.level.validation.DirectoryValidator;
 import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
 import org.slf4j.Logger;
@@ -39,6 +40,10 @@ import java.util.function.Consumer;
 
 @Mixin(FolderRepositorySource.class)
 public abstract class FolderRepositorySourceMixin {
+    @Shadow
+    @Final
+    private PackSource packSource;
+
     @Shadow
     @Final
     private PackType packType;
@@ -140,10 +145,10 @@ public abstract class FolderRepositorySourceMixin {
             additionalPrefixRef.set(additionalPrefix);
         }
         if (IS_SUBDIRECTORY.get()) {
-            return PackUtil.replicateLocationInfo(location, PackUtil.generateNestedPackId(path, additionalPrefix));
+            return PackUtil.replicateLocationInfo(location, this.getPackSource(additionalFolder != null), PackUtil.generateNestedPackId(path, additionalPrefix));
         }
         if (additionalPrefix != null) {
-            return PackUtil.replicateLocationInfo(location, PackUtil.generatePackId(path, additionalPrefix));
+            return PackUtil.replicateLocationInfo(location, this.getPackSource(true), PackUtil.generatePackId(path, additionalPrefix));
         }
 
         return location;
@@ -163,5 +168,10 @@ public abstract class FolderRepositorySourceMixin {
     @Shadow
     public static void discoverPacks(Path folder, DirectoryValidator validator, BiConsumer<Path, Pack.ResourcesSupplier> output) throws IOException {
         throw new AssertionError();
+    }
+
+    @Unique
+    private PackSource getPackSource(boolean externalPath) {
+        return externalPath && this.packType == PackType.SERVER_DATA ? PackAssets.SOURCE : this.packSource;
     }
 }

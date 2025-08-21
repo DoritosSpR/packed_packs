@@ -23,7 +23,7 @@ import java.util.*;
 
 public class PackUtil {
     // Changing these fields would be breaking changes
-    private static final String ADDITIONAL_FILE_PREFIX = "packed_packs$$$additional_folder/";
+    private static final String ADDITIONAL_FILE_PREFIX = "packed_packs$";
     private static final String FILE_PREFIX = "file/";
     private static final String DELIMITER = "/";
 
@@ -56,7 +56,7 @@ public class PackUtil {
         String hash = Hashing.sha256()
                 .hashString(path.toString(), StandardCharsets.UTF_8)
                 .toString()
-                .substring(0, 16);
+                .substring(0, 8);
 
         return ADDITIONAL_FILE_PREFIX + hash + DELIMITER;
     }
@@ -70,8 +70,8 @@ public class PackUtil {
         return sb;
     }
 
-    public static PackLocationInfo replicateLocationInfo(PackLocationInfo info, String id) {
-        return new PackLocationInfo(id, info.title(), info.source(), info.knownPackInfo());
+    public static PackLocationInfo replicateLocationInfo(PackLocationInfo info, PackSource source, String id) {
+        return new PackLocationInfo(id, info.title(), source, info.knownPackInfo());
     }
 
     public static long getLastUpdatedEpochMs(Pack pack) {
