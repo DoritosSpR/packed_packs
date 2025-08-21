@@ -96,6 +96,12 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         return this.open;
     }
 
+    public <U extends GuiEventListener> U prependWidget(U widget) {
+        this.children.addFirst(Objects.requireNonNull(widget));
+        if (widget instanceof NarratableEntry narratable) this.narratables.addFirst(narratable);
+        return widget;
+    }
+
     public <U extends GuiEventListener> U addWidget(U widget) {
         this.children.add(Objects.requireNonNull(widget));
         if (widget instanceof NarratableEntry narratable) this.narratables.add(narratable);
@@ -128,6 +134,12 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     @Override
     public @NotNull Optional<GuiEventListener> getChildAt(double mouseX, double mouseY) {
         for (var child : this.children) {
+            if (child instanceof ToggleableDialog<?> parent) {
+                var nestedChild = parent.getChildAt(mouseX, mouseY);
+                if (nestedChild.isPresent()) {
+                    return nestedChild;
+                }
+            }
             if (child.isMouseOver(mouseX, mouseY)) {
                 return Optional.of(child);
             }
@@ -256,6 +268,10 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         return this.captureClick || this.captureFocus;
     }
 
+    public boolean encloses(ScreenRectangle rectangle) {
+        return rectangle != null && (this.boundingBox.contains(rectangle) || this.childEncloses(rectangle));
+    }
+
     public boolean encloses(LayoutElement element) {
         return element != null && (this.boundingBox.contains(element) || this.childEncloses(element.getRectangle()));
     }
@@ -273,13 +289,25 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
 
     private boolean childEncloses(ScreenRectangle rectangle) {
         for (GuiEventListener child : this.children) {
-            LayoutElement childElement = child instanceof LayoutElement element ? element : null;
-            if ((childElement != null && GuiUtil.contains(childElement, rectangle)) ||
-                (childElement == null && GuiUtil.contains(child.getRectangle(), rectangle))) {
-                return true;
+            switch (child) {
+                case ToggleableDialog<?> dialog when dialog.encloses(rectangle) -> {
+                    return true;
+                }
+                case LayoutElement childElement when GuiUtil.contains(childElement, rectangle) -> {
+                    return true;
+                }
+                default -> {
+                    if (GuiUtil.contains(child.getRectangle(), rectangle)) {
+                        return true;
+                    }
+                }
             }
         }
         return false;
+    }
+
+    public boolean intersects(ScreenRectangle rectangle) {
+        return rectangle != null && (this.boundingBox.intersects(rectangle) || this.childIntersects(rectangle));
     }
 
     public boolean intersects(LayoutElement element) {
@@ -299,10 +327,18 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
 
     private boolean childIntersects(ScreenRectangle rectangle) {
         for (GuiEventListener child : this.children) {
-            LayoutElement childElement = child instanceof LayoutElement e ? e : null;
-            if ((childElement != null && GuiUtil.intersects(childElement, rectangle)) ||
-                (childElement == null && GuiUtil.intersects(child.getRectangle(), rectangle))) {
-                return true;
+            switch (child) {
+                case ToggleableDialog<?> dialog when dialog.intersects(rectangle) -> {
+                    return true;
+                }
+                case LayoutElement childElement when GuiUtil.intersects(childElement, rectangle) -> {
+                    return true;
+                }
+                default -> {
+                    if (GuiUtil.intersects(child.getRectangle(), rectangle)) {
+                        return true;
+                    }
+                }
             }
         }
         return false;

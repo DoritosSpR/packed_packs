@@ -47,6 +47,22 @@ public interface GuiRectangle {
         return this.getY() + this.getHeight();
     }
 
+    default int getFractionX(float fraction) {
+        return this.getX() + Math.round(this.getWidth() * Math.clamp(fraction, 0f, 1f));
+    }
+
+    default int getFractionY(float fraction) {
+        return this.getY() + Math.round(this.getHeight() * Math.clamp(fraction, 0f, 1f));
+    }
+
+    default int getMidX() {
+        return this.getX() + this.getWidth() / 2;
+    }
+
+    default int getMidY() {
+        return this.getY() + this.getHeight() / 2;
+    }
+
     default boolean containsPoint(int px, int py) {
         return px >= this.getX() && px < this.getRight() &&
                py >= this.getY() && py < this.getBottom();
