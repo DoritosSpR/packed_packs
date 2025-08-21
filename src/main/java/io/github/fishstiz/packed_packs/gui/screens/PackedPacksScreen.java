@@ -341,6 +341,10 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             try {
                 this.watcher = new PackWatcher();
                 this.watcher.addRoot(this.repository.getDirectory());
+
+                for (Path additionalFolder : PackUtil.mapValidDirectories(this.packsConfig.getAdditionalFolders())) {
+                    this.watcher.addRoot(additionalFolder);
+                }
             } catch (IOException e) {
                 PackedPacks.LOGGER.error("Failed to initialize pack directory watcher.", e);
                 this.closeWatcher();
