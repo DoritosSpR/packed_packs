@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -52,5 +53,10 @@ public class ObjectsUtil {
 
     public static <T, R> @Nullable R mapOrNull(T obj, Function<T, R> mapper) {
         return mapOrDefault(obj, null, mapper);
+    }
+
+    public static <T> T peek(T value, Consumer<? super T> action) {
+        action.accept(value);
+        return value;
     }
 }
