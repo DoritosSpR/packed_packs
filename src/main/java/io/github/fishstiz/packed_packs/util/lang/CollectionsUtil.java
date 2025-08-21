@@ -36,7 +36,10 @@ public class CollectionsUtil {
         List<R> result = new ArrayList<>();
         for (T item : collection) {
             if (item != null) {
-                result.add(mapper.apply(item));
+                R value = mapper.apply(item);
+                if (value != null) {
+                    result.add(value);
+                }
             }
         }
         return result;

@@ -130,7 +130,7 @@ public class PackRepositoryHelper implements PackAssets {
     }
 
     /**
-     * @param folderPack  the folder pack
+     * @param folderPack   the folder pack
      * @param orderedPacks the nested packs that define the preferred order
      * @return a validated and ordered list of all packs under the folder pack
      */
@@ -173,12 +173,14 @@ public class PackRepositoryHelper implements PackAssets {
      */
     private void populateAvailablePacks(Collection<Pack> packs) {
         for (Pack pack : packs) {
-            if (((IPack) pack).packed_packs$nestedPack()) {
-                Path folderPath = Objects.requireNonNull(((IPack) pack).packed_packs$getPath()).getParent();
+            IPack _pack = (IPack) pack;
+            if (_pack.packed_packs$nestedPack()) {
+                Path folderPath = Objects.requireNonNull(_pack.packed_packs$getPath()).getParent();
                 String folderName = PackUtil.generatePackName(folderPath);
-                String folderId = PackUtil.generatePackId(folderName);
+                String additionalPrefix = _pack.packed_packs$getAdditionalPrefix();
+                String folderId = PackUtil.generatePackId(folderName, additionalPrefix);
                 if (!this.availablePacks.containsKey(folderId)) {
-                    FolderPack folderPack = new FolderPack(folderId, folderName, folderPath);
+                    FolderPack folderPack = new FolderPack(folderId, folderName, additionalPrefix, folderPath);
                     this.folderConfigs.put(folderId, folderPack.loadConfig());
                     this.availablePacks.put(folderId, folderPack);
                 }
