@@ -4,6 +4,7 @@ import io.github.fishstiz.packed_packs.config.ConfigLoader;
 import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.*;
@@ -15,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Optional;
@@ -56,6 +58,8 @@ public class FolderPack extends Pack implements IPack {
                 try (InputStream inputStream = configIoSupplier.get()) {
                     return ConfigLoader.load(inputStream, Folder.class);
                 }
+            } catch(NoSuchFileException e) {
+                return ObjectsUtil.peek(new Folder(), this::saveConfig);
             } catch (IOException e) {
                 return new Folder();
             }
