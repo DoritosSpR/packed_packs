@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.util;
 
 import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
@@ -62,7 +63,11 @@ public class PackUtil {
     }
 
     public static boolean hasMcmeta(Path path) {
-        return Files.isRegularFile(path.resolve(PackResources.PACK_META));
+        return Files.isRegularFile(path.resolve(PackResources.PACK_META), LinkOption.NOFOLLOW_LINKS);
+    }
+
+    public static boolean hasFolderConfig(Path path) {
+        return Files.isRegularFile(path.resolve(FolderResources.FOLDER_CONFIG_FILENAME), LinkOption.NOFOLLOW_LINKS);
     }
 
     public static boolean isBuiltIn(Pack pack) {
