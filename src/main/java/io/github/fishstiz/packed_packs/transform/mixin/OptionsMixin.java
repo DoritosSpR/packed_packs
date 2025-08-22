@@ -22,7 +22,7 @@ public abstract class OptionsMixin {
     ))
     public CompletableFuture<Void> refreshPackedPacks(Minecraft instance, Operation<CompletableFuture<Void>> original) {
         if (this.minecraft != null && this.minecraft.screen instanceof PackedPacksScreen packedPacksScreen) {
-            return original.call(instance).thenRun(packedPacksScreen::revalidate);
+            return original.call(instance).thenRunAsync(packedPacksScreen::revalidatePacks, this.minecraft);
         }
         return original.call(instance);
     }
