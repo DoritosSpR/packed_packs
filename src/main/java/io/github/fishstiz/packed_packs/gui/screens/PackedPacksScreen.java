@@ -80,7 +80,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private final Config.Packs packsConfig;
     private final ProfilesLayout profiles;
     private final ImmediateDebouncer<String> searchListener = new ImmediateDebouncer<>(this::clearHistory, 250);
-    private final PollingDebouncer<Void> revalidateTask = new PollingDebouncer<>(this::revalidate, 1000);
+    private final PollingDebouncer<Void> refreshTask = new PollingDebouncer<>(this::refreshPacks, 1000);
     private final FolderDialog folderDialog;
     private final Modal<LinearLayout> options = Modal.builder(this, new OptionsLayout().layout())
             .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
@@ -118,7 +118,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     @Override
     public void added() {
         if (this.initialized) {
-            this.revalidate();
+            this.refreshPacks();
             this.createWatcher();
         }
     }
@@ -133,6 +133,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     @Override
     protected void init() {
+        if (this.initialized) return;
+
         this.layout.addToHeader(this.createHeader());
         this.layout.addToContents(this.createContents());
         this.layout.addToFooter(this.createFooter());
@@ -155,7 +157,9 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.clearHistory();
         this.repositionElements();
 
+        this.refreshPacks();
         this.createWatcher();
+
         this.initialized = true;
     }
 
@@ -246,14 +250,14 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         if (this.watcher != null) {
             try {
                 if (this.watcher.pollForChanges()) {
-                    this.revalidateTask.run();
+                    this.refreshTask.run();
                 }
             } catch (IOException e) {
                 PackedPacks.LOGGER.warn("Failed to poll for directory {} changes, stopping", this.original.packDir(), e);
                 this.closeWatcher();
             }
         }
-        this.revalidateTask.poll();
+        this.refreshTask.poll();
     }
 
     @Override
@@ -284,7 +288,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             }
             if (!results.valid().isEmpty()) {
                 PackSelectionScreen.copyPacks(this.minecraft, results.valid(), this.original.packDir());
-                this.revalidate();
+                this.refreshPacks();
             }
             if (!results.rejected().isEmpty()) {
                 String rejectedNames = PackUtil.joinPackNames(results.rejected());
@@ -408,17 +412,19 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         }
     }
 
-    public void revalidate() {
-        CompletableFuture.runAsync(this.repository::refresh).thenRunAsync(() -> {
-            PackList availableList = this.availablePacks.getList();
-            PackList currentList = this.currentPacks.getList();
-            PackRepositoryHelper.PackGroup packs = this.repository.validatePacks(availableList.copyPacks(), currentList.copyPacks());
-            this.repository.clearIconCache();
-            this.replacePacks(availableList, packs.unselected());
-            this.replacePacks(currentList, packs.selected());
-            this.revalidateFolder();
-            this.clearHistory();
-        }, this.minecraft);
+    public void revalidatePacks() {
+        PackList availableList = this.availablePacks.getList();
+        PackList currentList = this.currentPacks.getList();
+        PackRepositoryHelper.PackGroup packs = this.repository.validatePacks(availableList.copyPacks(), currentList.copyPacks());
+        this.repository.clearIconCache();
+        this.replacePacks(availableList, packs.unselected());
+        this.replacePacks(currentList, packs.selected());
+        this.revalidateFolder();
+        this.clearHistory();
+    }
+
+    public void refreshPacks() {
+        CompletableFuture.runAsync(this.repository::refresh).thenRunAsync(this::revalidatePacks, this.minecraft);
     }
 
     public void reset() {
