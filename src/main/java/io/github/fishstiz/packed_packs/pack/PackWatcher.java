@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.pack;
 
+import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 
 import java.io.IOException;
@@ -51,14 +52,18 @@ public class PackWatcher implements AutoCloseable {
 
         while ((key = this.watcher.poll()) != null) {
             for (WatchEvent<?> event : key.pollEvents()) {
+                Path watched = (Path) key.watchable();
+                Path path = watched.resolve((Path) event.context());
+
+                if (ModAdditions.discontinueChanges(watched, path)) {
+                    continue;
+                }
+
                 changed = true;
-                if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                    Path parent = (Path) key.watchable();
-                    Path child = parent.resolve((Path) event.context());
-                    if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS) && (PackUtil.hasFolderConfig(child) || this.roots.contains(parent))) {
-                        int depth = getDepth(child);
-                        this.watchDirRecursive(child, depth);
-                    }
+
+                if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE && this.isRootSubdirectory(watched, path)) {
+                    int depth = getDepth(watched);
+                    this.watchDirRecursive(path, depth);
                 }
             }
 
@@ -78,6 +83,10 @@ public class PackWatcher implements AutoCloseable {
             }
         }
         return -1;
+    }
+
+    private boolean isRootSubdirectory(Path parent, Path child) {
+        return Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS) && (PackUtil.hasFolderConfig(child) || this.roots.contains(parent));
     }
 
     @Override

@@ -4,6 +4,7 @@ import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.etf.ETFButtonFactory;
 import io.github.fishstiz.packed_packs.compat.resourcify.ResourcifyButtons;
+import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsUtil;
 import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsWidget;
 import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFactory;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
@@ -15,9 +16,11 @@ import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ModAdditions {
@@ -63,6 +66,13 @@ public class ModAdditions {
         return null;
     }
 
+    public static boolean discontinueChanges(Path watched, Path path) {
+        if (Mod.RESPACKOPTS.wrapError(RespackoptsUtil::isRespackOptsFile, false, path)) {
+            return true;
+        }
+        return false;
+    }
+
     public enum Mod {
         RESOURCIFY("resourcify"),
         RESPACKOPTS("respackopts"),
@@ -93,6 +103,17 @@ public class ModAdditions {
             try {
                 if (this.isLoaded()) {
                     return supplier.get();
+                }
+            } catch (LinkageError | Exception e) {
+                this.logError(e);
+            }
+            return defaultValue;
+        }
+
+        public <T, R> R wrapError(Function<T, R> mapper, R defaultValue, T value) {
+            try {
+                if (this.isLoaded()) {
+                    return mapper.apply(value);
                 }
             } catch (LinkageError | Exception e) {
                 this.logError(e);
