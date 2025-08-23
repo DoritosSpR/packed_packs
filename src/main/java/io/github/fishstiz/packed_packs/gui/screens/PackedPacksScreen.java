@@ -7,7 +7,6 @@ import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.util.debounce.ImmediateDebouncer;
-import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.Config;
@@ -35,8 +34,10 @@ import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.transform.mixin.HeaderAndFooterLayoutAccess;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
+import net.minecraft.Util;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LayoutSettings;
@@ -52,7 +53,6 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -80,7 +80,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private final Config.Packs packsConfig;
     private final ProfilesLayout profiles;
     private final ImmediateDebouncer<String> searchListener = new ImmediateDebouncer<>(this::clearHistory, 250);
-    private final PollingDebouncer<Void> refreshTask = new PollingDebouncer<>(this::refreshPacks, 1000);
     private final FolderDialog folderDialog;
     private final Modal<LinearLayout> options = Modal.builder(this, new OptionsLayout().layout())
             .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
@@ -246,21 +245,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     }
 
     @Override
-    public void tick() {
-        if (this.watcher != null) {
-            try {
-                if (this.watcher.pollForChanges()) {
-                    this.refreshTask.run();
-                }
-            } catch (IOException e) {
-                PackedPacks.LOGGER.warn("Failed to poll for directory {} changes, stopping", this.original.packDir(), e);
-                this.closeWatcher();
-            }
-        }
-        this.refreshTask.poll();
-    }
-
-    @Override
     public void onFilesDrop(List<Path> packs) {
         if (this.minecraft != null) {
             this.minecraft.setScreen(new ConfirmScreen(
@@ -340,17 +324,21 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.minecraft.setScreen(this.previous);
     }
 
+    @Override
+    public void tick() {
+        if (this.watcher != null) {
+            this.watcher.poll();
+        }
+    }
+
     private void createWatcher() {
         if (this.watcher == null) {
             try {
-                this.watcher = new PackWatcher();
-                this.watcher.addRoot(this.repository.getDirectory());
-
-                for (Path additionalFolder : PackUtil.mapValidDirectories(this.packsConfig.getAdditionalFolders())) {
-                    this.watcher.addRoot(additionalFolder);
-                }
-            } catch (IOException e) {
-                PackedPacks.LOGGER.error("Failed to initialize pack directory watcher.", e);
+                List<Path> paths = CollectionsUtil.mutableListOf(this.repository.getDirectory());
+                paths.addAll(PackUtil.mapValidDirectories(this.packsConfig.getAdditionalFolders()));
+                this.watcher = new PackWatcher(paths, this::refreshPacks, this.minecraft);
+            } catch (Exception e) {
+                PackedPacks.LOGGER.error("[packed_packs] Failed to initialize pack directory watcher.", e);
                 this.closeWatcher();
             }
         }
@@ -358,12 +346,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     private void closeWatcher() {
         if (this.watcher != null) {
-            try {
-                this.watcher.close();
-                this.watcher = null;
-            } catch (Exception e) {
-                PackedPacks.LOGGER.error("Failed to close watcher for pack directory.", e);
-            }
+            this.watcher.close();
+            this.watcher = null;
         }
     }
 
@@ -424,7 +408,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     }
 
     public void refreshPacks() {
-        CompletableFuture.runAsync(this.repository::refresh).thenRunAsync(this::revalidatePacks, this.minecraft);
+        CompletableFuture.runAsync(this.repository::refresh, Util.backgroundExecutor()).thenRunAsync(this::revalidatePacks, this.minecraft);
     }
 
     public void reset() {

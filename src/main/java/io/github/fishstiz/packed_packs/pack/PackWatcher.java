@@ -1,96 +1,161 @@
 package io.github.fishstiz.packed_packs.pack;
 
+import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
-import io.github.fishstiz.packed_packs.util.PackUtil;
+import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import net.minecraft.Util;
+import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
+import org.apache.commons.io.monitor.FileAlterationMonitor;
+import org.apache.commons.io.monitor.FileAlterationObserver;
 
-import java.io.IOException;
-import java.nio.file.*;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.io.File;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.github.fishstiz.packed_packs.util.PackUtil.hasFolderConfig;
+import static io.github.fishstiz.packed_packs.util.PackUtil.hasMcmeta;
+import static java.nio.file.Files.isDirectory;
+import static net.minecraft.Util.backgroundExecutor;
+
+/**
+ * Migrated from {@link java.nio.file.WatchService} due to registered subdirectories locking parent directory on Windows.
+ *
+ * @see <a href="https://bugs.openjdk.org/browse/JDK-6972833">JDK-6972833</a>
+ */
 public class PackWatcher implements AutoCloseable {
-    private static final int WATCH_DEPTH = 2;
-    private final WatchService watcher;
-    private final Set<Path> roots = ConcurrentHashMap.newKeySet();
+    private static final long POLL_INTERVAL_MS = 1000;
+    private static final long DEBOUNCED_CHANGE_DELAY_MS = 1000;
+    private final FileAlterationMonitor monitor = new FileAlterationMonitor(POLL_INTERVAL_MS);
+    private final Executor callbackExecutor;
+    private final PollingDebouncer<Path> onChangeCallback;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private volatile long lastPollTime;
 
-    public PackWatcher() throws IOException {
-        this.watcher = FileSystems.getDefault().newWatchService();
+    public PackWatcher(Collection<Path> directories, Runnable onChangeCallback, Executor callbackExecutor) {
+        this.monitor.setThreadFactory(r -> {
+            throw new IllegalStateException("PackWatcher monitor should not be creating a new thread.");
+        });
+        this.callbackExecutor = callbackExecutor;
+        this.onChangeCallback = this.debounceCallback(onChangeCallback);
+        CollectionsUtil.forEachDistinct(directories, this::addDirectory);
     }
 
-    public void addRoot(Path rootPath) throws IOException {
-        if (Files.notExists(rootPath) || !Files.isDirectory(rootPath)) {
-            return;
-        }
-        if (this.roots.add(rootPath)) {
-            this.watchDirRecursive(rootPath, 0);
-        }
-    }
+    private void addDirectory(Path directory) {
+        if (!isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) return;
 
-    private void watchDirRecursive(Path dir, int currentDepth) throws IOException {
-        if (currentDepth > WATCH_DEPTH || (currentDepth > 1 && !PackUtil.hasFolderConfig(dir.getParent()))) {
-            return;
-        }
+        FileAlterationObserver observer = new FileAlterationObserver(directory.toFile());
+        Path normalizedPath = directory.toAbsolutePath().normalize();
+        observer.addListener(new DirectoryListener(normalizedPath));
 
-        this.watchDir(dir);
-
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
-            for (Path entry : stream) {
-                if (Files.isDirectory(entry, LinkOption.NOFOLLOW_LINKS)) {
-                    this.watchDirRecursive(entry, currentDepth + 1);
+        backgroundExecutor().execute(() -> {
+            if (this.closed.get()) return;
+            try {
+                observer.initialize();
+                if (!this.closed.get()) {
+                    this.monitor.addObserver(observer);
+                } else {
+                    observer.destroy();
                 }
+            } catch (Exception e) {
+                PackedPacks.LOGGER.error("[packed_packs] Failed to initialize observer for directory {}.", normalizedPath, e);
             }
-        }
+        });
     }
 
-    private void watchDir(Path dir) throws IOException {
-        dir.register(this.watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY);
-    }
-
-    public boolean pollForChanges() throws IOException {
-        boolean changed = false;
-        WatchKey key;
-
-        while ((key = this.watcher.poll()) != null) {
-            for (WatchEvent<?> event : key.pollEvents()) {
-                Path watched = (Path) key.watchable();
-                Path path = watched.resolve((Path) event.context());
-
-                if (ModAdditions.discontinueChanges(watched, path)) {
-                    continue;
-                }
-
-                changed = true;
-
-                if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE && this.isRootSubdirectory(watched, path)) {
-                    int depth = getDepth(watched);
-                    this.watchDirRecursive(path, depth);
-                }
+    public void poll() {
+        backgroundExecutor().execute(() -> {
+            long currentTime = Util.getMillis();
+            if (currentTime - this.lastPollTime >= this.monitor.getInterval()) {
+                this.monitor.getObservers().forEach(FileAlterationObserver::checkAndNotify);
+                this.lastPollTime = currentTime;
             }
-
-            key.reset();
-        }
-        return changed;
-    }
-
-    private int getDepth(Path path) {
-        Path absolutePath = path.toAbsolutePath().normalize();
-
-        for (Path root : roots) {
-            Path absoluteRoot = root.toAbsolutePath().normalize();
-
-            if (absolutePath.startsWith(absoluteRoot)) {
-                return absoluteRoot.relativize(absolutePath).getNameCount();
-            }
-        }
-        return -1;
-    }
-
-    private boolean isRootSubdirectory(Path parent, Path child) {
-        return Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS) && (PackUtil.hasFolderConfig(child) || this.roots.contains(parent));
+            this.onChangeCallback.poll();
+        });
     }
 
     @Override
-    public void close() throws IOException {
-        this.watcher.close();
+    public void close() {
+        if (!this.closed.compareAndSet(false, true)) {
+            return;
+        }
+
+        backgroundExecutor().execute(() -> {
+            for (FileAlterationObserver observer : this.monitor.getObservers()) {
+                try {
+                    observer.destroy();
+                } catch (Exception e) {
+                    PackedPacks.LOGGER.error("[packed_packs] Error occurred while closing observer for {}", observer.getDirectory(), e);
+                }
+            }
+            this.onChangeCallback.abort();
+        });
+    }
+
+    private PollingDebouncer<Path> debounceCallback(Runnable callback) {
+        return new PollingDebouncer<>(path -> {
+            if (!this.closed.get() && !ModAdditions.discontinueChanges(path)) {
+                callback.run();
+            }
+        }, DEBOUNCED_CHANGE_DELAY_MS);
+    }
+
+    class DirectoryListener extends FileAlterationListenerAdaptor {
+        private static final int DIRECTORY_PACK_DEPTH = 1;
+        private static final int PACK_CONTENTS_DEPTH = 2;
+        private static final int NESTED_PACK_DEPTH = 3;
+        private final Path root;
+
+        DirectoryListener(Path root) {
+            this.root = root;
+        }
+
+        @Override
+        public void onDirectoryCreate(File directory) {
+            this.onEvent(directory);
+        }
+
+        @Override
+        public void onDirectoryChange(File directory) {
+            this.onEvent(directory);
+        }
+
+        @Override
+        public void onDirectoryDelete(File directory) {
+            this.onEvent(directory);
+        }
+
+        @Override
+        public void onFileCreate(File file) {
+            this.onEvent(file);
+        }
+
+        @Override
+        public void onFileChange(File file) {
+            this.onEvent(file);
+        }
+
+        @Override
+        public void onFileDelete(File file) {
+            this.onEvent(file);
+        }
+
+        private void onEvent(File file) {
+            Path path = file.toPath();
+            int depth = this.root.relativize(path.toAbsolutePath().normalize()).getNameCount();
+
+            if (switch (depth) {
+                case DIRECTORY_PACK_DEPTH ->
+                        !isDirectory(path, LinkOption.NOFOLLOW_LINKS) || hasMcmeta(path) || hasFolderConfig(path);
+                case PACK_CONTENTS_DEPTH -> hasMcmeta(path.getParent()) || hasFolderConfig(path.getParent());
+                case NESTED_PACK_DEPTH -> hasFolderConfig(path.getParent().getParent());
+                default -> false;
+            }) {
+                PackWatcher.this.callbackExecutor.execute(() -> PackWatcher.this.onChangeCallback.accept(path));
+            }
+        }
     }
 }
