@@ -7,6 +7,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
+import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
@@ -33,7 +34,7 @@ import static net.minecraft.client.gui.screens.Screen.findNarratableWidget;
 
 public class ToggleableDialog<T extends LayoutElement> extends AbstractContainerEventHandler implements Renderable, NarratableEntry {
     protected final Screen screen;
-    private final PollingDebouncer<Void> focusOnOpenTask = new PollingDebouncer<>(this::focus, 0);
+    private final PollingDebouncer<Void> focusOnOpenTask = new SimplePollingDebouncer<>(this::focus, 0);
     private final List<GuiEventListener> children = new ArrayList<>();
     private final List<Renderable> renderables = new ArrayList<>();
     private final List<NarratableEntry> narratables = new ArrayList<>();
