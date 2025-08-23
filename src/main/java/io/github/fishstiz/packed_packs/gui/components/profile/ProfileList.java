@@ -5,6 +5,7 @@ import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
+import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
@@ -28,7 +29,7 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
     private static final Component DELETE_TEXT = ResourceUtil.getText("profile.delete");
     private static final Tooltip DELETE_INFO = Tooltip.create(ResourceUtil.getText("profile.delete.info"));
     private static final Sprite TRASH_SPRITE = new Sprite(ResourceUtil.getIcon("trash"), Size.of16());
-    private final PollingDebouncer<Void> debouncedRefresh = new PollingDebouncer<>(this::refresh, 200);
+    private final PollingDebouncer<Void> debouncedRefresh = new SimplePollingDebouncer<>(this::refresh, 200);
     private final Config.Packs config;
     private final Supplier<Profile> selected;
     private final Consumer<Profile> onDelete;

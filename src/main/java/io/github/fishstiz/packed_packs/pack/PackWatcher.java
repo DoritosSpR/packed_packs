@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.pack;
 
+import io.github.fishstiz.fidgetz.util.debounce.ConcurrentPollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
@@ -96,7 +97,7 @@ public class PackWatcher implements AutoCloseable {
     }
 
     private PollingDebouncer<Path> debounceCallback(Runnable callback) {
-        return new PollingDebouncer<>(path -> {
+        return new ConcurrentPollingDebouncer<>(path -> {
             if (!this.closed.get() && !ModAdditions.discontinueChanges(path)) {
                 callback.run();
             }
