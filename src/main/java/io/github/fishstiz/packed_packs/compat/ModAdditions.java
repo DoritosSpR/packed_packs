@@ -66,7 +66,7 @@ public class ModAdditions {
         return null;
     }
 
-    public static boolean discontinueChanges(Path watched, Path path) {
+    public static boolean discontinueChanges(Path path) {
         if (Mod.RESPACKOPTS.wrapError(RespackoptsUtil::isRespackOptsFile, false, path)) {
             return true;
         }
