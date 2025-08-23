@@ -2,12 +2,13 @@ package io.github.fishstiz.fidgetz.util.debounce;
 
 import net.minecraft.Util;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class PollingDebouncer<T> extends Debouncer<T> {
-    private boolean pending = false;
-    private long lastCallTime = 0;
-    private T lastArg = null;
+    private final AtomicReference<T> lastArg = new AtomicReference<>(null);
+    private volatile boolean pending = false;
+    private volatile long lastCallTime = 0;
 
     public PollingDebouncer(Consumer<T> task, long delay) {
         super(task, delay);
@@ -21,7 +22,7 @@ public class PollingDebouncer<T> extends Debouncer<T> {
     public void accept(T t) {
         this.lastCallTime = Util.getMillis();
         this.pending = true;
-        this.lastArg = t;
+        this.lastArg.set(t);
     }
 
     public void abort() {
@@ -31,7 +32,7 @@ public class PollingDebouncer<T> extends Debouncer<T> {
     public void poll() {
         if (this.pending && Util.getMillis() - this.lastCallTime >= this.delay) {
             try {
-                this.task.accept(this.lastArg);
+                this.task.accept(this.lastArg.get());
             } finally {
                 this.pending = false;
             }
