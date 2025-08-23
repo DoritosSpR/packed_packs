@@ -1,8 +1,10 @@
 package io.github.fishstiz.packed_packs.util.lang;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class CollectionsUtil {
@@ -12,7 +14,9 @@ public class CollectionsUtil {
     @SafeVarargs
     @SuppressWarnings("varargs")
     public static <E> List<E> mutableListOf(E... elements) {
-        return new ArrayList<>(List.of(elements));
+        List<E> list = new ArrayList<>(elements.length);
+        Collections.addAll(list, elements);
+        return list;
     }
 
     public static <K, V> List<V> lookup(Collection<K> keys, Map<K, V> source) {
@@ -25,7 +29,7 @@ public class CollectionsUtil {
     }
 
     public static <T, K> Map<K, T> toMap(Collection<T> collection, Function<T, K> keyFn) {
-        Map<K, T> map = new Object2ObjectOpenHashMap<>();
+        Map<K, T> map = new Object2ObjectOpenHashMap<>(collection.size());
         for (T item : collection) {
             map.put(keyFn.apply(item), item);
         }
@@ -33,7 +37,7 @@ public class CollectionsUtil {
     }
 
     public static <T, R> List<R> extractNonNull(Collection<T> collection, Function<T, R> mapper) {
-        List<R> result = new ArrayList<>();
+        List<R> result = new ArrayList<>(collection.size());
         for (T item : collection) {
             if (item != null) {
                 R value = mapper.apply(item);
@@ -43,5 +47,14 @@ public class CollectionsUtil {
             }
         }
         return result;
+    }
+
+    public static <T> void forEachDistinct(Collection<T> collection, Consumer<T> action) {
+        Set<T> seen = new ObjectOpenHashSet<>(collection.size());
+        for (T entry : collection) {
+            if (entry != null && seen.add(entry)) {
+                action.accept(entry);
+            }
+        }
     }
 }
