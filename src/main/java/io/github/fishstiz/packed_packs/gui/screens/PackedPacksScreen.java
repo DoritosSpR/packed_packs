@@ -513,6 +513,11 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.profiles.getSidebar().setOpen(false);
         this.contextMenu.setOpen(false);
 
+        if (event instanceof FileOperationEvent) {
+            this.revalidatePacks();
+            return;
+        }
+
         if (event instanceof FolderOpenEvent folderOpenEvent) {
             this.onFolderOpen(folderOpenEvent);
         } else if (event instanceof FolderCloseEvent folderChangeEvent) {
