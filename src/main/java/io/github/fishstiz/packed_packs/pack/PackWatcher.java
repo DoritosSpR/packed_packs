@@ -149,8 +149,7 @@ public class PackWatcher implements AutoCloseable {
             int depth = this.root.relativize(path.toAbsolutePath().normalize()).getNameCount();
 
             if (switch (depth) {
-                case DIRECTORY_PACK_DEPTH ->
-                        !isDirectory(path, LinkOption.NOFOLLOW_LINKS) || hasMcmeta(path) || hasFolderConfig(path);
+                case DIRECTORY_PACK_DEPTH -> true;
                 case PACK_CONTENTS_DEPTH -> hasMcmeta(path.getParent()) || hasFolderConfig(path.getParent());
                 case NESTED_PACK_DEPTH -> hasFolderConfig(path.getParent().getParent());
                 default -> false;

@@ -1,25 +1,29 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
-import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
-import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
-import io.github.fishstiz.fidgetz.gui.components.ToggleableDialog;
-import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
+import io.github.fishstiz.fidgetz.gui.components.*;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
+import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
+import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.FolderCloseEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
-import io.github.fishstiz.packed_packs.gui.components.events.RequestContextMenuEvent;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
-import io.github.fishstiz.packed_packs.util.InputUtil;
+import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
+import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
-public class FolderDialog extends ToggleableDialog<FolderPackList> {
+public class FolderDialog extends ToggleableDialog<FolderPackList> implements ContextMenuContainer {
+    private static final Component BACK_TEXT = CommonComponents.GUI_BACK.copy().append(CommonComponents.ELLIPSIS);
     private static final int HEADER_HEIGHT = 16;
     private final FidgetzButton<Void> closeButton;
     private final FidgetzText<Void> folderTitle;
@@ -102,21 +106,47 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> {
         }
     }
 
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (InputUtil.isRightClick(button) && !this.root().isMouseOver(mouseX, mouseY) && this.isMouseOver(mouseX, mouseY)) {
-            this.sendEvent(new RequestContextMenuEvent(this.root(), this.folderPack, mouseX, mouseY));
-            return true;
-        }
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
     public @Nullable PackList getParent() {
         return this.parent;
     }
 
     public @Nullable FolderPack getFolderPack() {
         return this.folderPack;
+    }
+
+    @Override
+    public void buildItems(MenuItemBuilder builder, int mouseX, int mouseY) {
+        ContextMenuContainer.super.buildItems(
+                builder.when(this.folderPack != null && this.isOpen())
+                        .ifTrue(folderMenuBuilder -> folderMenuBuilder
+                                .add(PackMenuHeader.withItem(this.folderPack, this.folderSprite))
+                                .simpleItem(BACK_TEXT, () -> this.setOpen(false))
+                                .when(!this.root().isMouseOver(mouseX, mouseY))
+                                .ifTrue(b -> b
+                                        .whenNonNull(ObjectsUtil.mapOrNull(this.folderPack, IPack::packed_packs$getPath))
+                                        .ifTrue((path, operationsMenuBuilder) -> operationsMenuBuilder
+                                                .separator()
+                                                .simpleItem(PackAssets.RENAME_FILE_TEXT, this::canOperateFolder, this::renameDirectory)
+                                                .simpleItem(PackAssets.DELETE_FILE_TEXT, this::canOperateFolder, this::deleteDirectory)
+                                                .add(new DirectoryMenuItem(path, PackAssets.OPEN_FILE_TEXT))
+                                        )
+                                )
+                        ),
+                mouseX,
+                mouseY
+        );
+    }
+
+    private boolean canOperateFolder() {
+        return this.folderPack != null && !this.root().packAssets.isEnabled(this.folderPack);
+    }
+
+    private void renameDirectory() {
+
+    }
+
+    private void deleteDirectory() {
+
     }
 
     private void sendEvent(PackListEvent event) {

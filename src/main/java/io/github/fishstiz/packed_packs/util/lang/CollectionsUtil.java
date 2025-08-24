@@ -57,4 +57,10 @@ public class CollectionsUtil {
             }
         }
     }
+
+    public static <T> List<T> deduplicate(List<T> list) {
+        List<T> deduplicated = new ArrayList<>();
+        forEachDistinct(list, deduplicated::add);
+        return deduplicated;
+    }
 }

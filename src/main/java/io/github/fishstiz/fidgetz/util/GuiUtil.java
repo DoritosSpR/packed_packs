@@ -28,6 +28,18 @@ public class GuiUtil {
         return false;
     }
 
+    public static boolean deepChildHovered(ContainerEventHandler container, double mouseX, double mouseY) {
+        for (GuiEventListener child : container.children()) {
+            if (child instanceof ContainerEventHandler nestedContainer) {
+                return deepChildHovered(nestedContainer, mouseX, mouseY);
+            }
+            if (child.isMouseOver(mouseX, mouseY)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static void playClickSound() {
         Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
     }

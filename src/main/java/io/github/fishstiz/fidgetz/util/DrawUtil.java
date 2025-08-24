@@ -4,7 +4,6 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.NineSliceSprite;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Line;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
-import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.Util;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,7 +19,7 @@ public class DrawUtil {
             Line.zero(247),
             Line.zero(165)
     ));
-    public static final ResourceLocation SHADOW_SPRITE = ResourceUtil.getResource("drop_shadow");
+    public static final ResourceLocation SHADOW_SPRITE = ResourceLocation.fromNamespaceAndPath("fidgetz", "drop_shadow");
     private static final int SHADOW_BORDER = 32;
 
     private DrawUtil() {
