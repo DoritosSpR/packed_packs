@@ -1,19 +1,19 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
-import io.github.fishstiz.fidgetz.gui.components.ContainerEventHandlerPatch;
-import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
+import io.github.fishstiz.fidgetz.gui.components.*;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
-import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
+import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
+import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.transform.mixin.gui.AbstractSelectionListAccessor;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
-import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.Util;
@@ -37,7 +37,7 @@ import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
-public abstract class PackListBase<T extends PackListBase<T>.Entry> extends AbstractDynamicList<T> implements PackList, ContainerEventHandlerPatch {
+public abstract class PackListBase<T extends PackListBase<T>.Entry> extends AbstractDynamicList<T> implements PackList, ContainerEventHandlerPatch, ContextMenuContainer {
     protected static final int OFFSET_Y = 2;
     protected static final int ITEM_HEIGHT = 32;
     protected static final int ROW_GAP = 3;
@@ -51,7 +51,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     protected PackListBase(PackAssets packAssets, PackListEventListener listener) {
         super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, OFFSET_Y, ROW_GAP);
 
-        this.query = new Query(packAssets.getDirectory());
+        this.query = new Query(packAssets.getDir());
         this.packAssets = packAssets;
         this.listener = listener;
         this.queryPacks();
@@ -385,7 +385,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
     }
 
-    private void openFolder(FolderPack folderPack) {
+    protected void openFolder(FolderPack folderPack) {
         this.sendEvent(new FolderOpenEvent(this, folderPack));
     }
 
@@ -463,8 +463,20 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
+    protected void renderListItems(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.renderListItems(guiGraphics, mouseX, mouseY, partialTick);
+
+        Entry focused = this.getFocused();
+        if (focused != null && focused.isFocused()) {
+            int outlineTop = focused.getY() - Entry.BACKGROUND_OFFSET;
+            int outlineHeight = focused.getHeight() + Entry.BACKGROUND_OFFSET * 2;
+            guiGraphics.renderOutline(focused.getX(), outlineTop, focused.getWidth(), outlineHeight, Theme.WHITE.getARGB());
+        }
+    }
+
+    @Override
     public void replaceState(@NotNull Snapshot snapshot) {
-        Pack focused = ObjectsUtil.mapOrNull(this.getFocused(), PackList.Entry::getPack);
+        Pack focused = mapOrNull(this.getFocused(), PackList.Entry::getPack);
         this.packs.clear();
 
         for (Pack pack : snapshot.packs()) {
@@ -483,7 +495,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.setFocused(this.getEntry(focused));
     }
 
-    public abstract class Entry extends AbstractDynamicList<T>.Entry implements PackList.Entry {
+    public abstract class Entry extends AbstractDynamicList<T>.Entry implements PackList.Entry, ContextMenuContainer {
         private static final double DRAG_THRESHOLD = 1.0;
         private static final int DOUBLE_CLICK_DELTA_MS = 200;
         private static final Tooltip FOLDER_OPEN_INFO = Tooltip.create(FolderPack.FOLDER_OPEN_TEXT);
@@ -518,7 +530,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 this.folderWidget = this.addTopRenderableOnly(this.prependWidget(
                         FidgetzButton.<Void>builder()
                                 .setTooltip(FOLDER_OPEN_INFO)
-                                .setHeight(this.getHeight() / 3)
+                                .setHeight(this.packWidget.getHeight() / 3)
                                 .makeSquare()
                                 .setSprite(GuiConstants.HAMBURGER_SPRITE)
                                 .setOnPress(btn -> {
@@ -576,7 +588,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         public boolean isSelectedLast() {
-            return ObjectsUtil.mapOrDefault(PackListBase.this.getLastSelected(), false, p -> Objects.equals(p, this.pack));
+            return mapOrDefault(PackListBase.this.getLastSelected(), false, p -> Objects.equals(p, this.pack));
         }
 
         private boolean sendSelection() {
@@ -627,43 +639,26 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         @Override
-        public boolean isMouseOver(double mouseX, double mouseY) {
-            return GuiUtil.containsPoint(
-                    this.getX(),
-                    this.getY() - BACKGROUND_OFFSET,
-                    this.getWidth(),
-                    this.getHeight() + BACKGROUND_OFFSET * 2,
-                    mouseX, mouseY
-            );
-        }
-
-        @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (super.mouseClicked(mouseX, mouseY, button)) {
                 return false;
             }
-            if (this.isMouseOver(mouseX, mouseY)) {
-                if (isRightClick(button)) {
-                    PackListBase.this.sendEvent(new RequestContextMenuEvent(PackListBase.this, this.pack, mouseX, mouseY));
-                    return true;
+            if (isLeftClick(button) && this.isMouseOver(mouseX, mouseY)) {
+                if (!isRangeModifierActive() && !isSelectModifierActive() && this.handleDoubleClick()) {
+                    return false;
                 }
-                if (isLeftClick(button)) {
-                    if (!isRangeModifierActive() && !isSelectModifierActive() && this.handleDoubleClick()) {
-                        return false;
-                    }
-                    if (isRangeModifierActive()) {
-                        this.fireClickEvent(PackListBase::selectRange, MouseSelectionState.SELECTING_MANY);
-                    } else if (isSelectModifierActive()) {
-                        this.fireClickEvent(PackListBase::selectToggle, MouseSelectionState.SELECTING_MANY);
-                    } else if (!this.isSelected()) {
-                        this.fireClickEvent(PackListBase::selectExclusive, MouseSelectionState.SELECTING_ONE);
-                    } else if (this.isSelected() && !this.isSelectedLast()) {
-                        this.fireClickEvent(PackListBase::select, MouseSelectionState.SELECTING_ONE);
-                    } else {
-                        this.mouseSelectionState = MouseSelectionState.SELECTING_ONE;
-                    }
-                    return true;
+                if (isRangeModifierActive()) {
+                    this.fireClickEvent(PackListBase::selectRange, MouseSelectionState.SELECTING_MANY);
+                } else if (isSelectModifierActive()) {
+                    this.fireClickEvent(PackListBase::selectToggle, MouseSelectionState.SELECTING_MANY);
+                } else if (!this.isSelected()) {
+                    this.fireClickEvent(PackListBase::selectExclusive, MouseSelectionState.SELECTING_ONE);
+                } else if (this.isSelected() && !this.isSelectedLast()) {
+                    this.fireClickEvent(PackListBase::select, MouseSelectionState.SELECTING_ONE);
+                } else {
+                    this.mouseSelectionState = MouseSelectionState.SELECTING_ONE;
                 }
+                return true;
             }
             this.mouseSelectionState = MouseSelectionState.INACTIVE;
             return false;
@@ -706,11 +701,9 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         @Override
         public void renderBack(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTick) {
             if (!this.pack.getCompatibility().isCompatible() && !PackListBase.this.packAssets.getConfig().isIncompatibleWarningsHidden()) {
-                int backgroundTop = this.getY() - BACKGROUND_OFFSET;
                 int backgroundLeft = this.getX() + BACKGROUND_OFFSET;
-                int backgroundBottom = backgroundTop + this.getHeight() + BACKGROUND_OFFSET * 2;
                 int backgroundRight = backgroundLeft + this.getWidth() - BACKGROUND_OFFSET * 2;
-                guiGraphics.fill(backgroundLeft, backgroundTop, backgroundRight, backgroundBottom, Theme.RED_900.getARGB());
+                guiGraphics.fill(backgroundLeft, this.getY(), backgroundRight, this.getBottom(), Theme.RED_900.getARGB());
             }
         }
 
@@ -718,23 +711,15 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         private void renderSelection(GuiGraphics guiGraphics, int top, int left, int width, int height) {
             if (this.isSelected()) {
-                int overlayTop = this.getY() - BACKGROUND_OFFSET;
                 int overlayLeft = this.getX() + BACKGROUND_OFFSET;
                 int overlayWidth = this.getWidth() - BACKGROUND_OFFSET * 2;
-                int overlayHeight = this.getHeight() + BACKGROUND_OFFSET * 2;
-                pick(isSelectedLast(), GuiConstants.WHITE_OVERLAY, SELECTED_OVERLAY).render(guiGraphics, overlayLeft, overlayTop, overlayWidth, overlayHeight);
+                pick(isSelectedLast(), GuiConstants.WHITE_OVERLAY, SELECTED_OVERLAY)
+                        .render(guiGraphics, overlayLeft, this.getY(), overlayWidth, this.getHeight());
             }
             if (this.isSelected() || this.isFocused()) {
-                int outlineTop = top - BACKGROUND_OFFSET * 2;
-                int outlineHeight = height + BACKGROUND_OFFSET * 4;
-
-                if (this.isFocused()) {
-                    PoseStack poseStack = guiGraphics.pose();
-                    poseStack.pushPose();
-                    poseStack.translate(0, 0, 1f);
-                    guiGraphics.renderOutline(left, outlineTop, width, outlineHeight, Theme.WHITE.getARGB());
-                    poseStack.popPose();
-                } else {
+                int outlineTop = this.getY() - BACKGROUND_OFFSET;
+                int outlineHeight = this.getHeight() + BACKGROUND_OFFSET * 2;
+                if (!this.isFocused()) {
                     guiGraphics.renderOutline(left, outlineTop, width, outlineHeight, Theme.BLUE_500.getARGB());
                 }
             }
@@ -742,7 +727,8 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         protected void renderTop(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
             if (this.folderWidget != null) {
-                this.folderWidget.setPosition(this.packWidget.getContentLeft(), this.getBottom() - this.folderWidget.getHeight());
+                int folderWidgetY = this.getBottom() - this.folderWidget.getHeight() - BACKGROUND_OFFSET;
+                this.folderWidget.setPosition(this.packWidget.getContentLeft(), folderWidgetY);
             }
 
             for (Renderable renderable : this.topRenderables) {
@@ -769,6 +755,39 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         @Override
+        public void buildItems(MenuItemBuilder builder, int mouseX, int mouseY) {
+            PackListBase.this.setFocused(this);
+            ContextMenuContainer.super.buildItems(builder
+                            .add(PackMenuHeader.withItem(this.pack, this.packWidget.getSprite()))
+                            .whenNonNull(this.folderWidget)
+                            .ifTrue((widget, b) -> b
+                                    .separator()
+                                    .simpleItem(FolderPack.FOLDER_OPEN_TEXT, widget::onPress))
+                            .whenNonNull(((IPack) this.pack).packed_packs$getPath())
+                            .ifTrue((path, b) -> b
+                                    .separator()
+                                    .simpleItem(PackAssets.RENAME_FILE_TEXT, this::canOperateFile, this::renamePack)
+                                    .simpleItem(PackAssets.DELETE_FILE_TEXT, this::canOperateFile, this::deletePack)
+                                    .add(new DirectoryMenuItem(path, PackAssets.OPEN_FILE_TEXT))
+                            ),
+                    mouseX,
+                    mouseY
+            );
+        }
+
+        public boolean canOperateFile() {
+            return !PackListBase.this.packAssets.isEnabled(this.pack);
+        }
+
+        public void deletePack() {
+
+        }
+
+        public void renamePack() {
+
+        }
+
+        @Override
         public @NotNull List<? extends GuiEventListener> children() {
             return this.children;
         }
@@ -776,6 +795,16 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         @Override
         public @NotNull List<? extends NarratableEntry> narratables() {
             return this.narratables;
+        }
+
+        @Override
+        public int getY() {
+            return super.getY() - BACKGROUND_OFFSET;
+        }
+
+        @Override
+        public int getHeight() {
+            return super.getHeight() + BACKGROUND_OFFSET * 2;
         }
 
         private enum MouseSelectionState {

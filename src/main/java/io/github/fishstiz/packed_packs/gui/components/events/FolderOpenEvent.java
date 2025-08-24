@@ -14,13 +14,6 @@ public final class FolderOpenEvent extends PackListEvent {
         this.opened = Objects.requireNonNull(opened);
     }
 
-    public static FolderOpenEvent fromContextMenu(RequestContextMenuEvent event) {
-        if (event.trigger() instanceof FolderPack folderPack) {
-            return new FolderOpenEvent(event.target(), folderPack);
-        }
-        throw new IllegalArgumentException("Context menu event not triggered from folder pack.");
-    }
-
     public @NotNull FolderPack opened() {
         return this.opened;
     }

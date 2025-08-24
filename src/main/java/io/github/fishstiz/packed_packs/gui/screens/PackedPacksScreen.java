@@ -2,6 +2,7 @@ package io.github.fishstiz.packed_packs.gui.screens;
 
 import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.components.*;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
@@ -11,10 +12,10 @@ import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Folder;
+import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
+import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.pack.*;
 import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
-import io.github.fishstiz.fidgetz.gui.components.ContextMenu;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackOptions;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
@@ -62,14 +63,14 @@ import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.PackUtil.*;
 
-public class PackedPacksScreen extends PackListEventHandler implements ToggleableDialogContainer, Restorable<PackedPacksScreen.Snapshot> {
+public class PackedPacksScreen extends PackListEventHandler implements ToggleableDialogContainer, ContextMenuContainer, Restorable<PackedPacksScreen.Snapshot> {
     private static final Component ACTION_BAR_INFO = ResourceUtil.getText("toggle_actionbar.info");
     private static final Component ORIGINAL_SCREEN_INFO = ResourceUtil.getText("original_screen.info");
     private static final Component OPTIONS_TEXT = ResourceUtil.getText("options.title");
     private static final Component OPEN_FOLDER_TEXT = Component.translatable("pack.openFolder");
     private static final Component OPEN_FOLDER_INFO_TEXT = Component.translatable("pack.folderInfo");
     private static final Component APPLY_TEXT = ResourceUtil.getText("apply");
-    private static final Component BACK_TEXT = CommonComponents.GUI_BACK.copy().append(CommonComponents.ELLIPSIS);
+    private static final Component REFRESH_PACKS_TEXT = ResourceUtil.getText("refresh");
     private final Screen previous;
     private final PackSelectionScreenArgs original;
     private final PackRepositoryHelper repository;
@@ -88,6 +89,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private final ContextMenu contextMenu = ContextMenu.builder(this).build();
     private final List<ToggleableDialog<?>> dialogs;
     private final List<PackList> packLists;
+    private CompletableFuture<Void> refreshFuture;
     private PackWatcher watcher;
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
     private boolean initialized = false;
@@ -225,7 +227,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                 FidgetzButton.builder()
                         .setMessage(OPEN_FOLDER_TEXT)
                         .setTooltip(Tooltip.create(OPEN_FOLDER_INFO_TEXT))
-                        .setOnPress(this.repository::openDirectory)
+                        .setOnPress(this.repository::openDir)
                         .build()
         );
 
@@ -334,8 +336,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private void createWatcher() {
         if (this.watcher == null) {
             try {
-                List<Path> paths = CollectionsUtil.mutableListOf(this.repository.getDirectory());
-                paths.addAll(PackUtil.mapValidDirectories(this.packsConfig.getAdditionalFolders()));
+                List<Path> paths = CollectionsUtil.mutableListOf(this.repository.getDir());
+                paths.addAll(this.getAdditionalDirs());
                 this.watcher = new PackWatcher(paths, this::refreshPacks, this.minecraft);
             } catch (Exception e) {
                 PackedPacks.LOGGER.error("[packed_packs] Failed to initialize pack directory watcher.", e);
@@ -351,6 +353,10 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         }
     }
 
+    private List<Path> getAdditionalDirs() {
+        return CollectionsUtil.deduplicate(PackUtil.mapValidDirectories(this.packsConfig.getAdditionalFolders()));
+    }
+
     private void repositionLists() {
         this.availablePacks.setHeaderVisibility(this.showActionBar);
         this.currentPacks.setHeaderVisibility(this.showActionBar);
@@ -362,6 +368,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         ((HeaderAndFooterLayoutAccess) this.layout).getContentsFrame().setY(this.layout.getHeaderHeight());
         this.profiles.getSidebar().repositionElements();
         this.options.repositionElements();
+        this.contextMenu.setOpen(false);
         this.repositionLists();
     }
 
@@ -408,7 +415,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     }
 
     public void refreshPacks() {
-        CompletableFuture.runAsync(this.repository::refresh, Util.backgroundExecutor()).thenRunAsync(this::revalidatePacks, this.minecraft);
+        this.refreshFuture = CompletableFuture.runAsync(this.repository::refresh, Util.backgroundExecutor())
+                .thenRunAsync(this::revalidatePacks, this.minecraft);
     }
 
     public void reset() {
@@ -476,23 +484,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         }
     }
 
-    private void handleContextMenuRequest(RequestContextMenuEvent event) {
-        boolean folder = event.trigger() instanceof FolderPack;
-        var packOptions = ObjectsUtil.pick(folder, PackOptions.FOLDER, PackOptions.FILE).get(event.trigger());
-
-        if (!packOptions.isEmpty()) {
-            if (folder) {
-                packOptions.addFirst(this.folderDialog.isHovered() && Objects.equals(this.folderDialog.getFolderPack(), event.trigger())
-                        ? new ContextMenu.SimpleOption(BACK_TEXT, () -> this.onEvent(FolderCloseEvent.fromContextMenu(event)))
-                        : new ContextMenu.SimpleOption(FolderPack.FOLDER_OPEN_TEXT, () -> this.onEvent(FolderOpenEvent.fromContextMenu(event)))
-                );
-            }
-            this.contextMenu.open((int) event.mouseX(), (int) event.mouseY(), packOptions);
-        } else {
-            this.contextMenu.setOpen(false);
-        }
-    }
-
     private void onFolderOpen(FolderOpenEvent event) {
         this.folderDialog.root().reload(this.repository.getNestedPacks(event.opened()));
         this.folderDialog.updateFolder(event.target(), event.opened(), this.repository);
@@ -520,12 +511,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         super.onEvent(event);
 
         this.profiles.getSidebar().setOpen(false);
-
-        if (event instanceof RequestContextMenuEvent contextMenuEvent) {
-            this.handleContextMenuRequest(contextMenuEvent);
-        } else {
-            this.contextMenu.setOpen(false);
-        }
+        this.contextMenu.setOpen(false);
 
         if (event instanceof FolderOpenEvent folderOpenEvent) {
             this.onFolderOpen(folderOpenEvent);
@@ -571,6 +557,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        this.contextMenu.setOpen(false);
+
         if (super.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
@@ -592,17 +580,37 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         return false;
     }
 
+    private boolean hasHeader(List<MenuItem> items) {
+        return !items.isEmpty() && items.getFirst() instanceof RenderableMenuItem item && item.renderer() instanceof PackMenuHeader;
+    }
+
+    private void openContextMenu(int mouseX, int mouseY) {
+        if (this.contextMenu.isMouseOver(mouseX, mouseY)) return;
+
+        this.buildItems(mouseX, mouseY)
+                .separatorIfNonEmpty()
+                .simpleItem(REFRESH_PACKS_TEXT, this::canRefresh, this::refreshPacks)
+                .when(this.getAdditionalDirs(), List::isEmpty)
+                .ifTrue(b -> b.simpleItem(OPEN_FOLDER_TEXT, this.repository::openDir))
+                .ifFalse((dirs, b) -> b.parentItem(OPEN_FOLDER_TEXT, sub -> sub
+                        .add(new DirectoryMenuItem(this.repository.getDir()))
+                        .separator()
+                        .addAll(dirs.stream().map(DirectoryMenuItem::new).toList())
+                ))
+                .peek((items, b) -> {
+                    int yOffset = this.hasHeader(items) ? this.contextMenu.getItemHeight() : 0;
+                    this.contextMenu.open(mouseX, mouseY - yOffset, items);
+                });
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (super.mouseClicked(mouseX, mouseY, button)) {
+        if (isRightClick(button)) {
+            this.openContextMenu((int) mouseX, (int) mouseY);
             return true;
         }
-        if (isRightClick(button) && this.folderDialog.isHovered()) {
-            FolderPack folderPack = this.folderDialog.getFolderPack();
-            if (folderPack != null) {
-                this.onEvent(new RequestContextMenuEvent(this.folderDialog.root(), folderPack, mouseX, mouseY));
-                return true;
-            }
+        if (super.mouseClicked(mouseX, mouseY, button)) {
+            return true;
         }
         if (isClickForward(button)) {
             return this.history.redo();
@@ -633,6 +641,10 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     @Override
     public List<ToggleableDialog<?>> getDialogs() {
         return this.dialogs;
+    }
+
+    public boolean canRefresh() {
+        return this.refreshFuture == null || this.refreshFuture.isDone();
     }
 
     public void clearHistory() {

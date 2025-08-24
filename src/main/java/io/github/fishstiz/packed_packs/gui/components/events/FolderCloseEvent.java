@@ -12,13 +12,6 @@ public final class FolderCloseEvent extends PackListEvent {
         this.folderPack = folderPack;
     }
 
-    public static FolderCloseEvent fromContextMenu(RequestContextMenuEvent event) {
-        if (event.target() instanceof FolderPackList folderPackList && event.trigger() instanceof FolderPack folderPack) {
-            return new FolderCloseEvent(folderPackList, folderPack);
-        }
-        throw new IllegalArgumentException("Context menu event not triggered from folder pack.");
-    }
-
     public @Nullable FolderPack folderPack() {
         return this.folderPack;
     }

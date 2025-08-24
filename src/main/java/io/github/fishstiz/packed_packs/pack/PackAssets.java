@@ -22,7 +22,6 @@ import net.minecraft.server.packs.resources.IoSupplier;
 import java.io.InputStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -30,24 +29,19 @@ public interface PackAssets {
     String ICON_FILENAME = "pack.png";
     ResourceLocation DEFAULT_FOLDER_ICON = ResourceUtil.getResource("textures/misc/unknown_folder.png");
     ResourceLocation DEFAULT_ICON = ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png");
-    Component OPEN_LOCATION_TEXT = ResourceUtil.getText("file.open");
-    PackSource SOURCE = PackSource.create(
-            name -> Component.translatable(
-                            "pack.nameAndSource",
-                            name,
-                            ResourceUtil.getModName().withStyle(ChatFormatting.YELLOW)
-                    )
-                    .withStyle(ChatFormatting.GRAY),
-            false
-    );
+    Component OPEN_FILE_TEXT = ResourceUtil.getText("file.open");
+    Component RENAME_FILE_TEXT = ResourceUtil.getText("file.rename");
+    Component DELETE_FILE_TEXT = ResourceUtil.getText("file.delete");
+    PackSource SOURCE = PackSource.create(name -> Component.translatable("pack.nameAndSource", name, ResourceUtil.getModName().withStyle(ChatFormatting.YELLOW))
+            .withStyle(ChatFormatting.GRAY), false);
 
     void getOrLoadIcon(Pack pack, Consumer<ResourceLocation> iconCallback);
 
     boolean isResourcePacks();
 
-    Path getDirectory();
+    boolean isEnabled(Pack pack);
 
-    List<Pack> getNestedPacks(FolderPack subdirectory);
+    Path getDir();
 
     default Config.Packs getConfig() {
         return this.isResourcePacks() ? PackedPacks.CONFIG.getResourcepacks() : PackedPacks.CONFIG.getDatapacks();
@@ -104,6 +98,6 @@ public interface PackAssets {
                 }
                 return getDefaultIcon(pack);
             }
-        });
+        }, Util.backgroundExecutor());
     }
 }
