@@ -142,12 +142,6 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     @Override
     public @NotNull Optional<GuiEventListener> getChildAt(double mouseX, double mouseY) {
         for (var child : this.children) {
-            if (child instanceof ToggleableDialog<?> parent) {
-                var nestedChild = parent.getChildAt(mouseX, mouseY);
-                if (nestedChild.isPresent()) {
-                    return nestedChild;
-                }
-            }
             if (child.isMouseOver(mouseX, mouseY)) {
                 return Optional.of(child);
             }
@@ -245,7 +239,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         if (this.boundingBox.containsPoint(mouseX, mouseY)) {
             return true;
         }
-        return this.getChildAt(mouseX, mouseY).isPresent();
+        return GuiUtil.deepChildHovered(this, mouseX, mouseY);
     }
 
     @Override

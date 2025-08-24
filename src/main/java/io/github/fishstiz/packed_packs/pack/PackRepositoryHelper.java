@@ -264,7 +264,7 @@ public class PackRepositoryHelper implements PackAssets {
         return grouped;
     }
 
-    public void openDirectory() {
+    public void openDir() {
         Util.getPlatform().openPath(this.packDir);
     }
 
@@ -299,7 +299,26 @@ public class PackRepositoryHelper implements PackAssets {
     }
 
     @Override
-    public Path getDirectory() {
+    public boolean isEnabled(Pack pack) {
+        Set<String> selectedIds = new ObjectOpenHashSet<>(this.repository.getSelectedIds());
+
+        if (pack instanceof FolderPack folderPack) {
+            try {
+                for (Pack nestedPack : this.getNestedPacks(folderPack)) {
+                    if (selectedIds.contains(nestedPack.getId())) {
+                        return true;
+                    }
+                }
+            } catch (NullPointerException ignore) {
+            }
+            return false;
+        }
+
+        return selectedIds.contains(pack.getId());
+    }
+
+    @Override
+    public Path getDir() {
         return this.packDir;
     }
 
@@ -308,7 +327,6 @@ public class PackRepositoryHelper implements PackAssets {
         return future != null ? future.join() : null;
     }
 
-    @Override
     public List<Pack> getNestedPacks(FolderPack folderPack) {
         return this.validateAndOrderNestedPackIds(folderPack, Objects.requireNonNull(this.getFolderConfig(folderPack)).getPackIds());
     }

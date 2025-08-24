@@ -1,14 +1,14 @@
-package io.github.fishstiz.fidgetz.gui.components;
+package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 
-import com.google.common.base.Objects;
-import com.google.common.util.concurrent.Runnables;
-import io.github.fishstiz.fidgetz.gui.renderables.CenteredTextRect;
+import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.ITheme;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Renderable;
@@ -17,20 +17,22 @@ import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.client.sounds.SoundManager;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.SPACING;
 
 public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
-    public static final int DEFAULT_BACKGROUND_COLOR = Theme.GRAY_800.getARGB();
-    public static final int DEFAULT_BORDER_COLOR = Theme.GRAY_500.getARGB();
-    public static final int MIN_WIDTH = 150;
+    static final BooleanSupplier DEFAULT_ACTIVE_SUPPLIER = () -> true;
+    static final int DEFAULT_TEXT_INACTIVE_COLOR = Theme.GRAY_500.withAlpha(0.5f);
+    static final int DEFAULT_BORDER_COLOR = Theme.GRAY_500.getARGB();
+    static final int DEFAULT_BACKGROUND_COLOR = Theme.GRAY_800.getARGB();
+    private static final int ITEM_HEIGHT = 20;
+    private static final int MIN_WIDTH = 150;
     private static final int MENU_POINT_OFFSET = 1;
     private static final int DROP_SHADOW_SIZE = 16;
     private final Builder builder;
@@ -62,49 +64,51 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         return this.root().layout().addChild(child);
     }
 
-    private OptionWidget<?> createOptionWidget(Option current, Option next) {
-        Integer separatorColor = ObjectsUtil.pick(ObjectsUtil.anyIdentity(next, null, Option.SEPARATOR), null, this.borderColor);
-        if (current instanceof ParentOption parentOption) {
-            ContextMenu childMenu = Builder.ofChild(this.builder, this).setDirection(this.direction).build();
-            this.childMenus.add(this.prependWidget(childMenu));
-            return new ParentOptionWidget(this.root().getWidth(), separatorColor, parentOption, this, childMenu);
-        } else {
-            return new OptionWidget<>(this.root().getWidth(), separatorColor, current, this);
-        }
-    }
-
-    private void setOptions(Option... options) {
-        this.clearWidgets();
-        this.root().setLayout(emptyLayout());
-
-        for (int i = 0; i < options.length; i++) {
-            Option current = options[i];
-            Option next = (i + 1 < options.length) ? options[i + 1] : null;
-
-            if (current == Option.SEPARATOR) {
-                this.addRenderableOnly(this.addChild(new Separator(this.root().getWidth(), this.borderColor)));
-            } else {
-                this.addRenderableWidget(this.addChild(this.createOptionWidget(current, next)));
+    private ItemWidget<?> createItemWidget(MenuItem current, MenuItem next) {
+        Integer separatorColor = ObjectsUtil.pick(ObjectsUtil.anyIdentity(next, null, MenuItem.SEPARATOR), null, this.borderColor);
+        switch (current) {
+            case ParentMenuItem parentItem -> {
+                ContextMenu childMenu = Builder.ofChild(this.builder, this).setDirection(this.direction).build();
+                this.childMenus.add(this.prependWidget(childMenu));
+                return new ParentItemWidget(this.root().getWidth(), separatorColor, parentItem, this, childMenu);
+            }
+            case RenderableMenuItem renderableMenuItem -> {
+                return new CustomItemWidget(this.root().getWidth(), separatorColor, renderableMenuItem, this);
+            }
+            default -> {
+                return new ItemWidget<>(this.root().getWidth(), separatorColor, current, this);
             }
         }
     }
 
-    private void open(int x, int y, Direction direction, Option... options) {
-        if (options.length == 0) return;
+    private void setItems(List<MenuItem> items) {
+        this.clearWidgets();
+        this.root().setLayout(emptyLayout());
+
+        for (int i = 0; i < items.size(); i++) {
+            MenuItem current = items.get(i);
+            MenuItem next = (i + 1 < items.size()) ? items.get(i + 1) : null;
+
+            if (current == MenuItem.SEPARATOR) {
+                this.addRenderableOnly(this.addChild(new Separator(this.root().getWidth(), this.borderColor)));
+            } else {
+                this.addRenderableWidget(this.addChild(this.createItemWidget(current, next)));
+            }
+        }
+    }
+
+    private void open(int x, int y, Direction direction, List<MenuItem> items) {
+        if (items.isEmpty()) return;
 
         this.direction = direction;
-        this.setOptions(options);
+        this.setItems(items);
         this.root().arrangeElements();
         this.root().setPosition(this.clampX(x), this.clampY(y));
         this.setOpen(true);
     }
 
-    public void open(int x, int y, Option... options) {
-        this.open(x, y, this.builder.direction, options);
-    }
-
-    public void open(int x, int y, List<Option> options) {
-        this.open(x, y, options.toArray(new Option[0]));
+    public void open(int x, int y, List<MenuItem> items) {
+        this.open(x, y, this.builder.direction, items);
     }
 
     private int clampX(int x) {
@@ -117,6 +121,10 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         GuiRectangle bounds = this.getBoundingBox();
         y = y - MENU_POINT_OFFSET;
         return y + bounds.getHeight() > this.screen.height ? Math.max(0, this.screen.height - bounds.getHeight()) : y;
+    }
+
+    public int getItemHeight() {
+        return ITEM_HEIGHT;
     }
 
     @Override
@@ -156,8 +164,8 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
     }
 
     public void visitParents(Consumer<ContextMenu> visitor) {
-        visitor.accept(this);
         if (this.parentMenu != null) {
+            visitor.accept(this.parentMenu);
             this.parentMenu.visitParents(visitor);
         }
     }
@@ -220,53 +228,6 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         }
     }
 
-    public interface Option {
-        Option SEPARATOR = SimpleOption.newEmpty();
-
-        Component text();
-
-        Runnable onPress();
-    }
-
-    public record SimpleOption(Component text, Runnable onPress) implements Option {
-        private static final SimpleOption EMPTY = newEmpty();
-
-        public static SimpleOption newEmpty() {
-            return new SimpleOption(Component.empty(), Runnables.doNothing());
-        }
-
-        public static SimpleOption empty() {
-            return EMPTY;
-        }
-    }
-
-    public record ParentOption(Component text, Option... children) implements Option {
-        @Override
-        public Runnable onPress() {
-            return Runnables.doNothing();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o == null || this.getClass() != o.getClass()) return false;
-            ParentOption that = (ParentOption) o;
-            return Objects.equal(this.text, that.text) && Objects.equal(this.children, that.children);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hashCode(this.text, Arrays.hashCode(this.children));
-        }
-
-        @Override
-        public @NotNull String toString() {
-            return "ParentOption{" +
-                   "text=" + this.text +
-                   ", children=" + Arrays.toString(this.children) +
-                   '}';
-        }
-    }
-
     private record DefaultMenuBackground(int backgroundColor, int borderColor) implements RenderableRect {
         @Override
         public void render(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
@@ -275,29 +236,47 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         }
     }
 
-    private static class OptionWidget<T extends Option> extends AbstractWidget {
+    private static class ItemWidget<T extends MenuItem> extends AbstractWidget {
         private static final int HOVER_OVERLAY_COLOR = Theme.WHITE.withAlpha(0.1f);
-        private static final int DEFAULT_HEIGHT = 20;
         private final FidgetzText<Void> text;
         private final Runnable onPress;
         private final Integer separator;
         protected final ContextMenu parent;
-        protected final T option;
+        protected final T item;
 
-        private OptionWidget(int width, Integer separator, T option, ContextMenu parent) {
-            super(0, 0, width, DEFAULT_HEIGHT, option.text());
+        private ItemWidget(int width, Integer separator, T item, ContextMenu parent) {
+            super(0, 0, width, ITEM_HEIGHT, item.text());
 
-            this.text = FidgetzText.<Void>builder().setMessage(option.text()).alignLeft().build();
+            this.text = FidgetzText.<Void>builder().setMessage(item.text()).alignLeft().build();
             this.separator = ObjectsUtil.mapOrNull(separator, color -> ITheme.withAlpha(color, 0.15f));
-            this.onPress = option.onPress();
+            this.onPress = item.action();
             this.parent = parent;
-            this.option = option;
+            this.item = item;
+        }
+
+        @Override
+        public boolean isActive() {
+            return super.isActive() && this.item.active();
+        }
+
+        @Override
+        public void playDownSound(SoundManager handler) {
+            if (this.item.active()) {
+                super.playDownSound(handler);
+            }
+        }
+
+        protected void closeParents() {
+            this.parent.setOpen(false);
+            this.parent.visitParents(menu -> menu.setOpen(false));
         }
 
         @Override
         public void onClick(double mouseX, double mouseY) {
-            this.onPress.run();
-            this.parent.visitParents(menu -> menu.setOpen(false));
+            if (this.item.active()) {
+                this.onPress.run();
+            }
+            this.closeParents();
         }
 
         protected void renderSeparator(GuiGraphics guiGraphics, int minX, int maxX, int y) {
@@ -307,9 +286,21 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         }
 
         protected void renderText(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
+            this.text.setColor(this.item.textColor());
             this.text.setPosition(x, y);
             this.text.setSize(width, height);
             this.text.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+        }
+
+        protected void renderHighlight(GuiGraphics guiGraphics, int x, int y, int right, int bottom, boolean hoveredOrActive, float partialTick) {
+            if (hoveredOrActive && this.item.active()) {
+                guiGraphics.fill(x, y, right, bottom, HOVER_OVERLAY_COLOR);
+            }
+        }
+
+        @SuppressWarnings("unused")
+        protected void renderForeground(GuiGraphics guiGraphics, int x, int y, int width, int height, boolean hovered, double mouseX, double mouseY, float partialTick) {
+            // for subclass
         }
 
         @Override
@@ -321,7 +312,8 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             int right = x + width;
             int bottom = y + height;
 
-            if (this.isMouseOver(mouseX, mouseY)) guiGraphics.fill(x, y, right, bottom, HOVER_OVERLAY_COLOR);
+            boolean hovered = this.isMouseOver(mouseX, mouseY);
+            this.renderHighlight(guiGraphics, x, y, right, bottom, hovered, partialTick);
             this.renderSeparator(guiGraphics, x, right - 1, bottom - 1);
             if (this.isFocused()) guiGraphics.renderOutline(x, y, width, height, Theme.WHITE.getARGB());
 
@@ -331,6 +323,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             int textHeight = height - SPACING * 2;
 
             this.renderText(guiGraphics, textX, textY, textWidth, textHeight, mouseX, mouseY, partialTick);
+            this.renderForeground(guiGraphics, x, y, width, height, hovered, mouseX, mouseY, partialTick);
         }
 
         @Override
@@ -352,15 +345,14 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         }
     }
 
-    private static class ParentOptionWidget extends OptionWidget<ParentOption> {
-        private static final CenteredTextRect CARET_RIGHT = new CenteredTextRect(">", false);
+    private static class ParentItemWidget extends ItemWidget<ParentMenuItem> {
+        private static final String CARET_RIGHT = ">";
         private final ContextMenu child;
         private boolean forcedOpen;
 
-        ParentOptionWidget(int width, Integer separator, ParentOption option, ContextMenu parent, ContextMenu child) {
-            super(width, separator, option, parent);
+        ParentItemWidget(int width, Integer separator, ParentMenuItem item, ContextMenu parent, ContextMenu child) {
+            super(width, separator, item, parent);
             this.child = child;
-            this.forcedOpen = parent.isOpen();
         }
 
         private void openChild() {
@@ -373,12 +365,19 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             this.parent.visitChildren(menu -> {
                 if (menu != this.child) menu.setOpen(false);
             });
-            this.child.open(x, y, nextDirection, this.option.children);
+            this.child.open(x, y, nextDirection, this.item.children());
+        }
+
+        private void closeChildren() {
+            this.child.setOpen(false);
+            this.child.visitChildren(menu -> menu.setOpen(false));
         }
 
         @Override
         public void onClick(double mouseX, double mouseY) {
-            this.forcedOpen = !this.forcedOpen;
+            if (this.item.active()) {
+                this.forcedOpen = !this.forcedOpen;
+            }
         }
 
         @Override
@@ -386,20 +385,51 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             int textWidth = width - (height + SPACING);
             super.renderText(guiGraphics, x, y, textWidth, height, mouseX, mouseY, partialTick);
 
-            int caretX = x + textWidth + SPACING;
-            //noinspection SuspiciousNameCombination
-            CARET_RIGHT.render(guiGraphics, caretX, y, height, height, partialTick);
+            Font font = Minecraft.getInstance().font;
+            int caretWidth = font.width(CARET_RIGHT);
+            int caretHeight = font.lineHeight;
+            int caretX = (x + textWidth + SPACING) + (height - caretWidth) / 2;
+            int caretY = y + (height - caretHeight) / 2;
+            int color = this.item.textColor();
+
+            guiGraphics.drawString(font, CARET_RIGHT, caretX, caretY, color, false);
+        }
+
+        @Override
+        protected void renderHighlight(GuiGraphics guiGraphics, int x, int y, int right, int bottom, boolean hoveredOrActive, float partialTick) {
+            super.renderHighlight(guiGraphics, x, y, right, bottom, hoveredOrActive || this.child.isOpen(), partialTick);
         }
 
         @Override
         protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
             super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
 
+            if (!this.item.active()) {
+                if (this.child.isOpen()) this.closeChildren();
+                this.forcedOpen = false;
+                return;
+            }
+
             if (!this.forcedOpen && !this.isHovered() && !this.parent.isChildMenuHovered(mouseX, mouseY)) {
-                this.child.setOpen(false);
-                this.child.visitChildren(menu -> menu.setOpen(false));
+                this.closeChildren();
             } else if (this.isHovered() && !this.child.isOpen() && !this.parent.isChildMenuHovered(mouseX, mouseY)) {
                 this.openChild();
+            }
+        }
+    }
+
+    private static class CustomItemWidget extends ItemWidget<RenderableMenuItem> {
+        private CustomItemWidget(int width, Integer separator, RenderableMenuItem item, ContextMenu parent) {
+            super(width, separator, item, parent);
+        }
+
+        @Override
+        protected void renderForeground(GuiGraphics guiGraphics, int x, int y, int width, int height, boolean hovered, double mouseX, double mouseY, float partialTick) {
+            RenderableRect renderer = this.item.renderer();
+            if (renderer instanceof MenuItemRenderer menuItemRenderer) {
+                menuItemRenderer.render(guiGraphics, x, y, width, height, SPACING, hovered, mouseX, mouseY, partialTick);
+            } else {
+                renderer.render(guiGraphics, x, y, width, height);
             }
         }
     }
