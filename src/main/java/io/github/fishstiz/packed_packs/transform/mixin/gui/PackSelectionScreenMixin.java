@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.transform.mixin;
+package io.github.fishstiz.packed_packs.transform.mixin.gui;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -8,6 +8,7 @@ import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
+import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LinearLayout;
