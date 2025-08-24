@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.pack;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Runnables;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
@@ -84,13 +85,40 @@ public class PackRepositoryHelper implements PackAssets {
         return this.validateAndGroupPacks(this.getUnselectedPacks(), this.getSelectedPacks());
     }
 
+    private void removePack(Pack pack) {
+        this.repository.removePack(pack.getId());
+        this.availablePacks.remove(pack.getId());
+        try {
+            this.getSelectedPacks().remove(pack);
+            this.getUnselectedPacks().remove(pack);
+        } catch (UnsupportedOperationException e) {
+            // just in case
+            PackedPacks.LOGGER.warn("[packed_packs] Failed to mutate PackSelectionModel lists. Report this issue to mod author.");
+        }
+    }
+
+    @Override
+    public boolean deletePack(Pack pack) {
+        if (!PackAssets.super.deletePack(pack)) {
+            return false;
+        }
+        if (pack instanceof FolderPack) {
+            Optional.ofNullable(this.folderPacks.get(pack.getId())).ifPresent(packs -> packs.forEach(this::removePack));
+            this.folderPacks.remove(pack.getId());
+            this.folderConfigs.remove(pack.getId());
+        }
+        this.removePack(pack);
+        this.regenerateAvailablePacks();
+        return true;
+    }
+
     /**
      * @param unselected ungrouped list of unselected packs
      * @param selected   ungrouped list of selected packs
      * @return validated and grouped list of packs
      */
     public PackGroup validateAndGroupPacks(List<Pack> unselected, List<Pack> selected) {
-        return validatePacks(this.groupByFolders(unselected), this.groupByFolders(selected));
+        return this.validatePacks(this.groupByFolders(unselected), this.groupByFolders(selected));
     }
 
     private void addValidPacks(List<Pack> source, Set<Pack> seen, ObjectOpenHashSet<Pack> validPacks, List<Pack> target) {
@@ -317,7 +345,6 @@ public class PackRepositoryHelper implements PackAssets {
         return selectedIds.contains(pack.getId());
     }
 
-    @Override
     public Path getDir() {
         return this.packDir;
     }

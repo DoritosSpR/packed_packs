@@ -5,10 +5,13 @@ import com.mojang.blaze3d.platform.NativeImage;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -18,8 +21,10 @@ import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.server.packs.resources.IoSupplier;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
@@ -32,6 +37,8 @@ public interface PackAssets {
     Component OPEN_FILE_TEXT = ResourceUtil.getText("file.open");
     Component RENAME_FILE_TEXT = ResourceUtil.getText("file.rename");
     Component DELETE_FILE_TEXT = ResourceUtil.getText("file.delete");
+    Component FILE_OPS_FAIL_TEXT = ResourceUtil.getText("file.fail");
+    SystemToast.SystemToastId FILE_OPS_FAIL_ID = new SystemToast.SystemToastId();
     PackSource SOURCE = PackSource.create(name -> Component.translatable("pack.nameAndSource", name, ResourceUtil.getModName().withStyle(ChatFormatting.YELLOW))
             .withStyle(ChatFormatting.GRAY), false);
 
@@ -41,14 +48,65 @@ public interface PackAssets {
 
     boolean isEnabled(Pack pack);
 
-    Path getDir();
-
     default Config.Packs getConfig() {
         return this.isResourcePacks() ? PackedPacks.CONFIG.getResourcepacks() : PackedPacks.CONFIG.getDatapacks();
     }
 
+    default boolean deletePack(Pack pack) {
+        if (pack == null || this.isEnabled(pack)) {
+            return false;
+        }
+
+        Path path = validatePackPath(pack);
+        if (path == null) {
+            showFailToast(getDeleteFailText(pack.getTitle().getString()));
+            return false;
+        }
+
+        if (!PackUtil.deletePath(path)) {
+            showFailToast(getDeleteFailText(PackUtil.fileName(path)));
+            return false;
+        }
+
+        return true;
+    }
+
+    static @Nullable Path validatePackPath(Pack pack) {
+        if (pack == null) {
+            return null;
+        }
+        Path path = ((IPack) pack).packed_packs$getPath();
+        if (path == null) {
+            return null;
+        }
+
+        try {
+            return Files.exists(path) ? path : null;
+        } catch (SecurityException e) {
+            PackedPacks.LOGGER.error("[packed_packs] Could not read file: '{}'", path);
+            return null;
+        }
+    }
+
+    private static void showFailToast(Component message) {
+        Minecraft.getInstance().getToastManager().addToast(SystemToast.multiline(
+                Minecraft.getInstance(),
+                FILE_OPS_FAIL_ID,
+                FILE_OPS_FAIL_TEXT,
+                message
+        ));
+    }
+
     static ResourceLocation getDefaultIcon(Pack pack) {
         return pack instanceof FolderPack ? DEFAULT_FOLDER_ICON : DEFAULT_ICON;
+    }
+
+    static Component getRenameFailText(String from, String to) {
+        return ResourceUtil.getText("file.rename.fail", from, to);
+    }
+
+    static Component getDeleteFailText(String fileName) {
+        return ResourceUtil.getText("file.delete.fail", fileName);
     }
 
     /**

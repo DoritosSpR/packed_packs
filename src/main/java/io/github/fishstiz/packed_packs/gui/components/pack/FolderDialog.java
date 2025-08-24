@@ -8,6 +8,7 @@ import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
+import io.github.fishstiz.packed_packs.gui.components.events.FileOperationEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.FolderCloseEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
@@ -121,7 +122,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
                         .ifTrue(folderMenuBuilder -> folderMenuBuilder
                                 .add(PackMenuHeader.withItem(this.folderPack, this.folderSprite))
                                 .simpleItem(BACK_TEXT, () -> this.setOpen(false))
-                                .when(!this.root().isMouseOver(mouseX, mouseY))
+                                .when(this.root().getChildAt(mouseX, mouseY).isEmpty())
                                 .ifTrue(b -> b
                                         .whenNonNull(ObjectsUtil.mapOrNull(this.folderPack, IPack::packed_packs$getPath))
                                         .ifTrue((path, operationsMenuBuilder) -> operationsMenuBuilder
@@ -138,7 +139,9 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     private boolean canOperateFolder() {
-        return this.folderPack != null && !this.root().packAssets.isEnabled(this.folderPack);
+        return this.folderPack != null &&
+               !this.root().packAssets.isEnabled(this.folderPack) &&
+               PackAssets.validatePackPath(this.folderPack) != null;
     }
 
     private void renameDirectory() {
@@ -146,7 +149,11 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     private void deleteDirectory() {
-
+        if (this.root().packAssets.deletePack(this.folderPack)) {
+            this.setOpen(false);
+            this.root().remove(this.folderPack);
+            this.sendEvent(new FileOperationEvent(this.root()));
+        }
     }
 
     private void sendEvent(PackListEvent event) {
