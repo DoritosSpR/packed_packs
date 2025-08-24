@@ -6,15 +6,15 @@
     "defaultRequire": 1
   },
   "client": [
-    "CreateWorldScreenMixin",
-    "HeaderAndFooterLayoutAccess",
     "OptionsMixin",
-    "OptionsScreenMixin",
     "PackSelectionModelAccessor",
     "PackSelectionModelMixin",
     "PackSelectionScreenAccessor",
-    "PackSelectionScreenMixin",
     "folders.FolderRepositorySourceMixin",
-    "folders.PackMixin"
+    "folders.PackMixin",
+    "gui.CreateWorldScreenMixin",
+    "gui.HeaderAndFooterLayoutAccess",
+    "gui.OptionsScreenMixin",
+    "gui.PackSelectionScreenMixin"
   ]
 }

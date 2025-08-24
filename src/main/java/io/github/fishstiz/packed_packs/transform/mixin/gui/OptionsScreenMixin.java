@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.transform.mixin;
+package io.github.fishstiz.packed_packs.transform.mixin.gui;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
