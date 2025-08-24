@@ -7,7 +7,6 @@ import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
-import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -88,7 +87,11 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
                 listener.accept(open);
             }
             if (this.focusOnOpen || this.captureFocus) {
-                ObjectsUtil.<Runnable>pick(open, this.focusOnOpenTask, this.focusOnOpenTask::abort).run();
+                if (open) {
+                    this.focusOnOpenTask.run();
+                } else {
+                    this.focusOnOpenTask.abort();
+                }
             }
         }
     }
@@ -231,7 +234,13 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return (this.isOpen() && (this.isCaptureClick() || this.isCaptureFocus())) || this.isMouseOverBounds(mouseX, mouseY);
+        if (!this.isOpen()) {
+            return false;
+        }
+        if (this.isCaptureClick() || this.isCaptureFocus()) {
+            return true;
+        }
+        return this.isMouseOverBounds(mouseX, mouseY);
     }
 
     @Override

@@ -91,7 +91,7 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
         }
 
         public boolean isMouseOverSelect(double mouseX, double mouseY) {
-            return GuiUtil.containsPoint(this.getX() + SPACING, this.getY(), SELECT_SPRITE.width, SELECT_SPRITE.height, mouseX, mouseY);
+            return AvailablePackList.this.isHovered() && GuiUtil.containsPoint(this.getX() + SPACING, this.getY(), SELECT_SPRITE.width, SELECT_SPRITE.height, mouseX, mouseY);
         }
 
         @Override

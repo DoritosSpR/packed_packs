@@ -296,7 +296,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         public boolean isMouseOverRemove(double mouseX, double mouseY) {
-            return this.isTransferable() && GuiUtil.containsPoint(
+            return CurrentPackList.this.isHovered() && this.isTransferable() && GuiUtil.containsPoint(
                     this.getX() + SPACING,
                     this.getY(),
                     UNSELECT_SPRITE.width / 2,
@@ -307,7 +307,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         public boolean isMouseOverUp(double mouseX, double mouseY) {
-            return this.canMoveUp() && GuiUtil.containsPoint(
+            return CurrentPackList.this.isHovered() && this.canMoveUp() && GuiUtil.containsPoint(
                     this.getX() + SPACING + MOVE_UP_SPRITE.width / 2,
                     this.getY(),
                     MOVE_UP_SPRITE.width / 2,
@@ -318,7 +318,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         public boolean isMouseOverDown(double mouseX, double mouseY) {
-            return this.canMoveDown() && GuiUtil.containsPoint(
+            return CurrentPackList.this.isHovered() && this.canMoveDown() && GuiUtil.containsPoint(
                     this.getX() + SPACING + MOVE_DOWN_SPRITE.width / 2,
                     this.getY() + MOVE_DOWN_SPRITE.height / 2,
                     MOVE_DOWN_SPRITE.width / 2,
