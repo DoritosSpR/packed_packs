@@ -5,6 +5,7 @@ import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 
@@ -38,6 +39,23 @@ public class GuiUtil {
             }
         }
         return false;
+    }
+
+    public static boolean isHovered(ContainerEventHandler container, GuiEventListener listener, double mouseX, double mouseY) {
+        for (GuiEventListener child : container.children()) {
+            if (child instanceof ContainerEventHandler nestedContainer && isHovered(nestedContainer, listener, mouseX, mouseY)) {
+                return true;
+            }
+            if (child.isMouseOver(mouseX, mouseY)) {
+                return child == listener;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isHovered(GuiEventListener listener, double mouseX, double mouseY) {
+        Screen screen = Minecraft.getInstance().screen;
+        return screen != null && isHovered(screen, listener, mouseX, mouseY);
     }
 
     public static void playClickSound() {
