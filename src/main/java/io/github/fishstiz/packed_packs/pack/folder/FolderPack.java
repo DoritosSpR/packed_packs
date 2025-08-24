@@ -6,6 +6,7 @@ import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
+import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.*;
 import net.minecraft.server.packs.repository.Pack;
@@ -56,7 +57,7 @@ public class FolderPack extends Pack implements IPack {
             } catch (IOException e) {
                 return new Folder();
             }
-        });
+        }, Util.backgroundExecutor());
     }
 
     public void saveConfig(Folder folder) {

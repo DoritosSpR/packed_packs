@@ -107,6 +107,11 @@ class PackWidget extends AbstractWidget {
     }
 
     @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return false;
+    }
+
+    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         return false;
     }

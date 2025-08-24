@@ -30,8 +30,12 @@ public class PackUtil {
     private PackUtil() {
     }
 
-    public static String generatePackName(Path path) {
+    public static String fileName(Path path) {
         return path.getFileName().toString();
+    }
+
+    public static String generatePackName(Path path) {
+        return fileName(path);
     }
 
     public static String generatePackId(String name, String... afterPrefix) {
