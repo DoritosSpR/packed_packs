@@ -610,7 +610,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         this.setDragged(null);
-        if (isRightClick(button)) {
+        if (isRightClick(button) && !this.options.isMouseOver(mouseX, mouseY)) {
             this.openContextMenu((int) mouseX, (int) mouseY);
             return true;
         }

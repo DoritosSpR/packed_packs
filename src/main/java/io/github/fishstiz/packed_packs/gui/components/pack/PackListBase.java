@@ -5,6 +5,7 @@ import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
+import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
@@ -457,6 +458,13 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
+    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        // this.isHovered is evaluated right before renderWidget on AbstractWidget#render
+        this.isHovered = this.isHovered && GuiUtil.isHovered(this, mouseX, mouseY);
+        super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
     protected void renderListItems(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.renderListItems(guiGraphics, mouseX, mouseY, partialTick);
 
@@ -628,6 +636,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         @Override
+        public boolean isMouseOver(double mouseX, double mouseY) {
+            return PackListBase.this.isHovered() && super.isMouseOver(mouseX, mouseY);
+        }
+
+        @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (ContainerEventHandlerPatch.super.mouseClicked(mouseX, mouseY, button)) {
                 return false;
@@ -740,7 +753,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         @Override
         public final void render(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            this.renderWidget(guiGraphics, top, left, width, height, mouseX, mouseY, hovering, partialTick);
+            this.renderWidget(guiGraphics, top, left, width, height, mouseX, mouseY, hovering && PackListBase.this.isHovered(), partialTick);
         }
 
         @Override
