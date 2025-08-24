@@ -32,7 +32,7 @@ import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.gui.history.HistoryManager;
 import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
-import io.github.fishstiz.packed_packs.transform.mixin.HeaderAndFooterLayoutAccess;
+import io.github.fishstiz.packed_packs.transform.mixin.gui.HeaderAndFooterLayoutAccess;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;

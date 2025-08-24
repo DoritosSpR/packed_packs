@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.transform.mixin;
+package io.github.fishstiz.packed_packs.transform.mixin.gui;
 
 import net.minecraft.client.gui.layouts.FrameLayout;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
