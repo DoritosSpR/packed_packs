@@ -52,7 +52,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     protected PackListBase(PackAssets packAssets, PackListEventListener listener) {
         super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, OFFSET_Y, ROW_GAP);
 
-        this.query = new Query(packAssets.getDir());
+        this.query = new Query();
         this.packAssets = packAssets;
         this.listener = listener;
         this.queryPacks();
@@ -474,8 +474,8 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     protected void renderListItems(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.renderListItems(guiGraphics, mouseX, mouseY, partialTick);
 
-        Entry focused = this.getFocused();
-        if (focused != null && focused.isFocused()) {
+        T focused = this.getFocused();
+        if (focused != null && focused.isFocused() && this.children().contains(focused)) {
             int outlineTop = focused.getY() - Entry.BACKGROUND_OFFSET;
             int outlineHeight = focused.getHeight() + Entry.BACKGROUND_OFFSET * 2;
             guiGraphics.renderOutline(focused.getX(), outlineTop, focused.getWidth(), outlineHeight, Theme.WHITE.getARGB());
@@ -784,15 +784,17 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         public boolean canOperateFile() {
-            return !PackListBase.this.packAssets.isEnabled(this.pack);
+            return !PackListBase.this.packAssets.isEnabled(this.pack) && PackAssets.validatePackPath(this.pack) != null;
         }
 
         public void deletePack() {
-
+            if (PackListBase.this.packAssets.deletePack(this.pack)) {
+                PackListBase.this.remove(this.pack);
+                PackListBase.this.sendEvent(new FileOperationEvent(PackListBase.this));
+            }
         }
 
         public void renamePack() {
-
         }
 
         @Override

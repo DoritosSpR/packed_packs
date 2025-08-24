@@ -10,6 +10,7 @@
     "PackSelectionModelAccessor",
     "PackSelectionModelMixin",
     "PackSelectionScreenAccessor",
+    "UtilAccess",
     "folders.FolderRepositorySourceMixin",
     "folders.PackMixin",
     "gui.AbstractSelectionListAccessor",

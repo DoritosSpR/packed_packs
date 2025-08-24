@@ -4,6 +4,7 @@ import com.google.common.hash.Hashing;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.transform.mixin.UtilAccess;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;
@@ -15,6 +16,7 @@ import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackDetector;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
+import org.apache.commons.io.FileUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -144,6 +146,24 @@ public class PackUtil {
             }
             return null;
         });
+    }
+
+    public static boolean deletePath(Path path) {
+        if (Files.isDirectory(path)) {
+            try {
+                FileUtils.deleteDirectory(path.toFile());
+                return true;
+            } catch (IOException e) {
+                PackedPacks.LOGGER.error("[packed_packs] Failed to delete path: '{}'", path, e);
+                return false;
+            }
+        }
+
+        return UtilAccess.packed_packs$createDeleter(path).getAsBoolean();
+    }
+
+    public static boolean renameFile(Path path, Path newName) {
+        return UtilAccess.packed_packs$createRenamer(path, newName).getAsBoolean();
     }
 
     public static PathValidationResults validatePaths(List<Path> packs) {

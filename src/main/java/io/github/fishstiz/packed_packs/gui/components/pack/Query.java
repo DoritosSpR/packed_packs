@@ -13,24 +13,19 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
 public class Query {
-    private final Path packDir;
     private boolean hideIncompatible = false;
     private SortOption sort;
     private String search;
 
-    Query(Path packDir) {
-        this.packDir = packDir;
+    Query() {
     }
 
-    Query(Path packDir, boolean hideIncompatible, SortOption sort, String search) {
-        this(packDir);
-
+    Query(boolean hideIncompatible, SortOption sort, String search) {
         this.hideIncompatible = hideIncompatible;
         this.sort = sort;
         this.search = search;
@@ -84,7 +79,7 @@ public class Query {
     }
 
     public Query copy() {
-        return new Query(this.packDir, this.hideIncompatible, this.sort, this.search);
+        return new Query(this.hideIncompatible, this.sort, this.search);
     }
 
     public boolean isHideIncompatible() {
