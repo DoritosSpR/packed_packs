@@ -1,5 +1,6 @@
 package io.github.fishstiz.fidgetz.util;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.NineSliceSprite;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Line;
@@ -72,6 +73,7 @@ public class DrawUtil {
     public static void renderDropShadow(GuiGraphics guiGraphics, int x, int y, int width, int height, int shadowSize) {
         float scale = (float) shadowSize / SHADOW_BORDER;
         int offset = Math.round(SHADOW_BORDER * scale);
+        RenderSystem.enableBlend();
         guiGraphics.blitSprite(
                 SHADOW_SPRITE,
                 x - offset,
@@ -79,5 +81,6 @@ public class DrawUtil {
                 width + offset * 2,
                 height + offset * 2
         );
+        RenderSystem.defaultBlendFunc();
     }
 }
