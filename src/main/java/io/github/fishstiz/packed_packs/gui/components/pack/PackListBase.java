@@ -24,6 +24,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.navigation.FocusNavigationEvent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -513,6 +514,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         private FidgetzButton<Void> folderWidget;
         private long lastClickTime = 0;
         private MouseSelectionState mouseSelectionState = MouseSelectionState.INACTIVE;
+        private boolean stale = false;
 
         protected Entry(Pack pack, int index) {
             super(index);
@@ -686,6 +688,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 return false;
             }
             if (this.isSelected()
+                && !this.isStale()
                 && !this.pack.isFixedPosition()
                 && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE
                 && this.exceedsDragThreshold(dragX, dragY)) {
@@ -783,12 +786,26 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         public void deletePack() {
             if (PackListBase.this.packAssets.deletePack(this.pack)) {
+                this.stale = true;
                 PackListBase.this.remove(this.pack);
-                PackListBase.this.sendEvent(new FileOperationEvent(PackListBase.this));
+                PackListBase.this.sendEvent(new FileDeleteEvent(PackListBase.this));
             }
         }
 
         public void renamePack() {
+            PackListBase.this.sendEvent(new FileRenameOpenEvent(PackListBase.this, this.pack));
+        }
+
+        public void onRename(Component newName) {
+            this.stale = true;
+            this.packWidget.onRename(newName);
+            if (this.folderWidget != null) {
+                this.folderWidget.active = false;
+            }
+        }
+
+        public boolean isStale() {
+            return this.stale;
         }
 
         @Override

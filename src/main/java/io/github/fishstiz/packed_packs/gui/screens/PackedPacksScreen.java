@@ -21,7 +21,6 @@ import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
 import io.github.fishstiz.packed_packs.pack.PackWatcher;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
-import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
@@ -86,6 +85,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
             .setCaptureFocus(true)
             .build();
+    private final FileRenameModal fileRenameModal;
     private final ContextMenu contextMenu = ContextMenu.builder(this).build();
     private final List<ToggleableDialog<?>> dialogs;
     private final List<PackList> packLists;
@@ -112,7 +112,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                 this::onProfileChange
         );
         this.folderDialog = FolderDialog.build(this, this.repository);
-        this.dialogs = List.of(this.options, this.contextMenu, this.profiles.getSidebar(), this.folderDialog);
+        this.fileRenameModal = new FileRenameModal(this, this.repository);
+        this.dialogs = List.of(this.options, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
         this.packLists = List.of(this.folderDialog.root(), this.availablePacks.getList(), this.currentPacks.getList());
     }
 
@@ -147,11 +148,13 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
         this.addWidget(this.options);
         this.addWidget(this.contextMenu);
+        this.addWidget(this.fileRenameModal);
         this.addWidget(this.profiles.getSidebar());
         this.addWidget(this.folderDialog);
         this.layout.visitWidgets(this::addRenderableWidget);
         this.addRenderableOnly(this.folderDialog);
         this.addRenderableOnly(this.profiles.getSidebar());
+        this.addRenderableOnly(this.fileRenameModal);
         this.addRenderableOnly(this.contextMenu);
         this.addRenderableOnly(this.options);
 
@@ -252,7 +255,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             this.minecraft.setScreen(new ConfirmScreen(
                     this.confirmFileDrop(packs),
                     Component.translatable("pack.dropConfirm"),
-                    Component.literal(PackUtil.joinPackNames(packs))
+                    Component.literal(joinPackNames(packs))
             ));
         }
     }
@@ -277,7 +280,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                 this.refreshPacks();
             }
             if (!results.rejected().isEmpty()) {
-                String rejectedNames = PackUtil.joinPackNames(results.rejected());
+                String rejectedNames = joinPackNames(results.rejected());
                 this.minecraft.setScreen(new AlertScreen(
                         () -> this.minecraft.setScreen(this),
                         Component.translatable("pack.dropRejected.title"),
@@ -354,7 +357,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     }
 
     private List<Path> getAdditionalDirs() {
-        return CollectionsUtil.deduplicate(PackUtil.mapValidDirectories(this.packsConfig.getAdditionalFolders()));
+        return CollectionsUtil.deduplicate(mapValidDirectories(this.packsConfig.getAdditionalFolders()));
     }
 
     private void repositionLists() {
@@ -368,6 +371,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         ((HeaderAndFooterLayoutAccess) this.layout).getContentsFrame().setY(this.layout.getHeaderHeight());
         this.profiles.getSidebar().repositionElements();
         this.options.repositionElements();
+        this.fileRenameModal.repositionElements();
         this.contextMenu.setOpen(false);
         this.repositionLists();
     }
@@ -505,6 +509,13 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         }
     }
 
+    private void onFileRename(FileRenameEvent event) {
+        if (this.folderDialog.isOpen()) {
+            this.folderDialog.onRename(event.renamed(), event.newName());
+        }
+        this.refreshPacks();
+    }
+
 
     @Override
     public void onEvent(PackListEvent event) {
@@ -512,21 +523,24 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
         this.profiles.getSidebar().setOpen(false);
         this.contextMenu.setOpen(false);
+        this.fileRenameModal.setOpen(false);
 
-        if (event instanceof FileOperationEvent) {
-            this.revalidatePacks();
-            return;
-        }
-
-        if (event instanceof FolderOpenEvent folderOpenEvent) {
-            this.onFolderOpen(folderOpenEvent);
-        } else if (event instanceof FolderCloseEvent folderChangeEvent) {
-            this.onFolderClose(folderChangeEvent);
-        } else if (event.target() != this.folderDialog.root()) {
+        boolean notFolderDialogEvent = event.target() != this.folderDialog.root();
+        if (notFolderDialogEvent) {
             this.folderDialog.setOpen(false);
         }
 
-        if (event.modifiesTarget() && event.target() != this.folderDialog.root()) {
+        switch (event) {
+            case FileDeleteEvent ignore -> this.revalidatePacks();
+            case FileRenameOpenEvent e -> this.fileRenameModal.open(e.target(), e.trigger());
+            case FileRenameEvent e -> this.onFileRename(e);
+            case FolderOpenEvent e -> this.onFolderOpen(e);
+            case FolderCloseEvent e -> this.onFolderClose(e);
+            default -> {
+            }
+        }
+
+        if (event.pushToHistory() && notFolderDialogEvent) {
             this.history.push(this.captureState());
         }
     }

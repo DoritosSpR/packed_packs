@@ -32,7 +32,7 @@ public final class RequestTransferEvent extends PackListEvent {
     }
 
     @Override
-    public boolean modifiesTarget() {
+    public boolean pushToHistory() {
         return true;
     }
 

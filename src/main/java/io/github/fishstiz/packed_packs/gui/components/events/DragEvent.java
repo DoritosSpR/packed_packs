@@ -40,7 +40,7 @@ public final class DragEvent extends PackListEvent implements Renderable {
     }
 
     @Override
-    public boolean modifiesTarget() {
+    public boolean pushToHistory() {
         return false;
     }
 

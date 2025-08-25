@@ -162,7 +162,7 @@ public class PackUtil {
         return UtilAccess.packed_packs$createDeleter(path).getAsBoolean();
     }
 
-    public static boolean renameFile(Path path, Path newName) {
+    public static boolean renamePath(Path path, Path newName) {
         return UtilAccess.packed_packs$createRenamer(path, newName).getAsBoolean();
     }
 
