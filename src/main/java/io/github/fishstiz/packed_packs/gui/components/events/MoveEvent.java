@@ -18,7 +18,7 @@ public final class MoveEvent extends PackListEvent {
     }
 
     @Override
-    public boolean modifiesTarget() {
+    public boolean pushToHistory() {
         return true;
     }
 

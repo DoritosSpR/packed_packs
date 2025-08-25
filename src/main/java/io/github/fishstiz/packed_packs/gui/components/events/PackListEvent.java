@@ -13,5 +13,5 @@ public abstract class PackListEvent {
         return this.target;
     }
 
-    public abstract boolean modifiesTarget();
+    public abstract boolean pushToHistory();
 }

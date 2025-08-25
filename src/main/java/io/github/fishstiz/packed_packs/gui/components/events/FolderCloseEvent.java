@@ -17,7 +17,7 @@ public final class FolderCloseEvent extends PackListEvent {
     }
 
     @Override
-    public boolean modifiesTarget() {
+    public boolean pushToHistory() {
         return false;
     }
 }

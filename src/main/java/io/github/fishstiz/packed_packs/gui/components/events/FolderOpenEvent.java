@@ -19,7 +19,7 @@ public final class FolderOpenEvent extends PackListEvent {
     }
 
     @Override
-    public boolean modifiesTarget() {
+    public boolean pushToHistory() {
         return false;
     }
 }

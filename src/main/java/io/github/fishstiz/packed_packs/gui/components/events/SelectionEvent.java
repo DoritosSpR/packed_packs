@@ -14,7 +14,7 @@ public final class SelectionEvent extends PackListEvent {
     }
 
     @Override
-    public boolean modifiesTarget() {
+    public boolean pushToHistory() {
         return true;
     }
 

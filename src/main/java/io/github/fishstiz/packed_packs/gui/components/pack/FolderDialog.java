@@ -8,10 +8,7 @@ import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
-import io.github.fishstiz.packed_packs.gui.components.events.FileOperationEvent;
-import io.github.fishstiz.packed_packs.gui.components.events.FolderCloseEvent;
-import io.github.fishstiz.packed_packs.gui.components.events.PackListEvent;
-import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
@@ -21,6 +18,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
 
 public class FolderDialog extends ToggleableDialog<FolderPackList> implements ContextMenuContainer {
@@ -145,14 +143,26 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     private void renameDirectory() {
-
+        if (this.folderPack != null) {
+            this.sendEvent(new FileRenameOpenEvent(this.root(), this.folderPack));
+        }
     }
 
     private void deleteDirectory() {
         if (this.root().packAssets.deletePack(this.folderPack)) {
             this.setOpen(false);
             this.root().remove(this.folderPack);
-            this.sendEvent(new FileOperationEvent(this.root()));
+            this.sendEvent(new FileDeleteEvent(this.root()));
+        }
+    }
+
+    public void onRename(Pack pack, Component newName) {
+        if (this.parent instanceof PackListBase<?> packListBase && pack == this.folderPack) {
+            PackListBase<?>.Entry entry = packListBase.getEntry(this.folderPack);
+            if (entry != null) {
+                entry.onRename(newName);
+            }
+            this.setOpen(false);
         }
     }
 

@@ -87,7 +87,7 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
 
         @Override
         public boolean isTransferable() {
-            return true;
+            return !this.isStale();
         }
 
         public boolean isMouseOverSelect(double mouseX, double mouseY) {
@@ -111,7 +111,9 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
 
             int x = left + SPACING;
             GuiConstants.WHITE_OVERLAY.render(guiGraphics, x, top, SELECT_SPRITE.width, SELECT_SPRITE.height);
-            pick(!this.isMouseOverSelect(mouseX, mouseY), SELECT_SPRITE, SELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+            if (this.isTransferable()) {
+                pick(!this.isMouseOverSelect(mouseX, mouseY), SELECT_SPRITE, SELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+            }
         }
     }
 }
