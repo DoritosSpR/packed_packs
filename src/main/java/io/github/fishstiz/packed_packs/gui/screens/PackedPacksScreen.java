@@ -345,7 +345,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             try {
                 List<Path> paths = CollectionsUtil.mutableListOf(this.repository.getDir());
                 paths.addAll(this.getAdditionalDirs());
-                this.watcher = new PackWatcher(paths, this::refreshPacks, this.minecraft);
+                this.watcher = new PackWatcher(paths, this::refreshPacks);
             } catch (Exception e) {
                 PackedPacks.LOGGER.error("[packed_packs] Failed to initialize pack directory watcher.", e);
                 this.closeWatcher();
