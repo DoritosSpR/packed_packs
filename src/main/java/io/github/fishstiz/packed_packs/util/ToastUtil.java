@@ -11,6 +11,6 @@ public class ToastUtil {
     }
 
     public static void onFileFailToast(Component message) {
-        SystemToast.addOrUpdate(Minecraft.getInstance().getToastManager(), FILE_OPS_FAIL_ID, ResourceUtil.getText("file.fail"), message);
+        SystemToast.addOrUpdate(Minecraft.getInstance().getToasts(), FILE_OPS_FAIL_ID, ResourceUtil.getText("file.fail"), message);
     }
 }

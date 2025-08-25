@@ -484,7 +484,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     protected boolean beforeScrollbarX(double mouseX) {
-        return !this.scrollbarVisible() || mouseX < this.scrollBarX();
+        return !this.scrollbarVisible() || mouseX < this.getScrollbarPosition();
     }
 
     @Override
