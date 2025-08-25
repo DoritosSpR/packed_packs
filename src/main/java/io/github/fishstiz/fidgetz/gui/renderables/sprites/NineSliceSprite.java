@@ -7,8 +7,6 @@ public class NineSliceSprite extends Sprite {
     private final Sprite[][] slices = new Sprite[3][3];
     private final int[] widths = new int[3];
     private final int[] heights = new int[3];
-    private final int baseWidth;
-    private final int baseHeight;
 
     public NineSliceSprite(Sprite base) {
         super(base.location, base.width, base.height, base.u, base.v);
@@ -50,33 +48,34 @@ public class NineSliceSprite extends Sprite {
         this.widths[2] = this.slices[0][2].u.length();  // right border width
         this.heights[0] = this.slices[0][0].v.length(); // top border height
         this.heights[2] = this.slices[2][0].v.length(); // bottom border height
-
-        this.baseWidth = base.u.length();
-        this.baseHeight = base.v.length();
     }
 
     @Override
     public void render(GuiGraphics g, int x, int y, int width, int height, float partialTick) {
-        if (width == baseWidth && height == baseHeight) {
-            slices[1][1].render(g, x, y, width, height, partialTick);
-            return;
-        }
+        if (width <= 0 || height <= 0) return;
 
-        widths[1] = Math.max(width - widths[0] - widths[2], 0);
-        heights[1] = Math.max(height - heights[0] - heights[2], 0);
+        int left = Math.min(widths[0], width);
+        int right = Math.min(widths[2], width - left);
+        int top = Math.min(heights[0], height);
+        int bottom = Math.min(heights[2], height - top);
+
+        int midW = width - left - right;
+        int midH = height - top - bottom;
 
         int yPos = y;
         for (int row = 0; row < 3; row++) {
-            int xPos = x;
-            for (int col = 0; col < 3; col++) {
-                int w = widths[col];
-                int h = heights[row];
-                if (w > 0 && h > 0) {
-                    slices[row][col].render(g, xPos, yPos, w, h, partialTick);
+            int h = (row == 0 ? top : row == 1 ? midH : bottom);
+            if (h > 0) {
+                int xPos = x;
+                for (int col = 0; col < 3; col++) {
+                    int w = (col == 0 ? left : col == 1 ? midW : right);
+                    if (w > 0) {
+                        slices[row][col].render(g, xPos, yPos, w, h, partialTick);
+                        xPos += w;
+                    }
                 }
-                xPos += w;
+                yPos += h;
             }
-            yPos += heights[row];
         }
     }
 }

@@ -244,7 +244,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         @Override
         public boolean isTransferable() {
-            return !this.pack.isRequired();
+            return !this.pack.isRequired() && !this.isStale();
         }
 
         private int getDownIndex() {
@@ -262,7 +262,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         private boolean isFixed() {
-            return CurrentPackList.this.isQueried() || this.pack.isFixedPosition();
+            return CurrentPackList.this.isQueried() || this.pack.isFixedPosition() || this.isStale();
         }
 
         public boolean canMoveDown() {

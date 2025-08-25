@@ -10,6 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.MultiLineLabel;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 
 class PackWidget extends AbstractWidget {
@@ -68,6 +69,10 @@ class PackWidget extends AbstractWidget {
             this.title.setWidth(bodyWidth);
             this.cacheDescription();
         }
+    }
+
+    public void onRename(Component title) {
+        this.title.setMessage(title.plainCopy().withStyle(ChatFormatting.GRAY));
     }
 
     public int getContentLeft() {

@@ -8,10 +8,10 @@ import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.ToastUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -32,13 +32,12 @@ import java.util.function.Consumer;
 
 public interface PackAssets {
     String ICON_FILENAME = "pack.png";
+    String ZIP_PACK_EXTENSION = ".zip";
     ResourceLocation DEFAULT_FOLDER_ICON = ResourceUtil.getResource("textures/misc/unknown_folder.png");
     ResourceLocation DEFAULT_ICON = ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png");
     Component OPEN_FILE_TEXT = ResourceUtil.getText("file.open");
     Component RENAME_FILE_TEXT = ResourceUtil.getText("file.rename");
     Component DELETE_FILE_TEXT = ResourceUtil.getText("file.delete");
-    Component FILE_OPS_FAIL_TEXT = ResourceUtil.getText("file.fail");
-    SystemToast.SystemToastId FILE_OPS_FAIL_ID = new SystemToast.SystemToastId();
     PackSource SOURCE = PackSource.create(name -> Component.translatable("pack.nameAndSource", name, ResourceUtil.getModName().withStyle(ChatFormatting.YELLOW))
             .withStyle(ChatFormatting.GRAY), false);
 
@@ -71,6 +70,26 @@ public interface PackAssets {
         return true;
     }
 
+    default boolean renamePack(Pack pack, String newName) {
+        if (pack == null || this.isEnabled(pack)) {
+            return false;
+        }
+
+        Path path = validatePackPath(pack);
+        if (path == null) {
+            showFailToast(getRenameFailText(pack.getTitle().getString(), newName));
+            return false;
+        }
+
+        Path newPath = path.getParent().resolve(newName);
+        if (!PackUtil.renamePath(path, newPath)) {
+            showFailToast(getRenameFailText(PackUtil.fileName(path), PackUtil.fileName(newPath)));
+            return false;
+        }
+
+        return true;
+    }
+
     static @Nullable Path validatePackPath(Pack pack) {
         if (pack == null) {
             return null;
@@ -88,13 +107,13 @@ public interface PackAssets {
         }
     }
 
+    static boolean isZipPack(Pack pack) {
+        Path path = PackAssets.validatePackPath(pack);
+        return path != null && Files.isRegularFile(path) && PackUtil.fileName(path).endsWith(ZIP_PACK_EXTENSION);
+    }
+
     private static void showFailToast(Component message) {
-        Minecraft.getInstance().getToastManager().addToast(SystemToast.multiline(
-                Minecraft.getInstance(),
-                FILE_OPS_FAIL_ID,
-                FILE_OPS_FAIL_TEXT,
-                message
-        ));
+        ToastUtil.onFileFailToast(message);
     }
 
     static ResourceLocation getDefaultIcon(Pack pack) {

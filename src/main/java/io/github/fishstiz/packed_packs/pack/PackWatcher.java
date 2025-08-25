@@ -6,6 +6,7 @@ import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import net.minecraft.Util;
+import org.apache.commons.io.IOCase;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
@@ -48,7 +49,7 @@ public class PackWatcher implements AutoCloseable {
     private void addDirectory(Path directory) {
         if (!isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) return;
 
-        FileAlterationObserver observer = new FileAlterationObserver(directory.toFile());
+        FileAlterationObserver observer = new FileAlterationObserver(directory.toFile(), null, IOCase.SENSITIVE);
         Path normalizedPath = directory.toAbsolutePath().normalize();
         observer.addListener(new DirectoryListener(normalizedPath));
 
