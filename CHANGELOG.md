@@ -1,20 +1,23 @@
-#### 📂 Folder Packs ([#14](https://github.com/fishstiz/packed_packs/issues/14))
+- Added **Context Menus**. Right-click anywhere on the screen to open the context menu. Right-click on certain elements
+  to change the context. Options include:
+    - **Rename** a pack file.
+    - **Delete** a pack file.
+    - Refresh packs.
+- Added **Additional Folders** ([#18](https://github.com/fishstiz/packed_packs/issues/18)). Packs can be discovered from
+  other directories by adding its path to `config/packed_packs.json` array:
+    - `datapacks.additionalFolders` for datapacks
+    - `resourcepacks.additionalFolders` for resource packs
+    - Requires restart to apply!
+- Switched to polling for real-time file watching due to Windows directory locking (JDK-6972833). Performance may take a
+  hit.
+- Fixed packs' metadata not updating in real-time.
+- Fixed packs inside Folder Packs not being watched for updates.
+- Fixed packs not refreshing when entering the screen.
+- Fixed packs unnecessarily refreshing when applying changes.
+- Fixed pack entries showing hover state even when overlapped by another component.
+- Fixed dead zone between pack entries.
+- Fixed Folder Packs being rejected when dragged in from outside the game window.
 
-- Any folder in the root pack directory containing packs, without a `pack.mcmeta`, will be treated as a folder pack.
-- Folder packs behave like regular packs and can be moved between rows and columns to toggle multiple packs at once.
-- They can be opened to view and reorder their contents. The order is saved to `packed_packs.folderpack.json` in the
-  folder root.
-- Add a `pack.png` at the folder root to set a custom icon.
+### **WARNING**:
 
----
-
-- Added Ukrainian translation ([#17](https://github.com/fishstiz/packed_packs/pull/17) by StarmanMine142)
-- Added keyboard shortcut to open folder packs with `Enter`. Pressing `Space` still transfers the folder
-  pack.
-    - Folder packs can be closed with Escape or by navigating to the other pack list.
-- Child packs enabled individually from the Vanilla Screen now cause their folder pack to appear in both columns in the
-  Packed Packs Screen.
-- Renamed `packed_packs.manifest.json` → `packed_packs.folderpack.json`.
-- Updated the default icon for folder packs.
-- Fixed pack list focus jumping around after closing a folder pack.
-- Fixed minor resource leak when loading folder packs.
+This is a beta version! Things may break or change. Please report any issues and share your feedback, thanks.
