@@ -483,6 +483,10 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
     }
 
+    protected boolean beforeScrollbarX(double mouseX) {
+        return !this.scrollbarVisible() || mouseX < this.scrollBarX();
+    }
+
     @Override
     public void replaceState(@NotNull Snapshot snapshot) {
         Pack focused = mapOrNull(this.getFocused(), PackList.Entry::getPack);
@@ -645,7 +649,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         @Override
         public boolean isMouseOver(double mouseX, double mouseY) {
-            return PackListBase.this.isHovered() && super.isMouseOver(mouseX, mouseY);
+            return PackListBase.this.isHovered() && super.isMouseOver(mouseX, mouseY) && PackListBase.this.beforeScrollbarX(mouseX);
         }
 
         @Override
@@ -762,7 +766,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         @Override
         public final void render(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            this.renderWidget(guiGraphics, top, left, width, height, mouseX, mouseY, hovering && PackListBase.this.isHovered(), partialTick);
+            this.renderWidget(guiGraphics, top, left, width, height, mouseX, mouseY, hovering && PackListBase.this.isHovered() && PackListBase.this.beforeScrollbarX(mouseX), partialTick);
         }
 
         @Override
