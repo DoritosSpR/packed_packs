@@ -46,6 +46,14 @@ public class InputUtil {
         return noModifiers(modifiers) && (keyCode == KEY_SPACE || keyCode == KEY_RETURN);
     }
 
+    public static boolean isMoveDown(int keyCode, int modifiers) {
+        return keyCode == KEY_DOWN && moveModifiers(modifiers);
+    }
+
+    public static boolean isMoveUp(int keyCode, int modifiers) {
+        return keyCode == KEY_UP && moveModifiers(modifiers);
+    }
+
     public static boolean isExpandFolder(int keyCode, int modifiers) {
         return noModifiers(modifiers) && keyCode == KEY_RETURN;
     }
@@ -74,15 +82,15 @@ public class InputUtil {
         return modifiers == 0;
     }
 
+    public static boolean moveModifiers(int modifiers) {
+        return modifiers == MOD_CONTROL || modifiers == MOD_ALT;
+    }
+
     public static boolean isRangeModifierActive() {
         return hasShiftDown();
     }
 
     public static boolean isSelectModifierActive() {
         return hasControlDown();
-    }
-
-    public static boolean isMoveModifierActive() {
-        return hasAltDown() || hasControlDown();
     }
 }
