@@ -9,6 +9,7 @@ import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.PackResources;
@@ -17,6 +18,7 @@ import net.minecraft.server.packs.repository.PackDetector;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
@@ -121,6 +123,29 @@ public class PackUtil {
             }
             return null;
         });
+    }
+
+    public static void openParent(Path path) {
+        File file = path.toFile();
+        if (!file.exists()) return;
+
+        try {
+            switch (Util.getPlatform()) {
+                case WINDOWS -> new ProcessBuilder("explorer.exe", "/select,", file.getAbsolutePath()).start();
+                case OSX -> new ProcessBuilder("open", "-R", file.getAbsolutePath()).start();
+                case LINUX -> {
+                    File parentFile = file.getParentFile();
+                    if (parentFile != null) new ProcessBuilder("xdg-open", parentFile.getAbsolutePath()).start();
+                }
+                default -> {
+                    Path parent = path.getParent();
+                    if (parent != null) Util.getPlatform().openPath(parent);
+                }
+            }
+        } catch (IOException e) {
+            Path parent = path.getParent();
+            if (parent != null) Util.getPlatform().openPath(parent);
+        }
     }
 
     public static boolean deletePath(Path path) {
