@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.compat.respackopts;
 
 import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
+import io.github.fishstiz.packed_packs.compat.PossiblyYarnMappingVictimEntry;
 import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
 import io.gitlab.jfronny.respackopts.RespackoptsClient;
 import net.minecraft.client.Minecraft;
@@ -12,11 +12,7 @@ import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.Pack;
-import net.minecraft.server.packs.repository.PackCompatibility;
-import net.minecraft.server.packs.repository.PackSource;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class RespackoptsWidget extends AbstractButton {
@@ -34,7 +30,7 @@ public class RespackoptsWidget extends AbstractButton {
 
     public static @Nullable RespackoptsWidget create(LayoutElement container, Pack pack) {
         for (ResourcePackEntryWidget widget : ResourcePackEntryWidget.WIDGETS) {
-            PackSelectionModel.Entry model = new PackModelEntry(pack);
+            PackSelectionModel.Entry model = new PossiblyYarnMappingVictimEntry(pack);
             if (widget.isVisible(model, isSelectable(pack))) {
                 return new RespackoptsWidget(container, widget, model);
             }
@@ -89,82 +85,5 @@ public class RespackoptsWidget extends AbstractButton {
      */
     private static boolean isSelectable(Pack pack) {
         return !pack.isFixedPosition() || !pack.isRequired();
-    }
-
-    private record PackModelEntry(Pack pack) implements PackSelectionModel.Entry {
-        @Override
-        public @NotNull ResourceLocation getIconTexture() {
-            return PackAssets.DEFAULT_ICON;
-        }
-
-        @Override
-        public @NotNull PackCompatibility getCompatibility() {
-            return pack.getCompatibility();
-        }
-
-        @Override
-        public @NotNull String getId() {
-            return pack.getId();
-        }
-
-        @Override
-        public @NotNull Component getTitle() {
-            return pack.getTitle();
-        }
-
-        @Override
-        public @NotNull Component getDescription() {
-            return pack.getDescription();
-        }
-
-        @Override
-        public @NotNull PackSource getPackSource() {
-            return pack.getPackSource();
-        }
-
-        @Override
-        public boolean isFixedPosition() {
-            return pack.isFixedPosition();
-        }
-
-        @Override
-        public boolean isRequired() {
-            return pack.isRequired();
-        }
-
-        @Override
-        public void select() {
-            // no-op
-        }
-
-        @Override
-        public void unselect() {
-            // no-op
-        }
-
-        @Override
-        public void moveUp() {
-            // no-op
-        }
-
-        @Override
-        public void moveDown() {
-            // no-op
-        }
-
-        @Override
-        public boolean isSelected() {
-            return false;
-        }
-
-        @Override
-        public boolean canMoveUp() {
-            return false;
-        }
-
-        @Override
-        public boolean canMoveDown() {
-            return false;
-        }
     }
 }
