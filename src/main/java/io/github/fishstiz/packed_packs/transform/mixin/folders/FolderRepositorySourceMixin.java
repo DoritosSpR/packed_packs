@@ -69,6 +69,8 @@ public abstract class FolderRepositorySourceMixin {
         List<String> additionalFolders = PackedPacks.CONFIG.get(this.packType).getAdditionalFolders();
         if (!additionalFolders.isEmpty()) {
             Set<Path> seen = new ObjectOpenHashSet<>();
+            seen.add(folder.toAbsolutePath().normalize());
+
             for (Path additionalFolder : PackUtil.mapValidDirectories(additionalFolders)) {
                 try {
                     Path normalized = additionalFolder.toAbsolutePath().normalize();
