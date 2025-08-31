@@ -1,6 +1,5 @@
 package io.github.fishstiz.packed_packs.util;
 
-import com.google.common.hash.Hashing;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
@@ -19,13 +18,11 @@ import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
 import org.apache.commons.io.FileUtils;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
 public class PackUtil {
     // Changing these fields would be breaking changes
-    private static final String ADDITIONAL_FILE_PREFIX = "packed_packs$";
     private static final String FILE_PREFIX = "file/";
     private static final String DELIMITER = "/";
 
@@ -40,40 +37,16 @@ public class PackUtil {
         return fileName(path);
     }
 
-    public static String generatePackId(String name, String... afterPrefix) {
-        return appendNonNull(new StringBuilder(FILE_PREFIX), afterPrefix)
-                .append(name)
-                .toString();
+    public static String generatePackId(String name) {
+        return FILE_PREFIX + name;
     }
 
-    public static String generatePackId(Path path, String... afterPrefix) {
-        return generatePackId(generatePackName(path), afterPrefix);
+    public static String generatePackId(Path path) {
+        return generatePackId(generatePackName(path));
     }
 
-    public static String generateNestedPackId(Path path, String... afterPrefix) {
-        return appendNonNull(new StringBuilder(FILE_PREFIX), afterPrefix)
-                .append(generatePackName(path.getParent()))
-                .append(DELIMITER)
-                .append(generatePackName(path))
-                .toString();
-    }
-
-    public static String generateAdditionalFilePrefix(Path path) {
-        String hash = Hashing.sha256()
-                .hashString(path.toString(), StandardCharsets.UTF_8)
-                .toString()
-                .substring(0, 8);
-
-        return ADDITIONAL_FILE_PREFIX + hash + DELIMITER;
-    }
-
-    private static StringBuilder appendNonNull(StringBuilder sb, String... strings) {
-        if (strings != null) {
-            for (String string : strings) {
-                if (string != null) sb.append(string);
-            }
-        }
-        return sb;
+    public static String generateNestedPackId(Path path) {
+        return FILE_PREFIX + generatePackName(path.getParent()) + DELIMITER + generatePackName(path);
     }
 
     public static PackLocationInfo replicateLocationInfo(PackLocationInfo info, PackSource source, String id) {

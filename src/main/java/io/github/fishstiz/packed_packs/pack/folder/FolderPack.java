@@ -12,7 +12,6 @@ import net.minecraft.server.packs.*;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackCompatibility;
 import net.minecraft.world.flag.FeatureFlagSet;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -29,9 +28,8 @@ public class FolderPack extends Pack implements IPack {
     public static final PackSelectionConfig FOLDER_SELECTION_CONFIG = new PackSelectionConfig(false, Position.TOP, false);
     public static final Metadata FOLDER_METADATA = new Metadata(FOLDER_DESCRIPTION, PackCompatibility.COMPATIBLE, FeatureFlagSet.of(), Collections.emptyList());
     private final Path path;
-    private final String additionalPrefx;
 
-    public FolderPack(String id, String name, String additionalPrefix, Path path) {
+    public FolderPack(String id, String name, Path path) {
         super(
                 new PackLocationInfo(id, Component.literal(name), PackAssets.SOURCE, Optional.empty()),
                 new FolderResourcesSupplier(path),
@@ -39,7 +37,6 @@ public class FolderPack extends Pack implements IPack {
                 FOLDER_SELECTION_CONFIG
         );
         this.path = path;
-        this.additionalPrefx = additionalPrefix;
     }
 
     public CompletableFuture<Folder> loadConfig() {
@@ -69,10 +66,5 @@ public class FolderPack extends Pack implements IPack {
     @Override
     public @Nullable Path packed_packs$getPath() {
         return this.path;
-    }
-
-    @Override
-    public @NotNull String packed_packs$getAdditionalPrefix() {
-        return this.additionalPrefx;
     }
 }
