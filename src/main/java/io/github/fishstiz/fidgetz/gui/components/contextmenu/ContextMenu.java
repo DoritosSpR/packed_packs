@@ -4,6 +4,7 @@ import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
+import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.ITheme;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
@@ -12,12 +13,15 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.sounds.SoundManager;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,7 +94,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             MenuItem next = (i + 1 < items.size()) ? items.get(i + 1) : null;
 
             if (current == MenuItem.SEPARATOR) {
-                this.addRenderableOnly(this.addChild(new Separator(this.root().getWidth(), this.borderColor)));
+                this.addRenderableWidget(this.addChild(new Separator(this.root().getWidth(), this.borderColor)));
             } else {
                 this.addRenderableWidget(this.addChild(this.createItemWidget(current, next)));
             }
@@ -434,12 +438,32 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         }
     }
 
-    private static class Separator extends AbstractLayoutElement implements Renderable {
+    private static class Separator extends AbstractLayoutElement implements GuiEventListener, Renderable {
         private final int color;
 
         private Separator(int width, int color) {
             this.color = color;
             this.setSize(width, 1);
+        }
+
+        @Override
+        public void setFocused(boolean focused) {
+            // no-op
+        }
+
+        @Override
+        public boolean isFocused() {
+            return false;
+        }
+
+        @Override
+        public @NotNull ScreenRectangle getRectangle() {
+            return super.getRectangle();
+        }
+
+        @Override
+        public boolean isMouseOver(double mouseX, double mouseY) {
+            return GuiUtil.containsPoint(this, mouseX, mouseY);
         }
 
         @Override
