@@ -11,6 +11,7 @@ import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuI
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
@@ -708,6 +709,31 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         @Override
+        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+            boolean keyPressed = super.keyPressed(keyCode, scanCode, modifiers);
+            if (!keyPressed) {
+                if (isOpenFile(keyCode, modifiers)) {
+                    this.openPack();
+                    return true;
+                }
+                if (isOpenFolder(keyCode, modifiers)) {
+                    this.openParent();
+                    return true;
+                }
+                if (this.canOperateFile()) {
+                    if (isDelete(keyCode, modifiers)) {
+                        this.deletePack();
+                        return true;
+                    } else if (isRename(keyCode, modifiers)) {
+                        this.renamePack();
+                        return true;
+                    }
+                }
+            }
+            return keyPressed;
+        }
+
+        @Override
         public void renderBack(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTick) {
             if (!this.pack.getCompatibility().isCompatible() && !PackListBase.this.packAssets.getConfig().isIncompatibleWarningsHidden()) {
                 int backgroundLeft = this.getX() + BACKGROUND_OFFSET;
@@ -786,6 +812,20 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         public boolean canOperateFile() {
             return !PackListBase.this.packAssets.isEnabled(this.pack) && PackAssets.validatePackPath(this.pack) != null;
+        }
+
+        public void openParent() {
+            var path = ((IPack) pack).packed_packs$getPath();
+            if (path != null) {
+                PackUtil.openParent(path);
+            }
+        }
+
+        public void openPack() {
+            var path = ((IPack) pack).packed_packs$getPath();
+            if (path != null) {
+                Util.getPlatform().openPath(path);
+            }
         }
 
         public void deletePack() {
