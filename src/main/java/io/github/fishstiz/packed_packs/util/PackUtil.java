@@ -125,6 +125,20 @@ public class PackUtil {
         });
     }
 
+    public static void openPack(Pack pack) {
+        var path = ((IPack) pack).packed_packs$getPath();
+        if (path != null) {
+            Util.getPlatform().openPath(path);
+        }
+    }
+
+    public static void openParent(Pack pack) {
+        var path = ((IPack) pack).packed_packs$getPath();
+        if (path != null) {
+            PackUtil.openParent(path);
+        }
+    }
+
     public static void openParent(Path path) {
         File file = path.toFile();
         if (!file.exists()) return;
