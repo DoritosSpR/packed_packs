@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
+import io.github.fishstiz.packed_packs.gui.components.events.FileRenameCloseEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.FileRenameEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
@@ -80,9 +81,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         this.root().arrangeElements();
         this.root().visitWidgets(this::addRenderableWidget);
 
-        this.addListener(open -> {
-            if (!open) this.clearReferences();
-        });
+        this.addListener(this::onClose);
     }
 
     @Override
@@ -141,6 +140,19 @@ public class FileRenameModal extends Modal<LinearLayout> {
         this.saveButton.active = this.canSave(name);
     }
 
+    private void onClose(boolean open) {
+        if (open) return;
+
+        PackList target = this.packList;
+        Pack trigger = this.pack;
+
+        if (target != null) {
+            ((PackListEventListener) this.screen).onEvent(new FileRenameCloseEvent(target, trigger));
+        }
+
+        this.clearReferences();
+    }
+
     private void saveName() {
         String newName = this.nameEditor.getValue();
         if (!this.canSave(newName)) {
@@ -197,7 +209,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         boolean keyPressed = super.keyPressed(keyCode, scanCode, modifiers);
-        if (!keyPressed && keyCode == InputConstants.KEY_RETURN && this.canSave(this.nameEditor.getValue())) {
+        if (!keyPressed && this.isOpen() && keyCode == InputConstants.KEY_RETURN && this.canSave(this.nameEditor.getValue())) {
             this.saveName();
             return true;
         }

@@ -534,6 +534,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             case FileDeleteEvent ignore -> this.revalidatePacks();
             case FileRenameOpenEvent e -> this.fileRenameModal.open(e.target(), e.trigger());
             case FileRenameEvent e -> this.onFileRename(e);
+            case FileRenameCloseEvent e -> this.focusList(e.target());
             case FolderOpenEvent e -> this.onFolderOpen(e);
             case FolderCloseEvent e -> this.onFolderClose(e);
             default -> {
@@ -565,7 +566,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         if (super.charTyped(codePoint, modifiers)) {
             return true;
         }
-        if (codePoint != KEY_SPACE) {
+        if (codePoint != KEY_SPACE && noModifiers(modifiers)) {
             PackLayout<?> packLayout = this.getLayoutFromSelectedList();
             if (packLayout != null && !packLayout.getSearchField().isFocused()) {
                 return this.focusSearchField(packLayout).charTyped(codePoint, modifiers);
@@ -578,6 +579,10 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         this.contextMenu.setOpen(false);
 
+        if (isRefresh(keyCode, modifiers)) {
+            this.refreshPacks();
+            return true;
+        }
         if (super.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
