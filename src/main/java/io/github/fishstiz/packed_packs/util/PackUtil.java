@@ -113,7 +113,9 @@ public class PackUtil {
     public static boolean isBuiltIn(Pack pack) {
         PackSource packSource = pack.getPackSource();
         //noinspection UnstableApiUsage
-        return packSource == PackSource.BUILT_IN || packSource instanceof BuiltinModResourcePackSource;
+        return packSource == PackSource.BUILT_IN ||
+               packSource == PackSource.FEATURE ||
+               packSource instanceof BuiltinModResourcePackSource;
     }
 
     public static boolean isNonPackDirectory(Path path) {
