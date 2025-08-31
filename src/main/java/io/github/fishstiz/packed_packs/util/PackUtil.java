@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.util;
 
+import com.sun.jna.platform.FileUtils;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
@@ -15,7 +16,6 @@ import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackDetector;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
-import org.apache.commons.io.FileUtils;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -124,9 +124,20 @@ public class PackUtil {
     }
 
     public static boolean deletePath(Path path) {
+        FileUtils fileUtils = FileUtils.getInstance();
+
+        if (fileUtils.hasTrash()) {
+            try {
+                fileUtils.moveToTrash(path.toFile());
+                return true;
+            } catch (IOException e) {
+                PackedPacks.LOGGER.warn("[packed_packs] Failed to move to trash: '{}'", path, e);
+            }
+        }
+
         if (Files.isDirectory(path)) {
             try {
-                FileUtils.deleteDirectory(path.toFile());
+                org.apache.commons.io.FileUtils.deleteDirectory(path.toFile());
                 return true;
             } catch (IOException e) {
                 PackedPacks.LOGGER.error("[packed_packs] Failed to delete path: '{}'", path, e);
