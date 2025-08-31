@@ -6,6 +6,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.GradientRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.util.InputUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
@@ -21,10 +22,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
-import static com.mojang.blaze3d.platform.InputConstants.*;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
-import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
-import static io.github.fishstiz.packed_packs.util.InputUtil.isMoveModifierActive;
+import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
 import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
@@ -55,18 +54,20 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        Entry entry = this.getEntry(this.getLastSelected());
-        if (entry == null || !isMoveModifierActive()) {
-            return super.keyPressed(keyCode, scanCode, modifiers);
+        boolean keyPressed = super.keyPressed(keyCode, scanCode, modifiers);
+        if (!keyPressed) {
+            Entry entry = this.getEntry(this.getLastSelected());
+            if (entry != null) {
+                if (InputUtil.isMoveDown(keyCode, modifiers)) {
+                    if (entry.moveDown()) playClickSound();
+                    return true;
+                } else if (InputUtil.isMoveUp(keyCode, modifiers)) {
+                    if (entry.moveUp()) playClickSound();
+                    return true;
+                }
+            }
         }
-        if (keyCode == KEY_DOWN) {
-            if (entry.moveDown()) playClickSound();
-            return true;
-        } else if (keyCode == KEY_UP) {
-            if (entry.moveUp()) playClickSound();
-            return true;
-        }
-        return false;
+        return keyPressed;
     }
 
     private void scrollStep(MoveDirection direction, float partialTick) {
