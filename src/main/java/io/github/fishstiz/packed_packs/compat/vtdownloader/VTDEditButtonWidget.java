@@ -1,7 +1,7 @@
 package io.github.fishstiz.packed_packs.compat.vtdownloader;
 
 import io.github.fishstiz.packed_packs.compat.ModScreenFactory;
-import io.github.fishstiz.packed_packs.compat.PossiblyYarnMappingVictimEntry;
+import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
@@ -48,7 +48,7 @@ public class VTDEditButtonWidget extends AbstractButton {
 
     public static @Nullable VTDEditButtonWidget create(Screen previous, PackListBase<?>.Entry entry) {
         return entry.getPack().getDescription().getString().contains(VT_DESCRIPTION_MARKER)
-                ? new VTDEditButtonWidget(entry, previous, new PossiblyYarnMappingVictimEntry(entry.getPack()), entry.canOperateFile())
+                ? new VTDEditButtonWidget(entry, previous, new PackWrapperDelegatorAbstractionEpicModelEntry(entry.getPack()), entry.canOperateFile())
                 : null;
     }
 

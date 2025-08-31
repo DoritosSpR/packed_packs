@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.transform.mixin.compat.vtd;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import io.github.fishstiz.packed_packs.compat.PossiblyYarnMappingVictimEntry;
+import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.network.chat.Component;
@@ -26,7 +26,7 @@ public abstract class VTDownloaderScreenMixin extends Screen {
     @Dynamic
     @WrapOperation(method = "readResourcePack", at = @At(value = "INVOKE", target = "Ljava/lang/Class;isNestmateOf(Ljava/lang/Class;)Z"))
     private boolean hasPack(Class<?> instance, Class<?> clazz, Operation<Boolean> original) {
-        return original.call(instance, clazz) || this.packEntry instanceof PossiblyYarnMappingVictimEntry;
+        return original.call(instance, clazz) || this.packEntry instanceof PackWrapperDelegatorAbstractionEpicModelEntry;
     }
 
     @Dynamic
@@ -40,7 +40,7 @@ public abstract class VTDownloaderScreenMixin extends Screen {
             )
     )
     private PackSelectionModel.Entry getPackEntry(@Coerce Screen instance, Operation<PackSelectionModel.Entry> original) {
-        return this.packEntry instanceof PossiblyYarnMappingVictimEntry ? null : original.call(instance);
+        return this.packEntry instanceof PackWrapperDelegatorAbstractionEpicModelEntry ? null : original.call(instance);
     }
 
     @Dynamic
@@ -49,6 +49,6 @@ public abstract class VTDownloaderScreenMixin extends Screen {
             target = "Lme/bymartrixx/vtd/access/AbstractPackAccess;vtdownloader$getProfile()Lnet/minecraft/server/packs/repository/Pack;"
     ))
     private Pack getPack(@Coerce Object instance, Operation<Pack> original) {
-        return this.packEntry instanceof PossiblyYarnMappingVictimEntry(Pack pack) ? pack : original.call(instance);
+        return this.packEntry instanceof PackWrapperDelegatorAbstractionEpicModelEntry(Pack pack) ? pack : original.call(instance);
     }
 }

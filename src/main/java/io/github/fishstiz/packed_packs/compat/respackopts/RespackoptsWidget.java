@@ -4,7 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
-import io.github.fishstiz.packed_packs.compat.PossiblyYarnMappingVictimEntry;
+import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
 import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
 import io.gitlab.jfronny.respackopts.RespackoptsClient;
 import net.minecraft.client.Minecraft;
@@ -32,7 +32,7 @@ public class RespackoptsWidget extends AbstractButton {
 
     public static @Nullable RespackoptsWidget create(LayoutElement container, Pack pack) {
         for (ResourcePackEntryWidget widget : ResourcePackEntryWidget.WIDGETS) {
-            PackSelectionModel.Entry model = new PossiblyYarnMappingVictimEntry(pack);
+            PackSelectionModel.Entry model = new PackWrapperDelegatorAbstractionEpicModelEntry(pack);
             if (widget.isVisible(model, isSelectable(pack))) {
                 return new RespackoptsWidget(container, widget, model);
             }
