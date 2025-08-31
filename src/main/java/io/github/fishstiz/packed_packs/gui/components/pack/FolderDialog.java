@@ -6,12 +6,12 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
-import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.GuiGraphics;
@@ -127,7 +127,8 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
                                                 .separator()
                                                 .simpleItem(PackAssets.RENAME_FILE_TEXT, this::canOperateFolder, this::renameDirectory)
                                                 .simpleItem(PackAssets.DELETE_FILE_TEXT, this::canOperateFolder, this::deleteDirectory)
-                                                .add(new DirectoryMenuItem(path, PackAssets.OPEN_FILE_TEXT))
+                                                .simpleItem(PackAssets.OPEN_FILE_TEXT, () -> PackUtil.openPack(this.folderPack))
+                                                .simpleItem(PackAssets.OPEN_PARENT_TEXT, () -> PackUtil.openParent(this.folderPack))
                                         )
                                 )
                         ),
