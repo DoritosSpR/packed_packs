@@ -5,7 +5,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
-import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
@@ -136,32 +135,25 @@ public abstract class FolderRepositorySourceMixin {
             value = "INVOKE",
             target = "Lnet/minecraft/server/packs/repository/Pack;readMetaAndCreate(Lnet/minecraft/server/packs/PackLocationInfo;Lnet/minecraft/server/packs/repository/Pack$ResourcesSupplier;Lnet/minecraft/server/packs/PackType;Lnet/minecraft/server/packs/PackSelectionConfig;)Lnet/minecraft/server/packs/repository/Pack;"
     ))
-    private PackLocationInfo uniquifyPackIds(PackLocationInfo location, @Local(argsOnly = true) Path path, @Share("additionalPrefix") LocalRef<String> additionalPrefixRef) {
+    private PackLocationInfo modifyPackLocation(PackLocationInfo location, @Local(argsOnly = true) Path path) {
         Path additionalFolder = ADDITIONAL_PATH.get();
-        String additionalPrefix = null;
 
-        if (additionalFolder != null) {
-            additionalPrefix = PackUtil.generateAdditionalFilePrefix(additionalFolder);
-            additionalPrefixRef.set(additionalPrefix);
-        }
         if (IS_SUBDIRECTORY.get()) {
-            return PackUtil.replicateLocationInfo(location, this.getPackSource(additionalFolder != null), PackUtil.generateNestedPackId(path, additionalPrefix));
+            return PackUtil.replicateLocationInfo(location, this.getPackSource(additionalFolder != null), PackUtil.generateNestedPackId(path));
         }
-        if (additionalPrefix != null) {
-            return PackUtil.replicateLocationInfo(location, this.getPackSource(true), PackUtil.generatePackId(path, additionalPrefix));
+        if (additionalFolder != null) {
+            return PackUtil.replicateLocationInfo(location, this.getPackSource(true), PackUtil.generatePackId(path));
         }
 
         return location;
     }
 
     @ModifyArg(method = "method_45272", at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V"))
-    private Object bindDirToNestedPack(Object arg, @Local(argsOnly = true) Path path, @Share("additionalPrefix") LocalRef<String> additionalPrefixRef) {
+    private Object bindDirToNestedPack(Object arg, @Local(argsOnly = true) Path path) {
         if (arg instanceof IPack pack) {
             pack.packed_packs$setNestedPack(IS_SUBDIRECTORY.get());
             pack.packed_packs$setPath(path);
-            pack.packed_packs$setAdditionalPrefix(additionalPrefixRef.get());
         }
-        additionalPrefixRef.set(null);
         return arg;
     }
 

@@ -205,10 +205,9 @@ public class PackRepositoryHelper implements PackAssets {
             if (_pack.packed_packs$nestedPack()) {
                 Path folderPath = Objects.requireNonNull(_pack.packed_packs$getPath()).getParent();
                 String folderName = PackUtil.generatePackName(folderPath);
-                String additionalPrefix = _pack.packed_packs$getAdditionalPrefix();
-                String folderId = PackUtil.generatePackId(folderName, additionalPrefix);
+                String folderId = PackUtil.generatePackId(folderName);
                 if (!this.availablePacks.containsKey(folderId)) {
-                    FolderPack folderPack = new FolderPack(folderId, folderName, additionalPrefix, folderPath);
+                    FolderPack folderPack = new FolderPack(folderId, folderName, folderPath);
                     this.folderConfigs.put(folderId, folderPack.loadConfig());
                     this.availablePacks.put(folderId, folderPack);
                 }
