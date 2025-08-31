@@ -7,7 +7,6 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
-import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
@@ -713,11 +712,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             boolean keyPressed = super.keyPressed(keyCode, scanCode, modifiers);
             if (!keyPressed) {
                 if (isOpenFile(keyCode, modifiers)) {
-                    this.openPack();
+                    PackUtil.openPack(this.pack);
                     return true;
                 }
                 if (isOpenFolder(keyCode, modifiers)) {
-                    this.openParent();
+                    PackUtil.openParent(this.pack);
                     return true;
                 }
                 if (this.canOperateFile()) {
@@ -803,7 +802,8 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                                     .separator()
                                     .simpleItem(PackAssets.RENAME_FILE_TEXT, this::canOperateFile, this::renamePack)
                                     .simpleItem(PackAssets.DELETE_FILE_TEXT, this::canOperateFile, this::deletePack)
-                                    .add(new DirectoryMenuItem(path, PackAssets.OPEN_FILE_TEXT))
+                                    .simpleItem(PackAssets.OPEN_FILE_TEXT, () -> PackUtil.openPack(this.pack))
+                                    .simpleItem(PackAssets.OPEN_PARENT_TEXT, () -> PackUtil.openParent(this.pack))
                             ),
                     mouseX,
                     mouseY
@@ -812,20 +812,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         public boolean canOperateFile() {
             return !PackListBase.this.packAssets.isEnabled(this.pack) && PackAssets.validatePackPath(this.pack) != null;
-        }
-
-        public void openParent() {
-            var path = ((IPack) pack).packed_packs$getPath();
-            if (path != null) {
-                PackUtil.openParent(path);
-            }
-        }
-
-        public void openPack() {
-            var path = ((IPack) pack).packed_packs$getPath();
-            if (path != null) {
-                Util.getPlatform().openPath(path);
-            }
         }
 
         public void deletePack() {

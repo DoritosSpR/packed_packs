@@ -36,6 +36,7 @@ public interface PackAssets {
     ResourceLocation DEFAULT_FOLDER_ICON = ResourceUtil.getResource("textures/misc/unknown_folder.png");
     ResourceLocation DEFAULT_ICON = ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png");
     Component OPEN_FILE_TEXT = ResourceUtil.getText("file.open");
+    Component OPEN_PARENT_TEXT = ResourceUtil.getText("file.parent.open");
     Component RENAME_FILE_TEXT = ResourceUtil.getText("file.rename");
     Component DELETE_FILE_TEXT = ResourceUtil.getText("file.delete");
     PackSource SOURCE = PackSource.create(name -> Component.translatable("pack.nameAndSource", name, ResourceUtil.getModName().withStyle(ChatFormatting.YELLOW))
