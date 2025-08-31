@@ -43,11 +43,35 @@ public class InputUtil {
     }
 
     public static boolean isTransfer(int keyCode, int modifiers) {
-        return modifiers == 0 && (keyCode == KEY_SPACE || keyCode == KEY_RETURN);
+        return noModifiers(modifiers) && (keyCode == KEY_SPACE || keyCode == KEY_RETURN);
     }
 
     public static boolean isExpandFolder(int keyCode, int modifiers) {
-        return modifiers == 0 && keyCode == KEY_RETURN;
+        return noModifiers(modifiers) && keyCode == KEY_RETURN;
+    }
+
+    public static boolean isDelete(int keyCode, int modifiers) {
+        return noModifiers(modifiers) && keyCode == KEY_DELETE;
+    }
+
+    public static boolean isRename(int keyCode, int modifiers) {
+        return (noModifiers(modifiers) && keyCode == KEY_F2) || (modifiers == MOD_CONTROL && keyCode == KEY_R);
+    }
+
+    public static boolean isRefresh(int keyCode, int modifiers) {
+        return noModifiers(modifiers) && keyCode == KEY_F5;
+    }
+
+    public static boolean isOpenFile(int keyCode, int modifiers) {
+        return modifiers == MOD_CONTROL && keyCode == KEY_RETURN;
+    }
+
+    public static boolean isOpenFolder(int keyCode, int modifiers) {
+        return modifiers == MOD_ALT + MOD_SHIFT && keyCode == KEY_R;
+    }
+
+    public static boolean noModifiers(int modifiers) {
+        return modifiers == 0;
     }
 
     public static boolean isRangeModifierActive() {
