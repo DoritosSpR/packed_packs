@@ -9,10 +9,7 @@ import net.minecraft.server.packs.repository.PackCompatibility;
 import net.minecraft.server.packs.repository.PackSource;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Why aren't you just using the resource pack profile directly?
- */
-public record PossiblyYarnMappingVictimEntry(Pack pack) implements PackSelectionModel.Entry {
+public record PackWrapperDelegatorAbstractionEpicModelEntry(Pack pack) implements PackSelectionModel.Entry {
     @Override
     public @NotNull ResourceLocation getIconTexture() {
         return PackAssets.DEFAULT_ICON;
