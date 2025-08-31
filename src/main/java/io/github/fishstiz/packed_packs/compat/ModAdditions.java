@@ -7,6 +7,7 @@ import io.github.fishstiz.packed_packs.compat.resourcify.ResourcifyButtons;
 import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsUtil;
 import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsWidget;
 import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFactory;
+import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDEditButtonWidget;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
@@ -52,6 +53,12 @@ public class ModAdditions {
                 if (respackOptsWidget != null) {
                     entry.prependWidget(respackOptsWidget);
                     entry.addTopRenderableOnly(respackOptsWidget);
+                }
+            });
+            Mod.VTD.wrapError(packListEntry, entry -> {
+                VTDEditButtonWidget vtdEditButtonWidget = VTDEditButtonWidget.create(Minecraft.getInstance().screen, entry);
+                if (vtdEditButtonWidget != null) {
+                    entry.addTopRenderableOnly(entry.prependWidget(vtdEditButtonWidget));
                 }
             });
         }

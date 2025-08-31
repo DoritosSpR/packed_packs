@@ -10,10 +10,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 public class VTDButtonFactory {
-    private static final String VTD_SCREEN_NAME = "me.bymartrixx.vtd.gui.VTDownloadScreen";
-    private static final Sprite VTD_ICON = Sprite.of32(ResourceLocation.fromNamespaceAndPath("vt_downloader", "icon.png"));
-    private static final Component VTD_MESSAGE = Component.translatable("vtd.resourcePack.button");
-    private static final Component VTD_SUBTITLE = Component.translatable("vtd.resourcePack.subtitle");
+    static final String VTD_SCREEN_NAME = "me.bymartrixx.vtd.gui.VTDownloadScreen";
+    static final Sprite VTD_ICON = Sprite.of32(ResourceLocation.fromNamespaceAndPath("vt_downloader", "icon.png"));
+    static final Component VTD_MESSAGE = Component.translatable("vtd.resourcePack.button");
+    static final Component VTD_SUBTITLE = Component.translatable("vtd.resourcePack.subtitle");
 
     private VTDButtonFactory() {
     }
