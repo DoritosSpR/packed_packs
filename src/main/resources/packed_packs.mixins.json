@@ -14,9 +14,8 @@
     "compat.vtd.VTDownloaderScreenMixin",
     "folders.FolderRepositorySourceMixin",
     "folders.PackMixin",
-    "gui.CreateWorldScreenMixin",
     "gui.HeaderAndFooterLayoutAccess",
-    "gui.OptionsScreenMixin",
+    "gui.MinecraftMixin",
     "gui.PackSelectionScreenMixin"
   ],
   "plugin": "io.github.fishstiz.packed_packs.PackedPacksMixinConfigPlugin"
