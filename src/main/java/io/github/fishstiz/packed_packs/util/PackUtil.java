@@ -51,8 +51,8 @@ public class PackUtil {
         return FILE_PREFIX + generatePackName(path.getParent()) + DELIMITER + generatePackName(path);
     }
 
-    public static PackLocationInfo replicateLocationInfo(PackLocationInfo info, PackSource source, String id) {
-        return new PackLocationInfo(id, info.title(), source, info.knownPackInfo());
+    public static PackLocationInfo replicateLocationInfo(PackLocationInfo info, String id) {
+        return new PackLocationInfo(id, info.title(), info.source(), info.knownPackInfo());
     }
 
     public static long getLastUpdatedEpochMs(Pack pack) {

@@ -1,0 +1,38 @@
+package io.github.fishstiz.packed_packs.transform.mixin.folders.additional;
+
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
+import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.pack.ServerFolderRepositorySource;
+import io.github.fishstiz.packed_packs.util.PackUtil;
+import net.minecraft.server.packs.repository.PackRepository;
+import net.minecraft.server.packs.repository.RepositorySource;
+import net.minecraft.server.packs.repository.ServerPacksSource;
+import net.minecraft.world.level.validation.DirectoryValidator;
+import org.apache.commons.lang3.ArrayUtils;
+import org.spongepowered.asm.mixin.Debug;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+
+@Debug(export = true)
+@Mixin(ServerPacksSource.class)
+public abstract class ServerPacksSourceMixin {
+    @WrapOperation(method = "createPackRepository(Ljava/nio/file/Path;Lnet/minecraft/world/level/validation/DirectoryValidator;)Lnet/minecraft/server/packs/repository/PackRepository;", at = @At(
+            value = "NEW",
+            target = "([Lnet/minecraft/server/packs/repository/RepositorySource;)Lnet/minecraft/server/packs/repository/PackRepository;"
+    ))
+    private static PackRepository addAdditionalFolders(
+            RepositorySource[] sources,
+            Operation<PackRepository> original,
+            @Local(argsOnly = true) DirectoryValidator validator
+    ) {
+        RepositorySource[] folders = PackUtil.mapValidDirectories(PackedPacks.CONFIG.getDatapacks().getAdditionalFolders())
+                .stream()
+                .distinct()
+                .map(path -> new ServerFolderRepositorySource(path, validator))
+                .toArray(RepositorySource[]::new);
+
+        return original.call((Object) ArrayUtils.addAll(sources, folders));
+    }
+}
