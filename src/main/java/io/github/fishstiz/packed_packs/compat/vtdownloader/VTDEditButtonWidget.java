@@ -31,6 +31,7 @@ public class VTDEditButtonWidget extends AbstractButton {
     private static final ResourceLocation PENCIL_TEXTURE = ResourceLocation.fromNamespaceAndPath("vt_downloader", "textures/pencil.png");
     private static final int PENCIL_TEXTURE_SIZE = 32;
     private static final int PENCIL_SIZE = 16;
+    private static final int PENCIL_MARGIN_RIGHT = 1;
     private final LayoutElement container;
     private final Screen previous;
     private final PackSelectionModel.Entry pack;
@@ -54,7 +55,7 @@ public class VTDEditButtonWidget extends AbstractButton {
 
     @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        int pencilX = this.container.getX() + this.container.getWidth() - PENCIL_SIZE;
+        int pencilX = this.container.getX() + this.container.getWidth() - PENCIL_SIZE - PENCIL_MARGIN_RIGHT;
         int pencilY = this.container.getY() + this.container.getHeight() - PENCIL_SIZE;
         this.setPosition(pencilX, pencilY);
 
