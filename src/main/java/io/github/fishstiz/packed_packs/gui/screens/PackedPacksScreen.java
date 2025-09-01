@@ -585,7 +585,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         this.contextMenu.setOpen(false);
 
-        if (isRefresh(keyCode, modifiers)) {
+        if (isRefresh(keyCode, modifiers) && (this.refreshFuture == null || this.refreshFuture.isDone())) {
             this.refreshPacks();
             return true;
         }
