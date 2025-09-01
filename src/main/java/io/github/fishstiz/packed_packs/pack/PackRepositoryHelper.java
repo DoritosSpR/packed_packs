@@ -62,6 +62,10 @@ public class PackRepositoryHelper implements PackAssets {
         return ((PackSelectionModelAccessor) this.model).getUnselectedPacks();
     }
 
+    private void refreshModel() {
+        ((PackSelectionModelAccessor) this.model).packed_packs$reset();
+    }
+
     public ImmutableList<Pack> getPacks() {
         return ImmutableList.copyOf(this.availablePacks.values());
     }
@@ -237,6 +241,7 @@ public class PackRepositoryHelper implements PackAssets {
      */
     public void selectPacks(List<Pack> selected) {
         this.repository.setSelected(Lists.reverse(this.flattenPacks(selected)).stream().map(Pack::getId).collect(ImmutableList.toImmutableList()));
+        this.refreshModel();
     }
 
     /**
