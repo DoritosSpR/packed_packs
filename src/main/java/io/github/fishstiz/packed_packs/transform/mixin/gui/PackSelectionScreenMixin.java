@@ -16,6 +16,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.PackRepository;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,22 +33,27 @@ public abstract class PackSelectionScreenMixin extends Screen implements PackSel
     }
 
     @Unique
-    private PackSelectionScreenArgs packedPacks$original;
+    private PackSelectionScreenArgs packed_packs$original;
 
     @Unique
-    private FidgetzButton<GridWrapper<LinearLayout>> packedPacks$button;
+    private FidgetzButton<GridWrapper<LinearLayout>> packed_packs$button;
 
     @Unique
-    private Screen packedPacks$previous;
+    private Screen packed_packs$previous;
 
     @Override
-    public void packedPacks$setPrevious(Screen previous) {
-        this.packedPacks$previous = previous;
+    public void packed_packs$setPrevious(Screen previous) {
+        this.packed_packs$previous = previous;
+    }
+
+    @Override
+    public @Nullable Screen packed_packs$getPrevious() {
+        return this.packed_packs$previous;
     }
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void setRepository(PackRepository repository, Consumer<PackRepository> output, Path packDir, Component title, CallbackInfo ci) {
-        this.packedPacks$original = new PackSelectionScreenArgs(repository, output, packDir, title);
+        this.packed_packs$original = new PackSelectionScreenArgs(repository, output, packDir, title);
     }
 
     @WrapOperation(method = "init", at = @At(
@@ -60,25 +66,25 @@ public abstract class PackSelectionScreenMixin extends Screen implements PackSel
             return original.call(instance, spacing);
         }
 
-        Screen previous = this.packedPacks$previous != null ? this.packedPacks$previous : this;
-        this.packedPacks$button = FidgetzButton.<GridWrapper<LinearLayout>>builder()
+        Screen previous = this.packed_packs$previous != null ? this.packed_packs$previous : this;
+        this.packed_packs$button = FidgetzButton.<GridWrapper<LinearLayout>>builder()
                 .makeSquare()
                 .setTooltip(Tooltip.create(ResourceUtil.getModName()))
                 .setSprite(new Sprite(ResourceUtil.getIcon("packed_packs"), Size.of16()))
-                .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(previous, this.packedPacks$original)))
+                .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(previous, this.packed_packs$original)))
                 .setMetadata(new GridWrapper<>(original.call(instance, spacing), spacing))
                 .build();
 
-        this.addRenderableWidget(this.packedPacks$button);
-        return this.packedPacks$button.getMetadata().layout();
+        this.addRenderableWidget(this.packed_packs$button);
+        return this.packed_packs$button.getMetadata().layout();
     }
 
     @Inject(method = "repositionElements", at = @At("TAIL"))
     public void repositionPackedPacksButton(CallbackInfo ci) {
-        if (this.packedPacks$button != null) {
-            GridWrapper<LinearLayout> layoutData = this.packedPacks$button.getMetadata();
-            int x = layoutData.layout().getX() - this.packedPacks$button.getWidth() - layoutData.spacing();
-            this.packedPacks$button.setPosition(x, layoutData.layout().getY());
+        if (this.packed_packs$button != null) {
+            GridWrapper<LinearLayout> layoutData = this.packed_packs$button.getMetadata();
+            int x = layoutData.layout().getX() - this.packed_packs$button.getWidth() - layoutData.spacing();
+            this.packed_packs$button.setPosition(x, layoutData.layout().getY());
         }
     }
 }

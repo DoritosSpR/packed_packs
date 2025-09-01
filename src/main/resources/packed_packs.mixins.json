@@ -15,9 +15,8 @@
     "folders.FolderRepositorySourceMixin",
     "folders.PackMixin",
     "gui.AbstractSelectionListAccessor",
-    "gui.CreateWorldScreenMixin",
     "gui.HeaderAndFooterLayoutAccess",
-    "gui.OptionsScreenMixin",
+    "gui.MinecraftMixin",
     "gui.PackSelectionScreenMixin"
   ],
   "plugin": "io.github.fishstiz.packed_packs.PackedPacksMixinConfigPlugin"
