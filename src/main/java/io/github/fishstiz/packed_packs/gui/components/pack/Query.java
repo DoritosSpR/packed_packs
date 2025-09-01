@@ -99,6 +99,11 @@ public class Query {
             boolean builtInFirst = PackUtil.isBuiltIn(first);
             boolean builtInSecond = PackUtil.isBuiltIn(second);
             if (builtInFirst != builtInSecond) return builtInFirst ? 1 : -1;
+
+            boolean featureFirst = PackUtil.isFeature(first);
+            boolean featureSecond = PackUtil.isFeature(second);
+            if (featureFirst != featureSecond) return featureFirst ? 1 : -1;
+
             return first.getTitle().getString().compareTo(second.getTitle().getString());
         }),
         A_Z("sort.a_z", "sort_a_z", Comparator.comparing(
