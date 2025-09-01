@@ -16,6 +16,7 @@
     "folders.PackMixin",
     "gui.HeaderAndFooterLayoutAccess",
     "gui.MinecraftMixin",
+    "gui.OptionsScreenMixin",
     "gui.PackSelectionScreenMixin"
   ],
   "plugin": "io.github.fishstiz.packed_packs.PackedPacksMixinConfigPlugin"
