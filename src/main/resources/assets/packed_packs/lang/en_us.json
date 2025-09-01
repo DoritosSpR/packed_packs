@@ -21,6 +21,7 @@
   "packed_packs.profile.delete.info": "Delete Profile",
   "packed_packs.options": "Options",
   "packed_packs.apply": "Apply Packs",
+  "packed_packs.reset_enabled": "Reset to Enabled",
   "packed_packs.toggle_actionbar.info": "Toggle Action Bar",
   "packed_packs.search": "Search",
   "packed_packs.sort": "Sort",

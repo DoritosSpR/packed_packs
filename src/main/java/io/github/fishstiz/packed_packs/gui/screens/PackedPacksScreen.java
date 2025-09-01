@@ -70,6 +70,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private static final Component OPEN_FOLDER_INFO_TEXT = Component.translatable("pack.folderInfo");
     private static final Component APPLY_TEXT = ResourceUtil.getText("apply");
     private static final Component REFRESH_PACKS_TEXT = ResourceUtil.getText("refresh");
+    private static final Component RESET_ENABLED_TEXT = ResourceUtil.getText("reset_enabled");
     private final Screen previous;
     private final PackSelectionScreenArgs original;
     private final PackRepositoryHelper repository;
@@ -437,6 +438,11 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.clearHistory();
     }
 
+    public void resetToEnabled() {
+        this.onEvent(new DummyEvent());
+        this.useSelected();
+    }
+
     public void onProfileChange(@Nullable Profile profile) {
         if (profile == null) {
             this.useSelected();
@@ -613,6 +619,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
         this.buildItems(mouseX, mouseY)
                 .separatorIfNonEmpty()
+                .simpleItem(RESET_ENABLED_TEXT, this::resetToEnabled)
                 .simpleItem(REFRESH_PACKS_TEXT, this::canRefresh, this::refreshPacks)
                 .when(this.getAdditionalDirs(), List::isEmpty)
                 .ifTrue(b -> b.simpleItem(OPEN_FOLDER_TEXT, this.repository::openDir))
