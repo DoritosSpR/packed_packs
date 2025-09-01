@@ -4,7 +4,6 @@ import io.github.fishstiz.fidgetz.util.debounce.ConcurrentPollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
-import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import net.minecraft.Util;
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
@@ -41,8 +40,12 @@ public class PackWatcher implements AutoCloseable {
         this.monitor.setThreadFactory(r -> {
             throw new IllegalStateException("PackWatcher monitor should not be creating a new thread.");
         });
-        this.onChangeCallback = this.debounceCallback(onChangeCallback);
-        CollectionsUtil.forEachDistinct(directories, this::addDirectory);
+        this.onChangeCallback = new ConcurrentPollingDebouncer<>(path -> {
+            if (!this.closed.get() && !ModAdditions.discontinueChanges(path)) {
+                onChangeCallback.run();
+            }
+        }, DEBOUNCED_CHANGE_DELAY_MS);
+        directories.forEach(this::addDirectory);
     }
 
     private void addDirectory(Path directory) {
@@ -94,14 +97,6 @@ public class PackWatcher implements AutoCloseable {
                 }
             }
         });
-    }
-
-    private PollingDebouncer<Path> debounceCallback(Runnable callback) {
-        return new ConcurrentPollingDebouncer<>(path -> {
-            if (!this.closed.get() && !ModAdditions.discontinueChanges(path)) {
-                callback.run();
-            }
-        }, DEBOUNCED_CHANGE_DELAY_MS);
     }
 
     private record Filter(Path root) implements FileFilter {
