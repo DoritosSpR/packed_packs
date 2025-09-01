@@ -14,7 +14,7 @@ public class Config implements Serializable {
     private boolean hideIncompatible = false;
     private Query.SortOption sort = Query.SortOption.VANILLA;
     private final ResourcePacks resourcepacks = new ResourcePacks();
-    private final Packs datapacks = new Packs();
+    private final DataPacks datapacks = new DataPacks();
     transient File file;
 
     Config() {
@@ -68,7 +68,7 @@ public class Config implements Serializable {
     }
 
     public static class Packs implements Serializable {
-        private boolean replaceOriginal = false;
+        private boolean replaceOriginal = true;
         private boolean hideIncompatibleWarnings = false;
         private final List<String> additionalFolders = new ArrayList<>();
         private @Nullable Long lastViewed = null;
@@ -132,6 +132,9 @@ public class Config implements Serializable {
         public List<String> getAdditionalFolders() {
             return List.copyOf(this.additionalFolders);
         }
+    }
+
+    public static class DataPacks extends Packs {
     }
 
     public static class ResourcePacks extends Packs {
