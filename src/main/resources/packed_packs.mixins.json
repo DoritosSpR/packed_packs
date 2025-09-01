@@ -14,6 +14,8 @@
     "compat.vtd.VTDownloaderScreenMixin",
     "folders.FolderRepositorySourceMixin",
     "folders.PackMixin",
+    "folders.additional.MinecraftMixin",
+    "folders.additional.ServerPacksSourceMixin",
     "gui.AbstractSelectionListAccessor",
     "gui.HeaderAndFooterLayoutAccess",
     "gui.MinecraftMixin",
