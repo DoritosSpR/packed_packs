@@ -7,6 +7,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
+import java.nio.file.Path;
+
 @Mixin(PackSelectionScreen.class)
 public interface PackSelectionScreenAccessor extends IPackSelectionScreen {
     @Accessor("model")
@@ -17,4 +19,7 @@ public interface PackSelectionScreenAccessor extends IPackSelectionScreen {
 
     @Invoker("closeWatcher")
     void invokeCloseWatcher();
+
+    @Accessor("packDir")
+    Path packed_packs$getPackDir();
 }

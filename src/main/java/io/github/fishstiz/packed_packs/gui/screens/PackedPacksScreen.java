@@ -298,7 +298,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
             this.onClose();
         } else if (this.minecraft != null) {
             PackSelectionScreen originalScreen = this.original.createScreen();
-            ((PackSelectionScreenAccessor) originalScreen).packedPacks$setPrevious(this.previous);
+            ((PackSelectionScreenAccessor) originalScreen).packed_packs$setPrevious(this.previous);
             this.minecraft.setScreen(originalScreen);
         }
     }

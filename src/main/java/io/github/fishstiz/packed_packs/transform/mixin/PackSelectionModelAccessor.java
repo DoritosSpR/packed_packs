@@ -3,10 +3,12 @@ package io.github.fishstiz.packed_packs.transform.mixin;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPackSelectionModel;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackRepository;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * fabric workaround
@@ -23,4 +25,10 @@ public interface PackSelectionModelAccessor extends IPackSelectionModel {
 
     @Accessor("unselected")
     List<Pack> getUnselectedPacks();
+
+    @Accessor("repository")
+    PackRepository packed_packs$getRepository();
+
+    @Accessor("output")
+    Consumer<PackRepository> packed_packs$getOutput();
 }
