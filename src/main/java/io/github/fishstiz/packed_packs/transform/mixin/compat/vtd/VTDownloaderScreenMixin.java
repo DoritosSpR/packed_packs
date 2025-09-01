@@ -36,7 +36,8 @@ public abstract class VTDownloaderScreenMixin extends Screen {
             at = @At(
                     value = "FIELD:FIRST",
                     target = "Lme/bymartrixx/vtd/gui/VTDownloadScreen;pack:Lnet/minecraft/client/gui/screens/packs/PackSelectionModel$Entry;",
-                    ordinal = 0
+                    ordinal = 0,
+                    remap = true
             )
     )
     private PackSelectionModel.Entry getPackEntry(@Coerce Screen instance, Operation<PackSelectionModel.Entry> original) {
@@ -46,7 +47,8 @@ public abstract class VTDownloaderScreenMixin extends Screen {
     @Dynamic
     @WrapOperation(method = "readResourcePack", at = @At(
             value = "INVOKE",
-            target = "Lme/bymartrixx/vtd/access/AbstractPackAccess;vtdownloader$getProfile()Lnet/minecraft/server/packs/repository/Pack;"
+            target = "Lme/bymartrixx/vtd/access/AbstractPackAccess;vtdownloader$getProfile()Lnet/minecraft/server/packs/repository/Pack;",
+            remap = true
     ))
     private Pack getPack(@Coerce Object instance, Operation<Pack> original) {
         return this.packEntry instanceof PackWrapperDelegatorAbstractionEpicModelEntry(Pack pack) ? pack : original.call(instance);
