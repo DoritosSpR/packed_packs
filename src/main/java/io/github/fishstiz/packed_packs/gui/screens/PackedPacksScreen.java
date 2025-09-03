@@ -90,6 +90,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private final ContextMenu contextMenu = ContextMenu.builder(this).build();
     private final List<ToggleableDialog<?>> dialogs;
     private final List<PackList> packLists;
+    private List<Path> additionalFolders;
     private CompletableFuture<Void> refreshFuture;
     private PackWatcher watcher;
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
@@ -116,12 +117,14 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.fileRenameModal = new FileRenameModal(this, this.repository);
         this.dialogs = List.of(this.options, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
         this.packLists = List.of(this.folderDialog.root(), this.availablePacks.getList(), this.currentPacks.getList());
+        this.initAdditionalFolders();
     }
 
     @Override
     public void added() {
         if (this.initialized) {
             this.refreshPacks();
+            this.initAdditionalFolders();
             this.createWatcher();
         }
     }
@@ -340,8 +343,8 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     private void createWatcher() {
         if (this.watcher == null) {
             try {
-                List<Path> paths = CollectionsUtil.mutableListOf(this.repository.getDir());
-                paths.addAll(this.getAdditionalDirs());
+                List<Path> paths = CollectionsUtil.mutableListOf(this.repository.getBaseDir());
+                paths.addAll(this.additionalFolders);
                 this.watcher = new PackWatcher(paths, this::refreshPacks);
             } catch (Exception e) {
                 PackedPacks.LOGGER.error("[packed_packs] Failed to initialize pack directory watcher.", e);
@@ -357,8 +360,11 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         }
     }
 
-    private List<Path> getAdditionalDirs() {
-        return CollectionsUtil.deduplicate(mapValidDirectories(this.packsConfig.getAdditionalFolders()));
+    private void initAdditionalFolders() {
+        this.additionalFolders = CollectionsUtil.deduplicate(CollectionsUtil.addAll(
+                mapValidDirectories(this.packsConfig.getAdditionalFolders()),
+                this.repository.getAdditionalDirs()
+        ));
     }
 
     private void repositionLists() {
@@ -621,10 +627,10 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
                 .separatorIfNonEmpty()
                 .simpleItem(RESET_ENABLED_TEXT, this::resetToEnabled)
                 .simpleItem(REFRESH_PACKS_TEXT, this::canRefresh, this::refreshPacks)
-                .when(this.getAdditionalDirs(), List::isEmpty)
+                .when(this.additionalFolders, List::isEmpty)
                 .ifTrue(b -> b.simpleItem(OPEN_FOLDER_TEXT, this.repository::openDir))
                 .ifFalse((dirs, b) -> b.parentItem(OPEN_FOLDER_TEXT, sub -> sub
-                        .add(new DirectoryMenuItem(this.repository.getDir()))
+                        .add(new DirectoryMenuItem(this.repository.getBaseDir()))
                         .separator()
                         .addAll(dirs.stream().map(DirectoryMenuItem::new).toList())
                 ))
