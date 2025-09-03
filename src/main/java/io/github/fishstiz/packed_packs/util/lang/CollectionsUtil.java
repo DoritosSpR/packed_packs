@@ -58,9 +58,19 @@ public class CollectionsUtil {
         }
     }
 
-    public static <T> List<T> deduplicate(List<T> list) {
+    public static <T> List<T> deduplicate(Collection<T> list) {
         List<T> deduplicated = new ArrayList<>();
         forEachDistinct(list, deduplicated::add);
         return deduplicated;
+    }
+
+    @SafeVarargs
+    @SuppressWarnings("varargs")
+    public static <T> List<T> addAll(Collection<T>... collections) {
+        List<T> list = new ArrayList<>(collections.length);
+        for (Collection<T> collection : collections) {
+            list.addAll(collection);
+        }
+        return list;
     }
 }
