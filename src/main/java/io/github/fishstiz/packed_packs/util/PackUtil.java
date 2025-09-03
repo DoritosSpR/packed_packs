@@ -8,7 +8,6 @@ import io.github.fishstiz.packed_packs.transform.mixin.UtilAccess;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackLocationInfo;
@@ -99,24 +98,14 @@ public class PackUtil {
         return Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && !hasMcmeta(path);
     }
 
-    public static Path resolveRelativePath(String input, Path baseDir) {
-        Path path = Paths.get(input);
-        if (!path.isAbsolute()) {
-            path = baseDir.resolve(path).normalize();
-        } else {
-            path = path.normalize();
-        }
-        return baseDir.relativize(path);
-    }
-
     public static List<Path> mapValidDirectories(List<String> paths) {
         if (paths == null || paths.isEmpty()) return Collections.emptyList();
 
         return CollectionsUtil.extractNonNull(paths, path -> {
             try {
-                Path resolved = PackUtil.resolveRelativePath(path, FabricLoader.getInstance().getGameDir());
+                Path resolved = Paths.get(path);
                 if (Files.exists(resolved, LinkOption.NOFOLLOW_LINKS) && Files.isDirectory(resolved, LinkOption.NOFOLLOW_LINKS)) {
-                    return resolved;
+                    return resolved.toAbsolutePath().normalize();
                 } else {
                     PackedPacks.LOGGER.error("[packed_packs] Path is not a valid directory: '{}', ignoring.", path);
                 }
