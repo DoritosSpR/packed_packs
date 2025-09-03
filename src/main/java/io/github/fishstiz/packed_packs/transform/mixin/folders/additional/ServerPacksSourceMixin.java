@@ -4,8 +4,10 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.pack.ServerFolderRepositorySource;
+import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.util.PackUtil;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.repository.FolderRepositorySource;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.RepositorySource;
 import net.minecraft.server.packs.repository.ServerPacksSource;
@@ -30,7 +32,7 @@ public abstract class ServerPacksSourceMixin {
         RepositorySource[] folders = PackUtil.mapValidDirectories(PackedPacks.CONFIG.getDatapacks().getAdditionalFolders())
                 .stream()
                 .distinct()
-                .map(path -> new ServerFolderRepositorySource(path, validator))
+                .map(path -> new FolderRepositorySource(path, PackType.SERVER_DATA, PackAssets.SOURCE, validator))
                 .toArray(RepositorySource[]::new);
 
         return original.call((Object) ArrayUtils.addAll(sources, folders));

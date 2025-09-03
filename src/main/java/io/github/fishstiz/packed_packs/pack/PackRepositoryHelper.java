@@ -8,6 +8,8 @@ import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
+import io.github.fishstiz.packed_packs.transform.mixin.folders.additional.FolderRepositorySourceAccessor;
+import io.github.fishstiz.packed_packs.transform.mixin.folders.additional.PackRepositoryAccessor;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
@@ -349,8 +351,20 @@ public class PackRepositoryHelper implements PackAssets {
         return selectedIds.contains(pack.getId());
     }
 
-    public Path getDir() {
+    public Path getBaseDir() {
         return this.packDir;
+    }
+
+    public List<Path> getAdditionalDirs() {
+        Path normalizedBaseDir = this.getBaseDir().toAbsolutePath().normalize();
+
+        return ((PackRepositoryAccessor) this.repository).packed_packs$getSources().stream()
+                .filter(FolderRepositorySourceAccessor.class::isInstance)
+                .map(source -> ((FolderRepositorySourceAccessor) source).packed_packs$getFolder())
+                .map(path -> path.toAbsolutePath().normalize())
+                .filter(path -> !path.equals(normalizedBaseDir))
+                .distinct()
+                .toList();
     }
 
     public @Nullable Folder getFolderConfig(FolderPack folderPack) {
