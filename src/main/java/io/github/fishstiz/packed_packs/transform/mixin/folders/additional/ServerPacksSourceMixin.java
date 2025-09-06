@@ -13,11 +13,9 @@ import net.minecraft.server.packs.repository.RepositorySource;
 import net.minecraft.server.packs.repository.ServerPacksSource;
 import net.minecraft.world.level.validation.DirectoryValidator;
 import org.apache.commons.lang3.ArrayUtils;
-import org.spongepowered.asm.mixin.Debug;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-@Debug(export = true)
 @Mixin(ServerPacksSource.class)
 public abstract class ServerPacksSourceMixin {
     @WrapOperation(method = "createPackRepository(Ljava/nio/file/Path;Lnet/minecraft/world/level/validation/DirectoryValidator;)Lnet/minecraft/server/packs/repository/PackRepository;", at = @At(
@@ -31,6 +29,7 @@ public abstract class ServerPacksSourceMixin {
     ) {
         RepositorySource[] folders = PackUtil.mapValidDirectories(PackedPacks.CONFIG.getDatapacks().getAdditionalFolders())
                 .stream()
+                .map(path -> path.toAbsolutePath().normalize())
                 .distinct()
                 .map(path -> new FolderRepositorySource(path, PackType.SERVER_DATA, PackAssets.SOURCE, validator))
                 .toArray(RepositorySource[]::new);
