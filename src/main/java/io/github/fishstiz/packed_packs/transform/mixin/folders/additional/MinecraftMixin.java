@@ -30,6 +30,7 @@ public abstract class MinecraftMixin {
     private PackRepository addAdditionalFolders(RepositorySource[] sources, Operation<PackRepository> original) {
         RepositorySource[] folders = PackUtil.mapValidDirectories(PackedPacks.CONFIG.getResourcepacks().getAdditionalFolders())
                 .stream()
+                .map(path -> path.toAbsolutePath().normalize())
                 .distinct()
                 .map(path -> new FolderRepositorySource(path, PackType.CLIENT_RESOURCES, PackSource.DEFAULT, this.directoryValidator))
                 .toArray(RepositorySource[]::new);
