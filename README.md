@@ -7,12 +7,28 @@ Pack resource and data packs into profiles with multiple selection, drag and dro
 -   Save and load custom profiles.
 -   Select multiple packs at once.
 -   Drag and drop selection between columns.
+-   Additional Folders.
 -   Folder Packs.
 -   Search by title.
 -   Filter out incompatible packs.
 -   Sort alphabetically or by last updated.
--   Additional mouse and keyboard controls.
+-   Mouse and keyboard controls.
 -   History (undo and redo).
+
+### 📂 Additional Folders
+- Add extra folders for pack discovery.
+- Configure in `config/packed_packs.json` by adding paths under the `additionalFolders` array inside `resourcepacks` or `datapacks`.
+- If the array doesn’t exist, create it manually or open and close the Packed Packs screen to update the config.
+- Paths can be absolute or relative to the game directory.
+- Correctly added folders appear as a context menu option under **Open Pack Folder**.
+- **Requires game restart to apply.**
+
+### 📂📦 Folder Packs
+- Any folder in the root pack directory containing packs, without a `pack.mcmeta`, will be treated as a folder pack.
+- Folder packs behave like regular packs and can be moved between rows and columns to toggle multiple packs at once.
+- They can be opened to view and reorder their contents. The order is saved to `packed_packs.folderpack.json` in the
+  folder root.
+- Add a `pack.png` at the folder root to set a custom icon.
 
 ### 🖱️ Mouse Controls
 - Hold <kbd>Shift</kbd> while clicking to select range.
@@ -22,23 +38,21 @@ Pack resource and data packs into profiles with multiple selection, drag and dro
 - Click forwards side button to redo.
 
 ### ⌨️ Keyboard Controls
-- Navigate entries with <kbd>↑</kbd> and <kbd>↓</kbd> arrow keys.
-- Navigate out of entries with <kbd>Tab</kbd>.
-- Press <kbd>Space</kbd> or <kbd>Enter</kbd> to transfer selection.
-- Hold <kbd>Shift</kbd> with <kbd>↑</kbd> and <kbd>↓</kbd> arrow keys to select range.
-- Hold <kbd>Ctrl</kbd> or <kbd>Alt</kbd> with <kbd>↑</kbd> and <kbd>↓</kbd> arrow keys to move selection.
-- Press <kbd>Ctrl</kbd> + <kbd>Z</kbd> to undo.
-- Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd> or <kbd>Ctrl</kbd> + <kbd>Y</kbd> to redo.
-- Press <kbd>Enter</kbd> to open a single folder pack. <kbd>Space</kbd> to transfer.
-- Press <kbd>Escape</kbd> to close a folder pack.
-- Type any character to automatically focus search bar.
-
-### 📂 Folder Packs
-- Any folder in the root pack directory containing packs, without a `pack.mcmeta`, will be treated as a folder pack.
-- Folder packs behave like regular packs and can be moved between rows and columns to toggle multiple packs at once.
-- They can be opened to view and reorder their contents. The order is saved to `packed_packs.folderpack.json` in the
-  folder root.
-- Add a `pack.png` at the folder root to set a custom icon.
+- Navigate entries — <kbd>↑</kbd> / <kbd>↓</kbd>
+- Navigate out of entries — <kbd>Tab</kbd>
+- Transfer selection — <kbd>Space</kbd> / <kbd>Enter</kbd>
+- Select range — <kbd>Shift</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd>
+- Move selection — <kbd>Ctrl</kbd> / <kbd>Alt</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd>
+- Undo — <kbd>Ctrl</kbd> + <kbd>Z</kbd>
+- Redo — <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd> / <kbd>Ctrl</kbd> + <kbd>Y</kbd>
+- Open folder pack — <kbd>Enter</kbd>
+- Close folder pack — <kbd>Escape</kbd>
+- Delete file — <kbd>Delete</kbd>
+- Rename file — <kbd>Ctrl</kbd> + <kbd>R</kbd> / <kbd>F2</kbd> (if not bound to screenshot)
+- Open file — <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+- Show in file manager — <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>
+- Refresh packs — <kbd>F5</kbd>
+- Focus search bar — type any character
 
 ### ⚙️ Configuration
 - Apply resource packs automatically on close.
