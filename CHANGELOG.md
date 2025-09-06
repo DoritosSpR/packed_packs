@@ -1,20 +1,23 @@
-**WARNING**: This update will deselect/disable any packs under `additionalFolders`.
-<br>
-
-- Added Reset to Enabled option in context menu, which resets your packs to what is currently enabled.
-- Added Show in File Manager option in context menu.
-- Added keyboard shortcuts:
+- **Context Menus**: Right-click anywhere to open the context menu. Perform action such as:
+    - Renaming, Deleting, Opening, and Refreshing packs.
+- **Additional Folders** ([#18](https://github.com/fishstiz/packed_packs/issues/18)): Lets you add an additional folder
+  for pack discovery.
+    - An additional folder can be added by going to the config `config/packed_packs.json`and adding a path to the folder
+      in the `additionalFolders` array under `resourcepacks` or `datapacks`.
+    - If the `additionalFolders` array does not exist, you may add it yourself or Open and Close the Packed Packs Screen
+      to update the config.
+    - Path can be absolute or relative to the game directory.
+    - Shows up as a context menu action under "Open Pack Folder" if done correctly.
+    - **Requires restart to apply**!
+- Added keyboard shortcuts for the context menu actions:
     - Delete File: `Delete`
     - Rename File: `Ctrl` + `R` or `F2` (if unbound from screenshot)
     - Open File: `Ctrl` + `Enter`
     - Show in File Manager: `Alt` + `Shift` + `R`
     - Refresh Packs: `F5`
-- Deleted files will attempt to move to trash first instead of permanently deleting.
+- Added real-time file watching in the Packed Packs screen for folder packs, additional folders, and other folder
+  sources/providers (`FolderRepositorySource`/`FileResourcePackProvider`) that may be registered by other mods.
 - Added the pencil button from VTDownloader ([#6](https://github.com/fishstiz/packed_packs/issues/6)).
-- Replace original screen option should always replace original screen regardless of where the screen is
-  opened. ([#23](https://github.com/fishstiz/packed_packs/issues/23))
-- Replace original screen default value set to `true`.
-- Removed unique prefix in additional folder pack ids. This allows packs to easily be movable across other additional
-  folders, but you'll have to resolve duplicate pack ids yourself.
-- Fixed vanilla sort not accounting for feature packs.
-- Fixed being able to register base folder as an additional folder causing packs to be discovered twice on said folder.
+- Updated Ukrainian Translation ([#21](https://github.com/fishstiz/packed_packs/pull/21)).
+- Now replaces the original screen by default.
+- Fixed bugs (see beta changelog).
