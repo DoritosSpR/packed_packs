@@ -1,8 +1,8 @@
 package io.github.fishstiz.packed_packs.util.constants;
 
-import io.github.fishstiz.fidgetz.util.ITheme;
+import io.github.fishstiz.fidgetz.util.ARGBColor;
 
-public enum Theme implements ITheme {
+public enum Theme implements ARGBColor {
     RED_700(0xFFB00000), // Turkey Red
     RED_900(0xFF770000), // Barn Red
     GREEN_500(0xFF22C55E), // Dark Pastel Green

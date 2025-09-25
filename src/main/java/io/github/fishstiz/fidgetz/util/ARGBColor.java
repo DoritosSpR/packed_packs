@@ -1,6 +1,6 @@
 package io.github.fishstiz.fidgetz.util;
 
-public interface ITheme {
+public interface ARGBColor {
     int getARGB();
 
     default int withAlpha(float alpha) {

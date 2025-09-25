@@ -5,7 +5,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
-import io.github.fishstiz.fidgetz.util.ITheme;
+import io.github.fishstiz.fidgetz.util.ARGBColor;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.Minecraft;
@@ -252,7 +252,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             super(0, 0, width, ITEM_HEIGHT, item.text());
 
             this.text = FidgetzText.<Void>builder().setMessage(item.text()).alignLeft().build();
-            this.separator = ObjectsUtil.mapOrNull(separator, color -> ITheme.withAlpha(color, 0.15f));
+            this.separator = ObjectsUtil.mapOrNull(separator, color -> ARGBColor.withAlpha(color, 0.15f));
             this.onPress = item.action();
             this.parent = parent;
             this.item = item;
