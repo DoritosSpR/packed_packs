@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.compat.respackopts;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
-import io.github.fishstiz.packed_packs.compat.ModAdditions;
+import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
 import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
 import io.gitlab.jfronny.respackopts.RespackoptsClient;
@@ -23,7 +23,7 @@ public class RespackoptsWidget extends AbstractButton {
     private final LayoutElement container;
 
     private RespackoptsWidget(LayoutElement container, ResourcePackEntryWidget wrapped, PackSelectionModel.Entry model) {
-        super(0, 0, 0, 0, Component.literal(ModAdditions.Mod.RESPACKOPTS.getId()));
+        super(0, 0, 0, 0, Component.literal(Mod.RESPACKOPTS.getId()));
 
         this.container = container;
         this.wrapped = wrapped;

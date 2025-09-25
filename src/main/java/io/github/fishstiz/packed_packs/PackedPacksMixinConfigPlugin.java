@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs;
 
-import net.fabricmc.loader.api.FabricLoader;
+import io.github.fishstiz.packed_packs.compat.Mod;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -21,7 +21,8 @@ public class PackedPacksMixinConfigPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         final String compatPackage = "io.github.fishstiz.packed_packs.transform.mixin.compat";
-        if (mixinClassName.startsWith(compatPackage + ".vtd") && !FabricLoader.getInstance().isModLoaded("vt_downloader")) {
+
+        if (mixinClassName.startsWith(compatPackage + ".vtd") && !Mod.VTD.isLoaded()) {
             return false;
         }
 
