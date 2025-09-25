@@ -111,13 +111,13 @@ publishMods {
     additionalFiles.from(remapSourcesJar.archiveFile)
     changelog = file("CHANGELOG.md").text
     displayName = "$mod_name v$mod_version"
-    type = STABLE
+    type = BETA
     modLoaders.add("fabric")
 
     github {
         accessToken = secrets.getProperty("GITHUB_TOKEN")
         repository = "fishstiz/packed_packs"
-        commitish = "mc/$minecraft_version"
+        commitish = "mc/1.21.9"
         tagName = "v$mod_version"
     }
 
