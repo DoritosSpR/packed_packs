@@ -1,7 +1,7 @@
 package io.github.fishstiz.packed_packs.compat.respackopts;
 
 import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
-import io.github.fishstiz.packed_packs.compat.ModAdditions;
+import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
 import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
 import io.gitlab.jfronny.respackopts.RespackoptsClient;
@@ -11,6 +11,7 @@ import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
+import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
@@ -21,7 +22,7 @@ public class RespackoptsWidget extends AbstractButton {
     private final LayoutElement container;
 
     private RespackoptsWidget(LayoutElement container, ResourcePackEntryWidget wrapped, PackSelectionModel.Entry model) {
-        super(0, 0, 0, 0, Component.literal(ModAdditions.Mod.RESPACKOPTS.getId()));
+        super(0, 0, 0, 0, Component.literal(Mod.RESPACKOPTS.getId()));
 
         this.container = container;
         this.wrapped = wrapped;
@@ -39,7 +40,7 @@ public class RespackoptsWidget extends AbstractButton {
     }
 
     @Override
-    public void onPress() {
+    public void onPress(InputWithModifiers inputWithModifiers) {
         this.wrapped.onClick(this.model);
     }
 
