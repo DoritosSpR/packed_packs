@@ -138,7 +138,7 @@ public class Config implements Serializable {
     }
 
     public static class ResourcePacks extends Packs {
-        private boolean applyOnClose = false;
+        private boolean applyOnClose = true;
 
         public boolean isApplyOnClose() {
             return this.applyOnClose;
