@@ -36,19 +36,16 @@ public class PackRepositoryHelper implements PackAssets {
     private final Map<String, CompletableFuture<Folder>> folderConfigs = new Object2ObjectOpenHashMap<>();
     private final PackRepository repository;
     private final Path packDir;
-    private final PackSelectionModel model;
     private final boolean resourcePacks;
+    private PackSelectionModel model;
     private Map<String, ResourceLocation> staleIcons;
 
     public PackRepositoryHelper(PackRepository repository, Path packDir) {
         this.repository = repository;
         this.packDir = packDir;
-
-        // Fabric API workaround
-        this.model = new PackSelectionModel(Runnables.doNothing(), PackAssets::getDefaultIcon, this.repository, Consumers.nop());
-
         this.resourcePacks = this.repository == Minecraft.getInstance().getResourcePackRepository();
 
+        this.refreshModel();
         this.regenerateAvailablePacks();
     }
 
@@ -65,7 +62,7 @@ public class PackRepositoryHelper implements PackAssets {
     }
 
     private void refreshModel() {
-        ((PackSelectionModelAccessor) this.model).packed_packs$reset();
+        this.model = new PackSelectionModel(Consumers.nop(), PackAssets::getDefaultIcon, this.repository, Consumers.nop());
     }
 
     public ImmutableList<Pack> getPacks() {
