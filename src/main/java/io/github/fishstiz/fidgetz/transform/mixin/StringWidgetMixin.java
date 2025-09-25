@@ -8,15 +8,11 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.util.FormattedCharSequence;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(StringWidget.class)
 public class StringWidgetMixin implements IStringWidget {
-    @Shadow
-    private float alignX;
-
     @Unique
     private Boolean fidgetz$shadow;
 
@@ -31,11 +27,6 @@ public class StringWidgetMixin implements IStringWidget {
     @Override
     public boolean fidgetz$hasShadow() {
         return this.fidgetz$shadow != null && this.fidgetz$shadow;
-    }
-
-    @Override
-    public void fidgetz$setAlignX(float alignX) {
-        this.alignX = alignX;
     }
 
     @Override

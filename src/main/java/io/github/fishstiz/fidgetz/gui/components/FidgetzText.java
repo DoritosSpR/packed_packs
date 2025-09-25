@@ -5,11 +5,12 @@ import io.github.fishstiz.fidgetz.transform.interfaces.IStringWidget;
 import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
-public class FidgetzText<E> extends StringWidget implements Metadata<E> {
+public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E> {
     private E metadata;
 
     private FidgetzText(Builder<E> builder) {
@@ -27,12 +28,22 @@ public class FidgetzText<E> extends StringWidget implements Metadata<E> {
         if (builder.color != null) this.setColor(builder.color);
 
         ((IStringWidget) this).fidgetz$setShadow(builder.shadow);
-        ((IStringWidget) this).fidgetz$setAlignX(builder.alignment.getValue());
         ((IStringWidget) this).fidgetz$setOffsetY(builder.offsetY);
     }
 
     public void setOffsetY(int offsetY) {
         ((IStringWidget) this).fidgetz$setOffsetY(offsetY);
+    }
+
+    @Override
+    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
+        super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return super.isMouseOver(mouseX, mouseY) && Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     @Override
@@ -43,22 +54,6 @@ public class FidgetzText<E> extends StringWidget implements Metadata<E> {
     @Override
     public void setMetadata(E metadata) {
         this.metadata = metadata;
-    }
-
-    public enum Alignment {
-        LEFT(0.0F),
-        CENTER(0.5F),
-        RIGHT(1.0F);
-
-        private final float value;
-
-        Alignment(float value) {
-            this.value = value;
-        }
-
-        private float getValue() {
-            return this.value;
-        }
     }
 
     public static <E> Builder<E> builder(Font font) {
@@ -76,7 +71,6 @@ public class FidgetzText<E> extends StringWidget implements Metadata<E> {
         private Integer width;
         private int height;
         private int offsetY;
-        private Alignment alignment = Alignment.CENTER;
         private Component message = Component.empty();
         private Integer color;
         private boolean shadow;
@@ -126,26 +120,6 @@ public class FidgetzText<E> extends StringWidget implements Metadata<E> {
 
         public Builder<E> setOffsetY(int offsetY) {
             this.offsetY = offsetY;
-            return this;
-        }
-
-        public Builder<E> setAlignment(Alignment alignment) {
-            this.alignment = alignment;
-            return this;
-        }
-
-        public Builder<E> alignLeft() {
-            this.alignment = Alignment.LEFT;
-            return this;
-        }
-
-        public Builder<E> alignCenter() {
-            this.alignment = Alignment.CENTER;
-            return this;
-        }
-
-        public Builder<E> alignRight() {
-            this.alignment = Alignment.RIGHT;
             return this;
         }
 

@@ -1,26 +1,28 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import io.github.fishstiz.fidgetz.gui.Metadata;
 import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.util.GuiUtil;
-import net.minecraft.client.Minecraft;
+import io.github.fishstiz.fidgetz.util.DrawUtil;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class FidgetzButton<E> extends Button implements Metadata<E> {
+public class FidgetzButton<E> extends Button implements Fidgetz, Metadata<E> {
     private final List<Runnable> listeners = new ArrayList<>();
     private final ButtonSprites sprites;
     private final Integer focusedBorder;
     private final boolean spriteOnly;
+    private final boolean focusOnInteract;
     private E metadata;
 
     protected FidgetzButton(Builder<E, ?> builder) {
@@ -30,6 +32,7 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         this.sprites = builder.sprites;
         this.spriteOnly = builder.spriteOnly;
         this.focusedBorder = builder.focusedBorder;
+        this.focusOnInteract = builder.focusOnInteract;
 
         if (builder.tooltip != null) {
             this.setTooltip(builder.tooltip);
@@ -37,8 +40,8 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
     }
 
     @Override
-    public void onPress() {
-        super.onPress();
+    public void onPress(InputWithModifiers inputWithModifiers) {
+        super.onPress(inputWithModifiers);
 
         for (var listener : this.listeners) {
             listener.run();
@@ -68,12 +71,12 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
     }
 
     protected void renderBorder(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
-        guiGraphics.renderOutline(x, y, width, height, this.focusedBorder);
+        DrawUtil.renderOutline(guiGraphics, x, y, width, height, this.focusedBorder);
     }
 
     @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.isHovered = this.containsPoint(mouseX, mouseY);
+        this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
 
         if (!this.spriteOnly) {
             super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
@@ -91,6 +94,14 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         if (this.isHoveredOrFocused() && this.focusedBorder != null) {
             this.renderBorder(guiGraphics, this.getX(), this.getY(), this.getWidth(), this.getHeight(), partialTick);
         }
+
+        this.updateCursor(guiGraphics);
+    }
+
+    protected void updateCursor(GuiGraphics guiGraphics) {
+        if (this.isHovered()) {
+            guiGraphics.requestCursor(this.isActive() ? CursorTypes.POINTING_HAND : CursorTypes.NOT_ALLOWED);
+        }
     }
 
     @Override
@@ -100,20 +111,14 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         }
     }
 
-    private boolean isUncovered(double mouseX, double mouseY) {
-        if (Minecraft.getInstance().screen instanceof ToggleableDialogContainer dialogContainer) {
-            return !dialogContainer.isChildCoveredAtPoint(this, mouseX, mouseY);
-        }
-        return true;
-    }
-
-    public boolean containsPoint(double mouseX, double mouseY) {
-        return GuiUtil.containsPoint(this, mouseX, mouseY) && this.isUncovered(mouseX, mouseY);
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return super.isMouseOver(mouseX, mouseY) && Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     @Override
-    public boolean isMouseOver(double mouseX, double mouseY) {
-        return super.isMouseOver(mouseX, mouseY) && this.isUncovered(mouseX, mouseY);
+    public boolean shouldTakeFocusAfterInteraction() {
+        return this.focusOnInteract;
     }
 
     public static <E> Builder<E, ?> builder() {
@@ -130,6 +135,7 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         private ButtonSprites sprites;
         private boolean spriteOnly = false;
         private Integer focusedBorder;
+        private boolean focusOnInteract = true;
         private OnPress onPress = btn -> {
         };
         private E metadata;
@@ -221,6 +227,11 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
 
         public B setFocusedBorder(Integer hoverBorder) {
             this.focusedBorder = hoverBorder;
+            return self();
+        }
+
+        public B setFocusOnInteract(boolean focusOnInteract) {
+            this.focusOnInteract = focusOnInteract;
             return self();
         }
 

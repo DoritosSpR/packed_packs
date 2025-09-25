@@ -21,6 +21,9 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.navigation.FocusNavigationEvent;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -202,22 +205,22 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         }
     }
 
-    private boolean isValidClickButton(int button) {
-        return button == InputConstants.MOUSE_BUTTON_LEFT;
+    protected boolean isValidClickButton(MouseButtonInfo mouseButtonInfo) {
+        return mouseButtonInfo.button() == InputConstants.MOUSE_BUTTON_LEFT;
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent keyEvent) {
         if (!this.isOpen()) {
             return false;
         }
-        if (this.shouldCloseOnEscape() && keyCode == InputConstants.KEY_ESCAPE) {
+        if (this.shouldCloseOnEscape() && keyEvent.isEscape()) {
             this.setOpen(false);
             return true;
         }
         GuiEventListener focused = this.getFocused();
         if (focused != null) {
-            return focused.keyPressed(keyCode, scanCode, modifiers);
+            return focused.keyPressed(keyEvent);
         }
         return false;
     }
@@ -244,14 +247,16 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
         if (!this.isOpen()) {
             return false;
         }
-        Optional<GuiEventListener> hoveredChild = this.getChildAt(mouseX, mouseY);
-        if (hoveredChild.isPresent() && hoveredChild.get().mouseClicked(mouseX, mouseY, button)) {
-            this.setFocused(hoveredChild.get());
-            if (this.isValidClickButton(button)) {
+        Optional<GuiEventListener> hoveredChild = this.getChildAt(mouseButtonEvent.x(), mouseButtonEvent.y());
+        if (hoveredChild.isPresent() && hoveredChild.get().mouseClicked(mouseButtonEvent, doubleClicked)) {
+            if (hoveredChild.get().shouldTakeFocusAfterInteraction()) {
+                this.setFocused(hoveredChild.get());
+            }
+            if (this.isValidClickButton(mouseButtonEvent.buttonInfo())) {
                 this.setDragging(true);
             }
             return true;
@@ -262,11 +267,11 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
                 child.setFocused(false);
             }
         }
-        if (hoveredChild.isPresent() || this.isMouseOverBounds(mouseX, mouseY)) {
+        if (hoveredChild.isPresent() || this.isMouseOverBounds(mouseButtonEvent.x(), mouseButtonEvent.y())) {
             return true;
         }
-        if (this.autoClose && this.isValidClickButton(button) &&
-            (this.ignoreAutoCloseArea == null || !this.ignoreAutoCloseArea.containsPoint(mouseX, mouseY))) {
+        if (this.autoClose && this.isValidClickButton(mouseButtonEvent.buttonInfo()) &&
+            (this.ignoreAutoCloseArea == null || !this.ignoreAutoCloseArea.containsPoint(mouseButtonEvent.x(), mouseButtonEvent.y()))) {
             this.setOpen(false);
         }
         return this.captureClick || this.captureFocus;
@@ -459,16 +464,13 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
                 .toList();
         Screen.NarratableSearchResult narratableSearchResult = findNarratableWidget(sortedNarratables, this.lastNarratable);
         if (narratableSearchResult != null) {
-            if (narratableSearchResult.priority.isTerminal()) {
-                this.lastNarratable = narratableSearchResult.entry;
+            if (narratableSearchResult.priority().isTerminal()) {
+                this.lastNarratable = narratableSearchResult.entry();
             }
-            if (sortedNarratables.size() > 1) {
-                narrationElementOutput.add(NarratedElementType.POSITION, Component.translatable("narrator.position.screen", narratableSearchResult.index + 1, sortedNarratables.size()));
-                if (narratableSearchResult.priority == NarrationPriority.FOCUSED) {
-                    narrationElementOutput.add(NarratedElementType.USAGE, this.getUsageNarration());
-                }
+            if (sortedNarratables.size() > 1 && narratableSearchResult.priority() == NarrationPriority.FOCUSED) {
+                narrationElementOutput.add(NarratedElementType.USAGE, this.getUsageNarration());
             }
-            narratableSearchResult.entry.updateNarration(narrationElementOutput.nest());
+            narratableSearchResult.entry().updateNarration(narrationElementOutput.nest());
         }
     }
 

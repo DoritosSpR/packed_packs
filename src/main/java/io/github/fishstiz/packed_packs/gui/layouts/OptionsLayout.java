@@ -28,7 +28,6 @@ public class OptionsLayout {
         this.layout.addChild(
                 FidgetzText.<Void>builder()
                         .setMessage(ResourceUtil.getText("resource_packs").withColor(labelColor))
-                        .alignLeft()
                         .build(),
                 layoutSettings.copy().paddingTop((spacing * 2) - spacing / 2)
         );
@@ -61,7 +60,6 @@ public class OptionsLayout {
         this.layout.addChild(
                 FidgetzText.<Void>builder()
                         .setMessage(Component.translatable("selectWorld.dataPacks").withColor(labelColor))
-                        .alignLeft()
                         .build(),
                 layoutSettings.copy().paddingTop(spacing * 2)
         );

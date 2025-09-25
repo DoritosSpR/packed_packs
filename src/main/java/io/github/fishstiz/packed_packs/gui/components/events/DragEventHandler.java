@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.gui.components.events;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.input.MouseButtonEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,24 +34,24 @@ public interface DragEventHandler extends ContainerEventHandler {
     }
 
     @Override
-    default boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    default boolean mouseDragged(MouseButtonEvent mouseButtonEvent, double dragX, double dragY) {
         if (this.isDraggingSelection()) {
             return true;
         }
 
-        return ContainerEventHandler.super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return ContainerEventHandler.super.mouseDragged(mouseButtonEvent, dragX, dragY);
     }
 
     @Override
-    default boolean mouseReleased(double mouseX, double mouseY, int button) {
+    default boolean mouseReleased(MouseButtonEvent mouseButtonEvent) {
         DragEvent event = this.getDragged();
 
-        if (isLeftClick(button) && event != null) {
-            this.onRelease(event, mouseX, mouseY);
+        if (isLeftClick(mouseButtonEvent) && event != null) {
+            this.onRelease(event, mouseButtonEvent.x(), mouseButtonEvent.y());
             this.setDragged(null);
             return true;
         }
 
-        return ContainerEventHandler.super.mouseReleased(mouseX, mouseY, button);
+        return ContainerEventHandler.super.mouseReleased(mouseButtonEvent);
     }
 }

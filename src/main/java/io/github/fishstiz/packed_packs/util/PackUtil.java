@@ -23,6 +23,7 @@ import java.nio.file.*;
 import java.util.*;
 
 public class PackUtil {
+    public static final String HIGH_CONTRAST_ID = "high_contrast";
     // Changing these fields would be breaking changes
     private static final String FILE_PREFIX = "file/";
     private static final String DELIMITER = "/";

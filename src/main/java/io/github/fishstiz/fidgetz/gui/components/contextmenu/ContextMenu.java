@@ -20,6 +20,7 @@ import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.sounds.SoundManager;
 import org.jetbrains.annotations.NotNull;
 
@@ -236,7 +237,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         @Override
         public void render(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
             guiGraphics.fill(x, y, x + width, y + height, this.backgroundColor);
-            guiGraphics.renderOutline(x, y, width, height, this.borderColor);
+            DrawUtil.renderOutline(guiGraphics, x, y, width, height, this.borderColor);
         }
     }
 
@@ -251,16 +252,11 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         private ItemWidget(int width, Integer separator, T item, ContextMenu parent) {
             super(0, 0, width, ITEM_HEIGHT, item.text());
 
-            this.text = FidgetzText.<Void>builder().setMessage(item.text()).alignLeft().build();
+            this.text = FidgetzText.<Void>builder().setMessage(item.text()).build();
             this.separator = ObjectsUtil.mapOrNull(separator, color -> ARGBColor.withAlpha(color, 0.15f));
             this.onPress = item.action();
             this.parent = parent;
             this.item = item;
-        }
-
-        @Override
-        public boolean isActive() {
-            return super.isActive() && this.item.active();
         }
 
         @Override
@@ -276,7 +272,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         }
 
         @Override
-        public void onClick(double mouseX, double mouseY) {
+        public void onClick(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
             if (this.item.active()) {
                 this.onPress.run();
             }
@@ -319,7 +315,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             boolean hovered = this.isMouseOver(mouseX, mouseY);
             this.renderHighlight(guiGraphics, x, y, right, bottom, hovered, partialTick);
             this.renderSeparator(guiGraphics, x, right - 1, bottom - 1);
-            if (this.isFocused()) guiGraphics.renderOutline(x, y, width, height, Theme.WHITE.getARGB());
+            if (this.isFocused()) DrawUtil.renderOutline(guiGraphics, x, y, width, height, Theme.WHITE.getARGB());
 
             int textX = x + SPACING;
             int textY = y + SPACING;
@@ -378,7 +374,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         }
 
         @Override
-        public void onClick(double mouseX, double mouseY) {
+        public void onClick(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
             if (this.item.active()) {
                 this.forcedOpen = !this.forcedOpen;
             }

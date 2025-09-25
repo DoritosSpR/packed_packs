@@ -3,6 +3,7 @@ package io.github.fishstiz.fidgetz.gui.components;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
@@ -54,8 +55,8 @@ public class ToggleButton<E> extends FidgetzButton<E> {
     }
 
     @Override
-    public void onClick(double mouseX, double mouseY) {
-        super.onClick(mouseX, mouseY);
+    public void onClick(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+        super.onClick(mouseButtonEvent, doubleClicked);
 
         this.setValue(!this.getValue());
     }

@@ -45,7 +45,6 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
                         .setMessage(builder.title)
                         .setShadow(builder.shadow)
                         .setOffsetY(1)
-                        .alignLeft()
                         .build(),
                 false,
                 builder.headerSettings

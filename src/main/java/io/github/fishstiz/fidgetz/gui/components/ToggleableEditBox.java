@@ -6,7 +6,10 @@ import io.github.fishstiz.fidgetz.gui.Metadata;
 import io.github.fishstiz.fidgetz.util.LogUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,10 +19,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static com.mojang.blaze3d.platform.InputConstants.KEY_LEFT;
-import static com.mojang.blaze3d.platform.InputConstants.KEY_RIGHT;
-
-public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
+public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E> {
     private static final int DEFAULT_MAX_LENGTH = 32;
     private final List<Consumer<String>> listeners = new ArrayList<>();
     private final int hintColor;
@@ -114,6 +114,11 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
     }
 
     @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return super.isMouseOver(mouseX, mouseY) && Fidgetz.super.isMouseOver(mouseX, mouseY);
+    }
+
+    @Override
     public boolean isHovered() {
         return this.isEditing() && super.isHovered();
     }
@@ -124,20 +129,26 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
     }
 
     @Override
-    public void onClick(double mouseX, double mouseY) {
-        if (this.isEditing()) super.onClick(mouseX, mouseY);
+    public void onClick(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+        if (this.isEditing()) super.onClick(mouseButtonEvent, doubleClicked);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == KEY_LEFT && (this.getValue().isEmpty() || this.getCursorPosition() == 0)) {
+    public boolean keyPressed(KeyEvent keyEvent) {
+        if (keyEvent.isLeft() && (this.getValue().isEmpty() || this.getCursorPosition() == 0)) {
             return false;
         }
-        if (keyCode == KEY_RIGHT && (this.getValue().isEmpty() || this.getCursorPosition() == this.getValue().length())) {
+        if (keyEvent.isRight() && (this.getValue().isEmpty() || this.getCursorPosition() == this.getValue().length())) {
             return false;
         }
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(keyEvent);
+    }
+
+    @Override
+    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
+        super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     @Override
@@ -166,7 +177,7 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
         private int width = WidgetBuilder.DEFAULT_WIDTH;
         private int height = WidgetBuilder.DEFAULT_HEIGHT;
         private String value = "";
-        private Component hint;
+        private Component hint = Component.empty();
         private boolean textShadow = true;
         private Integer textColor;
         private Integer hintColor;

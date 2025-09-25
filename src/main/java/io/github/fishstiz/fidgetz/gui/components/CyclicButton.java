@@ -1,9 +1,9 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -11,8 +11,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
-import static com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_RIGHT;
 
 public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButton<E> {
     private final @Nullable Component prefix;
@@ -58,14 +56,13 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
     }
 
     @Override
-    public void onPress() {
-        this.value = this.value >= this.options.length - 1 ? 0 : this.value + 1;
-        this.updateMessage();
-        this.informListeners();
-    }
+    public void onPress(InputWithModifiers inputWithModifiers) {
+        if (this.allowReverseClick && inputWithModifiers.hasShiftDown()) {
+            this.value = this.value <= 0 ? this.options.length - 1 : this.value - 1;
+        } else {
+            this.value = this.value >= this.options.length - 1 ? 0 : this.value + 1;
+        }
 
-    public void onReversePress() {
-        this.value = this.value <= 0 ? this.options.length - 1 : this.value - 1;
         this.updateMessage();
         this.informListeners();
     }
@@ -105,21 +102,6 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
         if (sprites != null) {
             sprites.get(this.active).renderClamped(guiGraphics, x, y, width, height, partialTick);
         }
-    }
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (this.allowReverseClick && isValidReverseClick(button) && this.isMouseOver(mouseX, mouseY)) {
-            this.playDownSound(Minecraft.getInstance().getSoundManager());
-            this.onReversePress();
-            return true;
-        }
-
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    protected static boolean isValidReverseClick(int button) {
-        return button == MOUSE_BUTTON_RIGHT;
     }
 
     public static <E> Builder<Option, E> builder(Component... components) {

@@ -4,10 +4,9 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-
-import static com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE;
 
 @Mixin(Screen.class)
 public abstract class ScreenMixin {
@@ -15,8 +14,8 @@ public abstract class ScreenMixin {
             value = "INVOKE",
             target = "Lnet/minecraft/client/gui/screens/Screen;shouldCloseOnEsc()Z"
     ))
-    public boolean shouldCloseDialogs(Screen instance, Operation<Boolean> original, int keyCode) {
-        if (this instanceof ToggleableDialogContainer dialogContainer && keyCode == KEY_ESCAPE) {
+    public boolean shouldCloseDialogs(Screen instance, Operation<Boolean> original, KeyEvent keyEvent) {
+        if (this instanceof ToggleableDialogContainer dialogContainer && keyEvent.isEscape()) {
             for (var dialog : dialogContainer.getOpenDialogs()) {
                 if (dialog.shouldCloseOnEscape()) {
                     dialog.setOpen(false);

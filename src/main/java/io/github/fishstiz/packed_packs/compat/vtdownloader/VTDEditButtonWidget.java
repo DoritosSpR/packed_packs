@@ -1,5 +1,7 @@
 package io.github.fishstiz.packed_packs.compat.vtdownloader;
 
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
+import io.github.fishstiz.fidgetz.gui.components.Fidgetz;
 import io.github.fishstiz.packed_packs.compat.ModScreenFactory;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
@@ -9,6 +11,7 @@ import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
+import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -26,7 +29,7 @@ import static io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFacto
  *
  * @see <a href="https://github.com/IotaBread/VTDownloader/blob/1.21/src/main/java/me/bymartrixx/vtd/mixin/PackEntryListWidgetMixin.java">Github</a>
  */
-public class VTDEditButtonWidget extends AbstractButton {
+public class VTDEditButtonWidget extends AbstractButton implements Fidgetz {
     private static final String VT_DESCRIPTION_MARKER = "vanillatweaks.net";
     private static final ResourceLocation PENCIL_TEXTURE = ResourceLocation.fromNamespaceAndPath("vt_downloader", "textures/pencil.png");
     private static final int PENCIL_TEXTURE_SIZE = 32;
@@ -55,6 +58,8 @@ public class VTDEditButtonWidget extends AbstractButton {
 
     @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
+
         int pencilX = this.container.getX() + this.container.getWidth() - PENCIL_SIZE - PENCIL_MARGIN_RIGHT;
         int pencilY = this.container.getY() + this.container.getHeight() - PENCIL_SIZE;
         this.setPosition(pencilX, pencilY);
@@ -75,10 +80,14 @@ public class VTDEditButtonWidget extends AbstractButton {
                 PENCIL_SIZE, PENCIL_SIZE,
                 PENCIL_TEXTURE_SIZE, PENCIL_TEXTURE_SIZE
         );
+
+        if (this.isHovered()) {
+            guiGraphics.requestCursor(CursorTypes.POINTING_HAND);
+        }
     }
 
     @Override
-    public void onPress() {
+    public void onPress(InputWithModifiers inputWithModifiers) {
         if (this.editable) {
             ModScreenFactory.createScreenSetter(
                     VTD_SCREEN_NAME,

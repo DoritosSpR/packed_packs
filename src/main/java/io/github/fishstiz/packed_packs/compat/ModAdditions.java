@@ -1,7 +1,6 @@
 package io.github.fishstiz.packed_packs.compat;
 
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.etf.ETFButtonFactory;
 import io.github.fishstiz.packed_packs.compat.resourcify.ResourcifyButtons;
 import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsUtil;
@@ -9,20 +8,14 @@ import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsWidget;
 import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFactory;
 import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDEditButtonWidget;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
-import org.apache.logging.log4j.util.TriConsumer;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class ModAdditions {
     private ModAdditions() {

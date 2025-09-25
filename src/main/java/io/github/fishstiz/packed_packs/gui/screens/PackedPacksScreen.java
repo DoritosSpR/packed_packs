@@ -47,6 +47,9 @@ import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.NoticeWithLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
@@ -310,17 +313,15 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     public void onClose() {
         if (this.minecraft == null) return;
 
-        Config.ResourcePacks resourceConfig = this.packsConfig instanceof Config.ResourcePacks resources ? resources : null;
-        String requestor = ModAdditions.shouldCommit(this.repository.isResourcePacks());
-
-        if (requestor != null) {
+        String commitRequestor = ModAdditions.shouldCommit(this.repository.isResourcePacks());
+        if (commitRequestor != null) {
             this.commit();
-            PackedPacks.LOGGER.info("[packed_packs] Commiting packs on close at the request of mod '{}'.", requestor);
-        } else if (resourceConfig == null || resourceConfig.isApplyOnClose()) {
+            PackedPacks.LOGGER.info("[packed_packs] Commiting packs on close at the request of mod '{}'.", commitRequestor);
+        } else if (!(this.packsConfig instanceof Config.ResourcePacks resourceConfig) || resourceConfig.isApplyOnClose()) {
             this.commit();
         }
 
-        if (resourceConfig == null && !(this.previous instanceof PackSelectionScreen)) {
+        if (!this.repository.isResourcePacks() && !(this.previous instanceof PackSelectionScreen)) {
             this.original.output().accept(this.repository.getRepository()); // validate datapacks
             return;
         }
@@ -574,42 +575,42 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     }
 
     @Override
-    public boolean charTyped(char codePoint, int modifiers) {
-        if (super.charTyped(codePoint, modifiers)) {
+    public boolean charTyped(CharacterEvent charEvent) {
+        if (super.charTyped(charEvent)) {
             return true;
         }
-        if (codePoint != KEY_SPACE && noModifiers(modifiers)) {
+        if (charEvent.codepoint() != KEY_SPACE && noModifiers(charEvent.modifiers())) {
             PackLayout<?> packLayout = this.getLayoutFromSelectedList();
             if (packLayout != null && !packLayout.getSearchField().isFocused()) {
-                return this.focusSearchField(packLayout).charTyped(codePoint, modifiers);
+                return this.focusSearchField(packLayout).charTyped(charEvent);
             }
         }
         return false;
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent keyEvent) {
         this.contextMenu.setOpen(false);
 
-        if (isRefresh(keyCode, modifiers) && (this.refreshFuture == null || this.refreshFuture.isDone())) {
+        if (isRefresh(keyEvent) && (this.refreshFuture == null || this.refreshFuture.isDone())) {
             this.refreshPacks();
             return true;
         }
-        if (super.keyPressed(keyCode, scanCode, modifiers)) {
+        if (super.keyPressed(keyEvent)) {
             return true;
         }
-        if (isRedo(keyCode, modifiers)) {
+        if (isRedo(keyEvent)) {
             return this.history.redo();
         }
-        if (isUndo(keyCode, modifiers)) {
+        if (isUndo(keyEvent)) {
             return this.history.undo();
         }
-        if (keyCode == KEY_BACKSPACE) {
+        if (keyEvent.key() == KEY_BACKSPACE) {
             PackLayout<?> packLayout = this.getLayoutFromSelectedList();
             if (packLayout != null) {
                 ToggleableEditBox<Void> searchField = packLayout.getSearchField();
                 if (!searchField.isFocused() && !searchField.getValue().isEmpty()) {
-                    return this.focusSearchField(packLayout).keyPressed(keyCode, scanCode, modifiers);
+                    return this.focusSearchField(packLayout).keyPressed(keyEvent);
                 }
             }
         }
@@ -641,22 +642,22 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent mouseEvent, boolean doubleClicked) {
         this.setDragged(null);
-        if (isRightClick(button) && !this.options.isMouseOver(mouseX, mouseY)) {
-            this.openContextMenu((int) mouseX, (int) mouseY);
+        if (isRightClick(mouseEvent) && !this.options.isMouseOver(mouseEvent.x(), mouseEvent.y())) {
+            this.openContextMenu((int) mouseEvent.x(), (int) mouseEvent.y());
             return true;
         }
-        if (ToggleableDialogContainer.super.mouseClicked(mouseX, mouseY, button)) {
+        if (ToggleableDialogContainer.super.mouseClicked(mouseEvent, doubleClicked)) {
             return true;
         }
-        if (isClickForward(button)) {
+        if (isClickForward(mouseEvent)) {
             return this.history.redo();
         }
-        if (isClickBack(button)) {
+        if (isClickBack(mouseEvent)) {
             return this.history.undo();
         }
-        if (isLeftClick(button) && !(this.getFocused() instanceof PackList)) {
+        if (isLeftClick(mouseEvent) && !(this.getFocused() instanceof PackList)) {
             this.setFocused(this.children().getFirst());
             this.layout.visitWidgets(w -> w.setFocused(false));
         }

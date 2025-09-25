@@ -1,11 +1,11 @@
 package io.github.fishstiz.packed_packs.compat.respackopts;
 
-import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
+import io.github.fishstiz.fidgetz.gui.components.Fidgetz;
 import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
 import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
 import io.gitlab.jfronny.respackopts.RespackoptsClient;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.layouts.LayoutElement;
@@ -16,7 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
 
-public class RespackoptsWidget extends AbstractButton {
+public class RespackoptsWidget extends AbstractButton implements Fidgetz {
     private final ResourcePackEntryWidget wrapped;
     private final PackSelectionModel.Entry model;
     private final LayoutElement container;
@@ -55,9 +55,13 @@ public class RespackoptsWidget extends AbstractButton {
         this.setX((this.container.getX() + this.container.getWidth()) - width - marginRight);
         this.setY(this.container.getY() + (this.container.getHeight() - height) / 2);
 
-        this.isHovered = guiGraphics.containsPointInScissor(mouseX, mouseY) && this.isMouseOver(mouseX, mouseY);
+        this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
 
         this.wrapped.render(this.model, guiGraphics, this.getX(), this.getY(), this.isHovered, partialTick);
+
+        if (this.isHovered()) {
+            guiGraphics.requestCursor(CursorTypes.POINTING_HAND);
+        }
     }
 
     @Override
@@ -67,14 +71,7 @@ public class RespackoptsWidget extends AbstractButton {
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        boolean isMouseOver = super.isMouseOver(mouseX, mouseY);
-        boolean isCoveredAtPoint = false;
-
-        if (Minecraft.getInstance().screen instanceof ToggleableDialogContainer dialogContainer) {
-            isCoveredAtPoint = dialogContainer.isChildCoveredAtPoint(this, mouseX, mouseY);
-        }
-
-        return isMouseOver && !isCoveredAtPoint;
+        return super.isMouseOver(mouseX, mouseY) && Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     public static boolean isForceReload() {

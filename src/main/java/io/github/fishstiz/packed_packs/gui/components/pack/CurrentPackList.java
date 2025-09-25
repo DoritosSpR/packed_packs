@@ -1,9 +1,11 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import com.google.common.collect.ImmutableList;
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.GradientRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.InputUtil;
@@ -12,6 +14,8 @@ import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -53,15 +57,15 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        boolean keyPressed = super.keyPressed(keyCode, scanCode, modifiers);
+    public boolean keyPressed(KeyEvent keyEvent) {
+        boolean keyPressed = super.keyPressed(keyEvent);
         if (!keyPressed) {
             Entry entry = this.getEntry(this.getLastSelected());
             if (entry != null) {
-                if (InputUtil.isMoveDown(keyCode, modifiers)) {
+                if (InputUtil.isMoveDown(keyEvent)) {
                     if (entry.moveDown()) playClickSound();
                     return true;
-                } else if (InputUtil.isMoveUp(keyCode, modifiers)) {
+                } else if (InputUtil.isMoveUp(keyEvent)) {
                     if (entry.moveUp()) playClickSound();
                     return true;
                 }
@@ -215,12 +219,12 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         if (this.isMouseOver(mouseX, mouseY)) {
             double scrollAmount = this.scrollAmount();
 
-            int scrollDownY = bottom - this.itemHeight;
+            int scrollDownY = bottom - this.getItemHeight();
             if (scrollAmount < this.maxScrollAmount() && mouseY >= scrollDownY) {
-                SCROLL_DOWN.render(guiGraphics, x, scrollDownY, width, this.itemHeight);
+                SCROLL_DOWN.render(guiGraphics, x, scrollDownY, width, this.getItemHeight());
                 this.scrollStep(MoveDirection.DOWN, partialTick);
-            } else if (scrollAmount > 0 && mouseY <= y + this.itemHeight) {
-                SCROLL_UP.render(guiGraphics, x, y, width, this.itemHeight);
+            } else if (scrollAmount > 0 && mouseY <= y + this.getItemHeight()) {
+                SCROLL_UP.render(guiGraphics, x, y, width, this.getItemHeight());
                 this.scrollStep(MoveDirection.UP, partialTick);
             } else {
                 this.scrolling = false;
@@ -231,7 +235,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             }
         }
 
-        guiGraphics.renderOutline(x, y, width, height, DROP_THEME.getARGB());
+        DrawUtil.renderOutline(guiGraphics, x, y, width, height, DROP_THEME.getARGB());
     }
 
     public boolean isScrolling() {
@@ -386,8 +390,11 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         }
 
         @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (isLeftClick(button)) {
+        public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+            if (isLeftClick(mouseButtonEvent)) {
+                double mouseX = mouseButtonEvent.x();
+                double mouseY = mouseButtonEvent.y();
+
                 if (this.isMouseOverRemove(mouseX, mouseY)) {
                     return this.consumeClick(CurrentPackList.Entry::transfer);
                 } else if (this.isMouseOverUp(mouseX, mouseY)) {
@@ -396,7 +403,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
                     return this.consumeClick(CurrentPackList.Entry::moveDown);
                 }
             }
-            return super.mouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(mouseButtonEvent, doubleClicked);
         }
 
         private boolean consumeClick(Consumer<CurrentPackList.Entry> action) {
@@ -411,14 +418,27 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
             int x = left + SPACING;
             GuiConstants.WHITE_OVERLAY.render(guiGraphics, x, top, UNSELECT_SPRITE.width, UNSELECT_SPRITE.height);
+
             if (this.isTransferable()) {
-                pick(!this.isMouseOverRemove(mouseX, mouseY), UNSELECT_SPRITE, UNSELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+                boolean overRemove = this.isMouseOverRemove(mouseX, mouseY);
+                pick(!overRemove, UNSELECT_SPRITE, UNSELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+                this.updateCursor(guiGraphics, overRemove);
             }
             if (this.canMoveUp()) {
-                pick(!this.isMouseOverUp(mouseX, mouseY), MOVE_UP_SPRITE, MOVE_UP_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+                boolean overUp = this.isMouseOverUp(mouseX, mouseY);
+                pick(!overUp, MOVE_UP_SPRITE, MOVE_UP_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+                this.updateCursor(guiGraphics, overUp);
             }
             if (this.canMoveDown()) {
-                pick(!this.isMouseOverDown(mouseX, mouseY), MOVE_DOWN_SPRITE, MOVE_DOWN_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+                boolean overDown = this.isMouseOverDown(mouseX, mouseY);
+                pick(!overDown, MOVE_DOWN_SPRITE, MOVE_DOWN_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+                this.updateCursor(guiGraphics, overDown);
+            }
+        }
+
+        private void updateCursor(GuiGraphics guiGraphics, boolean hoveringButton) {
+            if (hoveringButton) {
+                guiGraphics.requestCursor(CursorTypes.POINTING_HAND);
             }
         }
     }

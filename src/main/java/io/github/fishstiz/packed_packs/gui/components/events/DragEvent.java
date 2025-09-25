@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.gui.components.events;
 import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.Minecraft;
@@ -68,7 +69,7 @@ public final class DragEvent extends PackListEvent implements Renderable {
         OVERLAY.render(guiGraphics, iconX, iconY, ICON_SIZE, ICON_SIZE);
         NUM_BACKGROUND.render(guiGraphics, numX, numY, numWidth, NUM_SIZE);
         guiGraphics.drawString(font, sizeString, numX + numWidth / 2 - sizeStringWidth / 2, numY + NUM_SIZE / 2 - font.lineHeight / 2, Theme.WHITE.getARGB());
-        guiGraphics.renderOutline(iconX, iconY, ICON_SIZE, ICON_SIZE, Theme.WHITE.getARGB());
-        guiGraphics.renderOutline(numX, numY, numWidth, NUM_SIZE, Theme.WHITE.getARGB());
+        DrawUtil.renderOutline(guiGraphics, iconX, iconY, ICON_SIZE, ICON_SIZE, Theme.WHITE.getARGB());
+        DrawUtil.renderOutline(guiGraphics, numX, numY, numWidth, NUM_SIZE, Theme.WHITE.getARGB());
     }
 }

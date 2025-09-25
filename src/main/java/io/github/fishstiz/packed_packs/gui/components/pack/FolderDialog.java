@@ -47,7 +47,6 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
                         .setHeight(GuiConstants.CROSS_SPRITE.height)
                         .setOffsetY(1)
                         .setShadow(true)
-                        .alignLeft()
                         .build()
         );
 

@@ -1,11 +1,16 @@
 package io.github.fishstiz.packed_packs.gui.screens;
 
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
+import io.github.fishstiz.packed_packs.compat.cursors_extended.CursorsExtended;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
+import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -116,21 +121,32 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
 
         DragEvent event = this.getDragged();
         if (event != null) {
+            PackList source = event.target();
+            boolean validDrop = false;
+
             for (PackList list : this.getPackLists()) {
                 list.renderDroppableZone(guiGraphics, event.target(), event.payload(), event.trigger(), mouseX, mouseY, partialTick);
+
+                if (list.isMouseOver(mouseX, mouseY)) {
+                    validDrop = source == list ||
+                                list instanceof CurrentPackList scrollable && scrollable.isScrolling() ||
+                                list.canDrop(event.target(), event.payload(), event.trigger(), mouseX, mouseY);
+                    break;
+                }
             }
 
             event.render(guiGraphics, mouseX, mouseY, partialTick);
+            guiGraphics.requestCursor(validDrop ? CursorsExtended.GRABBING : CursorTypes.NOT_ALLOWED);
         }
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        return this.isDraggingSelection() || super.keyPressed(keyCode, scanCode, modifiers);
+    public boolean keyPressed(KeyEvent keyEvent) {
+        return this.isDraggingSelection() || super.keyPressed(keyEvent);
     }
 
     @Override
-    public boolean charTyped(char codePoint, int modifiers) {
-        return this.isDraggingSelection() || super.charTyped(codePoint, modifiers);
+    public boolean charTyped(CharacterEvent charEvent) {
+        return this.isDraggingSelection() || super.charTyped(charEvent);
     }
 }

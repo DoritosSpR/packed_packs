@@ -1,14 +1,17 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import com.google.common.collect.ImmutableList;
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +65,7 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
         this.addAll(dropped);
         this.selectAll(dropped);
         this.select(trigger);
-        ofNullable(this.getEntry(trigger)).ifPresent(this::ensureVisible);
+        ofNullable(this.getEntry(trigger)).ifPresent(this::scrollToEntry);
 
         return dropped;
     }
@@ -77,7 +80,7 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
             DROP_ZONE.render(guiGraphics, this.getX(), this.getY(), width, this.getHeight(), partialTick);
         }
 
-        guiGraphics.renderOutline(this.getX(), this.getY(), width, this.getHeight(), DROP_ZONE_THEME.getARGB());
+        DrawUtil.renderOutline(guiGraphics, this.getX(), this.getY(), width, this.getHeight(), DROP_ZONE_THEME.getARGB());
     }
 
     public class Entry extends PackListBase<Entry>.Entry {
@@ -95,24 +98,26 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
         }
 
         @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (isLeftClick(button) && this.isMouseOverSelect(mouseX, mouseY)) {
+        public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+            if (isLeftClick(mouseButtonEvent) && this.isMouseOverSelect(mouseButtonEvent.x(), mouseButtonEvent.y())) {
                 playClickSound();
                 this.transfer();
                 return false;
             }
 
-            return super.mouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(mouseButtonEvent, doubleClicked);
         }
 
         @Override
         protected void renderForeground(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            if (!this.isMouseOver(mouseX, mouseY) && !this.isSelectedLast()) return;
+            if (!hovering && !this.isSelectedLast()) return;
 
             int x = left + SPACING;
             GuiConstants.WHITE_OVERLAY.render(guiGraphics, x, top, SELECT_SPRITE.width, SELECT_SPRITE.height);
             if (this.isTransferable()) {
-                pick(!this.isMouseOverSelect(mouseX, mouseY), SELECT_SPRITE, SELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+                boolean overSelect = this.isMouseOverSelect(mouseX, mouseY);
+                pick(!overSelect, SELECT_SPRITE, SELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+                if (overSelect) guiGraphics.requestCursor(CursorTypes.POINTING_HAND);
             }
         }
     }

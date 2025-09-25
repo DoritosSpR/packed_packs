@@ -21,7 +21,6 @@ class PackWidget extends AbstractWidget {
             .setHeight(Minecraft.getInstance().font.lineHeight)
             .setColor(ChatFormatting.WHITE.getColor())
             .setShadow(true)
-            .alignLeft()
             .build();
     private MultiLineLabel description;
     private Sprite sprite;
@@ -102,11 +101,13 @@ class PackWidget extends AbstractWidget {
         this.title.setY(startY);
         this.title.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
 
-        this.description.renderLeftAligned(
+        this.description.render(
                 guiGraphics,
+                MultiLineLabel.Align.LEFT,
                 this.title.getX(),
                 startY + lineHeight + this.spacing,
                 lineHeight,
+                false,
                 Theme.GRAY_500.getARGB()
         );
     }
@@ -117,7 +118,7 @@ class PackWidget extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean shouldTakeFocusAfterInteraction() {
         return false;
     }
 

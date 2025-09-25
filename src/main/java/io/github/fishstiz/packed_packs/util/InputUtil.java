@@ -1,81 +1,87 @@
 package io.github.fishstiz.packed_packs.util;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.platform.Window;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+
 import static com.mojang.blaze3d.platform.InputConstants.*;
-import static net.minecraft.client.gui.screens.Screen.*;
 
 public class InputUtil {
+    public static final Window WINDOW = Minecraft.getInstance().getWindow();
     public static final int MOUSE_BUTTON_BACK = 3;
     public static final int MOUSE_BUTTON_FORWARD = 4;
-    public static final int MOD_SHIFT = 1;
-    public static final int MOD_ALT = 4;
 
     private InputUtil() {
     }
 
-    public static boolean isLeftClick(int button) {
-        return button == MOUSE_BUTTON_LEFT;
+    public static boolean isLeftClick(MouseButtonEvent mouseEvent) {
+        return mouseEvent.button() == MOUSE_BUTTON_LEFT;
     }
 
-    public static boolean isRightClick(int button) {
-        return button == MOUSE_BUTTON_RIGHT;
+    public static boolean isRightClick(MouseButtonEvent mouseEvent) {
+        return mouseEvent.button() == MOUSE_BUTTON_RIGHT;
     }
 
-    public static boolean isClickBack(int button) {
-        return button == MOUSE_BUTTON_BACK;
+    public static boolean isClickBack(MouseButtonEvent mouseEvent) {
+        return mouseEvent.button() == MOUSE_BUTTON_BACK;
     }
 
-    public static boolean isClickForward(int button) {
-        return button == MOUSE_BUTTON_FORWARD;
+    public static boolean isClickForward(MouseButtonEvent mouseEvent) {
+        return mouseEvent.button() == MOUSE_BUTTON_FORWARD;
     }
 
-    public static boolean isUndo(int keyCode, int modifiers) {
-        return keyCode == KEY_Z && hasControlDown() && modifiers == MOD_CONTROL;
+    public static boolean isUndo(KeyEvent keyEvent) {
+        return keyEvent.key() == KEY_Z && keyEvent.hasControlDown() && keyEvent.modifiers() == MOD_CONTROL;
     }
 
-    public static boolean isRedo(int keyCode, int modifiers) {
-        if (keyCode == KEY_Z) {
-            return hasControlDown() && hasShiftDown() && modifiers == MOD_CONTROL + MOD_SHIFT;
-        } else if (keyCode == KEY_Y) {
-            return hasControlDown() && modifiers == MOD_CONTROL;
+    public static boolean isRedo(KeyEvent keyEvent) {
+        if (keyEvent.key() == KEY_Z) {
+            return keyEvent.hasControlDown() && keyEvent.hasShiftDown() && keyEvent.modifiers() == MOD_CONTROL + MOD_SHIFT;
+        } else if (keyEvent.key() == KEY_Y) {
+            return keyEvent.hasControlDown() && keyEvent.modifiers() == MOD_CONTROL;
         }
 
         return false;
     }
 
-    public static boolean isTransfer(int keyCode, int modifiers) {
-        return noModifiers(modifiers) && (keyCode == KEY_SPACE || keyCode == KEY_RETURN);
+    public static boolean isTransfer(KeyEvent keyEvent) {
+        return noModifiers(keyEvent.modifiers()) && (keyEvent.key() == KEY_SPACE || keyEvent.key() == KEY_RETURN);
     }
 
-    public static boolean isMoveDown(int keyCode, int modifiers) {
-        return keyCode == KEY_DOWN && moveModifiers(modifiers);
+    public static boolean isMoveDown(KeyEvent keyEvent) {
+        return keyEvent.key() == KEY_DOWN && moveModifiers(keyEvent.modifiers());
     }
 
-    public static boolean isMoveUp(int keyCode, int modifiers) {
-        return keyCode == KEY_UP && moveModifiers(modifiers);
+    public static boolean isMoveUp(KeyEvent keyEvent) {
+        return keyEvent.key() == KEY_UP && moveModifiers(keyEvent.modifiers());
     }
 
-    public static boolean isExpandFolder(int keyCode, int modifiers) {
-        return noModifiers(modifiers) && keyCode == KEY_RETURN;
+    public static boolean isExpandFolder(KeyEvent keyEvent) {
+        return noModifiers(keyEvent.modifiers()) && keyEvent.key() == KEY_RETURN;
     }
 
-    public static boolean isDelete(int keyCode, int modifiers) {
-        return noModifiers(modifiers) && keyCode == KEY_DELETE;
+    public static boolean isDelete(KeyEvent keyEvent) {
+        return noModifiers(keyEvent.modifiers()) && keyEvent.key() == KEY_DELETE;
     }
 
-    public static boolean isRename(int keyCode, int modifiers) {
-        return (noModifiers(modifiers) && keyCode == KEY_F2) || (modifiers == MOD_CONTROL && keyCode == KEY_R);
+    public static boolean isRename(KeyEvent keyEvent) {
+        return (noModifiers(keyEvent.modifiers()) && keyEvent.key() == KEY_F2) ||
+               (keyEvent.modifiers() == MOD_CONTROL && keyEvent.key() == KEY_R);
     }
 
-    public static boolean isRefresh(int keyCode, int modifiers) {
-        return noModifiers(modifiers) && keyCode == KEY_F5;
+    public static boolean isRefresh(KeyEvent keyEvent) {
+        return noModifiers(keyEvent.modifiers()) && keyEvent.key() == KEY_F5;
     }
 
-    public static boolean isOpenFile(int keyCode, int modifiers) {
-        return modifiers == MOD_CONTROL && keyCode == KEY_RETURN;
+    public static boolean isOpenFile(KeyEvent keyEvent) {
+        return keyEvent.modifiers() == MOD_CONTROL && keyEvent.key() == KEY_RETURN;
     }
 
-    public static boolean isOpenFolder(int keyCode, int modifiers) {
-        return modifiers == MOD_ALT + MOD_SHIFT && keyCode == KEY_R;
+    public static boolean isOpenFolder(KeyEvent keyEvent) {
+        return keyEvent.modifiers() == MOD_ALT + MOD_SHIFT && keyEvent.key() == KEY_R;
     }
 
     public static boolean noModifiers(int modifiers) {
@@ -92,5 +98,19 @@ public class InputUtil {
 
     public static boolean isSelectModifierActive() {
         return hasControlDown();
+    }
+
+    public static boolean hasControlDown() {
+        return Util.getPlatform() == Util.OS.OSX
+                ? InputConstants.isKeyDown(WINDOW, KEY_LSUPER) || InputConstants.isKeyDown(WINDOW, KEY_RSUPER)
+                : InputConstants.isKeyDown(WINDOW, KEY_LCONTROL) || InputConstants.isKeyDown(WINDOW, KEY_RCONTROL);
+    }
+
+    public static boolean hasShiftDown() {
+        return InputConstants.isKeyDown(WINDOW, KEY_LSHIFT) || InputConstants.isKeyDown(WINDOW, KEY_RSHIFT);
+    }
+
+    public static boolean hasAltDown() {
+        return InputConstants.isKeyDown(WINDOW, KEY_LALT) || InputConstants.isKeyDown(WINDOW, KEY_RALT);
     }
 }

@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.components.profile;
 
-import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
+import io.github.fishstiz.fidgetz.gui.components.AbstractFixedListWidget;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
+public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> {
     private static final int ITEM_HEIGHT = 20;
     private static final Component EMPTY_TEXT = ResourceUtil.getText("profile.empty");
     private static final Component DELETE_TEXT = ResourceUtil.getText("profile.delete");
@@ -37,7 +37,7 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
     private List<Profile> profiles;
 
     public ProfileList(Config.Packs config, Supplier<Profile> selected, Consumer<Profile> onDelete, Consumer<Profile> onSelect) {
-        super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, 0, 0);
+        super(ITEM_HEIGHT);
 
         this.config = config;
         this.selected = selected;
@@ -82,7 +82,7 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
         }
     }
 
-    public class Entry extends AbstractDynamicList<Entry>.Entry {
+    public class Entry extends AbstractFixedListWidget<Entry>.Entry {
         private final Profile profile;
         private final List<FidgetzButton<Void>> children = new ArrayList<>();
         private final FidgetzButton<Void> selectButton;
@@ -109,8 +109,11 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
         }
 
         @Override
-        public void render(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
+        public void renderContent(GuiGraphics guiGraphics, int mouseX, int mouseY, boolean hovering, float partialTick) {
             this.selectButton.active = ProfileList.this.selected.get() != this.profile;
+
+            int left = this.getX();
+            int top = this.getY();
 
             this.deleteButton.setPosition(left, top);
             this.selectButton.setPosition(left + this.deleteButton.getWidth(), top);

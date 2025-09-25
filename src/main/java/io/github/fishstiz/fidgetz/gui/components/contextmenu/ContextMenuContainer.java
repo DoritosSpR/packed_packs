@@ -7,7 +7,6 @@ public interface ContextMenuContainer extends ContextMenuProvider, ContainerEven
     default void buildItems(MenuItemBuilder builder, int mouseX, int mouseY) {
         this.getChildAt(mouseX, mouseY)
                 .filter(ContextMenuProvider.class::isInstance)
-                .map(ContextMenuProvider.class::cast)
-                .ifPresent(provider -> provider.buildItems(builder, mouseX, mouseY));
+                .ifPresent(provider -> ((ContextMenuProvider) provider).buildItems(builder, mouseX, mouseY));
     }
 }

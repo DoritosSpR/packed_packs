@@ -8,6 +8,7 @@ import io.github.fishstiz.packed_packs.gui.components.events.FileRenameCloseEven
 import io.github.fishstiz.packed_packs.gui.components.events.FileRenameEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
+import io.github.fishstiz.packed_packs.util.InputUtil;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.layouts.LayoutSettings;
@@ -16,6 +17,8 @@ import net.minecraft.client.gui.navigation.FocusNavigationEvent;
 import net.minecraft.client.gui.navigation.ScreenAxis;
 import net.minecraft.client.gui.navigation.ScreenDirection;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
@@ -43,7 +46,6 @@ public class FileRenameModal extends Modal<LinearLayout> {
             .setFilter(this::testInput)
             .build();
     private final FidgetzText<Void> title = FidgetzText.<Void>builder()
-            .alignLeft()
             .setHeight(TITLE_HEIGHT)
             .setOffsetY(1)
             .setShadow(true)
@@ -207,9 +209,9 @@ public class FileRenameModal extends Modal<LinearLayout> {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        boolean keyPressed = super.keyPressed(keyCode, scanCode, modifiers);
-        if (!keyPressed && this.isOpen() && keyCode == InputConstants.KEY_RETURN && this.canSave(this.nameEditor.getValue())) {
+    public boolean keyPressed(KeyEvent keyEvent) {
+        boolean keyPressed = super.keyPressed(keyEvent);
+        if (!keyPressed && this.isOpen() && keyEvent.key() == InputConstants.KEY_RETURN && this.canSave(this.nameEditor.getValue())) {
             this.saveName();
             return true;
         }
@@ -217,12 +219,12 @@ public class FileRenameModal extends Modal<LinearLayout> {
     }
 
     @Override
-    public boolean charTyped(char codePoint, int modifiers) {
-        boolean charTyped = super.charTyped(codePoint, modifiers);
+    public boolean charTyped(CharacterEvent characterEvent) {
+        boolean charTyped = super.charTyped(characterEvent);
 
         if (!charTyped && this.isOpen() && !this.nameEditor.isFocused()) {
             this.setFocused(this.nameEditor);
-            return this.nameEditor.charTyped(codePoint, modifiers);
+            return this.nameEditor.charTyped(characterEvent);
         }
 
         return charTyped;
@@ -233,7 +235,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         if (this.nameEditor.isFocused() &&
             event instanceof FocusNavigationEvent.ArrowNavigation(ScreenDirection direction) &&
             direction.getAxis() == ScreenAxis.HORIZONTAL) {
-            if (!Screen.hasShiftDown()) {
+            if (!InputUtil.hasShiftDown()) {
                 this.nameEditor.setHighlightPos(this.nameEditor.getCursorPosition());
             }
             return ComponentPath.path(this.nameEditor, this);
