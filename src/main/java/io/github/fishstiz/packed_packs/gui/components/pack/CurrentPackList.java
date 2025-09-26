@@ -302,7 +302,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         public boolean isMouseOverRemove(double mouseX, double mouseY) {
             return CurrentPackList.this.isHovered() && this.isTransferable() && GuiUtil.containsPoint(
-                    this.getX() + SPACING,
+                    this.getX() + H_SPACING,
                     this.getY(),
                     UNSELECT_SPRITE.width / 2,
                     UNSELECT_SPRITE.height,
@@ -313,7 +313,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         public boolean isMouseOverUp(double mouseX, double mouseY) {
             return CurrentPackList.this.isHovered() && this.canMoveUp() && GuiUtil.containsPoint(
-                    this.getX() + SPACING + MOVE_UP_SPRITE.width / 2,
+                    this.getX() + H_SPACING + MOVE_UP_SPRITE.width / 2,
                     this.getY(),
                     MOVE_UP_SPRITE.width / 2,
                     MOVE_UP_SPRITE.height / 2,
@@ -324,7 +324,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         public boolean isMouseOverDown(double mouseX, double mouseY) {
             return CurrentPackList.this.isHovered() && this.canMoveDown() && GuiUtil.containsPoint(
-                    this.getX() + SPACING + MOVE_DOWN_SPRITE.width / 2,
+                    this.getX() + H_SPACING + MOVE_DOWN_SPRITE.width / 2,
                     this.getY() + MOVE_DOWN_SPRITE.height / 2,
                     MOVE_DOWN_SPRITE.width / 2,
                     MOVE_DOWN_SPRITE.height / 2,
@@ -416,7 +416,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         protected void renderForeground(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
             if (!hovering && !this.isSelectedLast()) return;
 
-            int x = left + SPACING;
+            int x = left + H_SPACING;
             GuiConstants.WHITE_OVERLAY.render(guiGraphics, x, top, UNSELECT_SPRITE.width, UNSELECT_SPRITE.height);
 
             if (this.isTransferable()) {

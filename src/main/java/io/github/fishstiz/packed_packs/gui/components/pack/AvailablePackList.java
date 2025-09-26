@@ -94,7 +94,7 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
         }
 
         public boolean isMouseOverSelect(double mouseX, double mouseY) {
-            return AvailablePackList.this.isHovered() && GuiUtil.containsPoint(this.getX() + SPACING, this.getY(), SELECT_SPRITE.width, SELECT_SPRITE.height, mouseX, mouseY);
+            return AvailablePackList.this.isHovered() && GuiUtil.containsPoint(this.getX() + H_SPACING, this.getY(), SELECT_SPRITE.width, SELECT_SPRITE.height, mouseX, mouseY);
         }
 
         @Override
@@ -112,7 +112,7 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
         protected void renderForeground(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
             if (!hovering && !this.isSelectedLast()) return;
 
-            int x = left + SPACING;
+            int x = left + H_SPACING;
             GuiConstants.WHITE_OVERLAY.render(guiGraphics, x, top, SELECT_SPRITE.width, SELECT_SPRITE.height);
             if (this.isTransferable()) {
                 boolean overSelect = this.isMouseOverSelect(mouseX, mouseY);

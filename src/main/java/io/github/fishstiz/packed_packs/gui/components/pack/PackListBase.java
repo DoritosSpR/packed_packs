@@ -37,12 +37,13 @@ import java.util.function.BiConsumer;
 import static com.google.common.primitives.Ints.contains;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.WHITE_OVERLAY;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
 public abstract class PackListBase<T extends PackListBase<T>.Entry> extends AbstractFixedListWidget<T> implements PackList, ContainerEventHandlerPatch, ContextMenuContainer {
-    protected static final int OFFSET_Y = 2;
-    protected static final int ITEM_HEIGHT = 32;
+    protected static final int Y_OFFSET = 1;
+    protected static final int ITEM_HEIGHT = 35;
     protected static final int ROW_GAP = 3;
     protected final PackAssets packAssets;
     protected final List<Pack> packs = new ArrayList<>();
@@ -52,7 +53,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     private final Query query;
 
     protected PackListBase(PackAssets packAssets, PackListEventListener listener) {
-        super(ITEM_HEIGHT, OFFSET_Y, ROW_GAP);
+        super(ITEM_HEIGHT);
 
         this.query = new Query();
         this.packAssets = packAssets;
@@ -473,10 +474,16 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         T focused = this.getFocused();
         if (focused != null && focused.isFocused() && this.children().contains(focused)) {
-            int outlineTop = focused.getY() - Entry.BACKGROUND_OFFSET;
-            int outlineHeight = focused.getHeight() + Entry.BACKGROUND_OFFSET * 2;
+            int outlineTop = focused.getY();
+            int outlineHeight = focused.getHeight() + Y_OFFSET;
             DrawUtil.renderOutline(guiGraphics, focused.getX(), outlineTop, focused.getWidth(), outlineHeight, Theme.WHITE.getARGB());
         }
+    }
+
+    @Override
+    public int maxScrollAmount() {
+        int maxScrollAmount = super.maxScrollAmount();
+        return maxScrollAmount > 0 ? maxScrollAmount + Y_OFFSET : maxScrollAmount;
     }
 
     protected boolean beforeScrollbarX(double mouseX) {
@@ -505,10 +512,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     public abstract class Entry extends AbstractFixedListWidget<T>.Entry implements PackList.Entry, ContainerEventHandlerPatch, ContextMenuContainer {
+        private static final int V_MARGIN = ROW_GAP / 2 + Y_OFFSET;
+        private static final int BACKGROUND_MARGIN = 1;
         private static final double DRAG_THRESHOLD = 1.0;
         private static final Tooltip FOLDER_OPEN_INFO = Tooltip.create(FolderPack.FOLDER_OPEN_TEXT);
-        protected static final int SPACING = 2;
-        protected static final int BACKGROUND_OFFSET = 1;
+        protected static final int H_SPACING = 2;
         protected static final ColoredRect SELECTED_OVERLAY = new ColoredRect(Theme.BLUE_500.withAlpha(0.25F));
         protected final List<GuiEventListener> children = new ArrayList<>();
         protected final List<Renderable> renderables = new ArrayList<>();
@@ -530,8 +538,8 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                     this.getX(),
                     PackListBase.this.getRowTop(this.index),
                     this.getWidth(),
-                    PackListBase.this.getItemHeight(),
-                    SPACING
+                    ITEM_HEIGHT - ROW_GAP,
+                    H_SPACING
             ));
 
             if (this.pack instanceof FolderPack folderPack) {
@@ -621,11 +629,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         @Override
         public boolean isMouseOver(double mouseX, double mouseY) {
-            return PackListBase.this.isHovered() && PackListBase.this.beforeScrollbarX(mouseX) &&
-                   mouseX >= this.getX() &&
-                   mouseX <= this.getRight() &&
-                   mouseY >= this.getY() &&
-                   mouseY <= this.getBottom() + (double) BACKGROUND_OFFSET / 2;
+            return PackListBase.this.isHovered() && PackListBase.this.beforeScrollbarX(mouseX) && super.isMouseOver(mouseX, mouseY);
         }
 
         @Override
@@ -715,11 +719,14 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return keyPressed;
         }
 
-        public void renderBack(GuiGraphics guiGraphics) {
+        public void renderBack(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
             if (!this.pack.getCompatibility().isCompatible() && !PackListBase.this.packAssets.getConfig().isIncompatibleWarningsHidden()) {
-                int backgroundLeft = this.getX() + BACKGROUND_OFFSET;
-                int backgroundRight = backgroundLeft + this.getWidth() - BACKGROUND_OFFSET * 2;
-                guiGraphics.fill(backgroundLeft, this.getY(), backgroundRight, this.getBottom(), Theme.RED_900.getARGB());
+                int backgroundLeft = left + BACKGROUND_MARGIN;
+                int backgroundTop = top + BACKGROUND_MARGIN;
+                int backgroundRight = backgroundLeft + width - BACKGROUND_MARGIN;
+                int backgroundBottom = backgroundTop + height - BACKGROUND_MARGIN;
+
+                guiGraphics.fill(backgroundLeft, backgroundTop, backgroundRight, backgroundBottom, Theme.RED_900.getARGB());
             }
         }
 
@@ -727,23 +734,14 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         private void renderSelection(GuiGraphics guiGraphics, int top, int left, int width, int height) {
             if (this.isSelected()) {
-                int overlayLeft = this.getX() + BACKGROUND_OFFSET;
-                int overlayWidth = this.getWidth() - BACKGROUND_OFFSET * 2;
-                pick(isSelectedLast(), GuiConstants.WHITE_OVERLAY, SELECTED_OVERLAY)
-                        .render(guiGraphics, overlayLeft, this.getY(), overlayWidth, this.getHeight());
-            }
-            if (this.isSelected() || this.isFocused()) {
-                int outlineTop = this.getY() - BACKGROUND_OFFSET;
-                int outlineHeight = this.getHeight() + BACKGROUND_OFFSET * 2;
-                if (!this.isFocused()) {
-                    DrawUtil.renderOutline(guiGraphics, left, outlineTop, width, outlineHeight, Theme.BLUE_500.getARGB());
-                }
+                pick(isSelectedLast(), WHITE_OVERLAY, SELECTED_OVERLAY).render(guiGraphics, left, top, width, height);
+                DrawUtil.renderOutline(guiGraphics, left, top, width, height, Theme.BLUE_500.getARGB());
             }
         }
 
         protected void renderTop(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
             if (this.folderWidget != null) {
-                int folderWidgetY = this.getBottom() - this.folderWidget.getHeight() - BACKGROUND_OFFSET;
+                int folderWidgetY = this.folderWidget.getBottom() - this.folderWidget.getHeight();
                 this.folderWidget.setPosition(this.packWidget.getContentLeft(), folderWidgetY);
             }
 
@@ -757,21 +755,23 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             hovering = hovering && this.isMouseOver(mouseX, mouseY);
 
             int left = this.getX();
-            int top = this.getY() + BACKGROUND_OFFSET;
+            int top = this.getY();
             int width = this.getWidth();
             int height = this.getHeight();
+            int innerTop = top + V_MARGIN;
+            int innerHeight = height - ROW_GAP;
 
-            this.packWidget.setPosition(left, top);
+            this.packWidget.setPosition(left, innerTop);
             this.packWidget.setWidth(width);
 
-            this.renderBack(guiGraphics);
+            this.renderBack(guiGraphics, top, left, width, height, mouseX, mouseY, hovering, partialTick);
 
             for (Renderable renderable : this.renderables) {
                 renderable.render(guiGraphics, mouseX, mouseY, partialTick);
             }
 
-            this.renderSelection(guiGraphics, top, left, width, height);
-            this.renderForeground(guiGraphics, top, left, width, height, mouseX, mouseY, hovering, partialTick);
+            this.renderSelection(guiGraphics, top, left, width, height + Y_OFFSET);
+            this.renderForeground(guiGraphics, innerTop, left, width, innerHeight, mouseX, mouseY, hovering, partialTick);
             this.renderTop(guiGraphics, mouseX, mouseY, partialTick);
         }
 
@@ -837,16 +837,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         @Override
         public @NotNull List<? extends NarratableEntry> narratables() {
             return this.narratables;
-        }
-
-        @Override
-        public int getY() {
-            return super.getY() - BACKGROUND_OFFSET;
-        }
-
-        @Override
-        public int getHeight() {
-            return super.getHeight() + BACKGROUND_OFFSET * 2;
         }
 
         private enum MouseSelectionState {

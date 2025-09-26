@@ -1,5 +1,6 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
+import io.github.fishstiz.fidgetz.util.GuiUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
@@ -161,10 +162,7 @@ public abstract class AbstractFixedListWidget<T extends AbstractFixedListWidget<
 
         @Override
         public boolean isMouseOver(double mouseX, double mouseY) {
-            return mouseX >= this.getX() &&
-                   mouseX <= this.getRight() &&
-                   mouseY >= this.getY() &&
-                   mouseY <= this.getBottom() + AbstractFixedListWidget.this.rowGap;
+            return GuiUtil.containsPoint(this, mouseX, mouseY);
         }
     }
 }
