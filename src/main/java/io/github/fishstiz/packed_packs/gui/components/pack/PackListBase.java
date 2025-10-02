@@ -275,6 +275,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         return this.getLastSelected() != null ? this.getEntry(this.getLastSelected()) : super.getSelected();
     }
 
+    @Override
+    public void setSelected(@Nullable T selected) {
+        this.selected = selected;
+    }
+
     public boolean isSelected(Pack pack) {
         return this.selection.contains(pack);
     }
