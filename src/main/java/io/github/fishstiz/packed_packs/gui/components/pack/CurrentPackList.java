@@ -43,7 +43,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     private static final ColoredRect DROP_INDEX = new ColoredRect(DROP_THEME.getARGB());
     private static final GradientRect SCROLL_UP = GradientRect.fromTop(DROP_THEME.withAlpha(0.75f), DROP_THEME.withAlpha(0));
     private static final GradientRect SCROLL_DOWN = SCROLL_UP.flip();
-    private static final int DROP_INDEX_PADDING = 2;
+    private static final int DROP_INDEX_PADDING = 3;
     private static final double SCROLL_STEP = 10;
     private boolean scrolling;
 
@@ -198,7 +198,11 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
     private void renderDropIndex(GuiGraphics guiGraphics, int mouseY, int x, int width) {
         int dropIndex = this.getDropIndex(mouseY);
-        int rowTop = this.getRowTop(dropIndex != -1 ? dropIndex : this.children().size());
+        int rowTop = Math.clamp(
+                this.getRowTop(dropIndex != -1 ? dropIndex : this.children().size()),
+                this.getY() + this.offsetY + DROP_INDEX_PADDING,
+                this.getBottom() - this.rowGap - DROP_INDEX_PADDING
+        );
         int indexY = rowTop - this.rowGap - DROP_INDEX_PADDING;
 
         guiGraphics.enableScissor(this.getX(), this.getY(), this.getRight(), this.getBottom());
