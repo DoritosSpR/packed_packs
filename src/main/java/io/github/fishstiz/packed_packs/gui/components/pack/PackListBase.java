@@ -741,7 +741,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         protected void renderTop(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
             if (this.folderWidget != null) {
-                int folderWidgetY = this.folderWidget.getBottom() - this.folderWidget.getHeight();
+                int folderWidgetY = this.getBottom() - this.folderWidget.getHeight() - BACKGROUND_MARGIN;
                 this.folderWidget.setPosition(this.packWidget.getContentLeft(), folderWidgetY);
             }
 
