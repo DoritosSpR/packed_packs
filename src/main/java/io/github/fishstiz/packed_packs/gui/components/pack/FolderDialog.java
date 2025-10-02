@@ -83,6 +83,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         this.folderTitle.setMessage(folderPack.getTitle());
         packAssets.getOrLoadIcon(folderPack, icon -> this.folderSprite = Sprite.of16(icon));
 
+        this.root().onFolderPackChange(this.folderPack);
         this.setBoundingBox(parent);
         this.updateBounds();
     }
@@ -171,7 +172,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         ((PackListEventListener) this.screen).onEvent(event);
     }
 
-    public static <S extends Screen & ToggleableDialogContainer & PackListEventListener> FolderDialog build(S screen, PackAssets packAssets) {
+    public static <S extends Screen & ToggleableDialogContainer & PackListEventListener> FolderDialog create(S screen, PackAssets packAssets) {
         return new Builder(screen, new FolderPackList(packAssets, screen))
                 .setBackground(DrawUtil.DEMO_BACKGROUND)
                 .build();

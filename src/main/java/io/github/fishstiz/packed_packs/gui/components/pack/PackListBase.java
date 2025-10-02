@@ -17,6 +17,8 @@ import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
+import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.Util;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
@@ -44,9 +46,9 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     protected static final int ITEM_HEIGHT = 32;
     protected static final int ROW_GAP = 3;
     protected final PackAssets packAssets;
-    protected final List<Pack> packs = new ArrayList<>();
-    private final List<Pack> queried = new ArrayList<>();
-    private final List<Pack> selection = new ArrayList<>();
+    protected final List<Pack> packs = new ObjectArrayList<>();
+    private final List<Pack> queried = new ObjectArrayList<>();
+    private final List<Pack> selection = new ObjectArrayList<>();
     private final PackListEventListener listener;
     private final Query query;
 
@@ -87,7 +89,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     protected void queryPacks() {
         this.queried.clear();
-        this.queried.addAll(this.packs);
+        CollectionsUtil.addIf(this.queried, this.packs, pack -> !this.packAssets.isHidden(pack));
         this.query.apply(this.queried);
         this.selection.retainAll(this.queried);
         this.refreshEntries();
@@ -185,7 +187,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         if (pack != null && !this.packs.contains(pack)) {
             int index = 0;
             for (Pack p : this.packs) {
-                if (!p.isFixedPosition()) break;
+                if (!this.packAssets.isFixed(p)) break;
                 index++;
             }
             this.packs.add(index, pack);
@@ -208,7 +210,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     @Override
     public boolean move(Pack pack, int to) {
-        if (pack.isFixedPosition()) return false;
+        if (this.packAssets.isFixed(pack)) return false;
 
         int from = this.packs.indexOf(pack);
         if (from == -1 || to < 0 || to >= this.packs.size() || from == to) {
@@ -275,6 +277,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     public boolean isSelected(Pack pack) {
         return this.selection.contains(pack);
+    }
+
+    @Override
+    public boolean isLocked() {
+        return this.packAssets.isLocked();
     }
 
     public void scrollToLastSelected() {
@@ -510,7 +517,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     public abstract class Entry extends AbstractDynamicList<T>.Entry implements PackList.Entry, ContextMenuContainer {
         private static final double DRAG_THRESHOLD = 1.0;
-        private static final int DOUBLE_CLICK_DELTA_MS = 200;
+        private static final int DOUBLE_CLICK_DELTA_MS = 250;
         private static final Tooltip FOLDER_OPEN_INFO = Tooltip.create(FolderPack.FOLDER_OPEN_TEXT);
         protected static final int SPACING = 2;
         protected static final int BACKGROUND_OFFSET = 1;
@@ -521,7 +528,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         protected final List<NarratableEntry> narratables = new ArrayList<>();
         protected final Pack pack;
         private final PackWidget packWidget;
-        private FidgetzButton<Void> folderWidget;
+        private FidgetzButton<FolderPack> folderWidget;
         private long lastClickTime = 0;
         private MouseSelectionState mouseSelectionState = MouseSelectionState.INACTIVE;
         private boolean stale = false;
@@ -542,15 +549,13 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
             if (this.pack instanceof FolderPack folderPack) {
                 this.folderWidget = this.addTopRenderableOnly(this.prependWidget(
-                        FidgetzButton.<Void>builder()
+                        FidgetzButton.<FolderPack>builder()
                                 .setTooltip(FOLDER_OPEN_INFO)
                                 .setHeight(this.packWidget.getHeight() / 3)
                                 .makeSquare()
                                 .setSprite(GuiConstants.HAMBURGER_SPRITE)
-                                .setOnPress(btn -> {
-                                    btn.setFocused(false);
-                                    PackListBase.this.openFolder(folderPack);
-                                })
+                                .setMetadata(folderPack)
+                                .setOnPress(this::openFolder)
                                 .build()
                 ));
             }
@@ -576,15 +581,9 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return renderable;
         }
 
-        /**
-         * @deprecated z plane removed in GUI
-         */
-        @Deprecated(since = "mc1.21.6")
-        public <U extends GuiEventListener & Renderable> U prependRenderableWidget(U widget) {
-            this.children.addFirst(widget);
-            this.renderables.addFirst(widget);
-            if (widget instanceof NarratableEntry narratable) this.narratables.addFirst(narratable);
-            return widget;
+        @Override
+        public boolean isTransferable() {
+            return !PackListBase.this.isLocked();
         }
 
         @Override
@@ -652,6 +651,10 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return PackListBase.this.isHovered() && super.isMouseOver(mouseX, mouseY) && PackListBase.this.beforeScrollbarX(mouseX);
         }
 
+        protected boolean canDrag() {
+            return this.isSelected() && !this.isStale() && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE;
+        }
+
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (super.mouseClicked(mouseX, mouseY, button)) {
@@ -697,11 +700,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 this.mouseSelectionState = MouseSelectionState.INACTIVE;
                 return false;
             }
-            if (this.isSelected()
-                && !this.isStale()
-                && !this.pack.isFixedPosition()
-                && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE
-                && this.exceedsDragThreshold(dragX, dragY)) {
+            if (this.exceedsDragThreshold(dragX, dragY) && this.canDrag()) {
                 PackListBase.this.sendEvent(new DragEvent(
                         PackListBase.this,
                         PackListBase.this.getOrderedSelection().reversed(),
@@ -800,9 +799,9 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             ContextMenuContainer.super.buildItems(builder
                             .add(PackMenuHeader.withItem(this.pack, this.packWidget.getSprite()))
                             .whenNonNull(this.folderWidget)
-                            .ifTrue((widget, b) -> b
+                            .ifTrue(b -> b
                                     .separator()
-                                    .simpleItem(FolderPack.FOLDER_OPEN_TEXT, widget::onPress))
+                                    .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this::openFolder))
                             .whenNonNull(((IPack) this.pack).packed_packs$getPath())
                             .ifTrue((path, b) -> b
                                     .separator()
@@ -816,8 +815,16 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             );
         }
 
+        private void openFolder() {
+            PackListBase.this.openFolder(this.folderWidget.getMetadata());
+        }
+
         public boolean canOperateFile() {
-            return !PackListBase.this.packAssets.isEnabled(this.pack) && PackAssets.validatePackPath(this.pack) != null;
+            return !PackListBase.this.isLocked() &&
+                   !PackListBase.this.packAssets.isFixed(this.pack) &&
+                   !PackListBase.this.packAssets.isRequired(this.pack) &&
+                   !PackListBase.this.packAssets.isEnabled(this.pack) &&
+                   PackAssets.validatePackPath(this.pack) != null;
         }
 
         public void deletePack() {

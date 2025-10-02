@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class CollectionsUtil {
     private CollectionsUtil() {
@@ -72,5 +73,13 @@ public class CollectionsUtil {
             list.addAll(collection);
         }
         return list;
+    }
+
+    public static <E> void addIf(Collection<E> out, Collection<E> add, Predicate<E> predicate) {
+        for (E e : add) {
+            if (predicate.test(e)) {
+                out.add(e);
+            }
+        }
     }
 }

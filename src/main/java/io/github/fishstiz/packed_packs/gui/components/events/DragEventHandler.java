@@ -27,7 +27,7 @@ public interface DragEventHandler extends ContainerEventHandler {
 
     default void onRelease(@NotNull DragEvent event, double mouseX, double mouseY) {
         Optional<GuiEventListener> child = this.getChildAt(mouseX, mouseY);
-        if (child.isPresent() && child.get() instanceof PackList packList) {
+        if (child.isPresent() && child.get() instanceof PackList packList && !packList.isLocked()) {
             packList.drop(event.target(), event.payload(), event.trigger(), mouseX, mouseY);
         }
     }

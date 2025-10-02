@@ -1,13 +1,23 @@
 package io.github.fishstiz.packed_packs.config;
 
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.fishstiz.packed_packs.PackedPacks;
 
 import java.io.*;
+import java.util.Map;
 
 public class ConfigLoader {
-    private static final Gson GSON = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder()
+            .serializeNulls()
+            .setPrettyPrinting()
+            .registerTypeAdapter(Profile.PackEntry.class, new Profile.PackEntry.Adapter())
+            .registerTypeAdapter(
+                    new TypeToken<Map<String, Profile.PackEntry>>() {}.getType(),
+                    new Profile.PackEntryMapAdapter()
+            )
+            .create();
 
     private ConfigLoader() {
     }

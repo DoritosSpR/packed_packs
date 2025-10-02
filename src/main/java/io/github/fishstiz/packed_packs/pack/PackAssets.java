@@ -4,6 +4,8 @@ import com.google.common.hash.Hashing;
 import com.mojang.blaze3d.platform.NativeImage;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.config.Folder;
+import io.github.fishstiz.packed_packs.config.PackOptions;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
@@ -30,7 +32,7 @@ import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-public interface PackAssets {
+public interface PackAssets extends PackOptions {
     String ICON_FILENAME = "pack.png";
     String ZIP_PACK_EXTENSION = ".zip";
     ResourceLocation DEFAULT_FOLDER_ICON = ResourceUtil.getResource("textures/misc/unknown_folder.png");
@@ -46,11 +48,13 @@ public interface PackAssets {
 
     boolean isResourcePacks();
 
+    boolean isLocked();
+
     boolean isEnabled(Pack pack);
 
-    default Config.Packs getConfig() {
-        return this.isResourcePacks() ? PackedPacks.CONFIG.getResourcepacks() : PackedPacks.CONFIG.getDatapacks();
-    }
+    Config.Packs getConfig();
+
+    Folder getFolderConfig(@Nullable FolderPack folderPack);
 
     default boolean deletePack(Pack pack) {
         if (pack == null || this.isEnabled(pack)) {

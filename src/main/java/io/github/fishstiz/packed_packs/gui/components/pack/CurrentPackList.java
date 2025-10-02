@@ -11,12 +11,12 @@ import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -25,7 +25,7 @@ import java.util.function.ToIntFunction;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
-import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
+import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
 
 public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
@@ -98,6 +98,16 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         return index;
     }
 
+    private int toPackIndex(int dropIndex) {
+        List<Entry> children = this.children();
+
+        if (dropIndex == -1) {
+            return !children.isEmpty() ? this.packs.indexOf(this.children().getLast().getPack()) + 1 : -1;
+        }
+
+        return Math.clamp(this.packs.indexOf(this.children().get(dropIndex).getPack()), 0, this.packs.size());
+    }
+
     private boolean isMouserOverSelection(List<Pack> selection, double mouseX, double mouseY) {
         for (Pack selected : selection) {
             Entry entry = this.getEntry(selected);
@@ -122,43 +132,52 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
     @Override
     public boolean canDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
-        if (this.scrolling || this.isQueried() || payload.isEmpty() || (source != this && source instanceof FolderPackList)) {
+        if (this.scrolling || this.isQueried() || this.isLocked() || payload.isEmpty() || (source != this && !(source instanceof AvailablePackList))) {
             return false;
         }
 
+        List<Entry> children = this.children();
+        if (children.isEmpty()) return true;
+
         int dropIndex = this.getDropIndex(mouseY);
-        if (dropIndex > -1 && this.getEntry(dropIndex).isFixed()) {
+
+        int minDropIndex = 0;
+        int maxDropIndex = this.packs.size();
+        for (int i = 0; i < this.packs.size(); i++) {
+            Pack pack = this.packs.get(i);
+            if (this.packAssets.isFixed(pack)) {
+                switch (this.packAssets.getPosition(pack)) {
+                    case TOP -> minDropIndex = i + 1;
+                    case BOTTOM -> maxDropIndex = Math.min(i, maxDropIndex);
+                }
+            }
+        }
+
+        int dropPackIndex = this.toPackIndex(dropIndex);
+        if (dropPackIndex == -1) dropPackIndex = minDropIndex;
+        if (dropPackIndex < minDropIndex || dropPackIndex > maxDropIndex) {
             return false;
         }
 
         if (source != this) {
             return source.isTransferable(trigger);
         }
-
-        if (trigger.isFixedPosition() || this.isMouserOverSelection(payload, mouseX, mouseY)) {
+        if (this.packAssets.isFixed(trigger) || this.isMouserOverSelection(payload, mouseX, mouseY)) {
             return false;
         }
 
         int[] indices = this.getIndicesFromSelection(payload);
-
-        if (indices.length == 0) {
-            return false;
-        }
-
-        if (hasGap(indices)) {
-            return true;
-        }
+        if (indices.length == 0) return false;
+        if (hasGap(indices)) return true;
 
         Arrays.sort(indices);
         int lastSelectionIndex = indices[indices.length - 1];
-
         if (!this.packs.isEmpty()) {
             int lastPackIndex = this.packs.indexOf(this.packs.getLast());
             if (dropIndex == -1 && lastPackIndex == lastSelectionIndex) {
                 return false;
             }
         }
-
         return dropIndex != indices[0] && dropIndex - 1 != lastSelectionIndex;
     }
 
@@ -166,23 +185,31 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         if (!this.canDrop(source, payload, trigger, mouseX, mouseY)) return null;
 
-        int dropIndex = this.getDropIndex(mouseY);
-        if (dropIndex == -1) {
-            dropIndex = this.children().size();
+        int dropPackIndex = this.toPackIndex(this.getDropIndex(mouseY));
+
+        if (dropPackIndex == -1) {
+            int minDropIndex = 0;
+            for (int i = 0; i < this.packs.size(); i++) {
+                Pack pack = this.packs.get(i);
+                if (this.packAssets.isFixed(pack) && this.packAssets.getPosition(pack) == Pack.Position.TOP) {
+                    minDropIndex = i + 1;
+                }
+            }
+            dropPackIndex = minDropIndex;
         }
 
         if (source == this) {
-            List<Pack> movable = new ArrayList<>(payload);
-            movable.removeIf(Pack::isFixedPosition);
-            return this.moveAll(this.orderSelection(movable), dropIndex) ? payload : null;
+            List<Pack> movable = new ObjectArrayList<>(payload);
+            movable.removeIf(this.packAssets::isFixed);
+            return this.moveAll(this.orderSelection(movable), dropPackIndex) ? payload : null;
         }
 
         this.clearSelection();
-        List<Pack> dropped = new ArrayList<>();
+        List<Pack> dropped = new ObjectArrayList<>();
         for (Pack selected : payload) {
             if (source.isTransferable(selected)) {
                 dropped.add(selected);
-                this.insertDrop(selected, dropIndex);
+                this.insertDrop(selected, dropPackIndex);
                 this.select(selected);
             }
         }
@@ -204,7 +231,9 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
     @Override
     public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
-        if (this.isQueried() || (source != this && source instanceof FolderPackList)) return;
+        if (this.isLocked() || source.isLocked() || (source != this && source instanceof FolderPackList)) {
+            return;
+        }
 
         int x = this.getX();
         int y = this.getY();
@@ -245,41 +274,46 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         @Override
         public boolean isTransferable() {
-            return !this.pack.isRequired() && !this.isStale();
+            return !CurrentPackList.this.packAssets.isRequired(this.pack) &&
+                   !CurrentPackList.this.isLocked() &&
+                   !this.isStale();
         }
 
-        private int getDownIndex() {
-            for (int i = this.index + 1; i < CurrentPackList.this.packs.size(); i++) {
-                if (!CurrentPackList.this.packs.get(i).isFixedPosition()) return i;
-            }
-            return -1;
+        @Override
+        protected boolean canDrag() {
+            return !this.isFixed() && super.canDrag();
         }
 
-        private int getUpIndex() {
-            for (int i = this.index - 1; i >= 0; i--) {
-                if (!CurrentPackList.this.packs.get(i).isFixedPosition()) return i;
-            }
-            return -1;
-        }
-
-        private boolean isFixed() {
-            return CurrentPackList.this.isQueried() || this.pack.isFixedPosition() || this.isStale();
+        public boolean isFixed() {
+            return CurrentPackList.this.packAssets.isFixed(this.pack) ||
+                   CurrentPackList.this.isQueried() ||
+                   CurrentPackList.this.isLocked() ||
+                   this.isStale();
         }
 
         public boolean canMoveDown() {
             if (this.isFixed()) return false;
 
             int size = CurrentPackList.this.packs.size();
-
             if (this.isSelected()) {
                 List<Pack> selection = CurrentPackList.this.getOrderedSelection().reversed();
-                if (!selection.isEmpty()) {
+                if (selection.size() > 1) {
                     Entry entry = CurrentPackList.this.getEntry(selection.getFirst());
-                    return entry != null && entry.getIndex() < size && entry.getDownIndex() > -1;
+                    int index = entry != null ? entry.getPackIndex() : -1;
+                    int moveIndex = index > -1 ? entry.getMoveDownIndex() : -1;
+                    return index > -1 &&
+                           index < size - 1 &&
+                           moveIndex > -1 &&
+                           !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
                 }
             }
 
-            return this.index >= 0 && this.index < size && this.getDownIndex() > -1;
+            int index = this.getPackIndex();
+            int moveIndex = this.getMoveDownIndex();
+            return index > -1 &&
+                   index < size - 1 &&
+                   moveIndex > -1 &&
+                   !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
         }
 
         public boolean canMoveUp() {
@@ -287,13 +321,21 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
             if (this.isSelected()) {
                 List<Pack> selection = CurrentPackList.this.getOrderedSelection();
-                if (!selection.isEmpty()) {
+                if (selection.size() > 1) {
                     Entry entry = CurrentPackList.this.getEntry(selection.getFirst());
-                    return entry != null && entry.getIndex() > 0 && entry.getUpIndex() > -1;
+                    int index = entry != null ? entry.getPackIndex() : -1;
+                    int moveIndex = index > -1 ? entry.getMoveUpIndex() : -1;
+                    return index > 0 &&
+                           moveIndex > -1 &&
+                           !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
                 }
             }
 
-            return this.index > 0 && this.getUpIndex() > -1;
+            int index = this.getPackIndex();
+            int moveIndex = this.getMoveUpIndex();
+            return index > 0 &&
+                   moveIndex > -1 &&
+                   !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
         }
 
         public boolean isMouseOverRemove(double mouseX, double mouseY) {
@@ -329,13 +371,44 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             );
         }
 
+        protected int getPackIndex() {
+            return CurrentPackList.this.packs.indexOf(this.pack);
+        }
+
+        protected int getMoveUpIndex() {
+            for (int i = this.getPackIndex() - 1; i >= 0; i--) {
+                Pack nextPack = CurrentPackList.this.packs.get(i);
+                if (CurrentPackList.this.packAssets.isFixed(nextPack)) {
+                    return -1;
+                }
+                if (!CurrentPackList.this.packAssets.isHidden(nextPack)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        protected int getMoveDownIndex() {
+            for (int i = this.getPackIndex() + 1; i < CurrentPackList.this.packs.size(); i++) {
+                Pack nextPack = CurrentPackList.this.packs.get(i);
+                if (CurrentPackList.this.packAssets.isFixed(nextPack)) {
+                    return -1;
+                }
+                if (!CurrentPackList.this.packAssets.isHidden(nextPack)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         private @Nullable List<Pack> moveSelection(List<Pack> selection, ToIntFunction<Entry> indexGetter) {
-            List<Pack> moved = new ArrayList<>();
+            List<Pack> moved = new ObjectArrayList<>();
 
             Pack lastSelected = CurrentPackList.this.getLastSelected();
             for (int i = 0; i < selection.size(); i++) {
                 Entry entry = CurrentPackList.this.getEntry(selection.get(i));
-                if (entry != null && CurrentPackList.this.move(selection.get(i), indexGetter.applyAsInt(entry))) {
+                int index = indexGetter.applyAsInt(entry);
+                if (index > -1 && entry != null && CurrentPackList.this.move(selection.get(i), index)) {
                     moved.add(selection.get(i));
                 } else if (i == 0) {
                     return null;
@@ -348,6 +421,8 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         private void sendMoveEvent(List<Pack> moved) {
             CurrentPackList.this.sendEvent(new MoveEvent(CurrentPackList.this, moved, this.pack));
+            Entry entry = CurrentPackList.this.getEntry(this.pack);
+            if (entry != null) CurrentPackList.this.ensureVisible(entry);
         }
 
         private boolean moveDirection(MoveDirection direction) {
@@ -356,18 +431,21 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             }
 
             if (!this.isSelected()) {
-                int targetIndex = direction.isUp() ? this.getUpIndex() : this.getDownIndex();
-                if (CurrentPackList.this.move(this.pack, targetIndex)) {
-                    CurrentPackList.this.selectExclusive(this.pack);
-                    this.sendMoveEvent(List.of(this.pack));
-                    return true;
+                int packIndex = this.getPackIndex();
+                if (packIndex > -1) {
+                    int targetIndex = direction.isUp() ? this.getMoveUpIndex() : this.getMoveDownIndex();
+                    if (targetIndex > -1 && CurrentPackList.this.move(this.pack, targetIndex)) {
+                        CurrentPackList.this.selectExclusive(this.pack);
+                        this.sendMoveEvent(List.of(this.pack));
+                        return true;
+                    }
                 }
                 return false;
             }
 
             List<Pack> moved = direction.isUp()
-                    ? moveSelection(CurrentPackList.this.getOrderedSelection(), Entry::getUpIndex)
-                    : moveSelection(CurrentPackList.this.getOrderedSelection().reversed(), Entry::getDownIndex);
+                    ? this.moveSelection(CurrentPackList.this.getOrderedSelection(), Entry::getMoveUpIndex)
+                    : this.moveSelection(CurrentPackList.this.getOrderedSelection().reversed(), Entry::getMoveDownIndex);
 
             if (moved != null && !moved.isEmpty()) {
                 this.sendMoveEvent(moved);

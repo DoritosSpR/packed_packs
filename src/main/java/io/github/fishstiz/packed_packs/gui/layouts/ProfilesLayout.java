@@ -16,12 +16,10 @@ import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.repository.Pack;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public class ProfilesLayout {
     public static final Component TITLE_TEXT = ResourceUtil.getText("profile");
@@ -34,8 +32,7 @@ public class ProfilesLayout {
     private static final int MAX_WIDTH = 150;
     private final Config.Packs config;
     private final Sidebar sidebar;
-    private final Supplier<List<Pack>> selectedPacks;
-    private final Consumer<Profile> listener;
+    private final Listener listener;
     private final ToggleableEditBox<Void> nameField = ToggleableEditBox.<Void>builder()
             .setHint(UNNAMED_TEXT)
             .setMaxLength(Profile.NAME_MAX_LENGTH)
@@ -47,8 +44,11 @@ public class ProfilesLayout {
             .setTooltip(Tooltip.create(EDIT_NAME_TEXT))
             .setSprite(new ButtonSprites(
                     new Sprite(ResourceUtil.getIcon("edit"), Size.of16()),
-                    new Sprite(ResourceUtil.getIcon("edit_inactive"), Size.of16()))
-            )
+                    new Sprite(ResourceUtil.getIcon("edit_inactive"), Size.of16()),
+                    sprite -> this.getProfile() != null && this.getProfile().isLocked()
+                            ? GuiConstants.LOCK_SPRITE
+                            : sprite::renderClamped
+            ))
             .setOnPress(nameField::toggle)
             .build();
     private final FidgetzButton<Void> noProfileButton = FidgetzButton.<Void>builder()
@@ -58,10 +58,9 @@ public class ProfilesLayout {
     private final ProfileList profileList;
     private @Nullable Profile profile;
 
-    public ProfilesLayout(Sidebar.Builder sidebar, Config.Packs config, Supplier<List<Pack>> selectedPacks, Consumer<Profile> listener) {
+    public ProfilesLayout(Sidebar.Builder sidebar, Config.Packs config, Listener listener) {
         this.config = config;
         this.sidebar = sidebar.setMaxWidth(MAX_WIDTH).setTitle(TITLE_TEXT.copy().withColor(Theme.GRAY_800.getARGB()), false).build();
-        this.selectedPacks = selectedPacks;
         this.listener = listener;
         this.profileList = new ProfileList(this.config, this::getProfile, this::removeProfile, this::setProfile);
 
@@ -121,10 +120,7 @@ public class ProfilesLayout {
     }
 
     private void setProfile(@Nullable Profile profile) {
-        if (this.profile != null) {
-            this.profile.setPacks(this.selectedPacks.get());
-        }
-
+        Profile previous = this.profile;
         this.profile = profile;
 
         this.nameField.setEditable(false);
@@ -132,10 +128,10 @@ public class ProfilesLayout {
         boolean hasProfile = profile != null;
         this.nameField.setHint(hasProfile ? UNNAMED_TEXT : NO_PROFILE_TEXT);
         this.nameField.setValue(hasProfile ? profile.getName() : "");
-        this.toggleNameButton.active = hasProfile;
+        this.toggleNameButton.active = hasProfile && !profile.isLocked();
         this.noProfileButton.active = hasProfile;
 
-        this.listener.accept(this.profile);
+        this.listener.onProfileChange(previous, this.profile);
     }
 
     public @Nullable Profile getProfile() {
@@ -147,7 +143,7 @@ public class ProfilesLayout {
                 ? this.profile.copy()
                 : new Profile(NO_PROFILE_TEXT.getString() + " - " + COPY_TEXT.getString());
 
-        copiedProfile.setPacks(this.selectedPacks.get());
+        this.listener.onProfileCopy(this.profile, copiedProfile);
         this.config.addProfile(copiedProfile);
         this.setProfile(copiedProfile);
         this.sidebar.setOpen(false);
@@ -167,5 +163,11 @@ public class ProfilesLayout {
         }
         this.config.removeProfile(profile);
         this.profileList.refresh();
+    }
+
+    public interface Listener {
+        void onProfileChange(@Nullable Profile previous, @Nullable Profile current);
+
+        void onProfileCopy(@Nullable Profile original, @NotNull Profile copy);
     }
 }
