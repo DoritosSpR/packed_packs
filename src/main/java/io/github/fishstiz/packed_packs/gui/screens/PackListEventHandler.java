@@ -2,6 +2,7 @@ package io.github.fishstiz.packed_packs.gui.screens;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
+import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
@@ -52,7 +53,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
         }
     }
 
-    private void handleRequestTransferEvent(RequestTransferEvent event) {
+    protected void handleRequestTransferEvent(RequestTransferEvent event) {
         PackList source = event.target();
         PackList destination = this.getDestination(source);
 
@@ -75,7 +76,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
         this.unfocusOtherLists(event.target());
     }
 
-    private void handleMoveEvent(MoveEvent event) {
+    protected void handleMoveEvent(MoveEvent event) {
         PackList.Entry entry = event.target().getEntry(event.trigger());
         if (entry != null) {
             this.focus(ComponentPath.path(entry, event.target(), this));
@@ -112,17 +113,35 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
     }
 
     @Override
+    public void onRelease(@NotNull DragEvent event, double mouseX, double mouseY) {
+        for (PackList packList : this.getPackLists()) {
+            if (packList.isHovered()) {
+                if (!packList.isLocked()) {
+                    packList.drop(event.target(), event.payload(), event.trigger(), mouseX, mouseY);
+                }
+                return;
+            }
+        }
+    }
+
+    @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
         DragEvent event = this.getDragged();
         if (event != null) {
+            PackList source = event.target();
+
             PoseStack poseStack = guiGraphics.pose();
             poseStack.pushPose();
             poseStack.translate(0, 0, this.getDroppableZ());
 
-            for (PackList list : this.getPackLists()) {
-                list.renderDroppableZone(guiGraphics, event.target(), event.payload(), event.trigger(), mouseX, mouseY, partialTick);
+            if (!source.isLocked()) {
+                for (PackList list : this.getPackLists()) {
+                    if (!list.isLocked()) {
+                        list.renderDroppableZone(guiGraphics, event.target(), event.payload(), event.trigger(), mouseX, mouseY, partialTick);
+                    }
+                }
             }
 
             poseStack.translate(0, 0, 1f);
