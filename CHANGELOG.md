@@ -1,5 +1,6 @@
-- Added Russian Translation ([#27](https://github.com/fishstiz/packed_packs/pull/27) by iceban)
-- Now applies packs on close by default to match vanilla behavior.
-- Fixed hidden Fabric API resources from being shown sometimes.
-- Fixed shift+click not working on cycling buttons to cycle in reverse.
-- Port to 1.21.9 Release Candidate
+- Port to 1.21.9
+- Fixed issues from 1.21.9-rc1:
+  - Fixed dead click zones in pack list.
+  - Fixed being unable to drop to top of list.
+  - Fixed drop indicator not rendering sometimes.
+  - Fixed pack list always scrolling to selected pack.
