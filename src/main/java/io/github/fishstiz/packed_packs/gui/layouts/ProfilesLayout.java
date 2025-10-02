@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.gui.layouts;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
+import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
@@ -10,18 +11,18 @@ import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.profile.ProfileList;
 import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
+import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
-import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.repository.Pack;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
 public class ProfilesLayout {
     public static final Component TITLE_TEXT = ResourceUtil.getText("profile");
@@ -34,8 +35,7 @@ public class ProfilesLayout {
     private static final int MAX_WIDTH = 150;
     private final Config.Packs config;
     private final Sidebar sidebar;
-    private final Supplier<List<Pack>> selectedPacks;
-    private final Consumer<Profile> listener;
+    private final Listener listener;
     private final ToggleableEditBox<Void> nameField = ToggleableEditBox.<Void>builder()
             .setHint(UNNAMED_TEXT)
             .setMaxLength(Profile.NAME_MAX_LENGTH)
@@ -47,9 +47,10 @@ public class ProfilesLayout {
             .setTooltip(Tooltip.create(EDIT_NAME_TEXT))
             .setSprite(new ButtonSprites(
                     new Sprite(ResourceUtil.getIcon("edit"), Size.of16()),
-                    new Sprite(ResourceUtil.getIcon("edit_inactive"), Size.of16()))
-            )
-            .setOnPress(nameField::toggle)
+                    new Sprite(ResourceUtil.getIcon("edit_inactive"), Size.of16()),
+                    this::getToggleSpriteRenderer
+            ))
+            .setOnPress(this.nameField::toggle)
             .build();
     private final FidgetzButton<Void> noProfileButton = FidgetzButton.<Void>builder()
             .setMessage(NO_PROFILE_TEXT)
@@ -58,14 +59,17 @@ public class ProfilesLayout {
     private final ProfileList profileList;
     private @Nullable Profile profile;
 
-    public ProfilesLayout(Sidebar.Builder sidebar, Config.Packs config, Supplier<List<Pack>> selectedPacks, Consumer<Profile> listener) {
+    public ProfilesLayout(@Nullable Profile profile, Config.Packs config, PackedPacksScreen screen) {
         this.config = config;
-        this.sidebar = sidebar.setMaxWidth(MAX_WIDTH).setTitle(TITLE_TEXT.copy().withColor(Theme.GRAY_800.getARGB()), false).build();
-        this.selectedPacks = selectedPacks;
-        this.listener = listener;
+        this.sidebar = Sidebar.builder(screen)
+                .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
+                .setMaxWidth(MAX_WIDTH)
+                .setTitle(TITLE_TEXT, true)
+                .build();
+        this.listener = screen;
         this.profileList = new ProfileList(this.config, this::getProfile, this::removeProfile, this::setProfile);
-
         this.noProfileButton.addListener(() -> this.sidebar.setOpen(false));
+        this.profile = profile;
     }
 
     public void initContents() {
@@ -88,7 +92,15 @@ public class ProfilesLayout {
         this.sidebar.root().layout().arrangeElements();
         this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
 
-        this.setProfile(this.config.getLastViewed());
+        this.onSetProfile(this.profile);
+    }
+
+    private RenderableRect getToggleSpriteRenderer(Sprite sprite) {
+        if (this.profile != null && this.profile.isLocked()) {
+            Profile defaultProfile = this.config.getDefaultProfile();
+            return this.profile == defaultProfile ? STAR_SPRITE::renderClamped : LOCK_SPRITE;
+        }
+        return sprite::renderClamped;
     }
 
     public int getMaxWidth() {
@@ -120,22 +132,24 @@ public class ProfilesLayout {
         this.profileList.scheduleRefresh();
     }
 
-    private void setProfile(@Nullable Profile profile) {
-        if (this.profile != null) {
-            this.profile.setPacks(this.selectedPacks.get());
-        }
-
-        this.profile = profile;
-
+    private void onSetProfile(@Nullable Profile profile) {
         this.nameField.setEditable(false);
 
         boolean hasProfile = profile != null;
         this.nameField.setHint(hasProfile ? UNNAMED_TEXT : NO_PROFILE_TEXT);
         this.nameField.setValue(hasProfile ? profile.getName() : "");
-        this.toggleNameButton.active = hasProfile;
+        this.nameField.visible = hasProfile;
+        this.nameField.active = hasProfile;
         this.noProfileButton.active = hasProfile;
+        this.toggleNameButton.visible = hasProfile;
+        this.toggleNameButton.active = hasProfile && !profile.isLocked();
+    }
 
-        this.listener.accept(this.profile);
+    private void setProfile(@Nullable Profile profile) {
+        Profile previous = this.profile;
+        this.profile = profile;
+        this.onSetProfile(profile);
+        this.listener.onProfileChange(previous, this.profile);
     }
 
     public @Nullable Profile getProfile() {
@@ -147,7 +161,7 @@ public class ProfilesLayout {
                 ? this.profile.copy()
                 : new Profile(NO_PROFILE_TEXT.getString() + " - " + COPY_TEXT.getString());
 
-        copiedProfile.setPacks(this.selectedPacks.get());
+        this.listener.onProfileCopy(this.profile, copiedProfile);
         this.config.addProfile(copiedProfile);
         this.setProfile(copiedProfile);
         this.sidebar.setOpen(false);
@@ -167,5 +181,11 @@ public class ProfilesLayout {
         }
         this.config.removeProfile(profile);
         this.profileList.refresh();
+    }
+
+    public interface Listener {
+        void onProfileChange(@Nullable Profile previous, @Nullable Profile current);
+
+        void onProfileCopy(@Nullable Profile original, @NotNull Profile copy);
     }
 }

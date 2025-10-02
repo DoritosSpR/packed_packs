@@ -1,10 +1,10 @@
 package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 
 public interface ContextMenuProvider {
-    void buildItems(MenuItemBuilder builder, int mouseX, int mouseY);
+    void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY);
 
-    default MenuItemBuilder buildItems(int mouseX, int mouseY) {
-        MenuItemBuilder builder = new MenuItemBuilder();
+    default ContextMenuItemBuilder buildItems(int mouseX, int mouseY) {
+        ContextMenuItemBuilder builder = new ContextMenuItemBuilder();
         this.buildItems(builder, mouseX, mouseY);
         return builder;
     }

@@ -2,34 +2,40 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.*;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.GradientRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
+import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
-import io.github.fishstiz.packed_packs.util.InputUtil;
-import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
+import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
+import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.ToIntFunction;
+import java.util.function.*;
 
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
+import static io.github.fishstiz.packed_packs.gui.metadata.Toggleable.getDefaultIcon;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
-import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
+import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
 
 public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
@@ -39,6 +45,13 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     private static final Sprite MOVE_UP_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_up"));
     private static final Sprite MOVE_DOWN_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_down_highlighted"));
     private static final Sprite MOVE_DOWN_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_down"));
+    private static final Sprite ARROW_UP_SPRITE = Sprite.of16(ResourceUtil.getIcon("arrow_up"));
+    private static final Sprite ARROW_DOWN_SPRITE = Sprite.of16(ResourceUtil.getIcon("arrow_down"));
+    private static final Component REQUIRED = ResourceUtil.getText("profile.override.required");
+    private static final Component FIXED_POSITION = ResourceUtil.getText("profile.override.fixed");
+    private static final Component FIXED_TOP = ResourceUtil.getText("profile.override.fixed.top");
+    private static final Component FIXED_BOTTOM = ResourceUtil.getText("profile.override.fixed.bottom");
+    private static final Component REMOVE_OVERRIDES = ResourceUtil.getText("profile.override.remove");
     private static final Theme DROP_THEME = Theme.GREEN_500;
     private static final ColoredRect DROP_INDEX = new ColoredRect(DROP_THEME.getARGB());
     private static final GradientRect SCROLL_UP = GradientRect.fromTop(DROP_THEME.withAlpha(0.75f), DROP_THEME.withAlpha(0));
@@ -62,10 +75,10 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         if (!keyPressed) {
             Entry entry = this.getEntry(this.getLastSelected());
             if (entry != null) {
-                if (InputUtil.isMoveDown(keyEvent)) {
+                if (isMoveDown(keyEvent)) {
                     if (entry.moveDown()) playClickSound();
                     return true;
-                } else if (InputUtil.isMoveUp(keyEvent)) {
+                } else if (isMoveUp(keyEvent)) {
                     if (entry.moveUp()) playClickSound();
                     return true;
                 }
@@ -102,6 +115,16 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         return index;
     }
 
+    private int toPackIndex(int dropIndex) {
+        List<Entry> children = this.children();
+
+        if (dropIndex == -1) {
+            return !children.isEmpty() ? this.packs.indexOf(this.children().getLast().getPack()) + 1 : -1;
+        }
+
+        return Math.clamp(this.packs.indexOf(this.children().get(dropIndex).getPack()), 0, this.packs.size());
+    }
+
     private boolean isMouserOverSelection(List<Pack> selection, double mouseX, double mouseY) {
         for (Pack selected : selection) {
             Entry entry = this.getEntry(selected);
@@ -126,43 +149,52 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
     @Override
     public boolean canDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
-        if (this.scrolling || this.isQueried() || payload.isEmpty() || (source != this && source instanceof FolderPackList)) {
+        if (this.scrolling || this.isQueried() || this.isLocked() || payload.isEmpty() || (source != this && !(source instanceof AvailablePackList))) {
             return false;
         }
 
+        List<Entry> children = this.children();
+        if (children.isEmpty()) return true;
+
         int dropIndex = this.getDropIndex(mouseY);
-        if (dropIndex > -1 && this.getEntry(dropIndex).isFixed()) {
+
+        int minDropIndex = 0;
+        int maxDropIndex = this.packs.size();
+        for (int i = 0; i < this.packs.size(); i++) {
+            Pack pack = this.packs.get(i);
+            if (this.packAssets.isFixed(pack)) {
+                switch (this.packAssets.getPosition(pack)) {
+                    case TOP -> minDropIndex = i + 1;
+                    case BOTTOM -> maxDropIndex = Math.min(i, maxDropIndex);
+                }
+            }
+        }
+
+        int dropPackIndex = this.toPackIndex(dropIndex);
+        if (dropPackIndex == -1) dropPackIndex = minDropIndex;
+        if (dropPackIndex < minDropIndex || dropPackIndex > maxDropIndex) {
             return false;
         }
 
         if (source != this) {
             return source.isTransferable(trigger);
         }
-
-        if (trigger.isFixedPosition() || this.isMouserOverSelection(payload, mouseX, mouseY)) {
+        if (this.packAssets.isFixed(trigger) || this.isMouserOverSelection(payload, mouseX, mouseY)) {
             return false;
         }
 
         int[] indices = this.getIndicesFromSelection(payload);
-
-        if (indices.length == 0) {
-            return false;
-        }
-
-        if (hasGap(indices)) {
-            return true;
-        }
+        if (indices.length == 0) return false;
+        if (hasGap(indices)) return true;
 
         Arrays.sort(indices);
         int lastSelectionIndex = indices[indices.length - 1];
-
         if (!this.packs.isEmpty()) {
             int lastPackIndex = this.packs.indexOf(this.packs.getLast());
             if (dropIndex == -1 && lastPackIndex == lastSelectionIndex) {
                 return false;
             }
         }
-
         return dropIndex != indices[0] && dropIndex - 1 != lastSelectionIndex;
     }
 
@@ -170,23 +202,31 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         if (!this.canDrop(source, payload, trigger, mouseX, mouseY)) return null;
 
-        int dropIndex = this.getDropIndex(mouseY);
-        if (dropIndex == -1) {
-            dropIndex = this.children().size();
+        int dropPackIndex = this.toPackIndex(this.getDropIndex(mouseY));
+
+        if (dropPackIndex == -1) {
+            int minDropIndex = 0;
+            for (int i = 0; i < this.packs.size(); i++) {
+                Pack pack = this.packs.get(i);
+                if (this.packAssets.isFixed(pack) && this.packAssets.getPosition(pack) == Pack.Position.TOP) {
+                    minDropIndex = i + 1;
+                }
+            }
+            dropPackIndex = minDropIndex;
         }
 
         if (source == this) {
-            List<Pack> movable = new ArrayList<>(payload);
-            movable.removeIf(Pack::isFixedPosition);
-            return this.moveAll(this.orderSelection(movable), dropIndex) ? payload : null;
+            List<Pack> movable = new ObjectArrayList<>(payload);
+            movable.removeIf(this.packAssets::isFixed);
+            return this.moveAll(this.orderSelection(movable), dropPackIndex) ? payload : null;
         }
 
         this.clearSelection();
-        List<Pack> dropped = new ArrayList<>();
+        List<Pack> dropped = new ObjectArrayList<>();
         for (Pack selected : payload) {
             if (source.isTransferable(selected)) {
                 dropped.add(selected);
-                this.insertDrop(selected, dropIndex);
+                this.insertDrop(selected, dropPackIndex);
                 this.select(selected);
             }
         }
@@ -212,7 +252,9 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
     @Override
     public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
-        if (this.isQueried() || (source != this && source instanceof FolderPackList)) return;
+        if (this.isLocked() || source.isLocked() || (source != this && source instanceof FolderPackList)) {
+            return;
+        }
 
         int x = this.getX();
         int y = this.getY();
@@ -253,41 +295,46 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         @Override
         public boolean isTransferable() {
-            return !this.pack.isRequired() && !this.isStale();
+            return !CurrentPackList.this.packAssets.isRequired(this.pack) &&
+                   !CurrentPackList.this.isLocked() &&
+                   !this.isStale();
         }
 
-        private int getDownIndex() {
-            for (int i = this.index + 1; i < CurrentPackList.this.packs.size(); i++) {
-                if (!CurrentPackList.this.packs.get(i).isFixedPosition()) return i;
-            }
-            return -1;
+        @Override
+        protected boolean canDrag() {
+            return !this.isFixed() && super.canDrag();
         }
 
-        private int getUpIndex() {
-            for (int i = this.index - 1; i >= 0; i--) {
-                if (!CurrentPackList.this.packs.get(i).isFixedPosition()) return i;
-            }
-            return -1;
-        }
-
-        private boolean isFixed() {
-            return CurrentPackList.this.isQueried() || this.pack.isFixedPosition() || this.isStale();
+        public boolean isFixed() {
+            return CurrentPackList.this.packAssets.isFixed(this.pack) ||
+                   CurrentPackList.this.isQueried() ||
+                   CurrentPackList.this.isLocked() ||
+                   this.isStale();
         }
 
         public boolean canMoveDown() {
             if (this.isFixed()) return false;
 
             int size = CurrentPackList.this.packs.size();
-
             if (this.isSelected()) {
                 List<Pack> selection = CurrentPackList.this.getOrderedSelection().reversed();
-                if (!selection.isEmpty()) {
+                if (selection.size() > 1) {
                     Entry entry = CurrentPackList.this.getEntry(selection.getFirst());
-                    return entry != null && entry.getIndex() < size && entry.getDownIndex() > -1;
+                    int index = entry != null ? entry.getPackIndex() : -1;
+                    int moveIndex = index > -1 ? entry.getMoveDownIndex() : -1;
+                    return index > -1 &&
+                           index < size - 1 &&
+                           moveIndex > -1 &&
+                           !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
                 }
             }
 
-            return this.index >= 0 && this.index < size && this.getDownIndex() > -1;
+            int index = this.getPackIndex();
+            int moveIndex = this.getMoveDownIndex();
+            return index > -1 &&
+                   index < size - 1 &&
+                   moveIndex > -1 &&
+                   !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
         }
 
         public boolean canMoveUp() {
@@ -295,13 +342,21 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
             if (this.isSelected()) {
                 List<Pack> selection = CurrentPackList.this.getOrderedSelection();
-                if (!selection.isEmpty()) {
+                if (selection.size() > 1) {
                     Entry entry = CurrentPackList.this.getEntry(selection.getFirst());
-                    return entry != null && entry.getIndex() > 0 && entry.getUpIndex() > -1;
+                    int index = entry != null ? entry.getPackIndex() : -1;
+                    int moveIndex = index > -1 ? entry.getMoveUpIndex() : -1;
+                    return index > 0 &&
+                           moveIndex > -1 &&
+                           !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
                 }
             }
 
-            return this.index > 0 && this.getUpIndex() > -1;
+            int index = this.getPackIndex();
+            int moveIndex = this.getMoveUpIndex();
+            return index > 0 &&
+                   moveIndex > -1 &&
+                   !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
         }
 
         public boolean isMouseOverRemove(double mouseX, double mouseY) {
@@ -337,13 +392,44 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             );
         }
 
+        protected int getPackIndex() {
+            return CurrentPackList.this.packs.indexOf(this.pack);
+        }
+
+        protected int getMoveUpIndex() {
+            for (int i = this.getPackIndex() - 1; i >= 0; i--) {
+                Pack nextPack = CurrentPackList.this.packs.get(i);
+                if (CurrentPackList.this.packAssets.isFixed(nextPack)) {
+                    return -1;
+                }
+                if (!CurrentPackList.this.packAssets.isHidden(nextPack)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        protected int getMoveDownIndex() {
+            for (int i = this.getPackIndex() + 1; i < CurrentPackList.this.packs.size(); i++) {
+                Pack nextPack = CurrentPackList.this.packs.get(i);
+                if (CurrentPackList.this.packAssets.isFixed(nextPack)) {
+                    return -1;
+                }
+                if (!CurrentPackList.this.packAssets.isHidden(nextPack)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         private @Nullable List<Pack> moveSelection(List<Pack> selection, ToIntFunction<Entry> indexGetter) {
-            List<Pack> moved = new ArrayList<>();
+            List<Pack> moved = new ObjectArrayList<>();
 
             Pack lastSelected = CurrentPackList.this.getLastSelected();
             for (int i = 0; i < selection.size(); i++) {
                 Entry entry = CurrentPackList.this.getEntry(selection.get(i));
-                if (entry != null && CurrentPackList.this.move(selection.get(i), indexGetter.applyAsInt(entry))) {
+                int index = indexGetter.applyAsInt(entry);
+                if (index > -1 && entry != null && CurrentPackList.this.move(selection.get(i), index)) {
                     moved.add(selection.get(i));
                 } else if (i == 0) {
                     return null;
@@ -356,6 +442,8 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         private void sendMoveEvent(List<Pack> moved) {
             CurrentPackList.this.sendEvent(new MoveEvent(CurrentPackList.this, moved, this.pack));
+            Entry entry = CurrentPackList.this.getEntry(this.pack);
+            if (entry != null) CurrentPackList.this.scrollToEntry(entry);
         }
 
         private boolean moveDirection(MoveDirection direction) {
@@ -364,18 +452,21 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             }
 
             if (!this.isSelected()) {
-                int targetIndex = direction.isUp() ? this.getUpIndex() : this.getDownIndex();
-                if (CurrentPackList.this.move(this.pack, targetIndex)) {
-                    CurrentPackList.this.selectExclusive(this.pack);
-                    this.sendMoveEvent(List.of(this.pack));
-                    return true;
+                int packIndex = this.getPackIndex();
+                if (packIndex > -1) {
+                    int targetIndex = direction.isUp() ? this.getMoveUpIndex() : this.getMoveDownIndex();
+                    if (targetIndex > -1 && CurrentPackList.this.move(this.pack, targetIndex)) {
+                        CurrentPackList.this.selectExclusive(this.pack);
+                        this.sendMoveEvent(List.of(this.pack));
+                        return true;
+                    }
                 }
                 return false;
             }
 
             List<Pack> moved = direction.isUp()
-                    ? moveSelection(CurrentPackList.this.getOrderedSelection(), Entry::getUpIndex)
-                    : moveSelection(CurrentPackList.this.getOrderedSelection().reversed(), Entry::getDownIndex);
+                    ? this.moveSelection(CurrentPackList.this.getOrderedSelection(), Entry::getMoveUpIndex)
+                    : this.moveSelection(CurrentPackList.this.getOrderedSelection().reversed(), Entry::getMoveDownIndex);
 
             if (moved != null && !moved.isEmpty()) {
                 this.sendMoveEvent(moved);
@@ -400,17 +491,17 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
                 double mouseY = mouseButtonEvent.y();
 
                 if (this.isMouseOverRemove(mouseX, mouseY)) {
-                    return this.consumeClick(CurrentPackList.Entry::transfer);
+                    return this.consumeClick(Entry::transfer);
                 } else if (this.isMouseOverUp(mouseX, mouseY)) {
-                    return this.consumeClick(CurrentPackList.Entry::moveUp);
+                    return this.consumeClick(Entry::moveUp);
                 } else if (this.isMouseOverDown(mouseX, mouseY)) {
-                    return this.consumeClick(CurrentPackList.Entry::moveDown);
+                    return this.consumeClick(Entry::moveDown);
                 }
             }
             return super.mouseClicked(mouseButtonEvent, doubleClicked);
         }
 
-        private boolean consumeClick(Consumer<CurrentPackList.Entry> action) {
+        private boolean consumeClick(Consumer<Entry> action) {
             playClickSound();
             action.accept(this);
             return false;
@@ -421,7 +512,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             if (!hovering && !this.isSelectedLast()) return;
 
             int x = left + H_SPACING;
-            GuiConstants.WHITE_OVERLAY.render(guiGraphics, x, top, UNSELECT_SPRITE.width, UNSELECT_SPRITE.height);
+            WHITE_OVERLAY.render(guiGraphics, x, top, UNSELECT_SPRITE.width, UNSELECT_SPRITE.height);
 
             if (this.isTransferable()) {
                 boolean overRemove = this.isMouseOverRemove(mouseX, mouseY);
@@ -444,6 +535,132 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             if (hoveringButton) {
                 guiGraphics.requestCursor(CursorTypes.POINTING_HAND);
             }
+        }
+
+        @Override
+        protected void renderDevSprites(GuiGraphics guiGraphics, int top, int left, int size) {
+            int iconX = left;
+
+            PackOverride positionOverride = this.hasOverride(Profile::overridesPosition);
+            if (positionOverride.booleanValue()) {
+                boolean fixedTop = CurrentPackList.this.packAssets.getPosition(this.pack) == Pack.Position.TOP;
+                guiGraphics.fill(iconX, top, iconX + size, top + size, positionOverride.backgroundColor());
+                pick(fixedTop, ARROW_UP_SPRITE, ARROW_DOWN_SPRITE).render(guiGraphics, iconX, top, size, size);
+                iconX -= size;
+            }
+            PackOverride requiredOverride = this.hasOverride(Profile::overridesRequired);
+            if (requiredOverride.booleanValue()) {
+                boolean required = CurrentPackList.this.packAssets.isRequired(this.pack);
+                guiGraphics.fill(iconX, top, iconX + size, top + size, requiredOverride.backgroundColor());
+                pick(required, LOCK_SPRITE_SMALL, UNLOCK_SPRITE_SMALL).render(guiGraphics, iconX, top, size, size);
+                iconX -= size;
+            }
+            PackOverride hiddenOverride = this.hasOverride(Profile::isHidden);
+            if (hiddenOverride.booleanValue()) {
+                guiGraphics.fill(iconX, top, iconX + size, top + size, hiddenOverride.backgroundColor());
+                EYE_SLASH_SPRITE.render(guiGraphics, iconX, top, size, size);
+                iconX -= size;
+            }
+            PackOverride included = this.hasOverride(Profile::includes);
+            if (included.global() && !((ConfiguredPack) this.pack).packed_packs$getMetadata().compatibility().isCompatible()) {
+                guiGraphics.fill(iconX, top, iconX + size, top + size, included.backgroundColor());
+                X_SQUARE.render(guiGraphics, iconX, top, size, size);
+            }
+        }
+
+        private void updateRequired(@Nullable Boolean required) {
+            Profile profile = CurrentPackList.this.packAssets.getProfile();
+            if (profile != null) {
+                profile.setPacks(CurrentPackList.this.copyFlattenedPacks());
+                profile.setRequired(required, this.selectionOrPack());
+            }
+        }
+
+        private void updatePosition(@Nullable Pack.Position position) {
+            Profile profile = CurrentPackList.this.packAssets.getProfile();
+            if (profile != null) {
+                profile.setPacks(CurrentPackList.this.copyFlattenedPacks());
+                profile.setPosition(position, this.selectionOrPack());
+            }
+        }
+
+        private void resetOverrides() {
+            this.updateHidden(false);
+            this.updateRequired(null);
+            this.updatePosition(null);
+        }
+
+        private boolean isOptionActive(BiPredicate<Profile, Pack> option) {
+            return !CurrentPackList.this.isLocked() && !this.isOverriddenByDefault(option);
+        }
+
+        private Sprite getIcon(boolean active, BiPredicate<Profile, Pack> defaultOption) {
+            return this.isOverriddenByDefault(defaultOption) ? Sprite.of16(ResourceUtil.getIcon("radio_globe")) : getDefaultIcon(active);
+        }
+
+        private boolean nonEssential() {
+            return !this.pack.getId().equals(PackAssets.VANILLA_ID) && !this.pack.getId().equals(PackAssets.FABRIC_ID);
+        }
+
+        @Override
+        protected void onBuildHeader(ContextMenuItemBuilder builder) {
+            Profile profile = PackedPacks.CONFIG.isDevMode() ? CurrentPackList.this.packAssets.getProfile() : null;
+            if (profile == null) return;
+
+            builder.add(devItem(HIDDEN)
+                    .icon(() -> this.getIcon(profile.isHidden(this.pack), Profile::isHidden))
+                    .activeWhen(() -> this.isOptionActive(Profile::isHidden))
+                    .action(() -> this.updateHidden(!profile.isHidden(this.pack)))
+                    .closeOnInteract(false)
+                    .build());
+
+            builder.add(devParent(REQUIRED)
+                    .icon(() -> this.getIcon(profile.overridesRequired(this.pack), Profile::overridesRequired))
+                    .activeWhen(() -> this.isOptionActive(Profile::overridesRequired))
+                    .closeOnInteract(false)
+                    .addChild(devItem(CommonComponents.OPTION_OFF)
+                            .icon(() -> getDefaultIcon(!profile.overridesRequired(this.pack)))
+                            .action(() -> this.updateRequired(null))
+                            .closeOnInteract(false)
+                            .build())
+                    .addChild(devItem(CommonComponents.GUI_NO)
+                            .icon(() -> getDefaultIcon(
+                                    profile.overridesRequired(this.pack) &&
+                                    !profile.isRequired(this.pack)
+                            ))
+                            .activeWhen(this::nonEssential)
+                            .action(() -> this.updateRequired(false))
+                            .closeOnInteract(false)
+                            .build())
+                    .addChild(devItem(CommonComponents.GUI_YES)
+                            .icon(() -> getDefaultIcon(profile.isRequired(this.pack)))
+                            .action(() -> this.updateRequired(true))
+                            .closeOnInteract(false)
+                            .build())
+                    .build());
+
+            builder.add(devParent(FIXED_POSITION)
+                    .icon(() -> this.getIcon(profile.overridesPosition(this.pack), Profile::overridesPosition))
+                    .activeWhen(() -> this.isOptionActive(Profile::overridesPosition))
+                    .closeOnInteract(false)
+                    .addChild(devItem(CommonComponents.OPTION_OFF)
+                            .icon(() -> getDefaultIcon(!profile.overridesPosition(this.pack)))
+                            .action(() -> this.updatePosition(null))
+                            .closeOnInteract(false)
+                            .build())
+                    .addChild(devItem(FIXED_TOP)
+                            .icon(() -> getDefaultIcon(profile.getPosition(this.pack) == Pack.Position.TOP))
+                            .action(() -> this.updatePosition(Pack.Position.TOP))
+                            .closeOnInteract(false)
+                            .build())
+                    .addChild(devItem(FIXED_BOTTOM)
+                            .icon(() -> getDefaultIcon(profile.getPosition(this.pack) == Pack.Position.BOTTOM))
+                            .action(() -> this.updatePosition(Pack.Position.BOTTOM))
+                            .closeOnInteract(false)
+                            .build())
+                    .build());
+
+            builder.add(devItem(REMOVE_OVERRIDES).action(this::resetOverrides).build()).separator();
         }
     }
 

@@ -10,7 +10,9 @@ import net.minecraft.client.input.MouseButtonEvent;
 import static com.mojang.blaze3d.platform.InputConstants.*;
 
 public class InputUtil {
+    public static final String DEV_MODE_SHORTCUT = "CTRL + SHIFT + I";
     public static final Window WINDOW = Minecraft.getInstance().getWindow();
+    public static final long DOUBLE_CLICK_THRESHOLD_MS = 250;
     public static final int MOUSE_BUTTON_BACK = 3;
     public static final int MOUSE_BUTTON_FORWARD = 4;
 
@@ -82,6 +84,10 @@ public class InputUtil {
 
     public static boolean isOpenFolder(KeyEvent keyEvent) {
         return keyEvent.modifiers() == MOD_ALT + MOD_SHIFT && keyEvent.key() == KEY_R;
+    }
+
+    public static boolean isDeveloperMode(KeyEvent keyEvent) {
+        return keyEvent.modifiers() == MOD_CONTROL + MOD_SHIFT && keyEvent.key() == KEY_I;
     }
 
     public static boolean noModifiers(int modifiers) {

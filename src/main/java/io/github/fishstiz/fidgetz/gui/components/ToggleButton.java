@@ -97,7 +97,7 @@ public class ToggleButton<E> extends FidgetzButton<E> {
             return;
         }
 
-        this.toggleSprites.get(this.value, this.active).renderClamped(guiGraphics, x, y, width, height, partialTick);
+        this.toggleSprites.get(this.value).render(guiGraphics, x, y, width, height, this.active, partialTick);
     }
 
     public static <E> ToggleBuilder<E> builder() {

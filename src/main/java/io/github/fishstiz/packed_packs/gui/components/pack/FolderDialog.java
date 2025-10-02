@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
-import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
@@ -84,6 +84,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
 
         this.setBoundingBox(parent);
         this.updateBounds();
+        this.root().onChangeParent(parent);
     }
 
     @Override
@@ -113,11 +114,11 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     @Override
-    public void buildItems(MenuItemBuilder builder, int mouseX, int mouseY) {
+    public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
         ContextMenuContainer.super.buildItems(
                 builder.when(this.folderPack != null && this.isOpen())
                         .ifTrue(folderMenuBuilder -> folderMenuBuilder
-                                .add(PackMenuHeader.withItem(this.folderPack, this.folderSprite))
+                                .add(new PackMenuHeader(this.folderPack, this.folderSprite))
                                 .simpleItem(BACK_TEXT, () -> this.setOpen(false))
                                 .when(this.root().getChildAt(mouseX, mouseY).isEmpty())
                                 .ifTrue(b -> b
@@ -170,7 +171,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         ((PackListEventListener) this.screen).onEvent(event);
     }
 
-    public static <S extends Screen & ToggleableDialogContainer & PackListEventListener> FolderDialog build(S screen, PackAssets packAssets) {
+    public static <S extends Screen & ToggleableDialogContainer & PackListEventListener> FolderDialog create(S screen, PackAssets packAssets) {
         return new Builder(screen, new FolderPackList(packAssets, screen))
                 .setBackground(DrawUtil.DEMO_BACKGROUND)
                 .build();

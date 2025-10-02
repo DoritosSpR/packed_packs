@@ -3,20 +3,30 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
-import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
+import io.github.fishstiz.packed_packs.config.Preferences;
+import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
+import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
+import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.Util;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
@@ -33,22 +43,28 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 
 import static com.google.common.primitives.Ints.contains;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
-import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.WHITE_OVERLAY;
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
 public abstract class PackListBase<T extends PackListBase<T>.Entry> extends AbstractFixedListWidget<T> implements PackList, ContainerEventHandlerPatch, ContextMenuContainer {
+    protected static final Component HIDDEN = ResourceUtil.getText("profile.override.hidden");
+    protected static final Sprite EYE_SLASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("eye_slash"));
+    protected static final Sprite X_SQUARE = Sprite.of16(ResourceUtil.getIcon("x_square"));
+    protected static final int DEV_SPRITE_SIZE = 16;
+    protected static final int DEV_SPRITE_MARGIN_RIGHT = 8;
     protected static final int Y_OFFSET = 1;
     protected static final int ITEM_HEIGHT = 35;
     protected static final int ROW_GAP = 3;
     protected final PackAssets packAssets;
-    protected final List<Pack> packs = new ArrayList<>();
-    private final List<Pack> queried = new ArrayList<>();
-    private final List<Pack> selection = new ArrayList<>();
+    protected final List<Pack> packs = new ObjectArrayList<>();
+    private final List<Pack> queried = new ObjectArrayList<>();
+    private final List<Pack> selection = new ObjectArrayList<>();
     private final PackListEventListener listener;
     private final Query query;
 
@@ -89,7 +105,13 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     protected void queryPacks() {
         this.queried.clear();
-        this.queried.addAll(this.packs);
+
+        if (PackedPacks.CONFIG.isDevMode()) {
+            this.queried.addAll(this.packs);
+        } else {
+            CollectionsUtil.addIf(this.queried, this.packs, pack -> !this.packAssets.isHidden(pack));
+        }
+
         this.query.apply(this.queried);
         this.selection.retainAll(this.queried);
         this.refreshEntries();
@@ -117,6 +139,10 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     @Override
     public @NotNull ImmutableList<Pack> copyPacks() {
         return ImmutableList.copyOf(this.packs);
+    }
+
+    public ImmutableList<Pack> copyFlattenedPacks() {
+        return ImmutableList.copyOf(this.packAssets.flattenPacks(this.packs));
     }
 
     @Override
@@ -187,7 +213,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         if (pack != null && !this.packs.contains(pack)) {
             int index = 0;
             for (Pack p : this.packs) {
-                if (!p.isFixedPosition()) break;
+                if (!this.packAssets.isFixed(p) || this.packAssets.getPosition(p) == Pack.Position.BOTTOM) break;
                 index++;
             }
             this.packs.add(index, pack);
@@ -210,7 +236,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     @Override
     public boolean move(Pack pack, int to) {
-        if (pack.isFixedPosition()) return false;
+        if (this.packAssets.isFixed(pack)) return false;
 
         int from = this.packs.indexOf(pack);
         if (from == -1 || to < 0 || to >= this.packs.size() || from == to) {
@@ -282,6 +308,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     public boolean isSelected(Pack pack) {
         return this.selection.contains(pack);
+    }
+
+    @Override
+    public boolean isLocked() {
+        return this.packAssets.isLocked();
     }
 
     public void scrollToLastSelected() {
@@ -445,6 +476,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     public boolean keyPressed(KeyEvent keyEvent) {
         Entry entry = this.getEntry(this.getLastSelected());
         if (entry != null
+            && entry.folderWidget != null
             && entry.getPack() instanceof FolderPack folderPack
             && this.selection.size() == 1
             && isExpandFolder(keyEvent)) {
@@ -531,6 +563,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         private final PackWidget packWidget;
         private FidgetzButton<FolderPack> folderWidget;
         private MouseSelectionState mouseSelectionState = MouseSelectionState.INACTIVE;
+        private long lastClickTime = 0;
         private boolean stale = false;
 
         protected Entry(Pack pack, int index) {
@@ -547,9 +580,9 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                     H_SPACING
             ));
 
-            if (this.pack instanceof FolderPack folderPack) {
+            if (this.pack instanceof FolderPack folderPack && (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.folderPackWidget.get())) {
                 this.folderWidget = this.addTopRenderableOnly(this.prependWidget(
-                        FidgetzButton.<FolderPack>builder()
+                        Toggleable.applyPref(Preferences.INSTANCE.folderPackWidget, FidgetzButton.<FolderPack>builder())
                                 .setTooltip(FOLDER_OPEN_INFO)
                                 .setHeight(this.packWidget.getHeight() / 3)
                                 .makeSquare()
@@ -580,6 +613,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         public <U extends Renderable> U addTopRenderableOnly(U renderable) {
             this.topRenderables.add(renderable);
             return renderable;
+        }
+
+        @Override
+        public boolean isTransferable() {
+            return !PackListBase.this.isLocked();
         }
 
         @Override
@@ -637,13 +675,25 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return PackListBase.this.isHovered() && PackListBase.this.beforeScrollbarX(mouseX) && super.isMouseOver(mouseX, mouseY);
         }
 
+        protected boolean canDrag() {
+            return this.isSelected() && !this.isStale() && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE;
+        }
+
+        public boolean updateDoubleClick() {
+            long currentTime = Util.getMillis();
+            boolean doubleClicked = (currentTime - this.lastClickTime) < DOUBLE_CLICK_THRESHOLD_MS;
+            this.lastClickTime = currentTime;
+            return doubleClicked;
+        }
+
         @Override
         public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
             if (ContainerEventHandlerPatch.super.mouseClicked(mouseButtonEvent, doubleClicked)) {
                 return false;
             }
             if (isLeftClick(mouseButtonEvent) && this.isMouseOver(mouseButtonEvent.x(), mouseButtonEvent.y())) {
-                if (!isRangeModifierActive() && !isSelectModifierActive() && doubleClicked) {
+                boolean doubleClickedLocal = this.updateDoubleClick();
+                if (!isRangeModifierActive() && !isSelectModifierActive() && doubleClickedLocal && this.isTransferable()) {
                     PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, this.pack));
                     return false;
                 }
@@ -683,11 +733,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                 this.mouseSelectionState = MouseSelectionState.INACTIVE;
                 return false;
             }
-            if (this.isSelected()
-                && !this.isStale()
-                && !this.pack.isFixedPosition()
-                && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE
-                && this.exceedsDragThreshold(dragX, dragY)) {
+            if (this.exceedsDragThreshold(dragX, dragY) && this.canDrag()) {
                 PackListBase.this.sendEvent(new DragEvent(
                         PackListBase.this,
                         PackListBase.this.getOrderedSelection().reversed(),
@@ -778,20 +824,92 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             this.renderSelection(guiGraphics, top, left, width, height + Y_OFFSET);
             this.renderForeground(guiGraphics, innerTop, left, width, innerHeight, mouseX, mouseY, hovering, partialTick);
             this.renderTop(guiGraphics, mouseX, mouseY, partialTick);
+
+            if (PackedPacks.CONFIG.isDevMode()) {
+                int size = DEV_SPRITE_SIZE;
+                int iconX = (left + width) - size - DEV_SPRITE_MARGIN_RIGHT;
+                this.renderDevSprites(guiGraphics, innerTop, iconX, size);
+            }
+        }
+
+        protected void renderDevSprites(GuiGraphics guiGraphics, int top, int left, int size) {
+            int iconX = left;
+
+            PackOverride hiddenOverride = this.hasOverride(Profile::isHidden);
+            if (hiddenOverride.booleanValue()) {
+                guiGraphics.fill(iconX, top, iconX + size, top + size, hiddenOverride.backgroundColor());
+                EYE_SLASH_SPRITE.render(guiGraphics, iconX, top, size, size);
+                iconX -= size;
+            }
+            PackOverride included = this.hasOverride(Profile::includes);
+            if (included.global() && !((ConfiguredPack) this.pack).packed_packs$getMetadata().compatibility().isCompatible()) {
+                guiGraphics.fill(iconX, top, iconX + size, top + size, included.backgroundColor());
+                X_SQUARE.render(guiGraphics, iconX, top, size, size);
+            }
+        }
+
+        protected Pack[] selectionOrPack() {
+            if (this.isSelected()) {
+                return PackListBase.this.packAssets.flattenPacks(PackListBase.this.copySelection()).toArray(Pack[]::new);
+            }
+            if (this.pack instanceof FolderPack folderPack) {
+                return PackListBase.this.packAssets.flattenPacks(List.of(folderPack)).toArray(Pack[]::new);
+            }
+            return new Pack[]{this.pack};
+        }
+
+
+        protected boolean isOverriddenByDefault(BiPredicate<Profile, Pack> defaultOption) {
+            Profile selectedProfile = PackListBase.this.packAssets.getProfile();
+            if (selectedProfile == null) return false;
+
+            Profile defaultProfile = PackListBase.this.packAssets.getConfig().getDefaultProfile();
+            if (defaultProfile != null) {
+                if (defaultProfile.getId() == selectedProfile.getId()) {
+                    return false;
+                }
+                return defaultOption.test(defaultProfile, this.pack);
+            }
+            return false;
+        }
+
+        protected PackOverride hasOverride(BiPredicate<Profile, Pack> option) {
+            Profile defaultProfile = PackListBase.this.packAssets.getConfig().getDefaultProfile();
+            Profile currentProfile = PackListBase.this.packAssets.getProfile();
+            PackOverride packOverride = PackOverride.NONE;
+
+            if (defaultProfile != null && option.test(defaultProfile, this.pack)) {
+                packOverride = PackOverride.GLOBAL;
+            }
+            if (currentProfile != null && option.test(currentProfile, this.pack)) {
+                packOverride = !packOverride.booleanValue() ? PackOverride.LOCAL : PackOverride.COMPOSITE;
+            }
+            return packOverride;
+        }
+
+        protected void updateHidden(boolean hidden) {
+            Profile profile = PackListBase.this.packAssets.getProfile();
+            if (profile != null) {
+                profile.setHidden(hidden, this.selectionOrPack());
+            }
+        }
+
+        protected void onBuildHeader(ContextMenuItemBuilder builder) {
         }
 
         @Override
-        public void buildItems(MenuItemBuilder builder, int mouseX, int mouseY) {
+        public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
             PackListBase.this.setFocused(this);
             ContextMenuContainer.super.buildItems(builder
-                            .add(PackMenuHeader.withItem(this.pack, this.packWidget.getSprite()))
+                            .add(new PackMenuHeader(this.pack, this.packWidget.getSprite()))
+                            .then(this::onBuildHeader)
                             .whenNonNull(this.folderWidget)
                             .ifTrue(b -> b
+                                    .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this::openFolder)
                                     .separator()
-                                    .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this::openFolder))
+                            )
                             .whenNonNull(((IPack) this.pack).packed_packs$getPath())
-                            .ifTrue((path, b) -> b
-                                    .separator()
+                            .ifTrue(b -> b
                                     .simpleItem(PackAssets.RENAME_FILE_TEXT, this::canOperateFile, this::renamePack)
                                     .simpleItem(PackAssets.DELETE_FILE_TEXT, this::canOperateFile, this::deletePack)
                                     .simpleItem(PackAssets.OPEN_FILE_TEXT, () -> PackUtil.openPack(this.pack))
@@ -807,7 +925,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         public boolean canOperateFile() {
-            return !PackListBase.this.packAssets.isEnabled(this.pack) && PackAssets.validatePackPath(this.pack) != null;
+            return !PackListBase.this.isLocked() &&
+                   !PackListBase.this.packAssets.isFixed(this.pack) &&
+                   !PackListBase.this.packAssets.isRequired(this.pack) &&
+                   !PackListBase.this.packAssets.isEnabled(this.pack) &&
+                   PackAssets.validatePackPath(this.pack) != null;
         }
 
         public void deletePack() {
@@ -848,6 +970,31 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             INACTIVE,
             SELECTING_ONE,
             SELECTING_MANY
+        }
+    }
+
+    protected enum PackOverride {
+        NONE(Theme.WHITE.withAlpha(0)),
+        LOCAL(Theme.BLACK.withAlpha(0.75f)),
+        GLOBAL(Theme.BLUE_500.withAlpha(0.75f)),
+        COMPOSITE(Theme.PURPLE_500.withAlpha(0.75f));
+
+        private final int backgroundColor;
+
+        PackOverride(int backgroundColor) {
+            this.backgroundColor = backgroundColor;
+        }
+
+        boolean booleanValue() {
+            return this != NONE;
+        }
+
+        boolean global() {
+            return this == GLOBAL || this == COMPOSITE;
+        }
+
+        int backgroundColor() {
+            return this.backgroundColor;
         }
     }
 }

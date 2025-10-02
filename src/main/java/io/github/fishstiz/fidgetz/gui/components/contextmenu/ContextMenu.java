@@ -1,60 +1,70 @@
 package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 
+import com.mojang.blaze3d.platform.cursor.CursorType;
 import io.github.fishstiz.fidgetz.gui.components.*;
+import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
+import io.github.fishstiz.fidgetz.transform.interfaces.UnpaddedScrollableLayout;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.ARGBColor;
-import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Renderable;
-import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.layouts.LayoutElement;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.ScrollableLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.sounds.SoundManager;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.util.ARGB;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BooleanSupplier;
+import java.util.Objects;
 import java.util.function.Consumer;
 
-import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.SPACING;
-
-public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
-    static final BooleanSupplier DEFAULT_ACTIVE_SUPPLIER = () -> true;
-    static final int DEFAULT_TEXT_INACTIVE_COLOR = Theme.GRAY_500.withAlpha(0.5f);
-    static final int DEFAULT_BORDER_COLOR = Theme.GRAY_500.getARGB();
-    static final int DEFAULT_BACKGROUND_COLOR = Theme.GRAY_800.getARGB();
+public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout>> {
+    static final int DEFAULT_BORDER_COLOR = ARGBColor.withAlpha(Objects.requireNonNull(ChatFormatting.GRAY.getColor()), 1);
+    static final int DEFAULT_TEXT_INACTIVE_COLOR = ARGBColor.withAlpha(DEFAULT_BORDER_COLOR, 0.5f);
+    static final int DEFAULT_BACKGROUND_COLOR = ARGBColor.withAlpha(Objects.requireNonNull(ChatFormatting.DARK_GRAY.getColor()), 1);
+    private static final int DEFAULT_SPACING = Button.DEFAULT_SPACING;
     private static final int ITEM_HEIGHT = 20;
+    private static final int MAX_HEIGHT = ITEM_HEIGHT * 10;
     private static final int MIN_WIDTH = 150;
     private static final int MENU_POINT_OFFSET = 1;
     private static final int DROP_SHADOW_SIZE = 16;
     private final Builder builder;
     private final List<ContextMenu> childMenus = new ArrayList<>();
+    private final int spacing;
     private final int borderColor;
+    private final int softSeparatorColor;
     private final ContextMenu parentMenu;
     private Direction direction;
+    private boolean forceOpen;
 
     protected ContextMenu(Builder builder) {
         super(builder);
 
         this.builder = builder;
+        this.spacing = builder.spacing;
         this.borderColor = builder.borderColor;
+        this.softSeparatorColor = ARGBColor.withAlpha(this.borderColor, 0.15f);
         this.parentMenu = builder.parentMenu;
         this.direction = builder.direction;
         this.addListener(open -> {
-            if (!open) this.direction = this.builder.direction;
+            if (!open) {
+                this.direction = this.builder.direction;
+                this.forceOpen = false;
+            }
         });
     }
 
@@ -65,44 +75,57 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         this.childMenus.clear();
     }
 
-    private <T extends LayoutElement> T addChild(T child) {
-        return this.root().layout().addChild(child);
-    }
-
-    private ItemWidget<?> createItemWidget(MenuItem current, MenuItem next) {
-        Integer separatorColor = ObjectsUtil.pick(ObjectsUtil.anyIdentity(next, null, MenuItem.SEPARATOR), null, this.borderColor);
-        switch (current) {
+    private ItemWidget<?> createItemWidget(MenuItem item) {
+        switch (item) {
             case ParentMenuItem parentItem -> {
                 ContextMenu childMenu = Builder.ofChild(this.builder, this).setDirection(this.direction).build();
-                this.childMenus.add(this.prependWidget(childMenu));
-                return new ParentItemWidget(this.root().getWidth(), separatorColor, parentItem, this, childMenu);
+                this.childMenus.add(childMenu);
+                return new ParentItemWidget(MIN_WIDTH, this.spacing, parentItem, this, childMenu);
             }
             case RenderableMenuItem renderableMenuItem -> {
-                return new CustomItemWidget(this.root().getWidth(), separatorColor, renderableMenuItem, this);
+                return new CustomItemWidget(MIN_WIDTH, this.spacing, renderableMenuItem, this);
             }
             default -> {
-                return new ItemWidget<>(this.root().getWidth(), separatorColor, current, this);
+                return new ItemWidget<>(MIN_WIDTH, this.spacing, item, this);
             }
         }
     }
 
-    private void setItems(List<MenuItem> items) {
+    private void setItems(List<? extends MenuItem> items) {
         this.clearWidgets();
-        this.root().setLayout(emptyLayout());
+
+        LinearLayout content = LinearLayout.vertical();
 
         for (int i = 0; i < items.size(); i++) {
             MenuItem current = items.get(i);
             MenuItem next = (i + 1 < items.size()) ? items.get(i + 1) : null;
 
             if (current == MenuItem.SEPARATOR) {
-                this.addRenderableWidget(this.addChild(new Separator(this.root().getWidth(), this.borderColor)));
-            } else {
-                this.addRenderableWidget(this.addChild(this.createItemWidget(current, next)));
+                content.addChild(new Separator(MIN_WIDTH, this.borderColor));
+                continue;
+            }
+
+            content.addChild(this.createItemWidget(current));
+
+            if (current.shouldAutoSeparate() && next != null && next.shouldAutoSeparate()) {
+                content.addChild(new Separator(MIN_WIDTH, this.softSeparatorColor));
             }
         }
+
+        this.childMenus.forEach(this::addWidget);
+
+        content.arrangeElements();
+        ScrollableLayout layout = new ScrollableLayout(Minecraft.getInstance(), content, content.getHeight());
+        ((UnpaddedScrollableLayout) layout).fidgetz$setUnpadded(true);
+
+        layout.setMaxHeight(MAX_HEIGHT);
+        layout.visitWidgets(this::addRenderableWidget);
+
+        this.root().setLayout(layout);
+        this.root().visitWidgets(this::addRenderableWidget);
     }
 
-    private void open(int x, int y, Direction direction, List<MenuItem> items) {
+    private void open(int x, int y, Direction direction, List<? extends MenuItem> items) {
         if (items.isEmpty()) return;
 
         this.direction = direction;
@@ -124,7 +147,6 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
 
     private int clampY(int y) {
         GuiRectangle bounds = this.getBoundingBox();
-        y = y - MENU_POINT_OFFSET;
         return y + bounds.getHeight() > this.screen.height ? Math.max(0, this.screen.height - bounds.getHeight()) : y;
     }
 
@@ -140,25 +162,27 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
 
     @Override
     protected void renderForeground(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
+        DrawUtil.renderOutline(guiGraphics, x, y, width, height, this.borderColor);
+
         for (ContextMenu childMenu : this.childMenus) {
             childMenu.render(guiGraphics, mouseX, mouseY, partialTick);
         }
+
+        GuiRectangle bounds = this.getBoundingBox();
+        if (GuiUtil.containsPoint(bounds.getX() + MENU_POINT_OFFSET, bounds.getY(), bounds.getWidth(), bounds.getHeight(), mouseX, mouseY)) {
+            guiGraphics.requestCursor(CursorType.DEFAULT);
+        }
     }
 
-    private boolean isChildMenuHovered(int mouseX, int mouseY) {
-        if (this.isOpen()) {
-            for (ContextMenu child : this.childMenus) {
-                if (child.isOpen()) {
-                    if (child.isChildMenuHovered(mouseX, mouseY)) {
-                        return true;
-                    }
-                    if (child.isMouseOverBounds(mouseX, mouseY) || child.direction.isHovered(mouseX, mouseY, child.getBoundingBox())) {
-                        return true;
-                    }
-                }
-            }
+    public @Nullable ContextMenu getOpenedChildMenu() {
+        for (ContextMenu child : this.childMenus) {
+            if (child.isOpen()) return child;
         }
-        return false;
+        return null;
+    }
+
+    private boolean isHoveredAtDirection(int mouseX, int mouseY) {
+        return this.isOpen() && (this.isMouseOverBounds(mouseX, mouseY) || this.direction.isHovered(mouseX, mouseY, this.getBoundingBox()));
     }
 
     public void visitChildren(Consumer<ContextMenu> visitor) {
@@ -175,21 +199,23 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         }
     }
 
-    private static LinearLayout emptyLayout() {
-        return LinearLayout.vertical();
+    private void closeCascade() {
+        this.setOpen(false);
+        this.visitParents(parent -> parent.setOpen(false));
     }
 
-    public static <S extends Screen & ToggleableDialogContainer> ContextMenu.Builder builder(S screen) {
-        return new ContextMenu.Builder(screen, new LayoutWrapper<>(emptyLayout(), MIN_WIDTH, 0));
+    public static <S extends Screen & ToggleableDialogContainer> Builder builder(S screen) {
+        return new Builder(screen, new LayoutWrapper<>(new ScrollableLayout(Minecraft.getInstance(), LinearLayout.vertical(), MAX_HEIGHT), MIN_WIDTH, 0));
     }
 
-    public static class Builder extends ToggleableDialog.Builder<LayoutWrapper<LinearLayout>, Builder> {
+    public static class Builder extends ToggleableDialog.Builder<LayoutWrapper<ScrollableLayout>, Builder> {
         protected Direction direction = Direction.RIGHT;
         protected int backgroundColor = DEFAULT_BACKGROUND_COLOR;
         protected int borderColor = DEFAULT_BORDER_COLOR;
+        protected int spacing = DEFAULT_SPACING;
         private ContextMenu parentMenu = null;
 
-        protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, LayoutWrapper<LinearLayout> root) {
+        protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, LayoutWrapper<ScrollableLayout> root) {
             super(screen, root);
             this.focusOnOpen = false;
         }
@@ -197,6 +223,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         @SuppressWarnings("unchecked")
         protected static <S extends Screen & ToggleableDialogContainer> Builder ofChild(Builder builder, ContextMenu parentMenu) {
             Builder copy = builder((S) builder.screen);
+            copy.spacing = builder.spacing;
             copy.backgroundColor = builder.backgroundColor;
             copy.borderColor = builder.borderColor;
             copy.background = builder.background;
@@ -205,6 +232,11 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             copy.autoLoseFocus = builder.autoLoseFocus;
             copy.parentMenu = parentMenu;
             return copy;
+        }
+
+        public Builder setSpacing(int spacing) {
+            this.spacing = spacing;
+            return this;
         }
 
         public Builder setBorderColor(int borderColor) {
@@ -225,36 +257,29 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
 
         @Override
         public ContextMenu build() {
-            if (this.background == null || this.background instanceof DefaultMenuBackground) {
-                this.background = new DefaultMenuBackground(this.backgroundColor, this.borderColor);
+            if (this.background == null) {
+                this.background = new ColoredRect(this.backgroundColor);
             }
 
             return new ContextMenu(this);
         }
     }
 
-    private record DefaultMenuBackground(int backgroundColor, int borderColor) implements RenderableRect {
-        @Override
-        public void render(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
-            guiGraphics.fill(x, y, x + width, y + height, this.backgroundColor);
-            DrawUtil.renderOutline(guiGraphics, x, y, width, height, this.borderColor);
-        }
-    }
-
-    private static class ItemWidget<T extends MenuItem> extends AbstractWidget {
-        private static final int HOVER_OVERLAY_COLOR = Theme.WHITE.withAlpha(0.1f);
+    private static class ItemWidget<T extends MenuItem> extends AbstractWidget implements Fidgetz {
+        private static final int HOVER_OVERLAY_COLOR = ARGB.white(0.1f);
         private final FidgetzText<Void> text;
-        private final Runnable onPress;
-        private final Integer separator;
         protected final ContextMenu parent;
         protected final T item;
+        protected final int spacing;
 
-        private ItemWidget(int width, Integer separator, T item, ContextMenu parent) {
+        private ItemWidget(int width, int spacing, T item, ContextMenu parent) {
             super(0, 0, width, ITEM_HEIGHT, item.text());
-
-            this.text = FidgetzText.<Void>builder().setMessage(item.text()).build();
-            this.separator = ObjectsUtil.mapOrNull(separator, color -> ARGBColor.withAlpha(color, 0.15f));
-            this.onPress = item.action();
+            this.spacing = spacing;
+            this.text = FidgetzText.<Void>builder()
+                    .setOffsetY(MENU_POINT_OFFSET)
+                    .setShadow(true)
+                    .setMessage(item.text())
+                    .build();
             this.parent = parent;
             this.item = item;
         }
@@ -266,22 +291,27 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             }
         }
 
-        protected void closeParents() {
-            this.parent.setOpen(false);
-            this.parent.visitParents(menu -> menu.setOpen(false));
-        }
-
         @Override
         public void onClick(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
             if (this.item.active()) {
-                this.onPress.run();
+                this.item.action().run();
             }
-            this.closeParents();
+            if (this.item.shouldCloseOnInteract()) {
+                this.parent.closeCascade();
+            }
         }
 
-        protected void renderSeparator(GuiGraphics guiGraphics, int minX, int maxX, int y) {
-            if (this.separator != null) {
-                guiGraphics.hLine(minX, maxX, y, this.separator);
+        protected void renderBackground(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
+            RenderableRect background = this.item.background();
+            if (background != null) {
+                background.render(guiGraphics, x, y, width, height, partialTick);
+            }
+        }
+
+        protected void renderIcon(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
+            Sprite icon = this.item.icon();
+            if (icon != null) {
+                icon.render(guiGraphics, x, y, width, height, partialTick);
             }
         }
 
@@ -292,8 +322,8 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             this.text.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
         }
 
-        protected void renderHighlight(GuiGraphics guiGraphics, int x, int y, int right, int bottom, boolean hoveredOrActive, float partialTick) {
-            if (hoveredOrActive && this.item.active()) {
+        protected void renderHighlight(GuiGraphics guiGraphics, int x, int y, int right, int bottom, boolean hovered, float partialTick) {
+            if (hovered && this.item.active()) {
                 guiGraphics.fill(x, y, right, bottom, HOVER_OVERLAY_COLOR);
             }
         }
@@ -305,6 +335,8 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
 
         @Override
         protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+            this.isHovered = this.isHovered && this.isMouseOver(mouseX, mouseY);
+
             int x = this.getX();
             int y = this.getY();
             int width = this.getWidth();
@@ -312,18 +344,21 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             int right = x + width;
             int bottom = y + height;
 
-            boolean hovered = this.isMouseOver(mouseX, mouseY);
-            this.renderHighlight(guiGraphics, x, y, right, bottom, hovered, partialTick);
-            this.renderSeparator(guiGraphics, x, right - 1, bottom - 1);
-            if (this.isFocused()) DrawUtil.renderOutline(guiGraphics, x, y, width, height, Theme.WHITE.getARGB());
+            this.renderBackground(guiGraphics, x, y, width, height, partialTick);
+            this.renderHighlight(guiGraphics, x, y, right, bottom, this.isHovered, partialTick);
 
-            int textX = x + SPACING;
-            int textY = y + SPACING;
-            int textWidth = width - SPACING * 2;
-            int textHeight = height - SPACING * 2;
+            int size = Minecraft.getInstance().font.lineHeight;
+            int innerX = x + this.spacing;
+            int innerY = y + this.spacing;
+            int innerWidth = width - this.spacing * 2;
+            int innerHeight = height - this.spacing * 2;
+            int iconY = innerY + (innerHeight - size) / 2;
+            int textX = this.item.icon() != null ? innerX + size + this.spacing : innerX;
+            int textWidth = this.item.icon() != null ? innerWidth - size - this.spacing : innerWidth;
 
-            this.renderText(guiGraphics, textX, textY, textWidth, textHeight, mouseX, mouseY, partialTick);
-            this.renderForeground(guiGraphics, x, y, width, height, hovered, mouseX, mouseY, partialTick);
+            this.renderIcon(guiGraphics, innerX, iconY, size, size, partialTick);
+            this.renderText(guiGraphics, textX, innerY, textWidth, innerHeight, mouseX, mouseY, partialTick);
+            this.renderForeground(guiGraphics, x, y, width, height, this.isHovered, mouseX, mouseY, partialTick);
         }
 
         @Override
@@ -348,10 +383,9 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
     private static class ParentItemWidget extends ItemWidget<ParentMenuItem> {
         private static final String CARET_RIGHT = ">";
         private final ContextMenu child;
-        private boolean forcedOpen;
 
-        ParentItemWidget(int width, Integer separator, ParentMenuItem item, ContextMenu parent, ContextMenu child) {
-            super(width, separator, item, parent);
+        ParentItemWidget(int width, int spacing, ParentMenuItem item, ContextMenu parent, ContextMenu child) {
+            super(width, spacing, item, parent);
             this.child = child;
         }
 
@@ -360,8 +394,8 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             GuiRectangle childBounds = this.child.getBoundingBox();
             Direction parentDirection = this.parent.direction;
             Direction nextDirection = parentDirection.next(parent.screen, childBounds, parentDirection.getX(parentBounds));
-            int x = nextDirection.getX(parentBounds);
-            int y = this.getY() + MENU_POINT_OFFSET;
+            int x = nextDirection.getX(this);
+            int y = this.getY();
             this.parent.visitChildren(menu -> {
                 if (menu != this.child) menu.setOpen(false);
             });
@@ -376,28 +410,46 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         @Override
         public void onClick(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
             if (this.item.active()) {
-                this.forcedOpen = !this.forcedOpen;
+                this.item.action().run();
+                this.child.forceOpen = !this.child.forceOpen || !this.child.isOpen();
+                if (!this.child.isOpen()) {
+                    this.openChild();
+                }
+            } else if (this.item.shouldCloseOnInteract()) {
+                this.parent.closeCascade();
             }
+        }
+
+        private boolean isWithinParentXBounds(int mouseX, int mouseY) {
+            if (this.isHovered()) return true;
+
+            GuiRectangle parentBox = this.parent.getBoundingBox();
+            return mouseX >= parentBox.getX() &&
+                   mouseX <= parentBox.getRight() &&
+                   mouseY >= this.getY() &&
+                   mouseY <= this.getBottom();
         }
 
         @Override
         protected void renderText(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
-            int textWidth = width - (height + SPACING);
+            int textWidth = width - (height + this.spacing);
             super.renderText(guiGraphics, x, y, textWidth, height, mouseX, mouseY, partialTick);
 
-            Font font = Minecraft.getInstance().font;
-            int caretWidth = font.width(CARET_RIGHT);
-            int caretHeight = font.lineHeight;
-            int caretX = (x + textWidth + SPACING) + (height - caretWidth) / 2;
-            int caretY = y + (height - caretHeight) / 2;
-            int color = this.item.textColor();
+            if (this.item.active()) {
+                Font font = Minecraft.getInstance().font;
+                int caretWidth = font.width(CARET_RIGHT);
+                int caretHeight = font.lineHeight;
+                int caretX = (x + textWidth + this.spacing) + (height - caretWidth) / 2;
+                int caretY = y + (height - caretHeight) / 2;
+                int color = this.item.textColor();
 
-            guiGraphics.drawString(font, CARET_RIGHT, caretX, caretY, color, false);
+                guiGraphics.drawString(font, CARET_RIGHT, caretX, caretY, color, false);
+            }
         }
 
         @Override
-        protected void renderHighlight(GuiGraphics guiGraphics, int x, int y, int right, int bottom, boolean hoveredOrActive, float partialTick) {
-            super.renderHighlight(guiGraphics, x, y, right, bottom, hoveredOrActive || this.child.isOpen(), partialTick);
+        protected void renderHighlight(GuiGraphics guiGraphics, int x, int y, int right, int bottom, boolean hovered, float partialTick) {
+            super.renderHighlight(guiGraphics, x, y, right, bottom, hovered || this.child.isOpen(), partialTick);
         }
 
         @Override
@@ -406,45 +458,38 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
 
             if (!this.item.active()) {
                 if (this.child.isOpen()) this.closeChildren();
-                this.forcedOpen = false;
+                this.child.forceOpen = false;
                 return;
             }
 
-            if (!this.forcedOpen && !this.isHovered() && !this.parent.isChildMenuHovered(mouseX, mouseY)) {
+            boolean hovered = this.isWithinParentXBounds(mouseX, mouseY) && guiGraphics.containsPointInScissor(mouseX, mouseY);
+            ContextMenu sibling = this.parent.getOpenedChildMenu();
+
+            if (!hovered && this.child.isOpen() && !this.child.forceOpen && (sibling == null || !sibling.isHoveredAtDirection(mouseX, mouseY))) {
                 this.closeChildren();
-            } else if (this.isHovered() && !this.child.isOpen() && !this.parent.isChildMenuHovered(mouseX, mouseY)) {
+            } else if (hovered && !this.child.isOpen() && (sibling == null || !sibling.forceOpen && !sibling.isHoveredAtDirection(mouseX, mouseY))) {
                 this.openChild();
             }
         }
     }
 
     private static class CustomItemWidget extends ItemWidget<RenderableMenuItem> {
-        private CustomItemWidget(int width, Integer separator, RenderableMenuItem item, ContextMenu parent) {
-            super(width, separator, item, parent);
+        private CustomItemWidget(int width, int spacing, RenderableMenuItem item, ContextMenu parent) {
+            super(width, spacing, item, parent);
         }
 
         @Override
         protected void renderForeground(GuiGraphics guiGraphics, int x, int y, int width, int height, boolean hovered, double mouseX, double mouseY, float partialTick) {
-            RenderableRect renderer = this.item.renderer();
-            if (renderer instanceof MenuItemRenderer menuItemRenderer) {
-                menuItemRenderer.render(guiGraphics, x, y, width, height, SPACING, hovered, mouseX, mouseY, partialTick);
-            } else {
-                renderer.render(guiGraphics, x, y, width, height);
-            }
+            this.item.renderer().render(guiGraphics, x, y, width, height, partialTick);
         }
     }
 
-    private static class Separator extends AbstractLayoutElement implements GuiEventListener, Renderable {
+    private static class Separator extends AbstractWidget implements Fidgetz {
         private final int color;
 
         private Separator(int width, int color) {
+            super(0, 0, width, 1, CommonComponents.EMPTY);
             this.color = color;
-            this.setSize(width, 1);
-        }
-
-        @Override
-        public void setFocused(boolean focused) {
-            // no-op
         }
 
         @Override
@@ -453,8 +498,8 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         }
 
         @Override
-        public @NotNull ScreenRectangle getRectangle() {
-            return super.getRectangle();
+        public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean bl) {
+            return false;
         }
 
         @Override
@@ -463,8 +508,13 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         }
 
         @Override
-        public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
             guiGraphics.hLine(this.getX(), this.getRight() - 1, this.getMidY(), this.color);
+        }
+
+        @Override
+        protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+            // no-op
         }
     }
 
@@ -472,12 +522,12 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         LEFT {
             @Override
             protected Direction next(Screen screen, GuiRectangle bounds, int x) {
-                return x - MENU_POINT_OFFSET - bounds.getWidth() / 2 < 0 ? RIGHT : this;
+                return x - bounds.getWidth() / 2 < 0 ? RIGHT : this;
             }
 
             @Override
             protected int clamp(Screen screen, GuiRectangle bounds, int x) {
-                return Math.max(0, x - MENU_POINT_OFFSET - bounds.getWidth());
+                return Math.max(0, x - bounds.getWidth());
             }
 
             @Override
@@ -496,13 +546,12 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         RIGHT {
             @Override
             protected Direction next(Screen screen, GuiRectangle bounds, int x) {
-                return x + MENU_POINT_OFFSET + bounds.getWidth() / 2 > screen.width ? LEFT : this;
+                return x + bounds.getWidth() / 2 > screen.width ? LEFT : this;
             }
 
             @Override
             protected int clamp(Screen screen, GuiRectangle bounds, int x) {
-                int clamped = x + MENU_POINT_OFFSET;
-                return clamped + bounds.getWidth() > screen.width ? screen.width - bounds.getWidth() : clamped;
+                return x + bounds.getWidth() > screen.width ? screen.width - bounds.getWidth() : x;
             }
 
             @Override

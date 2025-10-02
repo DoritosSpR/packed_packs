@@ -125,7 +125,7 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
 
     @Override
     public boolean isActive() {
-        return this.isEditing() && this.active;
+        return this.isEditing() && this.active && this.visible;
     }
 
     @Override

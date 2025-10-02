@@ -2,11 +2,16 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
+import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
@@ -22,6 +27,7 @@ import java.util.List;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
 import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.devItem;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
 import static java.util.Optional.ofNullable;
 
@@ -90,7 +96,7 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
 
         @Override
         public boolean isTransferable() {
-            return !this.isStale();
+            return !this.isStale() && !AvailablePackList.this.isLocked();
         }
 
         public boolean isMouseOverSelect(double mouseX, double mouseY) {
@@ -119,6 +125,24 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
                 pick(!overSelect, SELECT_SPRITE, SELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
                 if (overSelect) guiGraphics.requestCursor(CursorTypes.POINTING_HAND);
             }
+        }
+
+        @Override
+        protected void onBuildHeader(ContextMenuItemBuilder builder) {
+            Profile profile = PackedPacks.CONFIG.isDevMode() ? AvailablePackList.this.packAssets.getProfile() : null;
+            if (profile == null) return;
+
+            PackOverride override = this.hasOverride(Profile::isHidden);
+            builder.add(devItem(HIDDEN)
+                    .icon(() -> override == PackOverride.GLOBAL
+                            ? Sprite.of16(ResourceUtil.getIcon("radio_globe"))
+                            : Toggleable.getDefaultIcon(profile.isHidden(this.pack))
+                    )
+                    .activeWhen(() -> !AvailablePackList.this.isLocked() && override != PackOverride.GLOBAL)
+                    .action(() -> this.updateHidden(!profile.isHidden(this.pack)))
+                    .closeOnInteract(false)
+                    .build());
+            builder.separator();
         }
     }
 }

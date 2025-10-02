@@ -47,6 +47,10 @@ public interface PackList extends ContainerEventHandler, LayoutElement, Restorab
 
     void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick);
 
+    boolean isLocked();
+
+    boolean isHovered();
+
     @Nullable Entry getSelected();
 
     @Nullable Entry getEntry(Pack pack);

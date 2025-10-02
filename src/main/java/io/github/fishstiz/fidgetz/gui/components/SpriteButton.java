@@ -23,6 +23,7 @@ public class SpriteButton<E> extends FidgetzButton<E> {
     @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.sprites.get(this.active).get(this.isHoveredOrFocused()).render(guiGraphics, this.getX(), this.getY());
+        this.renderForeground(guiGraphics, this.getX(), this.getY(), this.getWidth(), this.getHeight(), partialTick);
         this.updateCursor(guiGraphics);
     }
 

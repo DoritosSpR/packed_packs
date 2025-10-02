@@ -2,14 +2,23 @@ package io.github.fishstiz.packed_packs.gui.components.profile;
 
 import io.github.fishstiz.fidgetz.gui.components.AbstractFixedListWidget;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.gui.shapes.Size;
+import io.github.fishstiz.fidgetz.util.ARGBColor;
+import io.github.fishstiz.fidgetz.util.DrawUtil;
+import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
+import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
@@ -23,24 +32,27 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> {
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
+
+public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> implements ContextMenuContainer {
     private static final int ITEM_HEIGHT = 20;
     private static final Component EMPTY_TEXT = ResourceUtil.getText("profile.empty");
     private static final Component DELETE_TEXT = ResourceUtil.getText("profile.delete");
     private static final Tooltip DELETE_INFO = Tooltip.create(ResourceUtil.getText("profile.delete.info"));
-    private static final Sprite TRASH_SPRITE = new Sprite(ResourceUtil.getIcon("trash"), Size.of16());
+    private static final Sprite TRASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("trash"));
+    private static final Sprite STAR_OUTLINE_SPRITE = Sprite.of16(ResourceUtil.getIcon("star_outline"));
     private final PollingDebouncer<Void> debouncedRefresh = new SimplePollingDebouncer<>(this::refresh, 200);
     private final Config.Packs config;
-    private final Supplier<Profile> selected;
+    private final Supplier<Profile> current;
     private final Consumer<Profile> onDelete;
     private final Consumer<Profile> onSelect;
     private List<Profile> profiles;
 
-    public ProfileList(Config.Packs config, Supplier<Profile> selected, Consumer<Profile> onDelete, Consumer<Profile> onSelect) {
+    public ProfileList(Config.Packs config, Supplier<Profile> current, Consumer<Profile> onDelete, Consumer<Profile> onSelect) {
         super(ITEM_HEIGHT);
 
         this.config = config;
-        this.selected = selected;
+        this.current = current;
         this.onDelete = onDelete;
         this.onSelect = onSelect;
 
@@ -82,7 +94,7 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> {
         }
     }
 
-    public class Entry extends AbstractFixedListWidget<Entry>.Entry {
+    public class Entry extends AbstractFixedListWidget<Entry>.Entry implements ContextMenuProvider {
         private final Profile profile;
         private final List<FidgetzButton<Void>> children = new ArrayList<>();
         private final FidgetzButton<Void> selectButton;
@@ -95,10 +107,14 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> {
             this.deleteButton = FidgetzButton.<Void>builder()
                     .makeSquare(this.getHeight())
                     .setMessage(DELETE_TEXT)
-                    .setTooltip(DELETE_INFO)
-                    .setSprite(TRASH_SPRITE)
+                    .setSprite(this.isDefault()
+                            ? ButtonSprites.of(STAR_SPRITE) : profile.isLocked()
+                            ? ButtonSprites.unclamp(LOCK_SPRITE) : ButtonSprites.of(TRASH_SPRITE))
                     .setOnPress(() -> ProfileList.this.onDelete.accept(this.profile))
                     .build();
+            this.deleteButton.active = !profile.isLocked() && !this.isDefault();
+            if (this.deleteButton.active) this.deleteButton.setTooltip(DELETE_INFO);
+
             this.selectButton = FidgetzButton.<Void>builder()
                     .setMessage(Component.literal(this.profile.getName()))
                     .setOnPress(() -> ProfileList.this.onSelect.accept(this.profile))
@@ -110,7 +126,7 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> {
 
         @Override
         public void renderContent(GuiGraphics guiGraphics, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            this.selectButton.active = ProfileList.this.selected.get() != this.profile;
+            this.selectButton.active = ProfileList.this.current.get() != this.profile;
 
             int left = this.getX();
             int top = this.getY();
@@ -121,6 +137,43 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> {
 
             this.deleteButton.render(guiGraphics, mouseX, mouseY, partialTick);
             this.selectButton.render(guiGraphics, mouseX, mouseY, partialTick);
+
+            if (PackedPacks.CONFIG.isDevMode()) {
+                boolean hasProperty = true;
+                int width = this.getWidth();
+                int height = this.getHeight();
+                int borderColor;
+
+                if (this.isDefault() && this.profile.isLocked()) {
+                    borderColor = Theme.PURPLE_500.getARGB();
+                } else if (this.isDefault()) {
+                    borderColor = Theme.BLUE_500.getARGB();
+                } else if (this.profile.isLocked()) {
+                    borderColor = Theme.RED_700.getARGB();
+                } else {
+                    borderColor = Theme.WHITE.getARGB();
+                    hasProperty = false;
+                }
+
+                boolean hovered = guiGraphics.containsPointInScissor(mouseX, mouseY) && GuiUtil.isHovered(this, mouseX, mouseY);
+                if (hasProperty || hovered) {
+                    DrawUtil.renderOutline(guiGraphics, left, top, width, height, borderColor);
+                }
+                if (hovered) {
+                    int foregroundColor = ARGBColor.withAlpha(borderColor, 0.25f);
+                    guiGraphics.fill(left, top, left + width, top + height, foregroundColor);
+                }
+            }
+        }
+
+        private boolean isDefault() {
+            return ProfileList.this.config.getDefaultProfile() == this.profile ||
+                   ObjectsUtil.testNullable(ProfileList.this.config.getDefaultProfile(), p -> p.getId() == this.profile.getId());
+        }
+
+        private boolean isSelected() {
+            return ProfileList.this.current.get() == this.profile ||
+                   ObjectsUtil.testNullable(ProfileList.this.current.get(), p -> p.getId() == this.profile.getId());
         }
 
         @Override
@@ -136,6 +189,35 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> {
         @Override
         public void visitWidgets(Consumer<AbstractWidget> consumer) {
             this.children.forEach(consumer);
+        }
+
+        private void reselect() {
+            if (this.isSelected()) {
+                ProfileList.this.onSelect.accept(this.profile);
+            }
+        }
+
+        @Override
+        public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
+            if (!PackedPacks.CONFIG.isDevMode()) return;
+
+            builder.separatorIfNonEmpty();
+            builder.add(GuiConstants.devItem(ResourceUtil.getText("profile.default." + (this.isDefault() ? "unset" : "set")))
+                    .icon(() -> this.isDefault() ? STAR_SPRITE : STAR_OUTLINE_SPRITE)
+                    .action(() -> {
+                        ProfileList.this.config.setDefaultProfile(this.isDefault() ? null : this.profile);
+                        ProfileList.this.refresh();
+                        this.reselect();
+                    })
+                    .build());
+            builder.add(GuiConstants.devItem(ResourceUtil.getText("profile." + (this.profile.isLocked() ? "unlock" : "lock")))
+                    .icon(this.profile.isLocked() ? LOCK_SPRITE_SMALL : UNLOCK_SPRITE_SMALL)
+                    .action(() -> {
+                        this.profile.setLocked(!this.profile.isLocked());
+                        ProfileList.this.refresh();
+                        this.reselect();
+                    })
+                    .build());
         }
     }
 }

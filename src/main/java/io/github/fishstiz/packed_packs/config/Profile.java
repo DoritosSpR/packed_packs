@@ -1,26 +1,38 @@
 package io.github.fishstiz.packed_packs.config;
 
+import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.repository.Pack;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
 
-public class Profile implements Serializable {
+import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.mapOrDefault;
+
+public class Profile implements PackOptions, Serializable {
     public static final int NAME_MAX_LENGTH = 32;
+    private boolean locked = false;
     private long id;
     private String name;
-    private List<String> packIds = new ArrayList<>();
+    private final Set<String> hiddenIds = new ObjectOpenHashSet<>();
+    private PackEntry.PackMap packIds = new PackEntry.PackMap();
+
+    public Profile() {
+    }
 
     public Profile(String name) {
+        this();
         this.name = trimName(name);
     }
 
-    private Profile(String name, List<String> packIds) {
+    private Profile(String name, PackEntry.PackMap packIds) {
         this(name);
-        this.packIds = List.copyOf(packIds);
+        this.packIds = packIds;
     }
 
     void setId(long id) {
@@ -36,15 +48,7 @@ public class Profile implements Serializable {
     }
 
     public void setName(String name) {
-        this.name = trimName(name);
-    }
-
-    public List<String> getPackIds() {
-        return this.packIds;
-    }
-
-    public void setPacks(List<Pack> packs) {
-        this.packIds = PackUtil.extractPackIds(packs);
+        if (!this.isLocked()) this.name = trimName(name);
     }
 
     public Profile copy() {
@@ -54,7 +58,127 @@ public class Profile implements Serializable {
             profileName += " - " + ResourceUtil.getText("profile.copy").getString();
         }
 
-        return new Profile(profileName, this.packIds);
+        return new Profile(profileName, new PackEntry.PackMap(this.packIds));
+    }
+
+    void setPackMap(PackEntry.PackMap packMap) {
+        this.packIds = packMap;
+    }
+
+    public boolean includes(Pack pack) {
+        return this.packIds.containsKey(pack.getId());
+    }
+
+    public List<String> getPackIds() {
+        return List.copyOf(this.packIds.keySet());
+    }
+
+    public void setPacks(List<Pack> packs) {
+        if (!this.locked) {
+            this.setPackMap(this.toMap(PackUtil.extractPackIds(packs)));
+        }
+    }
+
+    public void setHidden(boolean hidden, Pack... packs) {
+        for (Pack pack : packs) {
+            if (hidden) {
+                this.hiddenIds.add(pack.getId());
+            } else {
+                this.hiddenIds.remove(pack.getId());
+            }
+        }
+    }
+
+    public void setRequired(@Nullable Boolean required, Pack... packs) {
+        for (Pack pack : packs) {
+            String id = pack.getId();
+            if (Boolean.FALSE.equals(required) && (id.equals(PackAssets.VANILLA_ID) || id.equals(PackAssets.FABRIC_ID))) {
+                continue;
+            }
+
+            PackEntry entry = this.packIds.get(id);
+            if (entry != null) {
+                this.packIds.put(id, new PackEntry(id, required, entry.fixed()));
+            }
+        }
+    }
+
+    public void setPosition(@Nullable Pack.Position position, Pack... packs) {
+        for (Pack pack : packs) {
+            PackEntry entry = this.packIds.get(pack.getId());
+            if (entry != null) {
+                this.packIds.put(pack.getId(), new PackEntry(
+                        pack.getId(),
+                        entry.required(),
+                        position != null ? PackEntry.SerializedPosition.get(position) : null
+                ));
+            }
+        }
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+    }
+
+    public boolean isLocked() {
+        return this.locked;
+    }
+
+    @Override
+    public boolean isHidden(Pack pack) {
+        return this.hiddenIds.contains(pack.getId());
+    }
+
+    @Override
+    public boolean isRequired(Pack pack) {
+        return Boolean.TRUE.equals(mapOrDefault(this.packIds.get(pack.getId()), false, PackEntry::required));
+    }
+
+    @Override
+    public boolean isFixed(Pack pack) {
+        return mapOrDefault(this.packIds.get(pack.getId()), false, entry -> entry.fixed() != null);
+    }
+
+    @Override
+    public @Nullable Pack.Position getPosition(Pack pack) {
+        PackEntry entry = this.packIds.get(pack.getId());
+        if (entry != null && entry.fixed() != null) {
+            return entry.fixed().pos();
+        }
+        return null;
+    }
+
+    @Override
+    public @Nullable PackSelectionConfig getSelectionConfig(Pack pack) {
+        PackEntry packEntry = this.packIds.get(pack.getId());
+        if (packEntry != null && (packEntry.required() != null || packEntry.fixed() != null)) {
+            return new PackSelectionConfig(this.isRequired(pack), this.getPosition(pack), this.isFixed(pack));
+        }
+        return null;
+    }
+
+    public boolean overridesRequired(Pack pack) {
+        return this.overridesProperty(pack, PackEntry::required);
+    }
+
+    public boolean overridesPosition(Pack pack) {
+        return this.overridesProperty(pack, PackEntry::fixed);
+    }
+
+    private boolean overridesProperty(Pack pack, Function<PackEntry, @Nullable Object> property) {
+        PackEntry entry = this.packIds.get(pack.getId());
+        return entry != null && property.apply(entry) != null;
+    }
+
+    private PackEntry.PackMap toMap(List<String> packIds) {
+        PackEntry.PackMap entryMap = new PackEntry.PackMap();
+
+        for (String packId : packIds) {
+            PackEntry entry = this.packIds.get(packId);
+            entryMap.put(packId, entry != null ? entry : new PackEntry(packId));
+        }
+
+        return entryMap;
     }
 
     private static String trimName(String name) {

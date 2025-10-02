@@ -5,9 +5,15 @@ import com.google.gson.GsonBuilder;
 import io.github.fishstiz.packed_packs.PackedPacks;
 
 import java.io.*;
+import java.util.function.Supplier;
 
 public class ConfigLoader {
-    private static final Gson GSON = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder()
+            .serializeNulls()
+            .setPrettyPrinting()
+            .registerTypeAdapter(PackEntry.class, new PackEntry.Adapter())
+            .registerTypeAdapter(PackEntry.PackMap.class, new PackEntry.MapAdapter())
+            .create();
 
     private ConfigLoader() {
     }
@@ -18,25 +24,26 @@ public class ConfigLoader {
         }
     }
 
-    public static Config load(File file) {
-        Config config = new Config();
+    public static <T extends Serializable> T loadOrSave(File file, Class<T> clazz, Supplier<T> defaultFactory) {
+        T serializable;
 
         try (FileReader reader = new FileReader(file)) {
-            config = GSON.fromJson(reader, Config.class);
+            serializable = GSON.fromJson(reader, clazz);
         } catch (FileNotFoundException e) {
+            serializable = defaultFactory.get();
             PackedPacks.LOGGER.info("[packed_packs] Creating config at '{}'...", file.getPath());
-            save(config, file);
+            save(serializable, file);
         } catch (IOException e) {
+            serializable = defaultFactory.get();
             PackedPacks.LOGGER.error("[packed_packs] Failed to load config at '{}'.", file.getPath());
         }
 
-        config.file = file;
-        return config;
+        return serializable;
     }
 
-    public static <T extends Serializable> void save(T config, File file) {
+    public static <T extends Serializable> void save(T serializable, File file) {
         try (FileWriter writer = new FileWriter(file)) {
-            GSON.toJson(config, writer);
+            GSON.toJson(serializable, writer);
         } catch (IOException e) {
             PackedPacks.LOGGER.info("[packed_packs] Failed to save config at '{}'.", file.getPath());
         }

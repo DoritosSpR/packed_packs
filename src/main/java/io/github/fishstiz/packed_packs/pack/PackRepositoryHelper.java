@@ -3,8 +3,11 @@ package io.github.fishstiz.packed_packs.pack;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Folder;
+import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.FilteredPackSelectionModel;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.transform.mixin.folders.additional.FolderRepositorySourceAccessor;
@@ -13,37 +16,42 @@ import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
 import org.apache.commons.lang3.function.Consumers;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
+import java.util.function.*;
 
 public class PackRepositoryHelper implements PackAssets {
     private final Map<String, ResourceLocation> cachedIcons = new Object2ObjectOpenHashMap<>();
     private final Map<String, Pack> availablePacks = new Object2ObjectLinkedOpenHashMap<>();
     private final Map<String, List<Pack>> folderPacks = new Object2ObjectOpenHashMap<>();
     private final Map<String, CompletableFuture<Folder>> folderConfigs = new Object2ObjectOpenHashMap<>();
+    private final PackOptionsResolver resolver;
     private final PackRepository repository;
     private final Path packDir;
     private final boolean resourcePacks;
     private PackSelectionModel model;
     private Map<String, ResourceLocation> staleIcons;
 
-    public PackRepositoryHelper(PackRepository repository, Path packDir) {
+    public PackRepositoryHelper(PackRepository repository, Path packDir, Config.Packs config, Supplier<@Nullable Profile> profileSupplier) {
+        this.resolver = new PackOptionsResolver(profileSupplier, config);
         this.repository = repository;
         this.packDir = packDir;
-        this.resourcePacks = this.repository == Minecraft.getInstance().getResourcePackRepository();
+        this.resourcePacks = config instanceof Config.ResourcePacks;
 
         this.refreshModel();
         this.regenerateAvailablePacks();
@@ -63,6 +71,7 @@ public class PackRepositoryHelper implements PackAssets {
 
     private void refreshModel() {
         this.model = new PackSelectionModel(Consumers.nop(), PackAssets::getDefaultIcon, this.repository, Consumers.nop());
+        ((FilteredPackSelectionModel) this.model).packed_packs$filterHidden(false);
     }
 
     public ImmutableList<Pack> getPacks() {
@@ -70,12 +79,12 @@ public class PackRepositoryHelper implements PackAssets {
     }
 
     public PackGroup getPacksByRequirement() {
-        List<Pack> required = new ArrayList<>();
-        List<Pack> optional = new ArrayList<>();
+        List<Pack> required = new ObjectArrayList<>();
+        List<Pack> optional = new ObjectArrayList<>();
 
         for (Pack pack : this.availablePacks.values()) {
-            if (pack.isRequired()) {
-                pack.getDefaultPosition().insert(required, pack, Pack::selectionConfig, true);
+            if (this.isRequired(pack)) {
+                this.getPosition(pack).insert(required, pack, this::getSelectionConfig, true);
             } else {
                 optional.add(pack);
             }
@@ -127,8 +136,7 @@ public class PackRepositoryHelper implements PackAssets {
     private void addValidPacks(List<Pack> source, Set<Pack> seen, ObjectOpenHashSet<Pack> validPacks, List<Pack> target) {
         for (Pack pack : source) {
             Pack validPack = validPacks.get(pack); // metadata can change
-            // Folder packs can show up in both columns in case user messes around in original screen. PackListBase ignores duplicates anyway.
-            if (validPack != null && (seen.add(pack) || pack instanceof FolderPack)) {
+            if (validPack != null && (seen.add(pack))) {
                 target.add(validPack);
             }
         }
@@ -142,16 +150,16 @@ public class PackRepositoryHelper implements PackAssets {
     public PackGroup validatePacks(List<Pack> unselected, List<Pack> selected) {
         Set<Pack> seen = new ObjectOpenHashSet<>();
         ObjectOpenHashSet<Pack> validPacks = new ObjectOpenHashSet<>(this.availablePacks.values());
-        List<Pack> validSelected = new ArrayList<>(selected.size());
-        List<Pack> validUnselected = new ArrayList<>(unselected.size());
+        List<Pack> validSelected = new ObjectArrayList<>(selected.size());
+        List<Pack> validUnselected = new ObjectArrayList<>(unselected.size());
 
         this.addValidPacks(selected, seen, validPacks, validSelected);
         this.addValidPacks(unselected, seen, validPacks, validUnselected);
 
         for (Pack validPack : validPacks) {
             if (seen.add(validPack)) {
-                if (validPack.isRequired()) {
-                    validPack.getDefaultPosition().insert(validSelected, validPack, Pack::selectionConfig, true);
+                if (this.isRequired(validPack)) {
+                    this.getPosition(validPack).insert(validSelected, validPack, this::getSelectionConfig, true);
                 } else {
                     validUnselected.add(validPack);
                 }
@@ -169,7 +177,7 @@ public class PackRepositoryHelper implements PackAssets {
         List<Pack> orderedValidPacks = this.folderPacks.get(folderPack.getId());
         ObjectOpenHashSet<Pack> validPacks = new ObjectOpenHashSet<>(orderedValidPacks);
         Set<Pack> seen = new ObjectOpenHashSet<>();
-        List<Pack> finalOrderedPacks = new ArrayList<>();
+        List<Pack> finalOrderedPacks = new ObjectArrayList<>();
 
         this.addValidPacks(orderedPacks, seen, validPacks, finalOrderedPacks);
 
@@ -183,20 +191,45 @@ public class PackRepositoryHelper implements PackAssets {
         return finalOrderedPacks;
     }
 
+    /**
+     * @param folderPack   the folder pack
+     * @param orderedPacks the nested pack ids that define the preferred order
+     * @return a validated and ordered list of all packs under the folder pack
+     */
     public List<Pack> validateAndOrderNestedPackIds(FolderPack folderPack, List<String> orderedPacks) {
         return this.validateAndOrderNestedPacks(folderPack, this.getPacksById(orderedPacks, this.folderPacks.get(folderPack.getId())));
     }
 
-    public List<Pack> getPacksById(List<String> packIds, Map<String, Pack> source) {
+    /**
+     * @param packIds grouped pack ids
+     * @param source  grouped packs
+     * @return grouped packs by id
+     */
+    public List<Pack> getPacksById(Collection<String> packIds, Map<String, Pack> source) {
         return CollectionsUtil.lookup(packIds, source);
     }
 
-    public List<Pack> getPacksById(List<String> packIds, List<Pack> source) {
+    /**
+     * @param packIds grouped pack ids
+     * @param source  grouped packs
+     * @return grouped packs by id
+     */
+    public List<Pack> getPacksById(Collection<String> packIds, Collection<Pack> source) {
         return CollectionsUtil.lookup(packIds, CollectionsUtil.toMap(source, Pack::getId));
     }
 
-    public List<Pack> getPacksById(List<String> packIds) {
+    /**
+     * @param packIds grouped pack ids
+     * @return grouped packs by id
+     */
+    public List<Pack> getPacksById(Collection<String> packIds) {
         return this.getPacksById(packIds, this.availablePacks);
+    }
+
+    public List<Pack> getPacksByFlattenedIds(Collection<String> packIds) {
+        List<Pack> folderPacks = CollectionsUtil.filter(this.availablePacks.values(), FolderPack.class::isInstance, ObjectArrayList::new);
+        List<Pack> available = CollectionsUtil.addAll(folderPacks, this.repository.getAvailablePacks());
+        return this.groupByFolders(this.getPacksById(packIds, available));
     }
 
     /**
@@ -214,7 +247,7 @@ public class PackRepositoryHelper implements PackAssets {
                     this.folderConfigs.put(folderId, folderPack.loadConfig());
                     this.availablePacks.put(folderId, folderPack);
                 }
-                this.folderPacks.computeIfAbsent(folderId, id -> new ArrayList<>()).add(pack);
+                this.folderPacks.computeIfAbsent(folderId, id -> new ObjectArrayList<>()).add(pack);
             } else {
                 this.availablePacks.put(pack.getId(), pack);
             }
@@ -240,23 +273,24 @@ public class PackRepositoryHelper implements PackAssets {
      */
     public void selectPacks(List<Pack> selected) {
         boolean hasHighContrast = false;
-        List<String> packIds = new ArrayList<>();
+        List<String> packIds = new ObjectArrayList<>();
 
         for (Pack pack : this.flattenPacks(selected).reversed()) {
             String packId = pack.getId();
 
             packIds.add(packId);
-            if (!hasHighContrast && packId.equals(PackUtil.HIGH_CONTRAST_ID)) {
+            if (!hasHighContrast && packId.equals(HIGH_CONTRAST_ID)) {
                 hasHighContrast = true;
             }
         }
+
+        this.repository.setSelected(ImmutableList.copyOf(packIds));
 
         OptionInstance<Boolean> highContrastOption = Minecraft.getInstance().options.highContrast();
         if (highContrastOption.get() != hasHighContrast) {
             highContrastOption.set(hasHighContrast);
         }
 
-        this.repository.setSelected(ImmutableList.copyOf(packIds));
         this.refreshModel();
     }
 
@@ -264,17 +298,19 @@ public class PackRepositoryHelper implements PackAssets {
      * @param groupedPacks grouped list of packs
      * @return flattened list of packs
      */
+    @Override
     public List<Pack> flattenPacks(List<Pack> groupedPacks) {
         if (this.folderPacks.isEmpty()) return groupedPacks;
 
-        List<Pack> flattened = new ArrayList<>(groupedPacks);
+        List<Pack> flattened = new ObjectArrayList<>(groupedPacks);
         for (int i = flattened.size() - 1; i >= 0; i--) {
             if (flattened.get(i) instanceof FolderPack folderPack) {
-                flattened.remove(i);
+                // do not remove folder pack; solves headaches
+//                flattened.remove(i);
                 List<Pack> nested = this.getNestedPacks(folderPack);
-                if (nested != null) {
+                if (nested != null && !nested.isEmpty()) {
                     for (Pack pack : Lists.reverse(nested)) {
-                        flattened.add(i, pack);
+                        flattened.add(i + 1, pack); // insert after folder pack
                     }
                 }
             }
@@ -297,7 +333,7 @@ public class PackRepositoryHelper implements PackAssets {
         }
 
         Set<String> seenFolders = new ObjectOpenHashSet<>();
-        List<Pack> grouped = new ArrayList<>(flatPacks.size());
+        List<Pack> grouped = new ObjectArrayList<>(flatPacks.size());
 
         for (Pack pack : flatPacks) {
             String folderId = packToFolder.get(pack.getId());
@@ -347,6 +383,12 @@ public class PackRepositoryHelper implements PackAssets {
     }
 
     @Override
+    public boolean isLocked() {
+        Profile profile = this.resolver.profileSupplier().get();
+        return profile != null && profile.isLocked();
+    }
+
+    @Override
     public boolean isEnabled(Pack pack) {
         Set<String> selectedIds = new ObjectOpenHashSet<>(this.repository.getSelectedIds());
 
@@ -365,6 +407,36 @@ public class PackRepositoryHelper implements PackAssets {
         return selectedIds.contains(pack.getId());
     }
 
+    @Override
+    public boolean isHidden(Pack pack) {
+        return this.resolver.isHidden(pack);
+    }
+
+    @Override
+    public boolean isRequired(Pack pack) {
+        return this.resolver.isRequiredOrDefault(pack);
+    }
+
+    @Override
+    public boolean isFixed(Pack pack) {
+        return this.resolver.isFixedOrDefault(pack);
+    }
+
+    @Override
+    public @NotNull Pack.Position getPosition(Pack pack) {
+        return this.resolver.getPositionOrDefault(pack);
+    }
+
+    @Override
+    public @NotNull PackSelectionConfig getSelectionConfig(Pack pack) {
+        return this.resolver.getSelectionConfigOrDefault(pack);
+    }
+
+    @Override
+    public Config.Packs getConfig() {
+        return this.resolver.config();
+    }
+
     public Path getBaseDir() {
         return this.packDir;
     }
@@ -381,18 +453,19 @@ public class PackRepositoryHelper implements PackAssets {
                 .toList();
     }
 
-    public @Nullable Folder getFolderConfig(FolderPack folderPack) {
+    @Override
+    public @Nullable Folder getFolderConfig(@Nullable FolderPack folderPack) {
+        if (folderPack == null) return null;
         CompletableFuture<Folder> future = this.folderConfigs.get(folderPack.getId());
         return future != null ? future.join() : null;
     }
 
-    public List<Pack> getNestedPacks(FolderPack folderPack) {
-        return this.validateAndOrderNestedPackIds(folderPack, Objects.requireNonNull(this.getFolderConfig(folderPack)).getPackIds());
+    @Override
+    public @Nullable Profile getProfile() {
+        return this.resolver.profileSupplier().get();
     }
 
-    public record PackGroup(ImmutableList<Pack> selected, ImmutableList<Pack> unselected) {
-        private static PackGroup of(List<Pack> selected, List<Pack> unselected) {
-            return new PackGroup(ImmutableList.copyOf(selected), ImmutableList.copyOf(unselected));
-        }
+    public List<Pack> getNestedPacks(FolderPack folderPack) {
+        return this.validateAndOrderNestedPackIds(folderPack, Objects.requireNonNull(this.getFolderConfig(folderPack)).getPackIds());
     }
 }
