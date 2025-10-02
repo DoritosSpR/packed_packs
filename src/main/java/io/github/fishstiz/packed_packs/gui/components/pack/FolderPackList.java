@@ -1,13 +1,18 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import com.google.common.collect.ImmutableList;
+import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
+import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class FolderPackList extends CurrentPackList {
+    private @Nullable FolderPack folderPack;
+
     public FolderPackList(PackAssets packAssets, PackListEventListener listener) {
         super(packAssets, listener);
     }
@@ -17,9 +22,24 @@ public class FolderPackList extends CurrentPackList {
         return new SubPackEntry(pack, index);
     }
 
+    public void onFolderPackChange(@Nullable FolderPack folderPack) {
+        this.folderPack = folderPack;
+    }
+
     @Override
     public boolean isTransferable(Pack pack) {
         return false;
+    }
+
+    @Override
+    public boolean canDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+        return source == this && super.canDrop(source, payload, trigger, mouseX, mouseY);
+    }
+
+    @Override
+    public boolean isLocked() {
+        Folder folder = this.packAssets.getFolderConfig(this.folderPack);
+        return (folder != null && folder.isLocked()) || super.isLocked();
     }
 
     @Override

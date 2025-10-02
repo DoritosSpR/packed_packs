@@ -87,7 +87,7 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
 
         @Override
         public boolean isTransferable() {
-            return !this.isStale();
+            return !this.isStale() && !AvailablePackList.this.isLocked();
         }
 
         public boolean isMouseOverSelect(double mouseX, double mouseY) {

@@ -100,7 +100,7 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
 
         ButtonSprites sprites = spriteOption.sprites();
         if (sprites != null) {
-            sprites.get(this.active).renderClamped(guiGraphics, x, y, width, height, partialTick);
+            sprites.render(guiGraphics, x, y, width, height, this.active, partialTick);
         }
     }
 

@@ -64,7 +64,7 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
     }
 
     protected void renderSprite(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
-        this.sprites.get(this.active).renderClamped(guiGraphics, x, y, width, height, partialTick);
+        this.sprites.render(guiGraphics, x, y, width, height, this.active, partialTick);
     }
 
     protected void renderBorder(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
