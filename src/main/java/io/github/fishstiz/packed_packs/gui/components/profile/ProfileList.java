@@ -2,6 +2,7 @@ package io.github.fishstiz.packed_packs.gui.components.profile;
 
 import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.LOCK_SPRITE;
+
 public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
     private static final int ITEM_HEIGHT = 20;
     private static final Component EMPTY_TEXT = ResourceUtil.getText("profile.empty");
@@ -31,16 +34,16 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
     private static final Sprite TRASH_SPRITE = new Sprite(ResourceUtil.getIcon("trash"), Size.of16());
     private final PollingDebouncer<Void> debouncedRefresh = new SimplePollingDebouncer<>(this::refresh, 200);
     private final Config.Packs config;
-    private final Supplier<Profile> selected;
+    private final Supplier<Profile> current;
     private final Consumer<Profile> onDelete;
     private final Consumer<Profile> onSelect;
     private List<Profile> profiles;
 
-    public ProfileList(Config.Packs config, Supplier<Profile> selected, Consumer<Profile> onDelete, Consumer<Profile> onSelect) {
+    public ProfileList(Config.Packs config, Supplier<Profile> current, Consumer<Profile> onDelete, Consumer<Profile> onSelect) {
         super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, 0, 0);
 
         this.config = config;
-        this.selected = selected;
+        this.current = current;
         this.onDelete = onDelete;
         this.onSelect = onSelect;
 
@@ -96,9 +99,10 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
                     .makeSquare(this.getHeight())
                     .setMessage(DELETE_TEXT)
                     .setTooltip(DELETE_INFO)
-                    .setSprite(TRASH_SPRITE)
+                    .setSprite(profile.isLocked() ? ButtonSprites.unclamp(LOCK_SPRITE) : ButtonSprites.of(TRASH_SPRITE))
                     .setOnPress(() -> ProfileList.this.onDelete.accept(this.profile))
                     .build();
+            this.deleteButton.active = !profile.isLocked();
             this.selectButton = FidgetzButton.<Void>builder()
                     .setMessage(Component.literal(this.profile.getName()))
                     .setOnPress(() -> ProfileList.this.onSelect.accept(this.profile))
@@ -110,7 +114,7 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
 
         @Override
         public void render(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            this.selectButton.active = ProfileList.this.selected.get() != this.profile;
+            this.selectButton.active = ProfileList.this.current.get() != this.profile;
 
             this.deleteButton.setPosition(left, top);
             this.selectButton.setPosition(left + this.deleteButton.getWidth(), top);

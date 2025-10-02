@@ -43,16 +43,20 @@ public class ObjectsUtil {
         return value != null ? value : Objects.requireNonNull(defaultValue);
     }
 
-    public static <E> boolean testNullable(@Nullable E obj, Predicate<E> predicate) {
+    public static <E> boolean testNullable(@Nullable E obj, Predicate<@NotNull E> predicate) {
         return obj != null && predicate.test(obj);
     }
 
-    public static <T, R> R mapOrDefault(T obj, R defaultValue, Function<T, R> mapper) {
+    public static <T, R> R mapOrDefault(T obj, R defaultValue, Function<@NotNull T, R> mapper) {
         return obj != null ? mapper.apply(obj) : defaultValue;
     }
 
-    public static <T, R> @Nullable R mapOrNull(T obj, Function<T, R> mapper) {
+    public static <T, R> @Nullable R mapOrNull(T obj, Function<@NotNull T, R> mapper) {
         return mapOrDefault(obj, null, mapper);
+    }
+
+    public static <T> T getOrDefault(@Nullable T obj, T defaultValue) {
+        return obj != null ? obj : defaultValue;
     }
 
     public static <T> T peek(T value, Consumer<? super T> action) {

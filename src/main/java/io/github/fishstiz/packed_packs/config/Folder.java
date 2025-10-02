@@ -8,18 +8,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Folder implements Serializable {
+    @SuppressWarnings("FieldCanBeLocal")
+    private boolean locked = false;
     private List<String> packIds = new ArrayList<>();
 
     public boolean setPacks(List<Pack> packs) {
-        List<String> newPackIds = PackUtil.extractPackIds(packs);
-        if (!this.packIds.equals(newPackIds)) {
-            this.packIds =  newPackIds;
-            return true;
+        if (!this.locked) {
+            List<String> newPackIds = PackUtil.extractPackIds(packs);
+            if (!this.packIds.equals(newPackIds)) {
+                this.packIds = newPackIds;
+                return true;
+            }
         }
         return false;
     }
 
     public List<String> getPackIds() {
         return List.copyOf(this.packIds);
+    }
+
+    public boolean isLocked() {
+        return this.locked;
     }
 }

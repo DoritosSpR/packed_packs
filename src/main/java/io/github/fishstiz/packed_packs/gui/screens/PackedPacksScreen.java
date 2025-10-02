@@ -38,6 +38,7 @@ import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import net.minecraft.Util;
+import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LayoutSettings;
@@ -62,7 +63,11 @@ import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.PackUtil.*;
 
-public class PackedPacksScreen extends PackListEventHandler implements ToggleableDialogContainer, ContextMenuContainer, Restorable<PackedPacksScreen.Snapshot> {
+public class PackedPacksScreen extends PackListEventHandler implements
+        ProfilesLayout.Listener,
+        ToggleableDialogContainer,
+        ContextMenuContainer,
+        Restorable<PackedPacksScreen.Snapshot> {
     private static final Component ACTION_BAR_INFO = ResourceUtil.getText("toggle_actionbar.info");
     private static final Component ORIGINAL_SCREEN_INFO = ResourceUtil.getText("original_screen.info");
     private static final Component OPTIONS_TEXT = ResourceUtil.getText("options.title");
@@ -101,19 +106,19 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
         this.previous = previous;
         this.original = original;
-        this.repository = new PackRepositoryHelper(this.original.repository(), this.original.packDir());
-        this.availablePacks = new AvailablePacksLayout(this.repository, this);
-        this.currentPacks = new CurrentPacksLayout(this.repository, this);
-        this.packsConfig = this.repository.getConfig();
+
+        this.packsConfig = PackedPacks.CONFIG.get(original.packType());
         this.profiles = new ProfilesLayout(
                 Sidebar.builder(this).setHeaderSettings(
                         LayoutSettings.defaults().paddingLeft(GuiConstants.SPACING).paddingTop(GuiConstants.SPACING - 1)
                 ),
                 this.packsConfig,
-                this.currentPacks.getList()::copyPacks,
-                this::onProfileChange
+                this
         );
-        this.folderDialog = FolderDialog.build(this, this.repository);
+        this.repository = new PackRepositoryHelper(this.original.repository(), this.original.packDir(), this.packsConfig, this.profiles::getProfile);
+        this.availablePacks = new AvailablePacksLayout(this.repository, this);
+        this.currentPacks = new CurrentPacksLayout(this.repository, this);
+        this.folderDialog = FolderDialog.create(this, this.repository);
         this.fileRenameModal = new FileRenameModal(this, this.repository);
         this.dialogs = List.of(this.options, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
         this.packLists = List.of(this.folderDialog.root(), this.availablePacks.getList(), this.currentPacks.getList());
@@ -449,16 +454,26 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.useSelected();
     }
 
-    public void onProfileChange(@Nullable Profile profile) {
-        if (profile == null) {
+    @Override
+    public void onProfileChange(@Nullable Profile previous, @Nullable Profile current) {
+        if (previous != null) {
+            previous.setPacks(this.currentPacks.getList().copyPacks());
+        }
+
+        if (current == null) {
             this.useSelected();
-        } else if (!profile.getPackIds().isEmpty()) {
-            this.applyProfile(profile);
+        } else if (!current.getPackIds().isEmpty()) {
+            this.applyProfile(current);
         } else {
             this.reset();
         }
         this.availablePacks.getSearchField().setValue("");
         this.currentPacks.getSearchField().setValue("");
+    }
+
+    @Override
+    public void onProfileCopy(@Nullable Profile original, @NotNull Profile copy) {
+        copy.setPacks(this.currentPacks.getList().copyPacks());
     }
 
     private void applyProfile(@NotNull Profile profile) {
@@ -474,6 +489,11 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         if (profile != null) {
             profile.setPacks(this.currentPacks.getList().copyPacks());
         }
+    }
+
+    private boolean isUnlocked() {
+        Profile profile = this.profiles.getProfile();
+        return profile == null || !profile.isLocked();
     }
 
     @Override
@@ -528,6 +548,20 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         this.refreshPacks();
     }
 
+    @Override
+    protected void handleMoveEvent(MoveEvent event) {
+        if (event.target() != this.folderDialog.root()) {
+            super.handleMoveEvent(event);
+            return;
+        }
+
+        PackList.Entry entry = event.target().getEntry(event.trigger());
+        if (entry != null) {
+            this.focus(ComponentPath.path(entry, event.target(), this.folderDialog, this));
+        } else {
+            this.focus(ComponentPath.path(event.target(), this.folderDialog, this));
+        }
+    }
 
     @Override
     public void onEvent(PackListEvent event) {
@@ -625,7 +659,7 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
 
         this.buildItems(mouseX, mouseY)
                 .separatorIfNonEmpty()
-                .simpleItem(RESET_ENABLED_TEXT, this::resetToEnabled)
+                .simpleItem(RESET_ENABLED_TEXT, this::isUnlocked, this::resetToEnabled)
                 .simpleItem(REFRESH_PACKS_TEXT, this::canRefresh, this::refreshPacks)
                 .when(this.additionalFolders, List::isEmpty)
                 .ifTrue(b -> b.simpleItem(OPEN_FOLDER_TEXT, this.repository::openDir))
@@ -664,17 +698,6 @@ public class PackedPacksScreen extends PackListEventHandler implements Toggleabl
         return false;
     }
 
-    @Override
-    public void onRelease(@NotNull DragEvent event, double mouseX, double mouseY) {
-        if (this.folderDialog.isOpen()) {
-            var child = this.folderDialog.getChildAt(mouseX, mouseY);
-            if (child.isPresent() && child.get() == this.folderDialog.root()) {
-                this.folderDialog.root().drop(event.target(), event.payload(), event.trigger(), mouseX, mouseY);
-            }
-        } else {
-            super.onRelease(event, mouseX, mouseY);
-        }
-    }
 
     @Override
     public List<ToggleableDialog<?>> getDialogs() {
