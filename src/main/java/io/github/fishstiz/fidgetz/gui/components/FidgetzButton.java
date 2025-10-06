@@ -2,10 +2,10 @@ package io.github.fishstiz.fidgetz.gui.components;
 
 import io.github.fishstiz.fidgetz.gui.Metadata;
 import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.util.GuiUtil;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -15,12 +15,14 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 
-public class FidgetzButton<E> extends Button implements Metadata<E> {
+public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProvider, Metadata<E> {
     private final List<Runnable> listeners = new ArrayList<>();
     private final ButtonSprites sprites;
     private final Integer focusedBorder;
     private final boolean spriteOnly;
+    private final BiConsumer<FidgetzButton<E>, MenuItemBuilder> contextMenuBuilder;
     private E metadata;
 
     protected FidgetzButton(Builder<E, ?> builder) {
@@ -30,6 +32,7 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         this.sprites = builder.sprites;
         this.spriteOnly = builder.spriteOnly;
         this.focusedBorder = builder.focusedBorder;
+        this.contextMenuBuilder = builder.contextMenuBuilder;
 
         if (builder.tooltip != null) {
             this.setTooltip(builder.tooltip);
@@ -73,7 +76,7 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
 
     @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.isHovered = this.containsPoint(mouseX, mouseY);
+        this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
 
         if (!this.spriteOnly) {
             super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
@@ -100,20 +103,16 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         }
     }
 
-    private boolean isUncovered(double mouseX, double mouseY) {
-        if (Minecraft.getInstance().screen instanceof ToggleableDialogContainer dialogContainer) {
-            return !dialogContainer.isChildCoveredAtPoint(this, mouseX, mouseY);
-        }
-        return true;
-    }
-
-    public boolean containsPoint(double mouseX, double mouseY) {
-        return GuiUtil.containsPoint(this, mouseX, mouseY) && this.isUncovered(mouseX, mouseY);
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return super.isMouseOver(mouseX, mouseY) && Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     @Override
-    public boolean isMouseOver(double mouseX, double mouseY) {
-        return super.isMouseOver(mouseX, mouseY) && this.isUncovered(mouseX, mouseY);
+    public void buildItems(MenuItemBuilder builder, int mouseX, int mouseY) {
+        if (this.contextMenuBuilder != null) {
+            this.contextMenuBuilder.accept(this, builder);
+        }
     }
 
     public static <E> Builder<E, ?> builder() {
@@ -132,6 +131,7 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
         private Integer focusedBorder;
         private OnPress onPress = btn -> {
         };
+        private BiConsumer<FidgetzButton<E>, MenuItemBuilder> contextMenuBuilder;
         private E metadata;
 
         protected Builder() {
@@ -231,6 +231,11 @@ public class FidgetzButton<E> extends Button implements Metadata<E> {
 
         public B setOnPress(Runnable onPress) {
             this.onPress = btn -> onPress.run();
+            return self();
+        }
+
+        public B setContextMenuBuilder(BiConsumer<FidgetzButton<E>, MenuItemBuilder> contextMenuBuilder) {
+            this.contextMenuBuilder = contextMenuBuilder;
             return self();
         }
 

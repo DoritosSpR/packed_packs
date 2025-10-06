@@ -797,14 +797,12 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         public void buildItems(MenuItemBuilder builder, int mouseX, int mouseY) {
             PackListBase.this.setFocused(this);
             ContextMenuContainer.super.buildItems(builder
-                            .add(PackMenuHeader.withItem(this.pack, this.packWidget.getSprite()))
+                            .add(new PackMenuHeader(this.pack, this.packWidget.getSprite()))
                             .whenNonNull(this.folderWidget)
                             .ifTrue(b -> b
-                                    .separator()
                                     .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this::openFolder))
                             .whenNonNull(((IPack) this.pack).packed_packs$getPath())
-                            .ifTrue((path, b) -> b
-                                    .separator()
+                            .ifTrue(b -> b
                                     .simpleItem(PackAssets.RENAME_FILE_TEXT, this::canOperateFile, this::renamePack)
                                     .simpleItem(PackAssets.DELETE_FILE_TEXT, this::canOperateFile, this::deletePack)
                                     .simpleItem(PackAssets.OPEN_FILE_TEXT, () -> PackUtil.openPack(this.pack))

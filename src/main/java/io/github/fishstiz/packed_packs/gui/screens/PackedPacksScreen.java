@@ -656,7 +656,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     private boolean hasHeader(List<MenuItem> items) {
-        return !items.isEmpty() && items.getFirst() instanceof RenderableMenuItem item && item.renderer() instanceof PackMenuHeader;
+        return !items.isEmpty() && items.getFirst() instanceof PackMenuHeader;
     }
 
     private void openContextMenu(int mouseX, int mouseY) {
@@ -668,12 +668,14 @@ public class PackedPacksScreen extends PackListEventHandler implements
                 .simpleItem(REFRESH_PACKS_TEXT, this::canRefresh, this::refreshPacks)
                 .when(this.additionalFolders, List::isEmpty)
                 .ifTrue(b -> b.simpleItem(OPEN_FOLDER_TEXT, this.repository::openDir))
-                .ifFalse((dirs, b) -> b.parentItem(OPEN_FOLDER_TEXT, sub -> sub
-                        .add(new DirectoryMenuItem(this.repository.getBaseDir()))
-                        .separator()
-                        .addAll(dirs.stream().map(DirectoryMenuItem::new).toList())
-                ))
-                .peek((items, b) -> {
+                .ifFalse((dirs, b) -> b
+                        .parentItem(OPEN_FOLDER_TEXT, p -> p
+                                .add(new DirectoryMenuItem(this.repository.getBaseDir()))
+                                .separator()
+                                .addAll(dirs.stream().map(DirectoryMenuItem::new).toList())
+                        )
+                )
+                .peek(items -> {
                     int yOffset = this.hasHeader(items) ? this.contextMenu.getItemHeight() : 0;
                     this.contextMenu.open(mouseX, mouseY - yOffset, items);
                 });
