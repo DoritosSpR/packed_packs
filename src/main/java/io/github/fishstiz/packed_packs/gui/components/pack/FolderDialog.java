@@ -119,7 +119,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         ContextMenuContainer.super.buildItems(
                 builder.when(this.folderPack != null && this.isOpen())
                         .ifTrue(folderMenuBuilder -> folderMenuBuilder
-                                .add(PackMenuHeader.withItem(this.folderPack, this.folderSprite))
+                                .add(new PackMenuHeader(this.folderPack, this.folderSprite))
                                 .simpleItem(BACK_TEXT, () -> this.setOpen(false))
                                 .when(this.root().getChildAt(mouseX, mouseY).isEmpty())
                                 .ifTrue(b -> b

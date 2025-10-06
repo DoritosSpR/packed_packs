@@ -83,13 +83,12 @@ public class MenuItemBuilder {
         return new PredicateChain<>(this.self(), t != null, t);
     }
 
-    public MenuItemBuilder then(Consumer<MenuItemBuilder> builderAction) {
-        builderAction.accept(this.self());
-        return this.self();
+    public <E> IterableChain<E> iterate(Iterable<E> iterable) {
+        return new IterableChain<>(this, iterable);
     }
 
-    public MenuItemBuilder peek(BiConsumer<List<MenuItem>, MenuItemBuilder> action) {
-        action.accept(Collections.unmodifiableList(this.items), this.self());
+    public MenuItemBuilder peek(Consumer<List<MenuItem>> action) {
+        action.accept(Collections.unmodifiableList(this.items));
         return this.self();
     }
 
@@ -97,19 +96,49 @@ public class MenuItemBuilder {
         return new ArrayList<>(this.items);
     }
 
-    public static class ConditionalChain extends MenuItemBuilder {
+    protected static abstract class AbstractChain extends MenuItemBuilder {
         protected final MenuItemBuilder builder;
-        protected final boolean condition;
 
-        ConditionalChain(MenuItemBuilder builder, boolean condition) {
+        AbstractChain(MenuItemBuilder builder) {
             super(builder.items);
             this.builder = builder;
-            this.condition = condition;
         }
 
         @Override
         protected MenuItemBuilder self() {
             return this.builder;
+        }
+    }
+
+    public static class IterableChain<E> extends AbstractChain {
+        protected final Iterable<E> iterable;
+
+        IterableChain(MenuItemBuilder builder, Iterable<E> iterable) {
+            super(builder);
+            this.iterable = iterable;
+        }
+
+        public MenuItemBuilder map(Function<E, MenuItem> itemFactory) {
+            for (E e : this.iterable) {
+                this.builder.add(itemFactory.apply(e));
+            }
+            return this.self();
+        }
+
+        public MenuItemBuilder forEach(BiConsumer<E, MenuItemBuilder> action) {
+            for (E e : this.iterable) {
+                action.accept(e, this.self());
+            }
+            return this.self();
+        }
+    }
+
+    public static class ConditionalChain extends AbstractChain {
+        protected final boolean condition;
+
+        ConditionalChain(MenuItemBuilder builder, boolean condition) {
+            super(builder);
+            this.condition = condition;
         }
 
         public ConditionalChain ifTrue(Consumer<MenuItemBuilder> builderAction) {
