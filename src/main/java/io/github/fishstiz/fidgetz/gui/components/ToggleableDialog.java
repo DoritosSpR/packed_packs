@@ -132,7 +132,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
 
     @Override
     public @NotNull List<? extends GuiEventListener> children() {
-        return this.isOpen() ? List.copyOf(this.children) : GuiUtil.EMPTY_CHILDREN;
+        return this.isOpen() ? this.children : GuiUtil.EMPTY_CHILDREN;
     }
 
     @Override
