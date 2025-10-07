@@ -15,7 +15,7 @@ public class ToastUtil {
     public static void onDevModeToggleToast(boolean enabled) {
         Component enableText = enabled ? CommonComponents.OPTION_ON : CommonComponents.OPTION_OFF;
         SystemToast.addOrUpdate(
-                Minecraft.getInstance().getToastManager(),
+                Minecraft.getInstance().getToasts(),
                 DEV_MODE_ID,
                 ResourceUtil.getModName(),
                 ResourceUtil.getText("dev_mode", enableText)

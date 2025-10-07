@@ -4,8 +4,8 @@ import com.google.common.util.concurrent.Runnables;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.util.ARGBColor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.ARGB;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.BooleanSupplier;
@@ -74,7 +74,7 @@ public class MenuItemBuilder<B extends MenuItemBuilder<B>> {
             this.activeSupplier = () -> true;
         }
         if (this.textColorSupplier == null) {
-            this.textColorSupplier = () -> this.activeSupplier.getAsBoolean() ? ARGB.white(1) : ContextMenu.DEFAULT_TEXT_INACTIVE_COLOR;
+            this.textColorSupplier = () -> this.activeSupplier.getAsBoolean() ? ARGBColor.WHITE : ContextMenu.DEFAULT_TEXT_INACTIVE_COLOR;
         }
     }
 

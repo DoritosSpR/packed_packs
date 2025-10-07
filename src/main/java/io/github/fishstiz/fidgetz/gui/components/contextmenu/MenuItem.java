@@ -2,8 +2,8 @@ package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.util.ARGBColor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.ARGB;
 import org.jetbrains.annotations.Nullable;
 
 public interface MenuItem {
@@ -30,7 +30,7 @@ public interface MenuItem {
     }
 
     default int textColor() {
-        return this.active() ? ARGB.white(1) : ContextMenu.DEFAULT_TEXT_INACTIVE_COLOR;
+        return this.active() ? ARGBColor.WHITE : ContextMenu.DEFAULT_TEXT_INACTIVE_COLOR;
     }
 
     static MenuItemBuilder<?> builder(Component text) {
