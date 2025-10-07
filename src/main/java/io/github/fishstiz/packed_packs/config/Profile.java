@@ -1,27 +1,24 @@
 package io.github.fishstiz.packed_packs.config;
 
-import com.google.gson.*;
-import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
-import java.lang.reflect.Type;
 import java.util.*;
+import java.util.function.Function;
 
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.mapOrDefault;
 
-@SuppressWarnings({"FieldMayBeFinal", "MismatchedQueryAndUpdateOfCollection"})
 public class Profile implements PackOptions, Serializable {
     public static final int NAME_MAX_LENGTH = 32;
+    private boolean locked = false;
     private long id;
     private String name;
-    private boolean locked = false;
-    private Map<String, PackEntry> packIds = new Object2ObjectLinkedOpenHashMap<>();
+    private PackEntry.PackMap packIds = new PackEntry.PackMap();
 
     public Profile() {
     }
@@ -31,9 +28,9 @@ public class Profile implements PackOptions, Serializable {
         this.name = trimName(name);
     }
 
-    private Profile(String name, List<String> packIds) {
+    private Profile(String name, PackEntry.PackMap packIds) {
         this(name);
-        this.packIds = this.toMap(packIds);
+        this.packIds = packIds;
     }
 
     void setId(long id) {
@@ -49,7 +46,21 @@ public class Profile implements PackOptions, Serializable {
     }
 
     public void setName(String name) {
-        if (!this.locked) this.name = trimName(name);
+        if (!this.isLocked()) this.name = trimName(name);
+    }
+
+    public Profile copy() {
+        String profileName = this.name;
+
+        if (profileName != null && !profileName.isBlank()) {
+            profileName += " - " + ResourceUtil.getText("profile.copy").getString();
+        }
+
+        return new Profile(profileName, new PackEntry.PackMap(this.packIds));
+    }
+
+    void setPackMap(PackEntry.PackMap packMap) {
+        this.packIds = packMap;
     }
 
     public List<String> getPackIds() {
@@ -58,15 +69,30 @@ public class Profile implements PackOptions, Serializable {
 
     public void setPacks(List<Pack> packs) {
         if (!this.locked) {
-            this.packIds = this.toMap(PackUtil.extractPackIds(packs));
+            this.setPackMap(this.toMap(PackUtil.extractPackIds(packs)));
         }
     }
 
-    public void setRequired(boolean required, Pack... packs) {
+    public void setHidden(@Nullable Boolean hidden, Pack... packs) {
         for (Pack pack : packs) {
             PackEntry entry = this.packIds.get(pack.getId());
             if (entry != null) {
-                this.packIds.put(pack.getId(), new PackEntry(pack.getId(), entry.hidden(), required, entry.fixed()));
+                if (Boolean.FALSE.equals(hidden)) hidden = null;
+                this.packIds.put(pack.getId(), new PackEntry(pack.getId(), hidden, entry.required(), entry.fixed()));
+            }
+        }
+    }
+
+    public void setRequired(@Nullable Boolean required, Pack... packs) {
+        for (Pack pack : packs) {
+            String id = pack.getId();
+            if (required != null && (id.equals(PackAssets.VANILLA_ID) || id.equals(PackAssets.FABRIC_ID))) {
+                continue;
+            }
+
+            PackEntry entry = this.packIds.get(id);
+            if (entry != null) {
+                this.packIds.put(id, new PackEntry(id, entry.hidden(), required, entry.fixed()));
             }
         }
     }
@@ -81,15 +107,6 @@ public class Profile implements PackOptions, Serializable {
                         entry.required(),
                         position != null ? PackEntry.SerializedPosition.get(position) : null
                 ));
-            }
-        }
-    }
-
-    public void setHidden(boolean hidden, Pack... packs) {
-        for (Pack pack : packs) {
-            PackEntry entry = this.packIds.get(pack.getId());
-            if (entry != null) {
-                this.packIds.put(pack.getId(), new PackEntry(pack.getId(), hidden, entry.required(), entry.fixed()));
             }
         }
     }
@@ -109,47 +126,47 @@ public class Profile implements PackOptions, Serializable {
 
     @Override
     public boolean isRequired(Pack pack) {
-        return Boolean.TRUE.equals(mapOrDefault(this.packIds.get(pack.getId()), pack.isRequired(), PackEntry::required));
+        return Boolean.TRUE.equals(mapOrDefault(this.packIds.get(pack.getId()), false, PackEntry::required));
     }
 
     @Override
     public boolean isFixed(Pack pack) {
-        return mapOrDefault(this.packIds.get(pack.getId()), pack.isFixedPosition(), packEntry -> packEntry.fixed != null);
+        return mapOrDefault(this.packIds.get(pack.getId()), false, entry -> entry.fixed() != null);
     }
 
     @Override
-    public Pack.Position getPosition(Pack pack) {
+    public @Nullable Pack.Position getPosition(Pack pack) {
         PackEntry entry = this.packIds.get(pack.getId());
-        if (entry != null && entry.fixed != null) {
-            return entry.fixed.position;
+        if (entry != null && entry.fixed() != null) {
+            return entry.fixed().pos();
         }
-        return pack.getDefaultPosition();
+        return null;
     }
 
     @Override
-    public PackSelectionConfig getSelectionConfig(Pack pack) {
+    public @Nullable PackSelectionConfig getSelectionConfig(Pack pack) {
         PackEntry packEntry = this.packIds.get(pack.getId());
-
-        if (packEntry != null) {
+        if (packEntry != null && (packEntry.required() != null || packEntry.fixed() != null)) {
             return new PackSelectionConfig(this.isRequired(pack), this.getPosition(pack), this.isFixed(pack));
         }
-
-        return pack.selectionConfig();
+        return null;
     }
 
-    // does not copy pack entry options
-    public Profile copy() {
-        String profileName = this.name;
-
-        if (profileName != null && !profileName.isBlank()) {
-            profileName += " - " + ResourceUtil.getText("profile.copy").getString();
-        }
-
-        return new Profile(profileName, this.getPackIds());
+    public boolean overridesRequired(Pack pack) {
+        return this.overridesProperty(pack, PackEntry::required);
     }
 
-    private Map<String, PackEntry> toMap(List<String> packIds) {
-        Map<String, PackEntry> entryMap = new Object2ObjectLinkedOpenHashMap<>();
+    public boolean overridesPosition(Pack pack) {
+        return this.overridesProperty(pack, PackEntry::fixed);
+    }
+
+    private boolean overridesProperty(Pack pack, Function<PackEntry, @Nullable Object> property) {
+        PackEntry entry = this.packIds.get(pack.getId());
+        return entry != null && property.apply(entry) != null;
+    }
+
+    private PackEntry.PackMap toMap(List<String> packIds) {
+        PackEntry.PackMap entryMap = new PackEntry.PackMap();
 
         for (String packId : packIds) {
             PackEntry entry = this.packIds.get(packId);
@@ -162,103 +179,5 @@ public class Profile implements PackOptions, Serializable {
     private static String trimName(String name) {
         if (name == null) return null;
         return name.length() <= NAME_MAX_LENGTH ? name : name.substring(0, NAME_MAX_LENGTH);
-    }
-
-    static class PackEntryMapAdapter implements JsonSerializer<Map<String, PackEntry>>, JsonDeserializer<Map<String, PackEntry>> {
-        @Override
-        public JsonElement serialize(Map<String, PackEntry> src, Type typeOfSrc, JsonSerializationContext context) {
-            JsonArray arr = new JsonArray();
-            for (PackEntry entry : src.values()) {
-                if (entry.hidden() == null && entry.required() == null && entry.fixed() == null) {
-                    arr.add(entry.id());
-                } else {
-                    arr.add(context.serialize(entry));
-                }
-            }
-            return arr;
-        }
-
-        @Override
-        public Map<String, PackEntry> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            Map<String, PackEntry> map = new Object2ObjectLinkedOpenHashMap<>();
-            for (JsonElement el : json.getAsJsonArray()) {
-                PackEntry entry = context.deserialize(el, PackEntry.class);
-                map.put(entry.id(), entry);
-            }
-            return map;
-        }
-    }
-
-    public record PackEntry(
-            String id,
-            @Nullable Boolean hidden,
-            @Nullable Boolean required,
-            @Nullable SerializedPosition fixed
-    ) implements Serializable {
-        private static final String ID_SERIALIZED_NAME = "id";
-        private static final String HIDDEN_SERIALIZED_NAME = "hidden";
-        private static final String REQUIRED_SERIALIZED_NAME = "required";
-        private static final String FIXED_SERIALIZED_NAME = "fixed";
-
-        public PackEntry(String id) {
-            this(id, null, null, null);
-        }
-
-        enum SerializedPosition {
-            TOP(Pack.Position.TOP),
-            BOTTOM(Pack.Position.BOTTOM);
-
-            final Pack.Position position;
-
-            SerializedPosition(Pack.Position position) {
-                this.position = position;
-            }
-
-            public static SerializedPosition get(Pack.Position position) {
-                return switch (position) {
-                    case TOP -> TOP;
-                    case BOTTOM -> BOTTOM;
-                };
-            }
-        }
-
-        static class Adapter implements JsonSerializer<PackEntry>, JsonDeserializer<PackEntry> {
-            @Override
-            public JsonElement serialize(PackEntry src, Type typeOfSrc, JsonSerializationContext context) {
-                JsonObject obj = new JsonObject();
-                obj.addProperty("id", src.id());
-                if (src.hidden() != null) obj.addProperty(HIDDEN_SERIALIZED_NAME, src.hidden());
-                if (src.required() != null) obj.addProperty(REQUIRED_SERIALIZED_NAME, src.required());
-                if (src.fixed() != null) obj.addProperty(FIXED_SERIALIZED_NAME, src.fixed().name());
-                return obj;
-            }
-
-            @Override
-            public PackEntry deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-                if (json.isJsonPrimitive() && json.getAsJsonPrimitive().isString()) {
-                    return new PackEntry(json.getAsString());
-                }
-
-                JsonObject obj = json.getAsJsonObject();
-
-                String id = Objects.requireNonNull(obj.get(ID_SERIALIZED_NAME).getAsString(), "'id' in pack entry must not be null");
-                Boolean hidden = obj.has(HIDDEN_SERIALIZED_NAME) ? obj.get(HIDDEN_SERIALIZED_NAME).getAsBoolean() : null;
-                Boolean required = obj.has(REQUIRED_SERIALIZED_NAME) ? obj.get(REQUIRED_SERIALIZED_NAME).getAsBoolean() : null;
-                SerializedPosition fixed = null;
-                if (obj.has(FIXED_SERIALIZED_NAME)) {
-                    String position = obj.get(FIXED_SERIALIZED_NAME).getAsString();
-                    try {
-                        fixed = SerializedPosition.valueOf(position.toUpperCase());
-                    } catch (IllegalArgumentException e) {
-                        PackedPacks.LOGGER.error(
-                                "[packed_packs] Invalid value for key 'fixed': '{}' in {}. Expected one of {}",
-                                position, id, SerializedPosition.values()
-                        );
-                    }
-                }
-
-                return new PackEntry(id, hidden, required, fixed);
-            }
-        }
     }
 }

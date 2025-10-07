@@ -13,7 +13,6 @@ import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
@@ -83,9 +82,6 @@ public record Toggleable(
     }
 
     public static Sprite getDefaultIcon(boolean enabled) {
-        ResourceLocation icon = enabled
-                ? ResourceUtil.getVanillaSprite("container/beacon/confirm")
-                : ResourceUtil.getVanillaSprite("container/beacon/cancel");
-        return new Sprite(icon, 18, 18);
+        return enabled ? GuiConstants.RADIO_ON_SPRITE : GuiConstants.RADIO_OFF_SPRITE;
     }
 }

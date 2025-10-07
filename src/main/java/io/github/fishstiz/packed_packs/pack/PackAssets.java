@@ -6,6 +6,7 @@ import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.config.PackOptions;
+import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
@@ -29,10 +30,14 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public interface PackAssets extends PackOptions {
+    String HIGH_CONTRAST_ID = "high_contrast";
+    String VANILLA_ID = "vanilla";
+    String FABRIC_ID = "fabric";
     String ICON_FILENAME = "pack.png";
     String ZIP_PACK_EXTENSION = ".zip";
     ResourceLocation DEFAULT_FOLDER_ICON = ResourceUtil.getResource("textures/misc/unknown_folder.png");
@@ -55,6 +60,10 @@ public interface PackAssets extends PackOptions {
     Config.Packs getConfig();
 
     Folder getFolderConfig(@Nullable FolderPack folderPack);
+
+    @Nullable Profile getProfile();
+
+    List<Pack> flattenPacks(List<Pack> grouped);
 
     default boolean deletePack(Pack pack) {
         if (pack == null || this.isEnabled(pack)) {
