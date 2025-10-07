@@ -2,14 +2,21 @@ package io.github.fishstiz.packed_packs.gui.components.profile;
 
 import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItem;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
+import io.github.fishstiz.fidgetz.util.ARGBColor;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -26,7 +33,7 @@ import java.util.function.Supplier;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.LOCK_SPRITE;
 
-public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
+public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implements ContextMenuContainer {
     private static final int ITEM_HEIGHT = 20;
     private static final Component EMPTY_TEXT = ResourceUtil.getText("profile.empty");
     private static final Component DELETE_TEXT = ResourceUtil.getText("profile.delete");
@@ -85,7 +92,7 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
         }
     }
 
-    public class Entry extends AbstractDynamicList<Entry>.Entry {
+    public class Entry extends AbstractDynamicList<Entry>.Entry implements ContextMenuProvider {
         private final Profile profile;
         private final List<FidgetzButton<Void>> children = new ArrayList<>();
         private final FidgetzButton<Void> selectButton;
@@ -122,6 +129,13 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
 
             this.deleteButton.render(guiGraphics, mouseX, mouseY, partialTick);
             this.selectButton.render(guiGraphics, mouseX, mouseY, partialTick);
+
+            if (PackedPacks.CONFIG.isDevMode()) {
+                int borderColor = this.profile.isLocked() ? Theme.RED_700.getARGB() : Theme.BLUE_500.getARGB();
+                int foregroundColor = ARGBColor.withAlpha(borderColor, 0.25f);
+                guiGraphics.renderOutline(left, top, width, height, borderColor);
+                guiGraphics.fill(left, top, left + width, top + height, foregroundColor);
+            }
         }
 
         @Override
@@ -137,6 +151,35 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> {
         @Override
         public void visitWidgets(Consumer<AbstractWidget> consumer) {
             this.children.forEach(consumer);
+        }
+
+        @Override
+        public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
+            if (!PackedPacks.CONFIG.isDevMode()) return;
+
+            Component text;
+            Sprite icon;
+            if (this.profile.isLocked()) {
+                text = ResourceUtil.getText("profile.unlock");
+                icon = new Sprite(ResourceUtil.getVanillaSprite("widget/unlocked_button_disabled"), 20, 20);
+            } else {
+                text = ResourceUtil.getText("profile.lock");
+                icon = LOCK_SPRITE;
+            }
+
+            MenuItem menuItem = MenuItem.builder(text)
+                    .background(GuiConstants.DEVELOPER_MODE_ITEM_BACKGROUND)
+                    .action(() -> {
+                        this.profile.setLocked(!this.profile.isLocked());
+                        ProfileList.this.refresh();
+                        if (this.profile == ProfileList.this.current.get()) {
+                            ProfileList.this.onSelect.accept(this.profile);
+                        }
+                    })
+                    .icon(icon)
+                    .build();
+
+            builder.separatorIfNonEmpty().add(menuItem);
         }
     }
 }

@@ -4,6 +4,7 @@ import static com.mojang.blaze3d.platform.InputConstants.*;
 import static net.minecraft.client.gui.screens.Screen.*;
 
 public class InputUtil {
+    public static final String DEV_MODE_SHORTCUT = "CTRL + SHIFT + I";
     public static final int MOUSE_BUTTON_BACK = 3;
     public static final int MOUSE_BUTTON_FORWARD = 4;
     public static final int MOD_SHIFT = 1;
@@ -76,6 +77,10 @@ public class InputUtil {
 
     public static boolean isOpenFolder(int keyCode, int modifiers) {
         return modifiers == MOD_ALT + MOD_SHIFT && keyCode == KEY_R;
+    }
+
+    public static boolean isDeveloperMode(int keyCode, int modifiers) {
+        return modifiers == MOD_CONTROL + MOD_SHIFT && keyCode == KEY_I;
     }
 
     public static boolean noModifiers(int modifiers) {

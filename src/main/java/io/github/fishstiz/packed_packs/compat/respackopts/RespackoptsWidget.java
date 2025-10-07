@@ -2,11 +2,16 @@ package io.github.fishstiz.packed_packs.compat.respackopts;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
+import io.github.fishstiz.fidgetz.gui.components.Fidgetz;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
+import io.github.fishstiz.packed_packs.config.Preferences;
+import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
 import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
 import io.gitlab.jfronny.respackopts.RespackoptsClient;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.layouts.LayoutElement;
@@ -16,14 +21,16 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
 
-public class RespackoptsWidget extends AbstractButton {
+public class RespackoptsWidget extends AbstractButton implements ContextMenuProvider, Fidgetz {
     private final ResourcePackEntryWidget wrapped;
     private final PackSelectionModel.Entry model;
     private final LayoutElement container;
+    private final @Nullable Toggleable toggleable;
 
     private RespackoptsWidget(LayoutElement container, ResourcePackEntryWidget wrapped, PackSelectionModel.Entry model) {
         super(0, 0, 0, 0, Component.literal(Mod.RESPACKOPTS.getId()));
 
+        this.toggleable = PackedPacks.CONFIG.isDevMode() ? new Toggleable(Preferences.INSTANCE.respackoptsButton) : null;
         this.container = container;
         this.wrapped = wrapped;
         this.model = model;
@@ -55,12 +62,16 @@ public class RespackoptsWidget extends AbstractButton {
         this.setX((this.container.getX() + this.container.getWidth()) - width - marginRight);
         this.setY(this.container.getY() + (this.container.getHeight() - height) / 2);
 
-        this.isHovered = guiGraphics.containsPointInScissor(mouseX, mouseY) && this.isMouseOver(mouseX, mouseY);
+        this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
 
         PoseStack poseStack = guiGraphics.pose();
         poseStack.pushPose();
         poseStack.translate(0, 0, 1f);
         this.wrapped.render(this.model, guiGraphics, this.getX(), this.getY(), this.isHovered, partialTick);
+
+        if (this.toggleable != null) {
+            this.toggleable.render(guiGraphics, this.getX(), this.getY(), this.getWidth(), this.getHeight(), partialTick);
+        }
         poseStack.popPose();
     }
 
@@ -71,14 +82,7 @@ public class RespackoptsWidget extends AbstractButton {
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        boolean isMouseOver = super.isMouseOver(mouseX, mouseY);
-        boolean isCoveredAtPoint = false;
-
-        if (Minecraft.getInstance().screen instanceof ToggleableDialogContainer dialogContainer) {
-            isCoveredAtPoint = dialogContainer.isChildCoveredAtPoint(this, mouseX, mouseY);
-        }
-
-        return isMouseOver && !isCoveredAtPoint;
+        return super.isMouseOver(mouseX, mouseY) && Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     public static boolean isForceReload() {
@@ -90,5 +94,12 @@ public class RespackoptsWidget extends AbstractButton {
      */
     private static boolean isSelectable(Pack pack) {
         return !pack.isFixedPosition() || !pack.isRequired();
+    }
+
+    @Override
+    public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
+        if (this.toggleable != null) {
+            this.toggleable.buildContext(builder);
+        }
     }
 }
