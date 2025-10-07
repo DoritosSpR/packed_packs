@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.gui.components.profile;
 
 import io.github.fishstiz.fidgetz.gui.components.*;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import net.minecraft.client.Minecraft;
@@ -12,7 +13,7 @@ import net.minecraft.network.chat.Component;
 
 import static io.github.fishstiz.fidgetz.util.DrawUtil.DEMO_BACKGROUND;
 
-public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> {
+public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> implements ContextMenuContainer {
     private static final int SPACING = 8;
     private static final int MIN_WIDTH = 100;
     private final FidgetzButton<Void> closeButton;

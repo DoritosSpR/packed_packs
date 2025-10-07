@@ -1,12 +1,14 @@
 package io.github.fishstiz.packed_packs.compat;
 
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.etf.ETFButtonFactory;
 import io.github.fishstiz.packed_packs.compat.resourcify.ResourcifyButtons;
 import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsUtil;
 import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsWidget;
 import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFactory;
 import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDEditButtonWidget;
+import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -25,8 +27,16 @@ public class ModAdditions {
         if (resourcePacks) {
             Screen currentScreen = Minecraft.getInstance().screen;
 
-            Mod.ETF.wrapError(header, currentScreen, (layout, previous) -> layout.addChild(ETFButtonFactory.create(previous)));
-            Mod.VTD.wrapError(header, currentScreen, (layout, previous) -> layout.addChild(VTDButtonFactory.create(previous)));
+            Mod.ETF.wrapError(header, currentScreen, (layout, previous) -> {
+                if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.etfButton.get()) {
+                    layout.addChild(ETFButtonFactory.create(previous));
+                }
+            });
+            Mod.VTD.wrapError(header, currentScreen, (layout, previous) -> {
+                if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.vtdButton.get()) {
+                    layout.addChild(VTDButtonFactory.create(previous));
+                }
+            });
         }
 
         Mod.RESOURCIFY.wrapError(header, original, original.getTitle(), (layout, packScreen, title) -> {
@@ -42,15 +52,19 @@ public class ModAdditions {
     public static void addToEntry(boolean resourcePacks, PackListBase<?>.Entry packListEntry) {
         if (resourcePacks) {
             Mod.RESPACKOPTS.wrapError(packListEntry, entry -> {
-                RespackoptsWidget respackOptsWidget = RespackoptsWidget.create(entry, entry.getPack());
-                if (respackOptsWidget != null) {
-                    entry.addTopRenderableOnly(entry.prependWidget(respackOptsWidget));
+                if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.respackoptsButton.get()) {
+                    RespackoptsWidget respackOptsWidget = RespackoptsWidget.create(entry, entry.getPack());
+                    if (respackOptsWidget != null) {
+                        entry.addTopRenderableOnly(entry.prependWidget(respackOptsWidget));
+                    }
                 }
             });
             Mod.VTD.wrapError(packListEntry, entry -> {
-                VTDEditButtonWidget vtdEditButtonWidget = VTDEditButtonWidget.create(Minecraft.getInstance().screen, entry);
-                if (vtdEditButtonWidget != null) {
-                    entry.addTopRenderableOnly(entry.prependWidget(vtdEditButtonWidget));
+                if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.vtdEditButton.get()) {
+                    VTDEditButtonWidget vtdEditButtonWidget = VTDEditButtonWidget.create(Minecraft.getInstance().screen, entry);
+                    if (vtdEditButtonWidget != null) {
+                        entry.addTopRenderableOnly(entry.prependWidget(vtdEditButtonWidget));
+                    }
                 }
             });
         }

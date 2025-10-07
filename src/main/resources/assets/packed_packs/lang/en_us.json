@@ -1,4 +1,5 @@
 {
+  "packed_packs.dev_mode": "Developer Mode: %1$s",
   "packed_packs.folder": "Folder",
   "packed_packs.folder.open": "Show Packs...",
   "packed_packs.file.open": "Open File",
@@ -10,6 +11,8 @@
   "packed_packs.file.parent.open": "Show in File Manager",
   "packed_packs.refresh": "Refresh Packs",
   "packed_packs.profile": "Saved Profiles",
+  "packed_packs.profile.lock": "Lock Profile",
+  "packed_packs.profile.unlock": "Unlock Profile",
   "packed_packs.profile.empty": "No profiles found.",
   "packed_packs.profile.none": "No Profile",
   "packed_packs.profile.new": "New",
@@ -39,5 +42,15 @@
   "packed_packs.options.replace_screen": "Replace Pack Screen",
   "packed_packs.options.apply_on_close": "Apply Packs on Close",
   "packed_packs.options.hide_incompatible_warnings": "Hide Incompatible Warnings",
-  "packed_packs.options.hide_incompatible_warnings.info": "Hides the red background on incompatible packs."
+  "packed_packs.options.hide_incompatible_warnings.info": "Hides the red background on incompatible packs.",
+  "packed_packs.preferences.reset": "Reset Preferences",
+  "packed_packs.preferences.widgets.original_screen": "Go to Original Screen",
+  "packed_packs.preferences.widgets.options": "Options",
+  "packed_packs.preferences.widgets.action_bar": "Action Bar Toggle",
+  "packed_packs.preferences.widgets.toggle_incompatible": "Incompatible Toggle",
+  "packed_packs.preferences.widgets.folder_pack": "Folder Pack Buttons",
+  "packed_packs.preferences.widgets.etf_button": "ETF Button",
+  "packed_packs.preferences.widgets.respackopts_button": "Respackopts Buttons",
+  "packed_packs.preferences.widgets.vtd_button": "VTD Button",
+  "packed_packs.preferences.widgets.vtd_edit_button": "VTD Edit Buttons"
 }

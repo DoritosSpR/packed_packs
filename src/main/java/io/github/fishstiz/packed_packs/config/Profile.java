@@ -62,6 +62,42 @@ public class Profile implements PackOptions, Serializable {
         }
     }
 
+    public void setRequired(boolean required, Pack... packs) {
+        for (Pack pack : packs) {
+            PackEntry entry = this.packIds.get(pack.getId());
+            if (entry != null) {
+                this.packIds.put(pack.getId(), new PackEntry(pack.getId(), entry.hidden(), required, entry.fixed()));
+            }
+        }
+    }
+
+    public void setPosition(@Nullable Pack.Position position, Pack... packs) {
+        for (Pack pack : packs) {
+            PackEntry entry = this.packIds.get(pack.getId());
+            if (entry != null) {
+                this.packIds.put(pack.getId(), new PackEntry(
+                        pack.getId(),
+                        entry.hidden(),
+                        entry.required(),
+                        position != null ? PackEntry.SerializedPosition.get(position) : null
+                ));
+            }
+        }
+    }
+
+    public void setHidden(boolean hidden, Pack... packs) {
+        for (Pack pack : packs) {
+            PackEntry entry = this.packIds.get(pack.getId());
+            if (entry != null) {
+                this.packIds.put(pack.getId(), new PackEntry(pack.getId(), hidden, entry.required(), entry.fixed()));
+            }
+        }
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+    }
+
     public boolean isLocked() {
         return this.locked;
     }
@@ -176,6 +212,13 @@ public class Profile implements PackOptions, Serializable {
 
             SerializedPosition(Pack.Position position) {
                 this.position = position;
+            }
+
+            public static SerializedPosition get(Pack.Position position) {
+                return switch (position) {
+                    case TOP -> TOP;
+                    case BOTTOM -> BOTTOM;
+                };
             }
         }
 
