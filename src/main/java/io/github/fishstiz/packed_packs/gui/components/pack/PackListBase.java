@@ -91,7 +91,13 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     protected void queryPacks() {
         this.queried.clear();
-        CollectionsUtil.addIf(this.queried, this.packs, pack -> !this.packAssets.isHidden(pack));
+
+        if (PackedPacks.CONFIG.isDevMode()) {
+            this.queried.addAll(this.packs);
+        } else {
+            CollectionsUtil.addIf(this.queried, this.packs, pack -> !this.packAssets.isHidden(pack));
+        }
+
         this.query.apply(this.queried);
         this.selection.retainAll(this.queried);
         this.refreshEntries();
@@ -119,6 +125,10 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     @Override
     public @NotNull ImmutableList<Pack> copyPacks() {
         return ImmutableList.copyOf(this.packs);
+    }
+
+    public ImmutableList<Pack> copyFlattenedPacks() {
+        return ImmutableList.copyOf(this.packAssets.flattenPacks(this.packs));
     }
 
     @Override
@@ -786,6 +796,9 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             this.renderTop(guiGraphics, mouseX, mouseY, partialTick);
         }
 
+        protected void onBuildHeader(ContextMenuItemBuilder builder) {
+        }
+
         @Override
         public final void render(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
             this.renderWidget(guiGraphics, top, left, width, height, mouseX, mouseY, hovering && PackListBase.this.isHovered() && PackListBase.this.beforeScrollbarX(mouseX), partialTick);
@@ -796,6 +809,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             PackListBase.this.setFocused(this);
             ContextMenuContainer.super.buildItems(builder
                             .add(new PackMenuHeader(this.pack, this.packWidget.getSprite()))
+                            .then(this::onBuildHeader)
                             .whenNonNull(this.folderWidget)
                             .ifTrue(b -> b
                                     .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this::openFolder)

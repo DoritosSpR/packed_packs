@@ -2,12 +2,13 @@ package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
 import org.jetbrains.annotations.Nullable;
 
 public interface MenuItem {
-    MenuItem SEPARATOR = MenuItem.builder(Component.empty()).autoSeparate(false).build();
+    MenuItem SEPARATOR = MenuItem.builder(CommonComponents.EMPTY).autoSeparate(false).build();
 
     Component text();
 
@@ -22,6 +23,10 @@ public interface MenuItem {
     }
 
     default boolean shouldAutoSeparate() {
+        return true;
+    }
+
+    default boolean shouldCloseOnInteract() {
         return true;
     }
 

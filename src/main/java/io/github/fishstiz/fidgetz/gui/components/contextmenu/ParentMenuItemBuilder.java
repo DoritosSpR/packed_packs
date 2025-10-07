@@ -3,12 +3,14 @@ package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 
 public class ParentMenuItemBuilder extends MenuItemBuilder<ParentMenuItemBuilder> {
     private final List<MenuItem> children = new ArrayList<>();
@@ -36,7 +38,8 @@ public class ParentMenuItemBuilder extends MenuItemBuilder<ParentMenuItemBuilder
                 this.action,
                 List.copyOf(this.children),
                 this.background,
-                this.icon,
+                this.iconSupplier,
+                this.shouldCloseOnInteract,
                 this.shouldAutoSeparate,
                 this.activeSupplier,
                 this.textColorSupplier
@@ -48,7 +51,8 @@ public class ParentMenuItemBuilder extends MenuItemBuilder<ParentMenuItemBuilder
             Runnable action,
             List<MenuItem> children,
             RenderableRect background,
-            Sprite icon,
+            Supplier<@Nullable Sprite> iconSupplier,
+            boolean shouldCloseOnInteract,
             boolean shouldAutoSeparate,
             BooleanSupplier activeSupplier,
             IntSupplier textColorSupplier
@@ -61,6 +65,11 @@ public class ParentMenuItemBuilder extends MenuItemBuilder<ParentMenuItemBuilder
         @Override
         public int textColor() {
             return this.textColorSupplier.getAsInt();
+        }
+
+        @Override
+        public @Nullable Sprite icon() {
+            return this.iconSupplier.get();
         }
     }
 }

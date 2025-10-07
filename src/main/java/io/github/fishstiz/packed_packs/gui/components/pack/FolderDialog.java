@@ -83,9 +83,9 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         this.folderTitle.setMessage(folderPack.getTitle());
         packAssets.getOrLoadIcon(folderPack, icon -> this.folderSprite = Sprite.of16(icon));
 
-        this.root().onFolderPackChange(this.folderPack);
         this.setBoundingBox(parent);
         this.updateBounds();
+        this.root().onChangeParent(parent);
     }
 
     @Override
