@@ -22,7 +22,11 @@
     "gui.HeaderAndFooterLayoutAccess",
     "gui.MinecraftMixin",
     "gui.OptionsScreenMixin",
-    "gui.PackSelectionScreenMixin"
+    "gui.PackSelectionScreenMixin",
+    "overrides.OptionsMixin",
+    "overrides.PackMixin",
+    "overrides.PackRepositoryMixin",
+    "overrides.PackSelectionModelMixin"
   ],
   "plugin": "io.github.fishstiz.packed_packs.PackedPacksMixinConfigPlugin"
 }

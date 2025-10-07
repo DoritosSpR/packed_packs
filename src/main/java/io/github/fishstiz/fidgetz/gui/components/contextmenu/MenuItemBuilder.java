@@ -10,12 +10,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 
 public class MenuItemBuilder<B extends MenuItemBuilder<B>> {
     protected final Component text;
     protected Runnable action = Runnables.doNothing();
     protected RenderableRect background;
-    protected Sprite icon;
+    protected Supplier<@Nullable Sprite> iconSupplier;
+    protected boolean shouldCloseOnInteract = true;
     protected boolean shouldAutoSeparate = true;
     protected BooleanSupplier activeSupplier;
     protected IntSupplier textColorSupplier;
@@ -45,7 +47,17 @@ public class MenuItemBuilder<B extends MenuItemBuilder<B>> {
     }
 
     public B icon(@Nullable Sprite icon) {
-        this.icon = icon;
+        this.iconSupplier = () -> icon;
+        return this.self();
+    }
+
+    public B icon(Supplier<@Nullable Sprite> icon) {
+        this.iconSupplier = icon;
+        return this.self();
+    }
+
+    public B closeOnInteract(boolean value) {
+        this.shouldCloseOnInteract = value;
         return this.self();
     }
 
@@ -76,6 +88,9 @@ public class MenuItemBuilder<B extends MenuItemBuilder<B>> {
         if (this.textColorSupplier == null) {
             this.textColorSupplier = () -> this.activeSupplier.getAsBoolean() ? ARGBColor.WHITE : ContextMenu.DEFAULT_TEXT_INACTIVE_COLOR;
         }
+        if (this.iconSupplier == null) {
+            this.iconSupplier = () -> null;
+        }
     }
 
     public MenuItem build() {
@@ -85,7 +100,8 @@ public class MenuItemBuilder<B extends MenuItemBuilder<B>> {
                 this.text,
                 this.action,
                 this.background,
-                this.icon,
+                this.iconSupplier,
+                this.shouldCloseOnInteract,
                 this.shouldAutoSeparate,
                 this.activeSupplier,
                 this.textColorSupplier
@@ -96,7 +112,8 @@ public class MenuItemBuilder<B extends MenuItemBuilder<B>> {
             Component text,
             Runnable action,
             RenderableRect background,
-            Sprite icon,
+            Supplier<@Nullable Sprite> iconSupplier,
+            boolean shouldCloseOnInteract,
             boolean shouldAutoSeparate,
             BooleanSupplier activeSupplier,
             IntSupplier textColorSupplier
@@ -109,6 +126,11 @@ public class MenuItemBuilder<B extends MenuItemBuilder<B>> {
         @Override
         public int textColor() {
             return this.textColorSupplier.getAsInt();
+        }
+
+        @Override
+        public @Nullable Sprite icon() {
+            return this.iconSupplier.get();
         }
     }
 }

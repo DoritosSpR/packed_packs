@@ -5,7 +5,6 @@ import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
-import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItem;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
@@ -18,6 +17,7 @@ import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
+import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.LOCK_SPRITE;
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
 public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implements ContextMenuContainer {
     private static final int ITEM_HEIGHT = 20;
@@ -131,11 +131,33 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
             this.selectButton.render(guiGraphics, mouseX, mouseY, partialTick);
 
             if (PackedPacks.CONFIG.isDevMode()) {
-                int borderColor = this.profile.isLocked() ? Theme.RED_700.getARGB() : Theme.BLUE_500.getARGB();
+                int borderColor;
+
+                if (this.isDefault() && this.profile.isLocked()) {
+                    borderColor = Theme.PURPLE_500.getARGB();
+                } else if (this.isDefault()) {
+                    borderColor = Theme.BLUE_500.getARGB();
+                } else if (this.profile.isLocked()) {
+                    borderColor = Theme.RED_700.getARGB();
+                } else {
+                    borderColor = Theme.WHITE.getARGB();
+                }
+
                 int foregroundColor = ARGBColor.withAlpha(borderColor, 0.25f);
+
                 guiGraphics.renderOutline(left, top, width, height, borderColor);
                 guiGraphics.fill(left, top, left + width, top + height, foregroundColor);
             }
+        }
+
+        private boolean isDefault() {
+            return ProfileList.this.config.getDefaultProfile() == this.profile ||
+                   ObjectsUtil.testNullable(ProfileList.this.config.getDefaultProfile(), p -> p.getId() == this.profile.getId());
+        }
+
+        private boolean isSelected() {
+            return ProfileList.this.current.get() == this.profile ||
+                   ObjectsUtil.testNullable(ProfileList.this.current.get(), p -> p.getId() == this.profile.getId());
         }
 
         @Override
@@ -157,29 +179,28 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
         public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
             if (!PackedPacks.CONFIG.isDevMode()) return;
 
-            Component text;
-            Sprite icon;
-            if (this.profile.isLocked()) {
-                text = ResourceUtil.getText("profile.unlock");
-                icon = new Sprite(ResourceUtil.getVanillaSprite("widget/unlocked_button_disabled"), 20, 20);
-            } else {
-                text = ResourceUtil.getText("profile.lock");
-                icon = LOCK_SPRITE;
-            }
-
-            MenuItem menuItem = MenuItem.builder(text)
-                    .background(GuiConstants.DEVELOPER_MODE_ITEM_BACKGROUND)
-                    .action(() -> {
-                        this.profile.setLocked(!this.profile.isLocked());
-                        ProfileList.this.refresh();
-                        if (this.profile == ProfileList.this.current.get()) {
-                            ProfileList.this.onSelect.accept(this.profile);
-                        }
-                    })
-                    .icon(icon)
-                    .build();
-
-            builder.separatorIfNonEmpty().add(menuItem);
+            builder.separatorIfNonEmpty()
+                    .add(GuiConstants.devItem(ResourceUtil.getText("profile." + (this.profile.isLocked() ? "unlock" : "lock")))
+                            .icon(this.profile.isLocked() ? UNLOCK_SPRITE_SMALL : LOCK_SPRITE_SMALL)
+                            .action(() -> {
+                                this.profile.setLocked(!this.profile.isLocked());
+                                ProfileList.this.refresh();
+                                if (this.isSelected()) {
+                                    ProfileList.this.onSelect.accept(this.profile);
+                                }
+                            })
+                            .build()
+                    )
+                    .add(GuiConstants.devItem(ResourceUtil.getText("profile.default." + (this.isDefault() ? "unset" : "set")))
+                            .action(() -> {
+                                ProfileList.this.config.setDefaultProfile(this.isDefault() ? null : this.profile);
+                                ProfileList.this.refresh();
+                                if (this.isSelected()) {
+                                    ProfileList.this.onSelect.accept(this.profile);
+                                }
+                            })
+                            .build()
+                    );
         }
     }
 }

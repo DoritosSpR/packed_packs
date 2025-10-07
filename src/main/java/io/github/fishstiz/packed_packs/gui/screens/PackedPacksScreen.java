@@ -486,7 +486,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     @Override
     public void onProfileChange(@Nullable Profile previous, @Nullable Profile current) {
         if (previous != null) {
-            previous.setPacks(this.currentPacks.getList().copyPacks());
+            previous.setPacks(this.currentPacks.getList().copyFlattenedPacks());
         }
 
         if (current == null) {
@@ -505,12 +505,12 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     @Override
     public void onProfileCopy(@Nullable Profile original, @NotNull Profile copy) {
-        copy.setPacks(this.currentPacks.getList().copyPacks());
+        copy.setPacks(this.currentPacks.getList().copyFlattenedPacks());
     }
 
     private void applyProfile(@NotNull Profile profile) {
         List<Pack> available = this.availablePacks.getList().copyPacks();
-        List<Pack> current = this.repository.getPacksById(profile.getPackIds());
+        List<Pack> current = this.repository.getPacksByFlattenedIds(profile.getPackIds());
         PackRepositoryHelper.PackGroup packs = this.repository.validatePacks(available, current);
         this.availablePacks.getList().reload(packs.unselected());
         this.currentPacks.getList().reload(packs.selected());
@@ -519,7 +519,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     public void updateProfile(@Nullable Profile profile) {
         if (profile != null) {
-            profile.setPacks(this.currentPacks.getList().copyPacks());
+            profile.setPacks(this.currentPacks.getList().copyFlattenedPacks());
         }
     }
 
@@ -565,8 +565,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (folderPack == null) return;
 
         Folder folder = this.repository.getFolderConfig(folderPack);
-        if (folder != null) {
-            if (folder.setPacks(this.repository.validateAndOrderNestedPacks(folderPack, event.target().copyPacks()))) {
+        if (folder != null && this.isUnlocked()) {
+            if (folder.trySetPacks(this.repository.validateAndOrderNestedPacks(folderPack, event.target().copyPacks()))) {
                 folderPack.saveConfig(folder);
             }
             this.focusList(ObjectsUtil.firstNonNullOrDefault(this.availablePacks.getList(), this.folderDialog.getParent()));
@@ -654,6 +654,11 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     public void toggleDevMode() {
+        Profile profile = this.profiles.getProfile();
+        if (PackedPacks.CONFIG.isDevMode() && profile != null) {
+            profile.setPacks(this.currentPacks.getList().copyFlattenedPacks());
+        }
+
         PackedPacks.CONFIG.setDevMode(!PackedPacks.CONFIG.isDevMode());
         ToastUtil.onDevModeToggleToast(PackedPacks.CONFIG.isDevMode());
         this.rebuildWidgets();

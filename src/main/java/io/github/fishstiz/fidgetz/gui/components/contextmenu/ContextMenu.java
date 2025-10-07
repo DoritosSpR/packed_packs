@@ -265,7 +265,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         private ItemWidget(int width, int spacing, T item, ContextMenu parent) {
             super(0, 0, width, ITEM_HEIGHT, item.text());
             this.spacing = spacing;
-            this.text = FidgetzText.<Void>builder().alignLeft().setMessage(item.text()).build();
+            this.text = FidgetzText.<Void>builder().setOffsetY(MENU_POINT_OFFSET).alignLeft().setMessage(item.text()).build();
             this.parent = parent;
             this.item = item;
         }
@@ -282,7 +282,9 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
             if (this.item.active()) {
                 this.item.action().run();
             }
-            this.parent.closeCascade();
+            if (this.item.shouldCloseOnInteract()) {
+                this.parent.closeCascade();
+            }
         }
 
         protected void renderBackground(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
@@ -378,7 +380,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
             GuiRectangle childBounds = this.child.getBoundingBox();
             Direction parentDirection = this.parent.direction;
             Direction nextDirection = parentDirection.next(parent.screen, childBounds, parentDirection.getX(parentBounds));
-            int x = nextDirection.getX(parentBounds);
+            int x = nextDirection.getX(this);
             int y = this.getY();
             this.parent.visitChildren(menu -> {
                 if (menu != this.child) menu.setOpen(false);
@@ -396,9 +398,11 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
             if (this.item.active()) {
                 this.item.action().run();
                 this.child.forceOpen = !this.child.forceOpen || !this.child.isOpen();
-            }
-            if (!this.child.isOpen()) {
-                this.openChild();
+                if (!this.child.isOpen()) {
+                    this.openChild();
+                }
+            } else if (this.item.shouldCloseOnInteract()) {
+                this.parent.closeCascade();
             }
         }
 
@@ -417,14 +421,16 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
             int textWidth = width - (height + this.spacing);
             super.renderText(guiGraphics, x, y, textWidth, height, mouseX, mouseY, partialTick);
 
-            Font font = Minecraft.getInstance().font;
-            int caretWidth = font.width(CARET_RIGHT);
-            int caretHeight = font.lineHeight;
-            int caretX = (x + textWidth + this.spacing) + (height - caretWidth) / 2;
-            int caretY = y + (height - caretHeight) / 2;
-            int color = this.item.textColor();
+            if (this.item.active()) {
+                Font font = Minecraft.getInstance().font;
+                int caretWidth = font.width(CARET_RIGHT);
+                int caretHeight = font.lineHeight;
+                int caretX = (x + textWidth + this.spacing) + (height - caretWidth) / 2;
+                int caretY = y + (height - caretHeight) / 2;
+                int color = this.item.textColor();
 
-            guiGraphics.drawString(font, CARET_RIGHT, caretX, caretY, color, false);
+                guiGraphics.drawString(font, CARET_RIGHT, caretX, caretY, color, false);
+            }
         }
 
         @Override
@@ -442,7 +448,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
                 return;
             }
 
-            boolean hovered = this.isHovered && this.isWithinParentXBounds(mouseX, mouseY);
+            boolean hovered = this.isWithinParentXBounds(mouseX, mouseY) && guiGraphics.containsPointInScissor(mouseX, mouseY);
             ContextMenu sibling = this.parent.getOpenedChildMenu();
 
             if (!hovered && this.child.isOpen() && !this.child.forceOpen && (sibling == null || !sibling.isHoveredAtDirection(mouseX, mouseY))) {
