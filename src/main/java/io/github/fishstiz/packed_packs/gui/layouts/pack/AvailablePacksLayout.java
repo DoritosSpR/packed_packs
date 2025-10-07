@@ -6,10 +6,12 @@ import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.components.events.QueryEvent;
+import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.client.gui.components.Tooltip;
@@ -26,7 +28,6 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
 
     public AvailablePacksLayout(PackAssets packAssets, PackListEventListener listener) {
         super(new AvailablePackList(packAssets, listener));
-
         this.eventListener = listener;
     }
 
@@ -52,7 +53,7 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
                 .addListener(PackedPacks.CONFIG::setSort)
                 .setValue(PackedPacks.CONFIG.getSort())
                 .build();
-        this.compatButton = ToggleButton.<Void>builder()
+        this.compatButton = Toggleable.applyPref(Preferences.INSTANCE.toggleIncompatibleWidget, ToggleButton.<Void>builder())
                 .setMessage(COMPAT_TEXT)
                 .setTooltip(Tooltip.create(COMPAT_INFO))
                 .setSprite(ToggleButton.Sprites.of(
@@ -72,7 +73,10 @@ public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
 
         header.addFlexChild(this.getSearchField());
         header.addChild(sortButton);
-        header.addChild(compatButton);
+
+        if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.toggleIncompatibleWidget.get()) {
+            header.addChild(compatButton);
+        }
         header.addChild(this.getTransferButton());
     }
 }

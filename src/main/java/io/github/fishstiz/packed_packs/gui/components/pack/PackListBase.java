@@ -3,12 +3,15 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
-import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
+import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.transform.mixin.gui.AbstractSelectionListAccessor;
 import io.github.fishstiz.packed_packs.util.PackUtil;
@@ -445,6 +448,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         Entry entry = this.getEntry(this.getLastSelected());
         if (entry != null
+            && entry.folderWidget != null
             && entry.getPack() instanceof FolderPack folderPack
             && this.selection.size() == 1
             && isExpandFolder(keyCode, modifiers)) {
@@ -547,9 +551,9 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                     SPACING
             ));
 
-            if (this.pack instanceof FolderPack folderPack) {
+            if (this.pack instanceof FolderPack folderPack && (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.folderPackWidget.get())) {
                 this.folderWidget = this.addTopRenderableOnly(this.prependWidget(
-                        FidgetzButton.<FolderPack>builder()
+                        Toggleable.applyPref(Preferences.INSTANCE.folderPackWidget, FidgetzButton.<FolderPack>builder())
                                 .setTooltip(FOLDER_OPEN_INFO)
                                 .setHeight(this.packWidget.getHeight() / 3)
                                 .makeSquare()
@@ -794,13 +798,15 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         @Override
-        public void buildItems(MenuItemBuilder builder, int mouseX, int mouseY) {
+        public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
             PackListBase.this.setFocused(this);
             ContextMenuContainer.super.buildItems(builder
                             .add(new PackMenuHeader(this.pack, this.packWidget.getSprite()))
                             .whenNonNull(this.folderWidget)
                             .ifTrue(b -> b
-                                    .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this::openFolder))
+                                    .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this::openFolder)
+                                    .separator()
+                            )
                             .whenNonNull(((IPack) this.pack).packed_packs$getPath())
                             .ifTrue(b -> b
                                     .simpleItem(PackAssets.RENAME_FILE_TEXT, this::canOperateFile, this::renamePack)

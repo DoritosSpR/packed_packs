@@ -6,10 +6,15 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+
+import static io.github.fishstiz.packed_packs.PackedPacks.MOD_ID;
 
 public class Config implements Serializable {
+    private boolean devMode = false;
     private boolean showActionBar = false;
     private boolean hideIncompatible = false;
     private Query.SortOption sort = Query.SortOption.VANILLA;
@@ -18,6 +23,14 @@ public class Config implements Serializable {
     transient File file;
 
     Config() {
+    }
+
+    public boolean isDevMode() {
+        return this.devMode;
+    }
+
+    public void setDevMode(boolean devMode) {
+        this.devMode = devMode;
     }
 
     public void setShowActionBar(boolean showActionBar) {
@@ -57,6 +70,13 @@ public class Config implements Serializable {
             case CLIENT_RESOURCES -> this.getResourcepacks();
             case SERVER_DATA -> this.getDatapacks();
         };
+    }
+
+    public static Config load(Path directory) {
+        File file = directory.resolve(MOD_ID + ".json").toFile();
+        Config config = ConfigLoader.loadOrSave(file, Config.class, Config::new);
+        config.file = file;
+        return config;
     }
 
     public void save() {

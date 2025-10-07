@@ -12,6 +12,7 @@ import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Folder;
+import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.pack.*;
@@ -19,8 +20,10 @@ import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
+import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
 import io.github.fishstiz.packed_packs.pack.PackWatcher;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
+import io.github.fishstiz.packed_packs.util.ToastUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
@@ -39,6 +42,7 @@ import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import net.minecraft.Util;
 import net.minecraft.client.gui.ComponentPath;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LayoutSettings;
@@ -81,18 +85,15 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private final PackRepositoryHelper repository;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final HistoryManager<Snapshot> history = new HistoryManager<>();
+    private final ImmediateDebouncer<String> searchListener = new ImmediateDebouncer<>(this::clearHistory, 250);
     private final AvailablePacksLayout availablePacks;
     private final CurrentPacksLayout currentPacks;
     private final Config.Packs packsConfig;
     private final ProfilesLayout profiles;
-    private final ImmediateDebouncer<String> searchListener = new ImmediateDebouncer<>(this::clearHistory, 250);
     private final FolderDialog folderDialog;
-    private final Modal<LinearLayout> options = Modal.builder(this, new OptionsLayout().layout())
-            .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
-            .setCaptureFocus(true)
-            .build();
+    private final Modal<LinearLayout> options;
     private final FileRenameModal fileRenameModal;
-    private final ContextMenu contextMenu = ContextMenu.builder(this).build();
+    private final ContextMenu contextMenu;
     private final List<ToggleableDialog<?>> dialogs;
     private final List<PackList> packLists;
     private List<Path> additionalFolders;
@@ -106,7 +107,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
         this.previous = previous;
         this.original = original;
-
         this.packsConfig = PackedPacks.CONFIG.get(original.packType());
         this.profiles = new ProfilesLayout(
                 Sidebar.builder(this).setHeaderSettings(
@@ -118,8 +118,17 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.repository = new PackRepositoryHelper(this.original.repository(), this.original.packDir(), this.packsConfig, this.profiles::getProfile);
         this.availablePacks = new AvailablePacksLayout(this.repository, this);
         this.currentPacks = new CurrentPacksLayout(this.repository, this);
+        this.options = Modal.builder(this, new OptionsLayout().layout())
+                .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
+                .setCaptureFocus(true)
+                .build();
         this.folderDialog = FolderDialog.create(this, this.repository);
         this.fileRenameModal = new FileRenameModal(this, this.repository);
+        this.contextMenu = ContextMenu.builder(this)
+                .setSpacing(GuiConstants.SPACING)
+                .setBackground(Theme.GRAY_800.getARGB())
+                .setBorderColor(Theme.GRAY_500.getARGB())
+                .build();
         this.dialogs = List.of(this.options, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
         this.packLists = List.of(this.folderDialog.root(), this.availablePacks.getList(), this.currentPacks.getList());
 
@@ -145,6 +154,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.updateProfile(this.profiles.getProfile());
         this.packsConfig.setLastViewed(this.profiles.getProfile());
         PackedPacks.CONFIG.save();
+        Preferences.INSTANCE.save();
     }
 
     @Override
@@ -183,6 +193,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     private FlexLayout createHeader() {
         FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
+        final boolean devMode = PackedPacks.CONFIG.isDevMode();
+
         header.addChild(
                 FidgetzButton.builder()
                         .makeSquare()
@@ -192,37 +204,44 @@ public class PackedPacksScreen extends PackListEventHandler implements
                         .setOnPress(this.profiles.getSidebar()::toggle)
                         .build()
         );
-        header.addChild(
-                FidgetzButton.builder()
-                        .makeSquare()
-                        .setTooltip(Tooltip.create(ACTION_BAR_INFO))
-                        .setSprite(new Sprite(ResourceUtil.getIcon("filter"), Size.of16()))
-                        .setOnPress(this::toggleActionBar)
-                        .build()
-        );
+
+        if (devMode || Preferences.INSTANCE.actionBarWidget.get()) {
+            header.addChild(
+                    Toggleable.applyPref(Preferences.INSTANCE.actionBarWidget, FidgetzButton.<Void>builder())
+                            .makeSquare()
+                            .setTooltip(Tooltip.create(ACTION_BAR_INFO))
+                            .setSprite(new Sprite(ResourceUtil.getIcon("filter"), Size.of16()))
+                            .setOnPress(this::toggleActionBar)
+                            .build()
+            );
+        }
         header.addChild(this.profiles.getToggleNameButton());
         header.addFlexChild(this.profiles.getNameField());
 
         PackSelectionScreen packSelectionScreen = this.previous instanceof PackSelectionScreen s ? s : this.original.createDummy();
         ModAdditions.addToHeader(this.repository.isResourcePacks(), header, packSelectionScreen);
 
-        header.addChild(
-                FidgetzButton.builder()
-                        .makeSquare()
-                        .setMessage(OPTIONS_TEXT)
-                        .setTooltip(Tooltip.create(OPTIONS_TEXT))
-                        .setSprite(new Sprite(ResourceUtil.getIcon("gear"), Size.of16()))
-                        .setOnPress(this.options::toggle)
-                        .build()
-        );
-        header.addChild(
-                FidgetzButton.builder()
-                        .makeSquare()
-                        .setTooltip(Tooltip.create(ORIGINAL_SCREEN_INFO))
-                        .setSprite(new Sprite(ResourceUtil.getIcon("exit"), Size.of16()))
-                        .setOnPress(this::setOriginalScreen)
-                        .build()
-        );
+        if (devMode || Preferences.INSTANCE.optionsWidget.get()) {
+            header.addChild(
+                    Toggleable.applyPref(Preferences.INSTANCE.optionsWidget, FidgetzButton.<Void>builder())
+                            .makeSquare()
+                            .setMessage(OPTIONS_TEXT)
+                            .setTooltip(Tooltip.create(OPTIONS_TEXT))
+                            .setSprite(new Sprite(ResourceUtil.getIcon("gear"), Size.of16()))
+                            .setOnPress(this.options::toggle)
+                            .build()
+            );
+        }
+        if (devMode || Preferences.INSTANCE.originalScreenWidget.get()) {
+            header.addChild(
+                    Toggleable.applyPref(Preferences.INSTANCE.originalScreenWidget, FidgetzButton.<Void>builder())
+                            .makeSquare()
+                            .setTooltip(Tooltip.create(ORIGINAL_SCREEN_INFO))
+                            .setSprite(new Sprite(ResourceUtil.getIcon("exit"), Size.of16()))
+                            .setOnPress(this::setOriginalScreen)
+                            .build()
+            );
+        }
         return header;
     }
 
@@ -261,6 +280,13 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     public int getMaxWidth() {
         return this.width - GuiConstants.SPACING * 2;
+    }
+
+    @Override
+    protected void rebuildWidgets() {
+        if (this.minecraft != null) {
+            this.minecraft.setScreen(new PackedPacksScreen(this.previous, this.original));
+        }
     }
 
     @Override
@@ -320,17 +346,15 @@ public class PackedPacksScreen extends PackListEventHandler implements
     public void onClose() {
         if (this.minecraft == null) return;
 
-        Config.ResourcePacks resourceConfig = this.packsConfig instanceof Config.ResourcePacks resources ? resources : null;
-        String requestor = ModAdditions.shouldCommit(this.repository.isResourcePacks());
-
-        if (requestor != null) {
+        String commitRequestor = ModAdditions.shouldCommit(this.repository.isResourcePacks());
+        if (commitRequestor != null) {
             this.commit();
-            PackedPacks.LOGGER.info("[packed_packs] Commiting packs on close at the request of mod '{}'.", requestor);
-        } else if (resourceConfig == null || resourceConfig.isApplyOnClose()) {
+            PackedPacks.LOGGER.info("[packed_packs] Commiting packs on close at the request of mod '{}'.", commitRequestor);
+        } else if (!(this.packsConfig instanceof Config.ResourcePacks resourceConfig) || resourceConfig.isApplyOnClose()) {
             this.commit();
         }
 
-        if (resourceConfig == null && !(this.previous instanceof PackSelectionScreen)) {
+        if (!this.repository.isResourcePacks() && !(this.previous instanceof PackSelectionScreen)) {
             this.original.output().accept(this.repository.getRepository()); // validate datapacks
             return;
         }
@@ -472,8 +496,11 @@ public class PackedPacksScreen extends PackListEventHandler implements
         } else {
             this.reset();
         }
+        boolean unlocked = current == null || !current.isLocked();
         this.availablePacks.getSearchField().setValue("");
+        this.availablePacks.getTransferButton().active = unlocked;
         this.currentPacks.getSearchField().setValue("");
+        this.currentPacks.getTransferButton().active = unlocked;
     }
 
     @Override
@@ -626,10 +653,20 @@ public class PackedPacksScreen extends PackListEventHandler implements
         return false;
     }
 
+    public void toggleDevMode() {
+        PackedPacks.CONFIG.setDevMode(!PackedPacks.CONFIG.isDevMode());
+        ToastUtil.onDevModeToggleToast(PackedPacks.CONFIG.isDevMode());
+        this.rebuildWidgets();
+    }
+
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         this.contextMenu.setOpen(false);
 
+        if (isDeveloperMode(keyCode, modifiers)) {
+            this.toggleDevMode();
+            return true;
+        }
         if (isRefresh(keyCode, modifiers) && (this.refreshFuture == null || this.refreshFuture.isDone())) {
             this.refreshPacks();
             return true;
@@ -663,13 +700,23 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (this.contextMenu.isMouseOver(mouseX, mouseY)) return;
 
         this.buildItems(mouseX, mouseY)
+                .when(PackedPacks.CONFIG.isDevMode())
+                .ifTrue(b -> b.separatorIfNonEmpty().add(
+                        MenuItem.builder(ResourceUtil.getText("preferences.reset"))
+                                .background(GuiConstants.DEVELOPER_MODE_ITEM_BACKGROUND)
+                                .action(() -> {
+                                    Preferences.INSTANCE.reset();
+                                    this.rebuildWidgets();
+                                })
+                                .build()
+                ))
                 .separatorIfNonEmpty()
                 .simpleItem(RESET_ENABLED_TEXT, this::isUnlocked, this::resetToEnabled)
                 .simpleItem(REFRESH_PACKS_TEXT, this::canRefresh, this::refreshPacks)
                 .when(this.additionalFolders, List::isEmpty)
                 .ifTrue(b -> b.simpleItem(OPEN_FOLDER_TEXT, this.repository::openDir))
                 .ifFalse((dirs, b) -> b
-                        .parentItem(OPEN_FOLDER_TEXT, p -> p
+                        .parent(OPEN_FOLDER_TEXT, p -> p
                                 .add(new DirectoryMenuItem(this.repository.getBaseDir()))
                                 .separator()
                                 .addAll(dirs.stream().map(DirectoryMenuItem::new).toList())
@@ -709,6 +756,21 @@ public class PackedPacksScreen extends PackListEventHandler implements
     @Override
     public List<ToggleableDialog<?>> getDialogs() {
         return this.dialogs;
+    }
+
+    @Override
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
+
+        if (PackedPacks.CONFIG.isDevMode()) {
+            float scale = 0.5f;
+            int y = (int) ((height - this.font.lineHeight * scale) / scale);
+
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().scale(scale, scale, 0);
+            guiGraphics.drawString(this.font, ResourceUtil.getText("dev_mode", DEV_MODE_SHORTCUT), 0, y, Theme.WHITE.getARGB());
+            guiGraphics.pose().popPose();
+        }
     }
 
     public boolean canRefresh() {

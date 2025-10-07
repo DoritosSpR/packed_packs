@@ -3,7 +3,8 @@ package io.github.fishstiz.fidgetz.gui.components;
 import io.github.fishstiz.fidgetz.gui.Metadata;
 import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
-import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
+import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import net.minecraft.client.gui.Font;
@@ -22,7 +23,8 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
     private final ButtonSprites sprites;
     private final Integer focusedBorder;
     private final boolean spriteOnly;
-    private final BiConsumer<FidgetzButton<E>, MenuItemBuilder> contextMenuBuilder;
+    private final BiConsumer<FidgetzButton<E>, ContextMenuItemBuilder> contextMenuBuilder;
+    private final RenderableRect foreground;
     private E metadata;
 
     protected FidgetzButton(Builder<E, ?> builder) {
@@ -31,6 +33,7 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
         this.metadata = builder.metadata;
         this.sprites = builder.sprites;
         this.spriteOnly = builder.spriteOnly;
+        this.foreground = builder.foreground;
         this.focusedBorder = builder.focusedBorder;
         this.contextMenuBuilder = builder.contextMenuBuilder;
 
@@ -74,6 +77,12 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
         guiGraphics.renderOutline(x, y, width, height, this.focusedBorder);
     }
 
+    protected void renderForeground(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
+        if (this.foreground != null) {
+            this.foreground.render(guiGraphics, x, y, width, height, partialTick);
+        }
+    }
+
     @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
@@ -94,6 +103,8 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
         if (this.isHoveredOrFocused() && this.focusedBorder != null) {
             this.renderBorder(guiGraphics, this.getX(), this.getY(), this.getWidth(), this.getHeight(), partialTick);
         }
+
+        this.renderForeground(guiGraphics, this.getX(), this.getY(), this.getWidth(), this.getHeight(), partialTick);
     }
 
     @Override
@@ -109,7 +120,7 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
     }
 
     @Override
-    public void buildItems(MenuItemBuilder builder, int mouseX, int mouseY) {
+    public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
         if (this.contextMenuBuilder != null) {
             this.contextMenuBuilder.accept(this, builder);
         }
@@ -128,10 +139,11 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
         private Tooltip tooltip;
         private ButtonSprites sprites;
         private boolean spriteOnly = false;
+        private RenderableRect foreground;
         private Integer focusedBorder;
         private OnPress onPress = btn -> {
         };
-        private BiConsumer<FidgetzButton<E>, MenuItemBuilder> contextMenuBuilder;
+        private BiConsumer<FidgetzButton<E>, ContextMenuItemBuilder> contextMenuBuilder;
         private E metadata;
 
         protected Builder() {
@@ -219,6 +231,11 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
             return self();
         }
 
+        public B setForeground(RenderableRect foreground) {
+            this.foreground = foreground;
+            return self();
+        }
+
         public B setFocusedBorder(Integer hoverBorder) {
             this.focusedBorder = hoverBorder;
             return self();
@@ -234,7 +251,7 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
             return self();
         }
 
-        public B setContextMenuBuilder(BiConsumer<FidgetzButton<E>, MenuItemBuilder> contextMenuBuilder) {
+        public B setContextMenuBuilder(BiConsumer<FidgetzButton<E>, ContextMenuItemBuilder> contextMenuBuilder) {
             this.contextMenuBuilder = contextMenuBuilder;
             return self();
         }
