@@ -8,6 +8,7 @@ import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.FilteredPackSelectionModel;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.transform.mixin.folders.additional.FolderRepositorySourceAccessor;
@@ -26,6 +27,7 @@ import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
 import org.apache.commons.lang3.function.Consumers;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -38,20 +40,18 @@ public class PackRepositoryHelper implements PackAssets {
     private final Map<String, Pack> availablePacks = new Object2ObjectLinkedOpenHashMap<>();
     private final Map<String, List<Pack>> folderPacks = new Object2ObjectOpenHashMap<>();
     private final Map<String, CompletableFuture<Folder>> folderConfigs = new Object2ObjectOpenHashMap<>();
+    private final PackOptionsResolver resolver;
     private final PackRepository repository;
     private final Path packDir;
-    private final Config.Packs config;
-    private final Supplier<@Nullable Profile> profileSupplier;
     private final boolean resourcePacks;
     private PackSelectionModel model;
     private Map<String, ResourceLocation> staleIcons;
 
     public PackRepositoryHelper(PackRepository repository, Path packDir, Config.Packs config, Supplier<@Nullable Profile> profileSupplier) {
+        this.resolver = new PackOptionsResolver(profileSupplier, config);
         this.repository = repository;
         this.packDir = packDir;
-        this.config = config;
-        this.profileSupplier = profileSupplier;
-        this.resourcePacks = this.config instanceof Config.ResourcePacks;
+        this.resourcePacks = config instanceof Config.ResourcePacks;
 
         this.refreshModel();
         this.regenerateAvailablePacks();
@@ -71,6 +71,7 @@ public class PackRepositoryHelper implements PackAssets {
 
     private void refreshModel() {
         this.model = new PackSelectionModel(Runnables.doNothing(), PackAssets::getDefaultIcon, this.repository, Consumers.nop());
+        ((FilteredPackSelectionModel) this.model).packed_packs$filterHidden(false);
     }
 
     public ImmutableList<Pack> getPacks() {
@@ -191,20 +192,45 @@ public class PackRepositoryHelper implements PackAssets {
         return finalOrderedPacks;
     }
 
+    /**
+     * @param folderPack   the folder pack
+     * @param orderedPacks the nested pack ids that define the preferred order
+     * @return a validated and ordered list of all packs under the folder pack
+     */
     public List<Pack> validateAndOrderNestedPackIds(FolderPack folderPack, List<String> orderedPacks) {
         return this.validateAndOrderNestedPacks(folderPack, this.getPacksById(orderedPacks, this.folderPacks.get(folderPack.getId())));
     }
 
-    public List<Pack> getPacksById(List<String> packIds, Map<String, Pack> source) {
+    /**
+     * @param packIds grouped pack ids
+     * @param source  grouped packs
+     * @return grouped packs by id
+     */
+    public List<Pack> getPacksById(Collection<String> packIds, Map<String, Pack> source) {
         return CollectionsUtil.lookup(packIds, source);
     }
 
-    public List<Pack> getPacksById(List<String> packIds, List<Pack> source) {
+    /**
+     * @param packIds grouped pack ids
+     * @param source  grouped packs
+     * @return grouped packs by id
+     */
+    public List<Pack> getPacksById(Collection<String> packIds, Collection<Pack> source) {
         return CollectionsUtil.lookup(packIds, CollectionsUtil.toMap(source, Pack::getId));
     }
 
-    public List<Pack> getPacksById(List<String> packIds) {
+    /**
+     * @param packIds grouped pack ids
+     * @return grouped packs by id
+     */
+    public List<Pack> getPacksById(Collection<String> packIds) {
         return this.getPacksById(packIds, this.availablePacks);
+    }
+
+    public List<Pack> getPacksByFlattenedIds(Collection<String> packIds) {
+        List<Pack> folderPacks = CollectionsUtil.filter(this.availablePacks.values(), FolderPack.class::isInstance, ObjectArrayList::new);
+        List<Pack> available = CollectionsUtil.addAll(folderPacks, this.repository.getAvailablePacks());
+        return this.groupByFolders(this.getPacksById(packIds, available));
     }
 
     /**
@@ -255,17 +281,19 @@ public class PackRepositoryHelper implements PackAssets {
      * @param groupedPacks grouped list of packs
      * @return flattened list of packs
      */
+    @Override
     public List<Pack> flattenPacks(List<Pack> groupedPacks) {
         if (this.folderPacks.isEmpty()) return groupedPacks;
 
         List<Pack> flattened = new ObjectArrayList<>(groupedPacks);
         for (int i = flattened.size() - 1; i >= 0; i--) {
             if (flattened.get(i) instanceof FolderPack folderPack) {
-                flattened.remove(i);
+                // do not remove folder pack; solves headaches
+//                flattened.remove(i);
                 List<Pack> nested = this.getNestedPacks(folderPack);
-                if (nested != null) {
+                if (nested != null && !nested.isEmpty()) {
                     for (Pack pack : Lists.reverse(nested)) {
-                        flattened.add(i, pack);
+                        flattened.add(i + 1, pack); // insert after folder pack
                     }
                 }
             }
@@ -339,7 +367,7 @@ public class PackRepositoryHelper implements PackAssets {
 
     @Override
     public boolean isLocked() {
-        Profile profile = this.profileSupplier.get();
+        Profile profile = this.resolver.profileSupplier().get();
         return profile != null && profile.isLocked();
     }
 
@@ -364,38 +392,32 @@ public class PackRepositoryHelper implements PackAssets {
 
     @Override
     public boolean isHidden(Pack pack) {
-        return this.inProfile(pack, Profile::isHidden);
+        return this.resolver.isHidden(pack);
     }
 
+    @Override
     public boolean isRequired(Pack pack) {
-        return pack.isRequired() || this.inProfile(pack, Profile::isRequired);
+        return this.resolver.isRequiredOrDefault(pack);
     }
 
     @Override
     public boolean isFixed(Pack pack) {
-        return pack.isFixedPosition() || this.inProfile(pack, Profile::isFixed);
+        return this.resolver.isFixedOrDefault(pack);
     }
 
     @Override
-    public Pack.Position getPosition(Pack pack) {
-        Profile profile = this.profileSupplier.get();
-        return profile != null ? profile.getPosition(pack) : pack.getDefaultPosition();
+    public @NotNull Pack.Position getPosition(Pack pack) {
+        return this.resolver.getPositionOrDefault(pack);
     }
 
     @Override
-    public PackSelectionConfig getSelectionConfig(Pack pack) {
-        Profile profile = this.profileSupplier.get();
-        return profile != null ? profile.getSelectionConfig(pack) : pack.selectionConfig();
-    }
-
-    private boolean inProfile(Pack pack, BiPredicate<Profile, Pack> option) {
-        Profile profile = this.profileSupplier.get();
-        return profile != null && option.test(profile, pack);
+    public @NotNull PackSelectionConfig getSelectionConfig(Pack pack) {
+        return this.resolver.getSelectionConfigOrDefault(pack);
     }
 
     @Override
     public Config.Packs getConfig() {
-        return this.config;
+        return this.resolver.config();
     }
 
     public Path getBaseDir() {
@@ -419,6 +441,11 @@ public class PackRepositoryHelper implements PackAssets {
         if (folderPack == null) return null;
         CompletableFuture<Folder> future = this.folderConfigs.get(folderPack.getId());
         return future != null ? future.join() : null;
+    }
+
+    @Override
+    public @Nullable Profile getProfile() {
+        return this.resolver.profileSupplier().get();
     }
 
     public List<Pack> getNestedPacks(FolderPack folderPack) {

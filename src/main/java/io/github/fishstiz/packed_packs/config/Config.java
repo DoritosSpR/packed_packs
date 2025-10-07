@@ -1,15 +1,16 @@
 package io.github.fishstiz.packed_packs.config;
 
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
+import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.server.packs.PackType;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Objects;
 
 import static io.github.fishstiz.packed_packs.PackedPacks.MOD_ID;
 
@@ -90,11 +91,31 @@ public class Config implements Serializable {
     public static class Packs implements Serializable {
         private boolean replaceOriginal = true;
         private boolean hideIncompatibleWarnings = false;
-        private final List<String> additionalFolders = new ArrayList<>();
+        private final List<String> additionalFolders = new ObjectArrayList<>();
+        private @Nullable Long defaultProfile = null;
         private @Nullable Long lastViewed = null;
         private long autoIncrement = 0;
-        private final List<Profile> profiles = new ArrayList<>();
-        private transient @Nullable Profile lastViewedProfile;
+        private final List<Profile> profiles = new ObjectArrayList<>();
+        private transient @Nullable Profile cachedDefaultProfile = null;
+        private transient @Nullable Profile cachedLastViewed = null;
+
+        public @Nullable Profile getDefaultProfile() {
+            if (this.defaultProfile == null) {
+                return null;
+            }
+            if (this.cachedDefaultProfile != null) {
+                return this.cachedDefaultProfile;
+            }
+            this.cachedDefaultProfile = CollectionsUtil.firstMatch(this.profiles, this.defaultProfile, Profile::getId);
+            return this.cachedDefaultProfile;
+        }
+
+        public void setDefaultProfile(@Nullable Profile defaultProfile) {
+            if (defaultProfile == null || CollectionsUtil.containsId(this.profiles, defaultProfile.getId(), Profile::getId)) {
+                this.defaultProfile = defaultProfile != null ? defaultProfile.getId() : null;
+                this.cachedDefaultProfile = defaultProfile;
+            }
+        }
 
         public List<Profile> getProfiles() {
             return List.copyOf(this.profiles);
@@ -108,29 +129,41 @@ public class Config implements Serializable {
         public void removeProfile(Profile profile) {
             this.profiles.remove(profile);
 
+            if (profile != null) {
+                if (Objects.equals(this.defaultProfile, profile.getId())) {
+                    this.defaultProfile = null;
+                    this.cachedDefaultProfile = null;
+                }
+                if (Objects.equals(this.lastViewed, profile.getId())) {
+                    this.lastViewed = null;
+                    this.cachedLastViewed = null;
+                }
+            }
+
             if (this.profiles.isEmpty()) {
                 this.autoIncrement = 0;
+                this.cachedDefaultProfile = null;
+                this.defaultProfile = null;
+                this.lastViewed = null;
+                this.cachedLastViewed = null;
             }
         }
 
         public @Nullable Profile getLastViewed() {
-            if (this.lastViewed == null) return null;
-
-            if (this.lastViewedProfile == null) {
-                for (Profile profile : this.profiles) {
-                    if (profile.getId() == this.lastViewed) {
-                        this.lastViewedProfile = profile;
-                        break;
-                    }
-                }
+            if (this.lastViewed == null) {
+                return null;
+            }
+            if (this.cachedLastViewed != null) {
+                return this.cachedLastViewed;
             }
 
-            return lastViewedProfile;
+            this.cachedLastViewed = CollectionsUtil.firstMatch(this.profiles, this.lastViewed, Profile::getId);
+            return this.cachedLastViewed;
         }
 
         public void setLastViewed(@Nullable Profile lastViewed) {
             this.lastViewed = lastViewed != null ? lastViewed.getId() : null;
-            this.lastViewedProfile = lastViewed;
+            this.cachedLastViewed = lastViewed;
         }
 
         public boolean isReplaceOriginal() {
