@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
-import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
@@ -115,7 +115,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     @Override
-    public void buildItems(MenuItemBuilder builder, int mouseX, int mouseY) {
+    public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
         ContextMenuContainer.super.buildItems(
                 builder.when(this.folderPack != null && this.isOpen())
                         .ifTrue(folderMenuBuilder -> folderMenuBuilder

@@ -11,6 +11,7 @@ public class GuiConstants {
     public static final Sprite CROSS_SPRITE = Sprite.of16(ResourceUtil.getIcon("cross"));
     public static final Sprite HAMBURGER_SPRITE = Sprite.of16(ResourceUtil.getIcon("hamburger"));
     public static final Sprite LOCK_SPRITE = new Sprite(ResourceUtil.getVanillaSprite("widget/locked_button_disabled"), Size.of16());
+    public static final ColoredRect DEVELOPER_MODE_ITEM_BACKGROUND = new ColoredRect(Theme.BLACK.withAlpha(0.25f));
 
     private GuiConstants() {
     }

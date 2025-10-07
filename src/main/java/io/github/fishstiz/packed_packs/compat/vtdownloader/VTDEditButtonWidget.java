@@ -1,8 +1,14 @@
 package io.github.fishstiz.packed_packs.compat.vtdownloader;
 
+import io.github.fishstiz.fidgetz.gui.components.Fidgetz;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModScreenFactory;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
+import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
+import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.layouts.LayoutElement;
@@ -26,7 +32,7 @@ import static io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFacto
  *
  * @see <a href="https://github.com/IotaBread/VTDownloader/blob/1.21/src/main/java/me/bymartrixx/vtd/mixin/PackEntryListWidgetMixin.java">Github</a>
  */
-public class VTDEditButtonWidget extends AbstractButton {
+public class VTDEditButtonWidget extends AbstractButton implements ContextMenuProvider, Fidgetz {
     private static final String VT_DESCRIPTION_MARKER = "vanillatweaks.net";
     private static final ResourceLocation PENCIL_TEXTURE = ResourceLocation.fromNamespaceAndPath("vt_downloader", "textures/pencil.png");
     private static final int PENCIL_TEXTURE_SIZE = 32;
@@ -36,10 +42,12 @@ public class VTDEditButtonWidget extends AbstractButton {
     private final Screen previous;
     private final PackSelectionModel.Entry pack;
     private final boolean editable;
+    private final @Nullable Toggleable toggleable;
 
     private VTDEditButtonWidget(LayoutElement container, Screen previous, PackSelectionModel.Entry pack, boolean editable) {
         super(0, 0, PENCIL_SIZE, PENCIL_SIZE, Component.empty());
 
+        this.toggleable = PackedPacks.CONFIG.isDevMode() ? new Toggleable(Preferences.INSTANCE.vtdEditButton) : null;
         this.container = container;
         this.previous = previous;
         this.pack = pack;
@@ -55,6 +63,8 @@ public class VTDEditButtonWidget extends AbstractButton {
 
     @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
+
         int pencilX = this.container.getX() + this.container.getWidth() - PENCIL_SIZE - PENCIL_MARGIN_RIGHT;
         int pencilY = this.container.getY() + this.container.getHeight() - PENCIL_SIZE;
         this.setPosition(pencilX, pencilY);
@@ -75,6 +85,10 @@ public class VTDEditButtonWidget extends AbstractButton {
                 PENCIL_SIZE, PENCIL_SIZE,
                 PENCIL_TEXTURE_SIZE, PENCIL_TEXTURE_SIZE
         );
+
+        if (this.toggleable != null) {
+            this.toggleable.render(guiGraphics, this.getX(), this.getY(), this.getWidth(), this.getHeight(), partialTick);
+        }
     }
 
     @Override
@@ -92,5 +106,12 @@ public class VTDEditButtonWidget extends AbstractButton {
     @Override
     protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
         this.defaultButtonNarrationText(narrationElementOutput);
+    }
+
+    @Override
+    public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
+        if (this.toggleable != null) {
+            this.toggleable.buildContext(builder);
+        }
     }
 }

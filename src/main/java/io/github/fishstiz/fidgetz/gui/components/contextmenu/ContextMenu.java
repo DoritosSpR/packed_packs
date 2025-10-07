@@ -8,11 +8,12 @@ import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.ARGBColor;
-import io.github.fishstiz.packed_packs.util.constants.Theme;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.LayoutElement;
@@ -22,27 +23,27 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.sounds.SoundManager;
+import net.minecraft.util.ARGB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BooleanSupplier;
+import java.util.Objects;
 import java.util.function.Consumer;
 
-import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.SPACING;
-
 public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
-    static final BooleanSupplier DEFAULT_ACTIVE_SUPPLIER = () -> true;
-    static final int DEFAULT_TEXT_INACTIVE_COLOR = Theme.GRAY_500.withAlpha(0.5f);
-    static final int DEFAULT_BORDER_COLOR = Theme.GRAY_500.getARGB();
-    static final int DEFAULT_BACKGROUND_COLOR = Theme.GRAY_800.getARGB();
+    static final int DEFAULT_BORDER_COLOR = ARGBColor.withAlpha(Objects.requireNonNull(ChatFormatting.GRAY.getColor()), 1);
+    static final int DEFAULT_TEXT_INACTIVE_COLOR = ARGBColor.withAlpha(DEFAULT_BORDER_COLOR, 0.5f);
+    static final int DEFAULT_BACKGROUND_COLOR = ARGBColor.withAlpha(Objects.requireNonNull(ChatFormatting.DARK_GRAY.getColor()), 1);
+    private static final int DEFAULT_SPACING = Button.DEFAULT_SPACING;
     private static final int ITEM_HEIGHT = 20;
     private static final int MIN_WIDTH = 150;
     private static final int MENU_POINT_OFFSET = 1;
     private static final int DROP_SHADOW_SIZE = 16;
     private final Builder builder;
     private final List<ContextMenu> childMenus = new ArrayList<>();
+    private final int spacing;
     private final int borderColor;
     private final int softSeparatorColor;
     private final ContextMenu parentMenu;
@@ -53,6 +54,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         super(builder);
 
         this.builder = builder;
+        this.spacing = builder.spacing;
         this.borderColor = builder.borderColor;
         this.softSeparatorColor = ARGBColor.withAlpha(this.borderColor, 0.15f);
         this.parentMenu = builder.parentMenu;
@@ -81,18 +83,18 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             case ParentMenuItem parentItem -> {
                 ContextMenu childMenu = Builder.ofChild(this.builder, this).setDirection(this.direction).build();
                 this.childMenus.add(childMenu);
-                return new ParentItemWidget(this.root().getWidth(), parentItem, this, childMenu);
+                return new ParentItemWidget(this.root().getWidth(), this.spacing, parentItem, this, childMenu);
             }
             case RenderableMenuItem renderableMenuItem -> {
-                return new CustomItemWidget(this.root().getWidth(), renderableMenuItem, this);
+                return new CustomItemWidget(this.root().getWidth(), this.spacing, renderableMenuItem, this);
             }
             default -> {
-                return new ItemWidget<>(this.root().getWidth(), item, this);
+                return new ItemWidget<>(this.root().getWidth(), this.spacing, item, this);
             }
         }
     }
 
-    private void setItems(List<MenuItem> items) {
+    private void setItems(List<? extends MenuItem> items) {
         this.clearWidgets();
         this.root().setLayout(emptyLayout());
 
@@ -115,7 +117,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         this.childMenus.forEach(this::prependWidget);
     }
 
-    private void open(int x, int y, Direction direction, List<MenuItem> items) {
+    private void open(int x, int y, Direction direction, List<? extends MenuItem> items) {
         if (items.isEmpty()) return;
 
         this.direction = direction;
@@ -202,6 +204,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         protected Direction direction = Direction.RIGHT;
         protected int backgroundColor = DEFAULT_BACKGROUND_COLOR;
         protected int borderColor = DEFAULT_BORDER_COLOR;
+        protected int spacing = DEFAULT_SPACING;
         private ContextMenu parentMenu = null;
 
         protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, LayoutWrapper<LinearLayout> root) {
@@ -212,6 +215,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         @SuppressWarnings("unchecked")
         protected static <S extends Screen & ToggleableDialogContainer> Builder ofChild(Builder builder, ContextMenu parentMenu) {
             Builder copy = builder((S) builder.screen);
+            copy.spacing = builder.spacing;
             copy.backgroundColor = builder.backgroundColor;
             copy.borderColor = builder.borderColor;
             copy.background = builder.background;
@@ -220,6 +224,11 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             copy.autoLoseFocus = builder.autoLoseFocus;
             copy.parentMenu = parentMenu;
             return copy;
+        }
+
+        public Builder setSpacing(int spacing) {
+            this.spacing = spacing;
+            return this;
         }
 
         public Builder setBorderColor(int borderColor) {
@@ -249,17 +258,16 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
     }
 
     private static class ItemWidget<T extends MenuItem> extends AbstractWidget {
-        private static final int HOVER_OVERLAY_COLOR = Theme.WHITE.withAlpha(0.1f);
+        private static final int HOVER_OVERLAY_COLOR = ARGB.white(0.1f);
         private final FidgetzText<Void> text;
-        private final Runnable onPress;
         protected final ContextMenu parent;
         protected final T item;
+        protected final int spacing;
 
-        private ItemWidget(int width, T item, ContextMenu parent) {
+        private ItemWidget(int width, int spacing, T item, ContextMenu parent) {
             super(0, 0, width, ITEM_HEIGHT, item.text());
-
+            this.spacing = spacing;
             this.text = FidgetzText.<Void>builder().alignLeft().setMessage(item.text()).build();
-            this.onPress = item.action();
             this.parent = parent;
             this.item = item;
         }
@@ -274,7 +282,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         @Override
         public void onClick(double mouseX, double mouseY) {
             if (this.item.active()) {
-                this.onPress.run();
+                this.item.action().run();
             }
             this.parent.closeCascade();
         }
@@ -326,13 +334,13 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
             this.renderHighlight(guiGraphics, x, y, right, bottom, hovered, partialTick);
 
             int size = Minecraft.getInstance().font.lineHeight;
-            int innerX = x + SPACING;
-            int innerY = y + SPACING;
-            int innerWidth = width - SPACING * 2;
-            int innerHeight = height - SPACING * 2;
+            int innerX = x + this.spacing;
+            int innerY = y + this.spacing;
+            int innerWidth = width - this.spacing * 2;
+            int innerHeight = height - this.spacing * 2;
             int iconY = innerY + (innerHeight - size) / 2;
-            int textX = this.item.icon() != null ? innerX + size + SPACING : innerX;
-            int textWidth = this.item.icon() != null ? innerWidth - size - SPACING : innerWidth;
+            int textX = this.item.icon() != null ? innerX + size + this.spacing : innerX;
+            int textWidth = this.item.icon() != null ? innerWidth - size - this.spacing : innerWidth;
 
             this.renderIcon(guiGraphics, innerX, iconY, size, size, partialTick);
             this.renderText(guiGraphics, textX, innerY, textWidth, innerHeight, mouseX, mouseY, partialTick);
@@ -362,8 +370,8 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         private static final String CARET_RIGHT = ">";
         private final ContextMenu child;
 
-        ParentItemWidget(int width, ParentMenuItem item, ContextMenu parent, ContextMenu child) {
-            super(width, item, parent);
+        ParentItemWidget(int width, int spacing, ParentMenuItem item, ContextMenu parent, ContextMenu child) {
+            super(width, spacing, item, parent);
             this.child = child;
         }
 
@@ -388,6 +396,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
         @Override
         public void onClick(double mouseX, double mouseY) {
             if (this.item.active()) {
+                this.item.action().run();
                 this.child.forceOpen = !this.child.forceOpen || !this.child.isOpen();
             }
             if (!this.child.isOpen()) {
@@ -397,13 +406,13 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
 
         @Override
         protected void renderText(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
-            int textWidth = width - (height + SPACING);
+            int textWidth = width - (height + this.spacing);
             super.renderText(guiGraphics, x, y, textWidth, height, mouseX, mouseY, partialTick);
 
             Font font = Minecraft.getInstance().font;
             int caretWidth = font.width(CARET_RIGHT);
             int caretHeight = font.lineHeight;
-            int caretX = (x + textWidth + SPACING) + (height - caretWidth) / 2;
+            int caretX = (x + textWidth + this.spacing) + (height - caretWidth) / 2;
             int caretY = y + (height - caretHeight) / 2;
             int color = this.item.textColor();
 
@@ -435,8 +444,8 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<LinearLayout>> {
     }
 
     private static class CustomItemWidget extends ItemWidget<RenderableMenuItem> {
-        private CustomItemWidget(int width, RenderableMenuItem item, ContextMenu parent) {
-            super(width, item, parent);
+        private CustomItemWidget(int width, int spacing, RenderableMenuItem item, ContextMenu parent) {
+            super(width, spacing, item, parent);
         }
 
         @Override
