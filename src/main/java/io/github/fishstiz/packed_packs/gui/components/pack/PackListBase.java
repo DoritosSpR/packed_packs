@@ -6,7 +6,6 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContaine
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
@@ -15,6 +14,7 @@ import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.transform.mixin.gui.AbstractSelectionListAccessor;
 import io.github.fishstiz.packed_packs.util.PackUtil;
@@ -53,6 +53,7 @@ import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 public abstract class PackListBase<T extends PackListBase<T>.Entry> extends AbstractDynamicList<T> implements PackList, ContainerEventHandlerPatch, ContextMenuContainer {
     protected static final Component HIDDEN = ResourceUtil.getText("profile.override.hidden");
     protected static final Sprite EYE_SLASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("eye_slash"));
+    protected static final Sprite X_SQUARE = Sprite.of16(ResourceUtil.getIcon("x_square"));
     protected static final int DEV_SPRITE_SIZE = 16;
     protected static final int DEV_SPRITE_MARGIN_RIGHT = 8;
     protected static final int OFFSET_Y = 2;
@@ -210,7 +211,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         if (pack != null && !this.packs.contains(pack)) {
             int index = 0;
             for (Pack p : this.packs) {
-                if (!this.packAssets.isFixed(p)) break;
+                if (!this.packAssets.isFixed(p) || this.packAssets.getPosition(p) == Pack.Position.BOTTOM) break;
                 index++;
             }
             this.packs.add(index, pack);
@@ -810,19 +811,27 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             this.renderSelection(guiGraphics, top, left, width, height);
             this.renderForeground(guiGraphics, top, left, width, height, mouseX, mouseY, hovering, partialTick);
             this.renderTop(guiGraphics, mouseX, mouseY, partialTick);
-            this.renderDev(guiGraphics, top, left);
-        }
 
-        protected void renderDev(GuiGraphics guiGraphics, int top, int left) {
             if (PackedPacks.CONFIG.isDevMode()) {
                 int size = DEV_SPRITE_SIZE;
                 int iconX = (left + width) - size - DEV_SPRITE_MARGIN_RIGHT;
+                this.renderDevSprites(guiGraphics, top, iconX, size);
+            }
+        }
 
-                PackOverride hiddenOverride = this.hasOverride(Profile::isHidden);
-                if (hiddenOverride.booleanValue()) {
-                    guiGraphics.fill(iconX, top, iconX + size, top + size, hiddenOverride.backgroundColor());
-                    EYE_SLASH_SPRITE.render(guiGraphics, iconX, top, size, size);
-                }
+        protected void renderDevSprites(GuiGraphics guiGraphics, int top, int left, int size) {
+            int iconX = left;
+
+            PackOverride hiddenOverride = this.hasOverride(Profile::isHidden);
+            if (hiddenOverride.booleanValue()) {
+                guiGraphics.fill(iconX, top, iconX + size, top + size, hiddenOverride.backgroundColor());
+                EYE_SLASH_SPRITE.render(guiGraphics, iconX, top, size, size);
+                iconX -= size;
+            }
+            PackOverride included = this.hasOverride(Profile::includes);
+            if (included.global() && !((ConfiguredPack) this.pack).packed_packs$getMetadata().compatibility().isCompatible()) {
+                guiGraphics.fill(iconX, top, iconX + size, top + size, included.backgroundColor());
+                X_SQUARE.render(guiGraphics, iconX, top, size, size);
             }
         }
 
