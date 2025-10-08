@@ -136,8 +136,7 @@ public class PackRepositoryHelper implements PackAssets {
     private void addValidPacks(List<Pack> source, Set<Pack> seen, ObjectOpenHashSet<Pack> validPacks, List<Pack> target) {
         for (Pack pack : source) {
             Pack validPack = validPacks.get(pack); // metadata can change
-            // Folder packs can show up in both columns in case user messes around in original screen. PackListBase ignores duplicates anyway.
-            if (validPack != null && (seen.add(pack) || pack instanceof FolderPack)) {
+            if (validPack != null && (seen.add(pack))) {
                 target.add(validPack);
             }
         }
