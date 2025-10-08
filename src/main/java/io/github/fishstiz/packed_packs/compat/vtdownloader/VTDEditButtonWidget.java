@@ -111,7 +111,7 @@ public class VTDEditButtonWidget extends AbstractButton implements ContextMenuPr
     @Override
     public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
         if (this.toggleable != null) {
-            this.toggleable.buildContext(builder);
+            this.toggleable.buildContext(builder.separatorIfNonEmpty());
         }
     }
 }

@@ -701,15 +701,14 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
         this.buildItems(mouseX, mouseY)
                 .when(PackedPacks.CONFIG.isDevMode())
-                .ifTrue(b -> b.separatorIfNonEmpty().add(
-                        MenuItem.builder(ResourceUtil.getText("preferences.reset"))
-                                .background(GuiConstants.DEVELOPER_MODE_ITEM_BACKGROUND)
-                                .action(() -> {
-                                    Preferences.INSTANCE.reset();
-                                    this.rebuildWidgets();
-                                })
-                                .build()
-                ))
+                .ifTrue(dev -> dev.separatorIfNonEmpty()
+                        .add(GuiConstants.devParent(ResourceUtil.getText("preferences"))
+                                .addChildren(Toggleable.preferences())
+                                .addChild(GuiConstants.devItem(ResourceUtil.getText("preferences.reset"))
+                                        .action(Preferences.INSTANCE::reset)
+                                        .build())
+                                .build())
+                )
                 .separatorIfNonEmpty()
                 .simpleItem(RESET_ENABLED_TEXT, this::isUnlocked, this::resetToEnabled)
                 .simpleItem(REFRESH_PACKS_TEXT, this::canRefresh, this::refreshPacks)
@@ -719,9 +718,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                         .parent(OPEN_FOLDER_TEXT, p -> p
                                 .add(new DirectoryMenuItem(this.repository.getBaseDir()))
                                 .separator()
-                                .addAll(dirs.stream().map(DirectoryMenuItem::new).toList())
-                        )
-                )
+                                .addAll(dirs.stream().map(DirectoryMenuItem::new).toList())))
                 .peek(items -> {
                     int yOffset = this.hasHeader(items) ? this.contextMenu.getItemHeight() : 0;
                     this.contextMenu.open(mouseX, mouseY - yOffset, items);
