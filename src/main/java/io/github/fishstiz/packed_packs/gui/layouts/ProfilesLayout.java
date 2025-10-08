@@ -14,7 +14,6 @@ import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
-import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.network.chat.Component;
@@ -65,7 +64,7 @@ public class ProfilesLayout {
         this.sidebar = Sidebar.builder(screen)
                 .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
                 .setMaxWidth(MAX_WIDTH)
-                .setTitle(TITLE_TEXT.copy().withColor(Theme.GRAY_800.getARGB()), false)
+                .setTitle(TITLE_TEXT, true)
                 .build();
         this.listener = screen;
         this.profileList = new ProfileList(this.config, this::getProfile, this::removeProfile, this::setProfile);
@@ -93,7 +92,7 @@ public class ProfilesLayout {
         this.sidebar.root().layout().arrangeElements();
         this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
 
-        this.setProfile(this.profile);
+        this.onSetProfile(this.profile);
     }
 
     private RenderableRect getToggleSpriteRenderer(Sprite sprite) {
@@ -133,10 +132,7 @@ public class ProfilesLayout {
         this.profileList.scheduleRefresh();
     }
 
-    private void setProfile(@Nullable Profile profile) {
-        Profile previous = this.profile;
-        this.profile = profile;
-
+    private void onSetProfile(@Nullable Profile profile) {
         this.nameField.setEditable(false);
 
         boolean hasProfile = profile != null;
@@ -146,11 +142,13 @@ public class ProfilesLayout {
         this.nameField.active = hasProfile;
         this.noProfileButton.active = hasProfile;
         this.toggleNameButton.visible = hasProfile;
+        this.toggleNameButton.active = hasProfile && !profile.isLocked();
+    }
 
-        boolean locked = hasProfile && !profile.isLocked();
-        this.toggleNameButton.active = locked;
-        this.toggleNameButton.setTooltip(locked ? null : Tooltip.create(EDIT_NAME_TEXT));
-
+    private void setProfile(@Nullable Profile profile) {
+        Profile previous = this.profile;
+        this.profile = profile;
+        this.onSetProfile(profile);
         this.listener.onProfileChange(previous, this.profile);
     }
 
