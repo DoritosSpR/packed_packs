@@ -7,8 +7,8 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuil
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.util.ARGBColor;
+import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
@@ -38,7 +38,8 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
     private static final Component EMPTY_TEXT = ResourceUtil.getText("profile.empty");
     private static final Component DELETE_TEXT = ResourceUtil.getText("profile.delete");
     private static final Tooltip DELETE_INFO = Tooltip.create(ResourceUtil.getText("profile.delete.info"));
-    private static final Sprite TRASH_SPRITE = new Sprite(ResourceUtil.getIcon("trash"), Size.of16());
+    private static final Sprite TRASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("trash"));
+    private static final Sprite STAR_OUTLINE_SPRITE = Sprite.of16(ResourceUtil.getIcon("star_outline"));
     private final PollingDebouncer<Void> debouncedRefresh = new SimplePollingDebouncer<>(this::refresh, 200);
     private final Config.Packs config;
     private final Supplier<Profile> current;
@@ -105,11 +106,14 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
             this.deleteButton = FidgetzButton.<Void>builder()
                     .makeSquare(this.getHeight())
                     .setMessage(DELETE_TEXT)
-                    .setTooltip(DELETE_INFO)
-                    .setSprite(profile.isLocked() ? ButtonSprites.unclamp(LOCK_SPRITE) : ButtonSprites.of(TRASH_SPRITE))
+                    .setSprite(this.isDefault()
+                            ? ButtonSprites.of(STAR_SPRITE) : profile.isLocked()
+                            ? ButtonSprites.unclamp(LOCK_SPRITE) : ButtonSprites.of(TRASH_SPRITE))
                     .setOnPress(() -> ProfileList.this.onDelete.accept(this.profile))
                     .build();
-            this.deleteButton.active = !profile.isLocked();
+            this.deleteButton.active = !profile.isLocked() && !this.isDefault();
+            if (this.deleteButton.active) this.deleteButton.setTooltip(DELETE_INFO);
+
             this.selectButton = FidgetzButton.<Void>builder()
                     .setMessage(Component.literal(this.profile.getName()))
                     .setOnPress(() -> ProfileList.this.onSelect.accept(this.profile))
@@ -131,6 +135,7 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
             this.selectButton.render(guiGraphics, mouseX, mouseY, partialTick);
 
             if (PackedPacks.CONFIG.isDevMode()) {
+                boolean hasProperty = true;
                 int borderColor;
 
                 if (this.isDefault() && this.profile.isLocked()) {
@@ -141,12 +146,17 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
                     borderColor = Theme.RED_700.getARGB();
                 } else {
                     borderColor = Theme.WHITE.getARGB();
+                    hasProperty = false;
                 }
 
-                int foregroundColor = ARGBColor.withAlpha(borderColor, 0.25f);
-
-                guiGraphics.renderOutline(left, top, width, height, borderColor);
-                guiGraphics.fill(left, top, left + width, top + height, foregroundColor);
+                boolean hovered = guiGraphics.containsPointInScissor(mouseX, mouseY) && GuiUtil.isHovered(this, mouseX, mouseY);
+                if (hasProperty || hovered) {
+                    guiGraphics.renderOutline(left, top, width, height, borderColor);
+                }
+                if (hovered) {
+                    int foregroundColor = ARGBColor.withAlpha(borderColor, 0.25f);
+                    guiGraphics.fill(left, top, left + width, top + height, foregroundColor);
+                }
             }
         }
 
@@ -175,32 +185,33 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
             this.children.forEach(consumer);
         }
 
+        private void reselect() {
+            if (this.isSelected()) {
+                ProfileList.this.onSelect.accept(this.profile);
+            }
+        }
+
         @Override
         public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
             if (!PackedPacks.CONFIG.isDevMode()) return;
 
-            builder.separatorIfNonEmpty()
-                    .add(GuiConstants.devItem(ResourceUtil.getText("profile." + (this.profile.isLocked() ? "unlock" : "lock")))
-                            .icon(this.profile.isLocked() ? UNLOCK_SPRITE_SMALL : LOCK_SPRITE_SMALL)
-                            .action(() -> {
-                                this.profile.setLocked(!this.profile.isLocked());
-                                ProfileList.this.refresh();
-                                if (this.isSelected()) {
-                                    ProfileList.this.onSelect.accept(this.profile);
-                                }
-                            })
-                            .build()
-                    )
-                    .add(GuiConstants.devItem(ResourceUtil.getText("profile.default." + (this.isDefault() ? "unset" : "set")))
-                            .action(() -> {
-                                ProfileList.this.config.setDefaultProfile(this.isDefault() ? null : this.profile);
-                                ProfileList.this.refresh();
-                                if (this.isSelected()) {
-                                    ProfileList.this.onSelect.accept(this.profile);
-                                }
-                            })
-                            .build()
-                    );
+            builder.separatorIfNonEmpty();
+            builder.add(GuiConstants.devItem(ResourceUtil.getText("profile.default." + (this.isDefault() ? "unset" : "set")))
+                    .icon(() -> this.isDefault() ? STAR_SPRITE : STAR_OUTLINE_SPRITE)
+                    .action(() -> {
+                        ProfileList.this.config.setDefaultProfile(this.isDefault() ? null : this.profile);
+                        ProfileList.this.refresh();
+                        this.reselect();
+                    })
+                    .build());
+            builder.add(GuiConstants.devItem(ResourceUtil.getText("profile." + (this.profile.isLocked() ? "unlock" : "lock")))
+                    .icon(this.profile.isLocked() ? LOCK_SPRITE_SMALL : UNLOCK_SPRITE_SMALL)
+                    .action(() -> {
+                        this.profile.setLocked(!this.profile.isLocked());
+                        ProfileList.this.refresh();
+                        this.reselect();
+                    })
+                    .build());
         }
     }
 }

@@ -20,6 +20,7 @@ public class GuiConstants {
     public static final Sprite RADIO_ON_SPRITE = Sprite.of16(ResourceUtil.getIcon("radio_on"));
     public static final Sprite UNLOCK_SPRITE_SMALL = Sprite.of16(ResourceUtil.getIcon("unlock"));
     public static final Sprite LOCK_SPRITE_SMALL = Sprite.of16(ResourceUtil.getIcon("lock"));
+    public static final Sprite STAR_SPRITE = Sprite.of16(ResourceUtil.getIcon("star"));
 
     private GuiConstants() {
     }
