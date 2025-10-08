@@ -645,16 +645,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return this.sendSelection();
         }
 
-        private boolean handleDoubleClick() {
-            long currentTime = Util.getMillis();
-            if (this.isTransferable() && this.isSelectedLast() && currentTime - lastClickTime <= DOUBLE_CLICK_DELTA_MS) {
-                PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, this.pack));
-                return true;
-            }
-            lastClickTime = currentTime;
-            return false;
-        }
-
         private void fireClickEvent(BiConsumer<PackListBase<T>, Pack> selector, MouseSelectionState state) {
             this.mouseSelectionState = state;
             selector.accept(PackListBase.this, this.pack);
@@ -674,13 +664,22 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return this.isSelected() && !this.isStale() && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE;
         }
 
+        public boolean updateDoubleClick() {
+            long currentTime = Util.getMillis();
+            boolean doubleClicked = (currentTime - this.lastClickTime) < DOUBLE_CLICK_THRESHOLD_MS;
+            this.lastClickTime = currentTime;
+            return doubleClicked;
+        }
+
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (ContainerEventHandlerPatch.super.mouseClicked(mouseX, mouseY, button)) {
                 return false;
             }
             if (isLeftClick(button) && this.isMouseOver(mouseX, mouseY)) {
-                if (!isRangeModifierActive() && !isSelectModifierActive() && this.handleDoubleClick()) {
+                boolean doubleClickedLocal = this.updateDoubleClick();
+                if (!isRangeModifierActive() && !isSelectModifierActive() && doubleClickedLocal && this.isTransferable()) {
+                    PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, this.pack));
                     return false;
                 }
                 if (isRangeModifierActive()) {
