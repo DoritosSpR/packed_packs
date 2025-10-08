@@ -25,11 +25,10 @@ public abstract class PackRepositoryMixin {
     @Inject(method = "<init>", at = @At("TAIL"))
     private void setConfigOnInit(RepositorySource[] sources, CallbackInfo ci) {
         if (sources.length > 0) {
-            if (sources[0] instanceof ClientPackSource) {
-                this.packed_packs$resolver = new PackOptionsResolver(PackedPacks.CONFIG.getResourcepacks());
-            }
             if (sources[0] instanceof ServerPacksSource) {
                 this.packed_packs$resolver = new PackOptionsResolver(PackedPacks.CONFIG.getDatapacks());
+            } else if (sources[0] instanceof ClientPackSource) {
+                this.packed_packs$resolver = new PackOptionsResolver(PackedPacks.CONFIG.getResourcepacks());
             }
         }
     }
