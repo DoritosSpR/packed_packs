@@ -65,6 +65,10 @@ public class Profile implements PackOptions, Serializable {
         this.packIds = packMap;
     }
 
+    public boolean includes(Pack pack) {
+        return this.packIds.containsKey(pack.getId());
+    }
+
     public List<String> getPackIds() {
         return List.copyOf(this.packIds.keySet());
     }
@@ -88,7 +92,7 @@ public class Profile implements PackOptions, Serializable {
     public void setRequired(@Nullable Boolean required, Pack... packs) {
         for (Pack pack : packs) {
             String id = pack.getId();
-            if (required != null && (id.equals(PackAssets.VANILLA_ID) || id.equals(PackAssets.FABRIC_ID))) {
+            if ((required == null || !required) && (id.equals(PackAssets.VANILLA_ID) || id.equals(PackAssets.FABRIC_ID))) {
                 continue;
             }
 
