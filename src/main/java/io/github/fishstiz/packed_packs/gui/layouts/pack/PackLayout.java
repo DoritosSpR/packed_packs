@@ -17,21 +17,13 @@ public abstract class PackLayout<T extends PackListBase<?>> {
     private static final Component TRANSFER_INFO = ResourceUtil.getText("transfer_all.info");
     protected final T list;
     private final GridWrapper<FlexLayout> header;
-    private ToggleableEditBox<Void> searchField;
-    private FidgetzButton<Void> transferButton;
+    private final ToggleableEditBox<Void> searchField;
+    private final FidgetzButton<Void> transferButton;
     private FlexLayout layout;
 
     protected PackLayout(T list) {
         this.list = list;
         this.header = new GridWrapper<>(FlexLayout.horizontal(this.list::getWidth).spacing(GuiConstants.SPACING), GuiConstants.SPACING);
-    }
-
-    protected void initHeader(@NotNull FlexLayout header) {
-    }
-
-    public final void init(@NotNull FlexLayout layout) {
-        this.layout = layout;
-
         this.searchField = ToggleableEditBox.<Void>builder()
                 .setHint(SEARCH_HINT)
                 .setEditable(true)
@@ -42,6 +34,13 @@ public abstract class PackLayout<T extends PackListBase<?>> {
                 .setOnPress(this.list::transferAll)
                 .setTooltip(Tooltip.create(TRANSFER_INFO))
                 .build();
+    }
+
+    protected void initHeader(@NotNull FlexLayout header) {
+    }
+
+    public final void init(@NotNull FlexLayout layout) {
+        this.layout = layout;
 
         this.initHeader(this.header.layout());
         this.layout.addChild(this.header.layout());

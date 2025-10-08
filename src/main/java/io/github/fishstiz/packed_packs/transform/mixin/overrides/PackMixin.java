@@ -20,6 +20,10 @@ public abstract class PackMixin implements ConfiguredPack {
     @Final
     private Pack.Metadata metadata;
 
+    @Shadow
+    @Final
+    private PackSelectionConfig selectionConfig;
+
     @Unique
     @Nullable
     private PackOptionsResolver packed_packs$resolver;
@@ -91,7 +95,22 @@ public abstract class PackMixin implements ConfiguredPack {
     }
 
     @Override
+    public boolean packed_packs$isConfigured() {
+        if (this.packed_packs$resolver != null) {
+            Profile defaultProfile = this.packed_packs$resolver.config().getDefaultProfile();
+            return defaultProfile != null && defaultProfile.includes(self());
+        }
+
+        return false;
+    }
+
+    @Override
     public Pack.Metadata packed_packs$getMetadata() {
         return this.metadata;
+    }
+
+    @Override
+    public PackSelectionConfig packed_packs$originalConfig() {
+        return this.selectionConfig;
     }
 }
