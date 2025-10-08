@@ -98,14 +98,14 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
             MenuItem next = (i + 1 < items.size()) ? items.get(i + 1) : null;
 
             if (current == MenuItem.SEPARATOR) {
-                content.addChild(new Separator(this, MIN_WIDTH, this.borderColor));
+                content.addChild(new Separator(MIN_WIDTH, this.borderColor));
                 continue;
             }
 
             content.addChild(this.createItemWidget(current));
 
             if (current.shouldAutoSeparate() && next != null && next.shouldAutoSeparate()) {
-                content.addChild(new Separator(this, MIN_WIDTH, this.softSeparatorColor));
+                content.addChild(new Separator(MIN_WIDTH, this.softSeparatorColor));
             }
         }
 
@@ -266,7 +266,12 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         private ItemWidget(int width, int spacing, T item, ContextMenu parent) {
             super(0, 0, width, ITEM_HEIGHT, item.text());
             this.spacing = spacing;
-            this.text = FidgetzText.<Void>builder().setOffsetY(MENU_POINT_OFFSET).alignLeft().setMessage(item.text()).build();
+            this.text = FidgetzText.<Void>builder()
+                    .alignLeft()
+                    .setOffsetY(MENU_POINT_OFFSET)
+                    .setShadow(true)
+                    .setMessage(item.text())
+                    .build();
             this.parent = parent;
             this.item = item;
         }
@@ -472,12 +477,10 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
     }
 
     private static class Separator extends AbstractWidget implements Fidgetz {
-        private final ContextMenu parent;
         private final int color;
 
-        private Separator(ContextMenu parent, int width, int color) {
+        private Separator(int width, int color) {
             super(0, 0, width, 1, CommonComponents.EMPTY);
-            this.parent = parent;
             this.color = color;
         }
 
@@ -488,7 +491,6 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            this.parent.closeCascade();
             return false;
         }
 

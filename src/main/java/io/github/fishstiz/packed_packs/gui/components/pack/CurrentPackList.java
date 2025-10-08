@@ -55,7 +55,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     private static final ColoredRect DROP_INDEX = new ColoredRect(DROP_THEME.getARGB());
     private static final GradientRect SCROLL_UP = GradientRect.fromTop(DROP_THEME.withAlpha(0.75f), DROP_THEME.withAlpha(0));
     private static final GradientRect SCROLL_DOWN = SCROLL_UP.flip();
-    private static final int DEV_SPRITE_PART = 3;
+    private static final int DEV_SPRITE_SIZE = 16;
     private static final int DEV_SPRITE_MARGIN_RIGHT = 8;
     private static final int DROP_INDEX_PADDING = 2;
     private static final double SCROLL_STEP = 10;
@@ -552,7 +552,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         protected void renderDev(GuiGraphics guiGraphics, int left, int top, int height) {
             if (PackedPacks.CONFIG.isDevMode()) {
-                int size = height / DEV_SPRITE_PART;
+                int size = DEV_SPRITE_SIZE;
                 int iconX = (left + width) - size - DEV_SPRITE_MARGIN_RIGHT;
 
                 PackOverride positionOverride = this.hasOverride(Profile::overridesPosition);
@@ -631,64 +631,64 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         @Override
         protected void onBuildHeader(ContextMenuItemBuilder builder) {
-            builder.whenNonNull(PackedPacks.CONFIG.isDevMode() ? CurrentPackList.this.packAssets.getProfile() : null)
-                    .ifTrue((profile, b) -> b
-                            .add(devItem(HIDDEN)
-                                    .icon(() -> this.getIcon(profile.isHidden(this.pack), Profile::isHidden))
-                                    .activeWhen(() -> this.isOptionActive(Profile::isHidden))
-                                    .action(() -> this.updateHidden(!profile.isHidden(this.pack)))
-                                    .closeOnInteract(false)
-                                    .build())
-                            .add(devParent(REQUIRED)
-                                    .icon(() -> this.getIcon(profile.overridesRequired(this.pack), Profile::overridesRequired))
-                                    .activeWhen(() -> this.isOptionActive(Profile::overridesRequired) &&
-                                                      !this.pack.getId().equals(PackAssets.VANILLA_ID) &&
-                                                      !this.pack.getId().equals(PackAssets.FABRIC_ID)
-                                    )
-                                    .closeOnInteract(false)
-                                    .addChild(devItem(CommonComponents.OPTION_OFF)
-                                            .icon(() -> getDefaultIcon(!profile.overridesRequired(this.pack)))
-                                            .action(() -> this.updateRequired(null))
-                                            .closeOnInteract(false)
-                                            .build())
-                                    .addChild(devItem(CommonComponents.GUI_NO)
-                                            .icon(() -> getDefaultIcon(
-                                                    profile.overridesRequired(this.pack) &&
-                                                    !profile.isRequired(this.pack)
-                                            ))
-                                            .action(() -> this.updateRequired(false))
-                                            .closeOnInteract(false)
-                                            .build())
-                                    .addChild(devItem(CommonComponents.GUI_YES)
-                                            .icon(() -> getDefaultIcon(profile.isRequired(this.pack)))
-                                            .action(() -> this.updateRequired(true))
-                                            .closeOnInteract(false)
-                                            .build())
-                                    .build())
-                            .add(devParent(FIXED_POSITION)
-                                    .icon(() -> this.getIcon(profile.overridesPosition(this.pack), Profile::overridesPosition))
-                                    .activeWhen(() -> this.isOptionActive(Profile::overridesPosition))
-                                    .closeOnInteract(false)
-                                    .addChild(devItem(CommonComponents.OPTION_OFF)
-                                            .icon(() -> getDefaultIcon(!profile.overridesPosition(this.pack)))
-                                            .action(() -> this.updatePosition(null))
-                                            .closeOnInteract(false)
-                                            .build())
-                                    .addChild(devItem(FIXED_TOP)
-                                            .icon(() -> getDefaultIcon(profile.getPosition(this.pack) == Pack.Position.TOP))
-                                            .action(() -> this.updatePosition(Pack.Position.TOP))
-                                            .closeOnInteract(false)
-                                            .build())
-                                    .addChild(devItem(FIXED_BOTTOM)
-                                            .icon(() -> getDefaultIcon(profile.getPosition(this.pack) == Pack.Position.BOTTOM))
-                                            .action(() -> this.updatePosition(Pack.Position.BOTTOM))
-                                            .closeOnInteract(false)
-                                            .build())
-                                    .build())
-                            .separator()
-                            .add(devItem(REMOVE_OVERRIDES).action(this::resetOverrides).build())
-                            .separator()
-                    );
+            Profile profile = PackedPacks.CONFIG.isDevMode() ? CurrentPackList.this.packAssets.getProfile() : null;
+            if (profile == null) return;
+
+            builder.add(devItem(HIDDEN)
+                    .icon(() -> this.getIcon(profile.isHidden(this.pack), Profile::isHidden))
+                    .activeWhen(() -> this.isOptionActive(Profile::isHidden))
+                    .action(() -> this.updateHidden(!profile.isHidden(this.pack)))
+                    .closeOnInteract(false)
+                    .build());
+
+            builder.add(devParent(REQUIRED)
+                    .icon(() -> this.getIcon(profile.overridesRequired(this.pack), Profile::overridesRequired))
+                    .activeWhen(() -> this.isOptionActive(Profile::overridesRequired) &&
+                                      !this.pack.getId().equals(PackAssets.VANILLA_ID) &&
+                                      !this.pack.getId().equals(PackAssets.FABRIC_ID))
+                    .closeOnInteract(false)
+                    .addChild(devItem(CommonComponents.OPTION_OFF)
+                            .icon(() -> getDefaultIcon(!profile.overridesRequired(this.pack)))
+                            .action(() -> this.updateRequired(null))
+                            .closeOnInteract(false)
+                            .build())
+                    .addChild(devItem(CommonComponents.GUI_NO)
+                            .icon(() -> getDefaultIcon(
+                                    profile.overridesRequired(this.pack) &&
+                                    !profile.isRequired(this.pack)
+                            ))
+                            .action(() -> this.updateRequired(false))
+                            .closeOnInteract(false)
+                            .build())
+                    .addChild(devItem(CommonComponents.GUI_YES)
+                            .icon(() -> getDefaultIcon(profile.isRequired(this.pack)))
+                            .action(() -> this.updateRequired(true))
+                            .closeOnInteract(false)
+                            .build())
+                    .build());
+
+            builder.add(devParent(FIXED_POSITION)
+                    .icon(() -> this.getIcon(profile.overridesPosition(this.pack), Profile::overridesPosition))
+                    .activeWhen(() -> this.isOptionActive(Profile::overridesPosition))
+                    .closeOnInteract(false)
+                    .addChild(devItem(CommonComponents.OPTION_OFF)
+                            .icon(() -> getDefaultIcon(!profile.overridesPosition(this.pack)))
+                            .action(() -> this.updatePosition(null))
+                            .closeOnInteract(false)
+                            .build())
+                    .addChild(devItem(FIXED_TOP)
+                            .icon(() -> getDefaultIcon(profile.getPosition(this.pack) == Pack.Position.TOP))
+                            .action(() -> this.updatePosition(Pack.Position.TOP))
+                            .closeOnInteract(false)
+                            .build())
+                    .addChild(devItem(FIXED_BOTTOM)
+                            .icon(() -> getDefaultIcon(profile.getPosition(this.pack) == Pack.Position.BOTTOM))
+                            .action(() -> this.updatePosition(Pack.Position.BOTTOM))
+                            .closeOnInteract(false)
+                            .build())
+                    .build());
+
+            builder.add(devItem(REMOVE_OVERRIDES).action(this::resetOverrides).build()).separator();
         }
     }
 
