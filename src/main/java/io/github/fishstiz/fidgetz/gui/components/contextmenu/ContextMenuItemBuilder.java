@@ -1,11 +1,9 @@
 package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.*;
 
 public class ContextMenuItemBuilder {
@@ -80,8 +78,8 @@ public class ContextMenuItemBuilder {
         return new PredicateChain<>(this.self(), predicate.test(t), t);
     }
 
-    public <T> PredicateChain<T> whenNonNull(T t) {
-        return new PredicateChain<>(this.self(), t != null, t);
+    public <T> NonNullPredicateChain<T> whenNonNull(T t) {
+        return new NonNullPredicateChain<>(this.self(), t != null, t);
     }
 
     public <E> IterableChain<E> iterate(Iterable<E> iterable) {
@@ -154,7 +152,7 @@ public class ContextMenuItemBuilder {
     }
 
     public static class PredicateChain<T> extends ConditionalChain {
-        private final T t;
+        protected final T t;
 
         PredicateChain(ContextMenuItemBuilder builder, boolean condition, T t) {
             super(builder, condition);
@@ -180,6 +178,18 @@ public class ContextMenuItemBuilder {
 
         public PredicateChain<T> ifFalse(BiConsumer<T, ContextMenuItemBuilder> builderAction) {
             if (!this.condition) builderAction.accept(this.t, this.self());
+            return this;
+        }
+    }
+
+    public static class NonNullPredicateChain<T> extends PredicateChain<T> {
+        NonNullPredicateChain(ContextMenuItemBuilder builder, boolean condition, T t) {
+            super(builder, condition, t);
+        }
+
+        @Override
+        public PredicateChain<T> ifTrue(BiConsumer<@NotNull T, ContextMenuItemBuilder> builderAction) {
+            if (this.condition) builderAction.accept(Objects.requireNonNull(this.t), this.self());
             return this;
         }
     }

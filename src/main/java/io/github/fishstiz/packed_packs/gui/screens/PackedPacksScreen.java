@@ -707,6 +707,12 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.buildItems(mouseX, mouseY)
                 .when(PackedPacks.CONFIG.isDevMode())
                 .ifTrue(dev -> dev.separatorIfNonEmpty()
+                        .whenNonNull(this.profiles.getProfile())
+                        .ifTrue((profile, b) -> b.
+                                add(GuiConstants.devItem(ResourceUtil.getText("profile.save"))
+                                        .action(() -> profile.setPacks(this.currentPacks.getList().copyFlattenedPacks()))
+                                        .build())
+                                .separator())
                         .add(GuiConstants.devParent(ResourceUtil.getText("preferences"))
                                 .addChildren(Toggleable.preferences())
                                 .addChild(GuiConstants.devItem(ResourceUtil.getText("preferences.reset"))

@@ -13,6 +13,7 @@
   "packed_packs.profile": "Saved Profiles",
   "packed_packs.profile.lock": "Lock Profile",
   "packed_packs.profile.unlock": "Unlock Profile",
+  "packed_packs.profile.save": "Save Profile",
   "packed_packs.profile.empty": "No profiles found.",
   "packed_packs.profile.none": "No Profile",
   "packed_packs.profile.new": "New",
