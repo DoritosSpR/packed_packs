@@ -13,17 +13,15 @@ import java.util.Objects;
 
 public record PackEntry(
         String id,
-        @Nullable Boolean hidden,
         @Nullable Boolean required,
         @Nullable PackEntry.SerializedPosition fixed
 ) implements Serializable {
     private static final String ID_SERIALIZED_NAME = "id";
-    private static final String HIDDEN_SERIALIZED_NAME = "hidden";
     private static final String REQUIRED_SERIALIZED_NAME = "required";
     private static final String FIXED_SERIALIZED_NAME = "fixed";
 
     public PackEntry(String id) {
-        this(id, null, null, null);
+        this(id, null, null);
     }
 
     enum SerializedPosition {
@@ -62,7 +60,7 @@ public record PackEntry(
         public JsonElement serialize(PackMap src, Type typeOfSrc, JsonSerializationContext context) {
             JsonArray arr = new JsonArray();
             for (PackEntry entry : src.values()) {
-                if (entry.hidden() == null && entry.required() == null && entry.fixed() == null) {
+                if (entry.required() == null && entry.fixed() == null) {
                     arr.add(entry.id());
                 } else {
                     arr.add(context.serialize(entry));
@@ -87,7 +85,6 @@ public record PackEntry(
         public JsonElement serialize(PackEntry src, Type typeOfSrc, JsonSerializationContext context) {
             JsonObject obj = new JsonObject();
             obj.addProperty("id", src.id());
-            if (src.hidden() != null) obj.addProperty(HIDDEN_SERIALIZED_NAME, src.hidden());
             if (src.required() != null) obj.addProperty(REQUIRED_SERIALIZED_NAME, src.required());
             if (src.fixed() != null) obj.addProperty(FIXED_SERIALIZED_NAME, src.fixed().name());
             return obj;
@@ -102,7 +99,6 @@ public record PackEntry(
             JsonObject obj = json.getAsJsonObject();
 
             String id = Objects.requireNonNull(obj.get(ID_SERIALIZED_NAME).getAsString(), "'id' in pack entry must not be null");
-            Boolean hidden = obj.has(HIDDEN_SERIALIZED_NAME) ? obj.get(HIDDEN_SERIALIZED_NAME).getAsBoolean() : null;
             Boolean required = obj.has(REQUIRED_SERIALIZED_NAME) ? obj.get(REQUIRED_SERIALIZED_NAME).getAsBoolean() : null;
             SerializedPosition fixed = null;
             if (obj.has(FIXED_SERIALIZED_NAME)) {
@@ -117,7 +113,7 @@ public record PackEntry(
                 }
             }
 
-            return new PackEntry(id, hidden, required, fixed);
+            return new PackEntry(id, required, fixed);
         }
     }
 }

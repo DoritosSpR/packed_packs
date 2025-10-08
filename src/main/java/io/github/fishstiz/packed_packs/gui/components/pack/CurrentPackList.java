@@ -9,7 +9,6 @@ import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
-import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.util.InputUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
@@ -42,10 +41,8 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     private static final Sprite MOVE_UP_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_up"));
     private static final Sprite MOVE_DOWN_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_down_highlighted"));
     private static final Sprite MOVE_DOWN_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_down"));
-    private static final Sprite EYE_SLASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("eye_slash"));
     private static final Sprite ARROW_UP_SPRITE = Sprite.of16(ResourceUtil.getIcon("arrow_up"));
     private static final Sprite ARROW_DOWN_SPRITE = Sprite.of16(ResourceUtil.getIcon("arrow_down"));
-    private static final Component HIDDEN = ResourceUtil.getText("profile.override.hidden");
     private static final Component REQUIRED = ResourceUtil.getText("profile.override.required");
     private static final Component FIXED_POSITION = ResourceUtil.getText("profile.override.fixed");
     private static final Component FIXED_TOP = ResourceUtil.getText("profile.override.fixed.top");
@@ -285,21 +282,6 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         return this.scrolling;
     }
 
-    private boolean isOverriddenByDefault(BiPredicate<Profile, Pack> defaultOption, Pack pack) {
-        Profile selectedProfile = CurrentPackList.this.packAssets.getProfile();
-        if (selectedProfile == null) return false;
-
-        Profile defaultProfile = CurrentPackList.this.packAssets.getConfig().getDefaultProfile();
-        if (defaultProfile != null) {
-            if (defaultProfile.getId() == selectedProfile.getId()) {
-                return false;
-            }
-            return defaultOption.test(defaultProfile, pack);
-        }
-        return false;
-    }
-
-
     public class Entry extends PackListBase<Entry>.Entry {
         protected Entry(Pack pack, int index) {
             super(pack, index);
@@ -518,8 +500,6 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         @Override
         protected void renderForeground(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            this.renderDev(guiGraphics, left, top, height);
-
             if (!hovering && !this.isSelectedLast()) return;
 
             int x = left + SPACING;
@@ -536,21 +516,8 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             }
         }
 
-        private PackOverride hasOverride(BiPredicate<Profile, Pack> option) {
-            Profile defaultProfile = CurrentPackList.this.packAssets.getConfig().getDefaultProfile();
-            Profile currentProfile = CurrentPackList.this.packAssets.getProfile();
-            PackOverride packOverride = PackOverride.NONE;
-
-            if (defaultProfile != null && option.test(defaultProfile, this.pack)) {
-                packOverride = PackOverride.GLOBAL;
-            }
-            if (currentProfile != null && option.test(currentProfile, this.pack)) {
-                packOverride = !packOverride.booleanValue() ? PackOverride.LOCAL : PackOverride.COMPOSITE;
-            }
-            return packOverride;
-        }
-
-        protected void renderDev(GuiGraphics guiGraphics, int left, int top, int height) {
+        @Override
+        protected void renderDev(GuiGraphics guiGraphics, int top, int left) {
             if (PackedPacks.CONFIG.isDevMode()) {
                 int size = DEV_SPRITE_SIZE;
                 int iconX = (left + width) - size - DEV_SPRITE_MARGIN_RIGHT;
@@ -577,24 +544,6 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             }
         }
 
-        private Pack[] selectionOrPack() {
-            if (this.isSelected()) {
-                return CurrentPackList.this.packAssets.flattenPacks(CurrentPackList.this.copySelection()).toArray(Pack[]::new);
-            }
-            if (this.pack instanceof FolderPack folderPack) {
-                return CurrentPackList.this.packAssets.flattenPacks(List.of(folderPack)).toArray(Pack[]::new);
-            }
-            return new Pack[]{this.pack};
-        }
-
-        private void updateHidden(boolean hidden) {
-            Profile profile = CurrentPackList.this.packAssets.getProfile();
-            if (profile != null) {
-                profile.setPacks(CurrentPackList.this.copyFlattenedPacks());
-                profile.setHidden(hidden, this.selectionOrPack());
-            }
-        }
-
         private void updateRequired(@Nullable Boolean required) {
             Profile profile = CurrentPackList.this.packAssets.getProfile();
             if (profile != null) {
@@ -615,10 +564,6 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             this.updateHidden(false);
             this.updateRequired(null);
             this.updatePosition(null);
-        }
-
-        private boolean isOverriddenByDefault(BiPredicate<Profile, Pack> defaultOption) {
-            return CurrentPackList.this.isOverriddenByDefault(defaultOption, this.pack);
         }
 
         private boolean isOptionActive(BiPredicate<Profile, Pack> option) {
@@ -701,27 +646,6 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
 
         public boolean isDown() {
             return this == MoveDirection.DOWN;
-        }
-    }
-
-    private enum PackOverride {
-        NONE(Theme.WHITE.withAlpha(0)),
-        LOCAL(Theme.BLACK.withAlpha(0.75f)),
-        GLOBAL(Theme.BLUE_500.withAlpha(0.75f)),
-        COMPOSITE(Theme.PURPLE_500.withAlpha(0.75f));
-
-        private final int backgroundColor;
-
-        PackOverride(int backgroundColor) {
-            this.backgroundColor = backgroundColor;
-        }
-
-        boolean booleanValue() {
-            return this != NONE;
-        }
-
-        int backgroundColor() {
-            return this.backgroundColor;
         }
     }
 }

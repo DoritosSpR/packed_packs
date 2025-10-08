@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.config;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
@@ -18,6 +19,7 @@ public class Profile implements PackOptions, Serializable {
     private boolean locked = false;
     private long id;
     private String name;
+    private final Set<String> hiddenIds = new ObjectOpenHashSet<>();
     private PackEntry.PackMap packIds = new PackEntry.PackMap();
 
     public Profile() {
@@ -73,12 +75,12 @@ public class Profile implements PackOptions, Serializable {
         }
     }
 
-    public void setHidden(@Nullable Boolean hidden, Pack... packs) {
+    public void setHidden(boolean hidden, Pack... packs) {
         for (Pack pack : packs) {
-            PackEntry entry = this.packIds.get(pack.getId());
-            if (entry != null) {
-                if (Boolean.FALSE.equals(hidden)) hidden = null;
-                this.packIds.put(pack.getId(), new PackEntry(pack.getId(), hidden, entry.required(), entry.fixed()));
+            if (hidden) {
+                this.hiddenIds.add(pack.getId());
+            } else {
+                this.hiddenIds.remove(pack.getId());
             }
         }
     }
@@ -92,7 +94,7 @@ public class Profile implements PackOptions, Serializable {
 
             PackEntry entry = this.packIds.get(id);
             if (entry != null) {
-                this.packIds.put(id, new PackEntry(id, entry.hidden(), required, entry.fixed()));
+                this.packIds.put(id, new PackEntry(id, required, entry.fixed()));
             }
         }
     }
@@ -103,7 +105,6 @@ public class Profile implements PackOptions, Serializable {
             if (entry != null) {
                 this.packIds.put(pack.getId(), new PackEntry(
                         pack.getId(),
-                        entry.hidden(),
                         entry.required(),
                         position != null ? PackEntry.SerializedPosition.get(position) : null
                 ));
@@ -121,7 +122,7 @@ public class Profile implements PackOptions, Serializable {
 
     @Override
     public boolean isHidden(Pack pack) {
-        return Boolean.TRUE.equals(mapOrDefault(this.packIds.get(pack.getId()), false, PackEntry::hidden));
+        return this.hiddenIds.contains(pack.getId());
     }
 
     @Override
