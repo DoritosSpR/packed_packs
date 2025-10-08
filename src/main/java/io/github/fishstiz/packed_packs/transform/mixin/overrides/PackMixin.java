@@ -2,16 +2,24 @@ package io.github.fishstiz.packed_packs.transform.mixin.overrides;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.pack.PackOptionsResolver;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
 import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackCompatibility;
 import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(Pack.class)
 public abstract class PackMixin implements ConfiguredPack {
+    @Shadow
+    @Final
+    private Pack.Metadata metadata;
+
     @Unique
     @Nullable
     private PackOptionsResolver packed_packs$resolver;
@@ -69,5 +77,21 @@ public abstract class PackMixin implements ConfiguredPack {
             }
         }
         return original.call();
+    }
+
+    @WrapMethod(method = "getCompatibility")
+    private PackCompatibility resolveCompatibility(Operation<PackCompatibility> original) {
+        if (this.packed_packs$resolver != null) {
+            Profile defaultProfile = this.packed_packs$resolver.config().getDefaultProfile();
+            if (defaultProfile != null && defaultProfile.includes(self())) {
+                return PackCompatibility.COMPATIBLE;
+            }
+        }
+        return original.call();
+    }
+
+    @Override
+    public Pack.Metadata packed_packs$getMetadata() {
+        return this.metadata;
     }
 }
