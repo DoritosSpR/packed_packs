@@ -100,7 +100,7 @@ public class RespackoptsWidget extends AbstractButton implements ContextMenuProv
     @Override
     public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
         if (this.toggleable != null) {
-            this.toggleable.buildContext(builder);
+            this.toggleable.buildContext(builder.separatorIfNonEmpty());
         }
     }
 }

@@ -1,8 +1,6 @@
 package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -175,12 +173,12 @@ public class ContextMenuItemBuilder {
             return this;
         }
 
-        public PredicateChain<T> ifTrue(BiConsumer<@NotNull T, ContextMenuItemBuilder> builderAction) {
+        public PredicateChain<T> ifTrue(BiConsumer<T, ContextMenuItemBuilder> builderAction) {
             if (this.condition) builderAction.accept(this.t, this.self());
             return this;
         }
 
-        public PredicateChain<T> ifFalse(BiConsumer<@Nullable T, ContextMenuItemBuilder> builderAction) {
+        public PredicateChain<T> ifFalse(BiConsumer<T, ContextMenuItemBuilder> builderAction) {
             if (!this.condition) builderAction.accept(this.t, this.self());
             return this;
         }

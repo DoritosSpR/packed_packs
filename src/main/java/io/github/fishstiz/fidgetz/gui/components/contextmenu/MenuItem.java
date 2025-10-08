@@ -8,7 +8,10 @@ import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 public interface MenuItem {
-    MenuItem SEPARATOR = MenuItem.builder(CommonComponents.EMPTY).autoSeparate(false).build();
+    MenuItem SEPARATOR = MenuItem.builder(CommonComponents.EMPTY)
+            .closeOnInteract(false)
+            .autoSeparate(false)
+            .build();
 
     Component text();
 

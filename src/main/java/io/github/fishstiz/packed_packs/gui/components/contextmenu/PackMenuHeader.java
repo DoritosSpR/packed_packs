@@ -28,7 +28,17 @@ public record PackMenuHeader(Pack pack, Sprite icon) implements MenuItem {
     }
 
     @Override
+    public boolean active() {
+        return false;
+    }
+
+    @Override
     public Runnable action() {
         return Runnables.doNothing();
+    }
+
+    @Override
+    public int textColor() {
+        return Theme.WHITE.getARGB();
     }
 }
