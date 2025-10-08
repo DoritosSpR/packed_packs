@@ -93,11 +93,9 @@ public class Config implements Serializable {
         private boolean hideIncompatibleWarnings = false;
         private final List<String> additionalFolders = new ObjectArrayList<>();
         private @Nullable Long defaultProfile = null;
-        private @Nullable Long lastViewed = null;
         private long autoIncrement = 0;
         private final List<Profile> profiles = new ObjectArrayList<>();
         private transient @Nullable Profile cachedDefaultProfile = null;
-        private transient @Nullable Profile cachedLastViewed = null;
 
         public @Nullable Profile getDefaultProfile() {
             if (this.defaultProfile == null) {
@@ -114,6 +112,11 @@ public class Config implements Serializable {
             if (defaultProfile == null || CollectionsUtil.containsId(this.profiles, defaultProfile.getId(), Profile::getId)) {
                 this.defaultProfile = defaultProfile != null ? defaultProfile.getId() : null;
                 this.cachedDefaultProfile = defaultProfile;
+
+                if (defaultProfile != null) {
+                    profiles.remove(defaultProfile);
+                    profiles.addFirst(defaultProfile);
+                }
             }
         }
 
@@ -134,36 +137,13 @@ public class Config implements Serializable {
                     this.defaultProfile = null;
                     this.cachedDefaultProfile = null;
                 }
-                if (Objects.equals(this.lastViewed, profile.getId())) {
-                    this.lastViewed = null;
-                    this.cachedLastViewed = null;
-                }
             }
 
             if (this.profiles.isEmpty()) {
                 this.autoIncrement = 0;
                 this.cachedDefaultProfile = null;
                 this.defaultProfile = null;
-                this.lastViewed = null;
-                this.cachedLastViewed = null;
             }
-        }
-
-        public @Nullable Profile getLastViewed() {
-            if (this.lastViewed == null) {
-                return null;
-            }
-            if (this.cachedLastViewed != null) {
-                return this.cachedLastViewed;
-            }
-
-            this.cachedLastViewed = CollectionsUtil.firstMatch(this.profiles, this.lastViewed, Profile::getId);
-            return this.cachedLastViewed;
-        }
-
-        public void setLastViewed(@Nullable Profile lastViewed) {
-            this.lastViewed = lastViewed != null ? lastViewed.getId() : null;
-            this.cachedLastViewed = lastViewed;
         }
 
         public boolean isReplaceOriginal() {

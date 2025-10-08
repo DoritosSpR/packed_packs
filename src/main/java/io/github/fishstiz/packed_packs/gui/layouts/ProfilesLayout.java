@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.gui.layouts;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
+import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
@@ -10,6 +11,7 @@ import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.profile.ProfileList;
 import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
+import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
@@ -20,6 +22,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
 public class ProfilesLayout {
     public static final Component TITLE_TEXT = ResourceUtil.getText("profile");
@@ -45,11 +49,9 @@ public class ProfilesLayout {
             .setSprite(new ButtonSprites(
                     new Sprite(ResourceUtil.getIcon("edit"), Size.of16()),
                     new Sprite(ResourceUtil.getIcon("edit_inactive"), Size.of16()),
-                    sprite -> this.getProfile() != null && this.getProfile().isLocked()
-                            ? GuiConstants.LOCK_SPRITE
-                            : sprite::renderClamped
+                    this::getToggleSpriteRenderer
             ))
-            .setOnPress(nameField::toggle)
+            .setOnPress(this.nameField::toggle)
             .build();
     private final FidgetzButton<Void> noProfileButton = FidgetzButton.<Void>builder()
             .setMessage(NO_PROFILE_TEXT)
@@ -58,13 +60,17 @@ public class ProfilesLayout {
     private final ProfileList profileList;
     private @Nullable Profile profile;
 
-    public ProfilesLayout(Sidebar.Builder sidebar, Config.Packs config, Listener listener) {
+    public ProfilesLayout(@Nullable Profile profile, Config.Packs config, PackedPacksScreen screen) {
         this.config = config;
-        this.sidebar = sidebar.setMaxWidth(MAX_WIDTH).setTitle(TITLE_TEXT.copy().withColor(Theme.GRAY_800.getARGB()), false).build();
-        this.listener = listener;
+        this.sidebar = Sidebar.builder(screen)
+                .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
+                .setMaxWidth(MAX_WIDTH)
+                .setTitle(TITLE_TEXT.copy().withColor(Theme.GRAY_800.getARGB()), false)
+                .build();
+        this.listener = screen;
         this.profileList = new ProfileList(this.config, this::getProfile, this::removeProfile, this::setProfile);
-
         this.noProfileButton.addListener(() -> this.sidebar.setOpen(false));
+        this.profile = profile;
     }
 
     public void initContents() {
@@ -87,7 +93,15 @@ public class ProfilesLayout {
         this.sidebar.root().layout().arrangeElements();
         this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
 
-        this.setProfile(this.config.getLastViewed());
+        this.setProfile(this.profile);
+    }
+
+    private RenderableRect getToggleSpriteRenderer(Sprite sprite) {
+        if (this.profile != null && this.profile.isLocked()) {
+            Profile defaultProfile = this.config.getDefaultProfile();
+            return this.profile == defaultProfile ? STAR_SPRITE::renderClamped : LOCK_SPRITE;
+        }
+        return sprite::renderClamped;
     }
 
     public int getMaxWidth() {
@@ -128,8 +142,14 @@ public class ProfilesLayout {
         boolean hasProfile = profile != null;
         this.nameField.setHint(hasProfile ? UNNAMED_TEXT : NO_PROFILE_TEXT);
         this.nameField.setValue(hasProfile ? profile.getName() : "");
-        this.toggleNameButton.active = hasProfile && !profile.isLocked();
+        this.nameField.visible = hasProfile;
+        this.nameField.active = hasProfile;
         this.noProfileButton.active = hasProfile;
+        this.toggleNameButton.visible = hasProfile;
+
+        boolean locked = hasProfile && !profile.isLocked();
+        this.toggleNameButton.active = locked;
+        this.toggleNameButton.setTooltip(locked ? null : Tooltip.create(EDIT_NAME_TEXT));
 
         this.listener.onProfileChange(previous, this.profile);
     }

@@ -16,7 +16,6 @@ import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.pack.*;
-import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
@@ -24,7 +23,6 @@ import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
 import io.github.fishstiz.packed_packs.pack.PackWatcher;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.util.ToastUtil;
-import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.pack.PackRepositoryHelper;
@@ -45,7 +43,6 @@ import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
-import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.AlertScreen;
 import net.minecraft.client.gui.screens.ConfirmScreen;
@@ -66,6 +63,7 @@ import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.PackUtil.*;
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
 public class PackedPacksScreen extends PackListEventHandler implements
         ProfilesLayout.Listener,
@@ -102,19 +100,13 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
     private boolean initialized = false;
 
-    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original) {
+    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, @Nullable Profile profile) {
         super(ResourceUtil.getModName());
 
         this.previous = previous;
         this.original = original;
         this.packsConfig = PackedPacks.CONFIG.get(original.packType());
-        this.profiles = new ProfilesLayout(
-                Sidebar.builder(this).setHeaderSettings(
-                        LayoutSettings.defaults().paddingLeft(GuiConstants.SPACING).paddingTop(GuiConstants.SPACING - 1)
-                ),
-                this.packsConfig,
-                this
-        );
+        this.profiles = new ProfilesLayout(profile, this.packsConfig, this);
         this.repository = new PackRepositoryHelper(this.original.repository(), this.original.packDir(), this.packsConfig, this.profiles::getProfile);
         this.availablePacks = new AvailablePacksLayout(this.repository, this);
         this.currentPacks = new CurrentPacksLayout(this.repository, this);
@@ -125,13 +117,17 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.folderDialog = FolderDialog.create(this, this.repository);
         this.fileRenameModal = new FileRenameModal(this, this.repository);
         this.contextMenu = ContextMenu.builder(this)
-                .setSpacing(GuiConstants.SPACING)
+                .setSpacing(SPACING)
                 .setBackground(Theme.GRAY_800.getARGB())
                 .setBorderColor(Theme.GRAY_500.getARGB())
                 .build();
         this.dialogs = List.of(this.options, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
         this.packLists = List.of(this.folderDialog.root(), this.availablePacks.getList(), this.currentPacks.getList());
         this.initAdditionalFolders();
+    }
+
+    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original) {
+        this(previous, original, null);
     }
 
     @Override
@@ -147,7 +143,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
     public void removed() {
         this.closeWatcher();
         this.updateProfile(this.profiles.getProfile());
-        this.packsConfig.setLastViewed(this.profiles.getProfile());
         PackedPacks.CONFIG.save();
         Preferences.INSTANCE.save();
     }
@@ -187,7 +182,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     private FlexLayout createHeader() {
-        FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
+        FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
         final boolean devMode = PackedPacks.CONFIG.isDevMode();
 
         header.addChild(
@@ -195,7 +190,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                         .makeSquare()
                         .setMessage(ProfilesLayout.TITLE_TEXT)
                         .setTooltip(Tooltip.create(ProfilesLayout.TITLE_TEXT))
-                        .setSprite(GuiConstants.HAMBURGER_SPRITE)
+                        .setSprite(HAMBURGER_SPRITE)
                         .setOnPress(this.profiles.getSidebar()::toggle)
                         .build()
         );
@@ -241,17 +236,17 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     private FlexLayout createContents() {
-        FlexLayout contents = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
-        this.availablePacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(GuiConstants.SPACING), false));
-        this.currentPacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(GuiConstants.SPACING), false));
+        FlexLayout contents = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
+        this.availablePacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING), false));
+        this.currentPacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING), false));
         this.currentPacks.getSearchField().addListener(this.searchListener);
         this.availablePacks.getSearchField().addListener(this.searchListener);
         return contents;
     }
 
     private FlexLayout createFooter() {
-        FlexLayout footer = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
-        FlexLayout firstColumn = FlexLayout.horizontal().spacing(GuiConstants.SPACING);
+        FlexLayout footer = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
+        FlexLayout firstColumn = FlexLayout.horizontal().spacing(SPACING);
         FlexLayout secondColumn = firstColumn.copyLayout();
 
         firstColumn.addFlexChild(
@@ -274,13 +269,13 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     public int getMaxWidth() {
-        return this.width - GuiConstants.SPACING * 2;
+        return this.width - SPACING * 2;
     }
 
     @Override
     protected void rebuildWidgets() {
         if (this.minecraft != null) {
-            this.minecraft.setScreen(new PackedPacksScreen(this.previous, this.original));
+            this.minecraft.setScreen(new PackedPacksScreen(this.previous, this.original, this.profiles.getProfile()));
         }
     }
 
@@ -491,11 +486,14 @@ public class PackedPacksScreen extends PackListEventHandler implements
         } else {
             this.reset();
         }
+
         boolean unlocked = current == null || !current.isLocked();
         this.availablePacks.getSearchField().setValue("");
         this.availablePacks.getTransferButton().active = unlocked;
         this.currentPacks.getSearchField().setValue("");
         this.currentPacks.getTransferButton().active = unlocked;
+
+        this.repositionElements();
     }
 
     @Override
@@ -704,13 +702,13 @@ public class PackedPacksScreen extends PackListEventHandler implements
                 .ifTrue(dev -> dev.separatorIfNonEmpty()
                         .whenNonNull(this.profiles.getProfile())
                         .ifTrue((profile, b) -> b.
-                                add(GuiConstants.devItem(ResourceUtil.getText("profile.save"))
+                                add(devItem(ResourceUtil.getText("profile.save"))
                                         .action(() -> profile.setPacks(this.currentPacks.getList().copyFlattenedPacks()))
                                         .build())
                                 .separator())
-                        .add(GuiConstants.devParent(ResourceUtil.getText("preferences"))
+                        .add(devParent(ResourceUtil.getText("preferences"))
                                 .addChildren(Toggleable.preferences())
-                                .addChild(GuiConstants.devItem(ResourceUtil.getText("preferences.reset"))
+                                .addChild(devItem(ResourceUtil.getText("preferences.reset"))
                                         .action(Preferences.INSTANCE::reset)
                                         .build())
                                 .build())

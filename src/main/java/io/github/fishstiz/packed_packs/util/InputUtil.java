@@ -5,6 +5,7 @@ import static net.minecraft.client.gui.screens.Screen.*;
 
 public class InputUtil {
     public static final String DEV_MODE_SHORTCUT = "CTRL + SHIFT + I";
+    public static final long DOUBLE_CLICK_THRESHOLD_MS = 250;
     public static final int MOUSE_BUTTON_BACK = 3;
     public static final int MOUSE_BUTTON_FORWARD = 4;
     public static final int MOD_SHIFT = 1;
