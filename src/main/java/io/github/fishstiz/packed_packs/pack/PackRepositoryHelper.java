@@ -450,10 +450,4 @@ public class PackRepositoryHelper implements PackAssets {
     public List<Pack> getNestedPacks(FolderPack folderPack) {
         return this.validateAndOrderNestedPackIds(folderPack, Objects.requireNonNull(this.getFolderConfig(folderPack)).getPackIds());
     }
-
-    public record PackGroup(ImmutableList<Pack> selected, ImmutableList<Pack> unselected) {
-        private static PackGroup of(List<Pack> selected, List<Pack> unselected) {
-            return new PackGroup(ImmutableList.copyOf(selected), ImmutableList.copyOf(unselected));
-        }
-    }
 }

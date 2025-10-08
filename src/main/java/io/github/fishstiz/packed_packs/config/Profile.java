@@ -92,7 +92,7 @@ public class Profile implements PackOptions, Serializable {
     public void setRequired(@Nullable Boolean required, Pack... packs) {
         for (Pack pack : packs) {
             String id = pack.getId();
-            if ((required == null || !required) && (id.equals(PackAssets.VANILLA_ID) || id.equals(PackAssets.FABRIC_ID))) {
+            if (Boolean.FALSE.equals(required) && (id.equals(PackAssets.VANILLA_ID) || id.equals(PackAssets.FABRIC_ID))) {
                 continue;
             }
 

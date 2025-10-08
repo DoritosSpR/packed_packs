@@ -20,6 +20,7 @@ import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.pack.PackGroup;
 import io.github.fishstiz.packed_packs.pack.PackWatcher;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.util.ToastUtil;
@@ -100,7 +101,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
     private boolean initialized = false;
 
-    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, @Nullable Profile profile) {
+    private PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, @Nullable Profile profile, @Nullable PackGroup packs) {
         super(ResourceUtil.getModName());
 
         this.previous = previous;
@@ -129,10 +130,26 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
 
         this.initAdditionalFolders();
+
+        if (profile != null) {
+            this.applyProfile(profile);
+        } else if (packs == null) {
+            this.onProfileChange(null, null);
+        } else {
+            this.applyPacks(packs.unselected(), packs.selected());
+        }
     }
 
     public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original) {
-        this(previous, original, null);
+        this(previous, original, null, null);
+    }
+
+    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, Profile profile) {
+        this(previous, original, profile, null);
+    }
+
+    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, PackGroup packs) {
+        this(previous, original, null, packs);
     }
 
     @Override
@@ -279,9 +296,20 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     @Override
     protected void rebuildWidgets() {
-        if (this.minecraft != null) {
-            this.minecraft.setScreen(new PackedPacksScreen(this.previous, this.original, this.profiles.getProfile()));
+        if (this.minecraft == null) return;
+
+        PackedPacksScreen screen;
+        Profile profile = this.profiles.getProfile();
+
+        if (profile != null) {
+            profile.setPacks(this.currentPacks.getList().copyFlattenedPacks());
+            screen = new PackedPacksScreen(this.previous, this.original, profile);
+        } else {
+            PackGroup packs = PackGroup.of(this.currentPacks.getList().copyPacks(), this.availablePacks.getList().copyPacks());
+            screen = new PackedPacksScreen(this.previous, this.original, packs);
         }
+
+        this.minecraft.setScreen(screen);
     }
 
     @Override
@@ -446,7 +474,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     public void revalidatePacks() {
         PackList availableList = this.availablePacks.getList();
         PackList currentList = this.currentPacks.getList();
-        PackRepositoryHelper.PackGroup packs = this.repository.validatePacks(availableList.copyPacks(), currentList.copyPacks());
+        PackGroup packs = this.repository.validatePacks(availableList.copyPacks(), currentList.copyPacks());
         this.repository.clearIconCache();
         this.replacePacks(availableList, packs.unselected());
         this.replacePacks(currentList, packs.selected());
@@ -460,14 +488,14 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     public void reset() {
-        PackRepositoryHelper.PackGroup packs = this.repository.getPacksByRequirement();
+        PackGroup packs = this.repository.getPacksByRequirement();
         this.availablePacks.getList().reload(packs.unselected());
         this.currentPacks.getList().reload(packs.selected());
         this.clearHistory();
     }
 
     public void useSelected() {
-        PackRepositoryHelper.PackGroup packs = this.repository.getPacksBySelected();
+        PackGroup packs = this.repository.getPacksBySelected();
         this.availablePacks.getList().reload(packs.unselected());
         this.currentPacks.getList().reload(packs.selected());
         this.clearHistory();
@@ -480,7 +508,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     @Override
     public void onProfileChange(@Nullable Profile previous, @Nullable Profile current) {
-        if (previous != null) {
+        if (previous != null && previous != current) {
             previous.setPacks(this.currentPacks.getList().copyFlattenedPacks());
         }
 
@@ -509,7 +537,11 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private void applyProfile(@NotNull Profile profile) {
         List<Pack> available = this.availablePacks.getList().copyPacks();
         List<Pack> current = this.repository.getPacksByFlattenedIds(profile.getPackIds());
-        PackRepositoryHelper.PackGroup packs = this.repository.validatePacks(available, current);
+        this.applyPacks(available, current);
+    }
+
+    private void applyPacks(List<Pack> available, List<Pack> current) {
+        PackGroup packs = this.repository.validatePacks(available, current);
         this.availablePacks.getList().reload(packs.unselected());
         this.currentPacks.getList().reload(packs.selected());
         this.clearHistory();
@@ -652,11 +684,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     public void toggleDevMode() {
-        Profile profile = this.profiles.getProfile();
-        if (PackedPacks.CONFIG.isDevMode() && profile != null) {
-            profile.setPacks(this.currentPacks.getList().copyFlattenedPacks());
-        }
-
         PackedPacks.CONFIG.setDevMode(!PackedPacks.CONFIG.isDevMode());
         ToastUtil.onDevModeToggleToast(PackedPacks.CONFIG.isDevMode());
         this.rebuildWidgets();
