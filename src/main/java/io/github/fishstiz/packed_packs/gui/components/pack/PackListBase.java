@@ -303,6 +303,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
+    public boolean isHovered() {
+        return super.isHovered();
+    }
+
+    @Override
     public boolean isLocked() {
         return this.packAssets.isLocked();
     }
