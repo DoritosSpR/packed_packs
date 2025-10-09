@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.config;
 
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -75,7 +76,15 @@ public class Config implements Serializable {
 
     public static Config load(Path directory) {
         File file = directory.resolve(MOD_ID + ".json").toFile();
-        Config config = ConfigLoader.loadOrSave(file, Config.class, Config::new);
+        Config config;
+
+        try {
+            config = ConfigLoader.loadOrSave(file, Config.class, Config::new);
+        } catch (Exception e) {
+            PackedPacks.LOGGER.error("[packed_packs] Failed to read config file, using default. ", e);
+            config = new Config();
+        }
+
         config.file = file;
         return config;
     }
