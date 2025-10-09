@@ -502,7 +502,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     public void resetToEnabled() {
-        this.onEvent(new DummyEvent());
+        this.onEvent(new BasicEvent(true));
         this.useSelected();
     }
 
