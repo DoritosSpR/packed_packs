@@ -11,8 +11,8 @@ public class ConfigLoader {
     private static final Gson GSON = new GsonBuilder()
             .serializeNulls()
             .setPrettyPrinting()
-            .registerTypeAdapter(PackEntry.class, new PackEntry.Adapter())
-            .registerTypeAdapter(PackEntry.PackMap.class, new PackEntry.MapAdapter())
+            .registerTypeAdapter(PackOverride.class, new PackOverride.Adapter())
+            .registerTypeAdapter(Profile.class, new Profile.Deserializer())
             .create();
 
     private ConfigLoader() {
