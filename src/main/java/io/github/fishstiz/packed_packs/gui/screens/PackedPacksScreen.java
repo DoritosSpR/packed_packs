@@ -129,7 +129,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (profile != null) {
             this.applyProfile(profile);
         } else if (packs == null) {
-            this.onProfileChange(null, null);
+            this.useSelected();
         } else {
             this.applyPacks(packs.unselected(), packs.selected());
         }
@@ -503,7 +503,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     @Override
     public void onProfileChange(@Nullable Profile previous, @Nullable Profile current) {
-        if (previous != null && previous != current) {
+        if (previous != null) {
             previous.setPacks(this.currentPacks.getList().copyFlattenedPacks());
         }
 

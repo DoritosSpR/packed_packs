@@ -92,7 +92,7 @@ public class ProfilesLayout {
         this.sidebar.root().layout().arrangeElements();
         this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
 
-        this.onSetProfile(this.profile);
+        this.updateGuiState(this.profile);
     }
 
     private RenderableRect getToggleSpriteRenderer(Sprite sprite) {
@@ -132,7 +132,7 @@ public class ProfilesLayout {
         this.profileList.scheduleRefresh();
     }
 
-    private void onSetProfile(@Nullable Profile profile) {
+    private void updateGuiState(@Nullable Profile profile) {
         this.nameField.setEditable(false);
 
         boolean hasProfile = profile != null;
@@ -148,8 +148,8 @@ public class ProfilesLayout {
     private void setProfile(@Nullable Profile profile) {
         Profile previous = this.profile;
         this.profile = profile;
-        this.onSetProfile(profile);
         this.listener.onProfileChange(previous, this.profile);
+        this.updateGuiState(profile);
     }
 
     public @Nullable Profile getProfile() {
