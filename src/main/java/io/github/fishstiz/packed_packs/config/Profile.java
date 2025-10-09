@@ -2,11 +2,11 @@ package io.github.fishstiz.packed_packs.config;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
@@ -77,9 +77,17 @@ public class Profile implements PackOptions, Serializable {
         return List.copyOf(this.packIds);
     }
 
-    public void setPacks(List<Pack> packs) {
+    public void setPacks(Collection<Pack> selected) {
         if (!this.locked) {
-            this.packIds = new ObjectLinkedOpenHashSet<>(PackUtil.extractPackIds(packs));
+            this.packIds = new ObjectLinkedOpenHashSet<>(PackUtil.extractPackIds(selected));
+        }
+    }
+
+    public void syncPacks(Collection<Pack> available, Collection<Pack> selected) {
+        if (!this.locked) {
+            this.packIds = new ObjectLinkedOpenHashSet<>(PackUtil.extractPackIds(selected));
+            Set<String> availableIds = new ObjectOpenHashSet<>(PackUtil.extractPackIds(available));
+            this.overrides.keySet().removeIf(id -> !this.packIds.contains(id) && !availableIds.contains(id));
         }
     }
 
@@ -91,8 +99,7 @@ public class Profile implements PackOptions, Serializable {
 
     public void setRequired(@Nullable Boolean required, Pack... packs) {
         for (Pack pack : packs) {
-            String id = pack.getId();
-            if (Boolean.FALSE.equals(required) && (id.equals(PackAssets.VANILLA_ID) || id.equals(PackAssets.FABRIC_ID))) {
+            if (Boolean.FALSE.equals(required) && PackUtil.isEssential(pack)) {
                 continue;
             }
 
