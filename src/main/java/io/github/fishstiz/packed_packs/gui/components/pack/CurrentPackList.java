@@ -11,6 +11,7 @@ import io.github.fishstiz.packed_packs.config.PackOverride;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
+import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
@@ -576,10 +577,6 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             return this.isOverriddenByDefault(defaultOption) ? Sprite.of16(ResourceUtil.getIcon("radio_globe")) : getDefaultIcon(active);
         }
 
-        private boolean nonEssential() {
-            return !this.pack.getId().equals(PackAssets.VANILLA_ID) && !this.pack.getId().equals(PackAssets.FABRIC_ID);
-        }
-
         @Override
         protected void onBuildHeader(ContextMenuItemBuilder builder) {
             Profile profile = PackedPacks.CONFIG.isDevMode() ? CurrentPackList.this.packAssets.getProfile() : null;
@@ -606,7 +603,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
                                     profile.overridesRequired(this.pack) &&
                                     !profile.isRequired(this.pack)
                             ))
-                            .activeWhen(this::nonEssential)
+                            .activeWhen(() -> !PackUtil.isEssential(this.pack))
                             .action(() -> this.updateRequired(false))
                             .closeOnInteract(false)
                             .build())
