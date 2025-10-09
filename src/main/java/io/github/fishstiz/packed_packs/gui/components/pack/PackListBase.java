@@ -46,7 +46,6 @@ import java.util.function.BiPredicate;
 import static com.google.common.primitives.Ints.contains;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
-import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
@@ -542,7 +541,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
     public abstract class Entry extends AbstractDynamicList<T>.Entry implements PackList.Entry, ContextMenuContainer {
         private static final double DRAG_THRESHOLD = 1.0;
-        private static final int DOUBLE_CLICK_DELTA_MS = 250;
         private static final Tooltip FOLDER_OPEN_INFO = Tooltip.create(FolderPack.FOLDER_OPEN_TEXT);
         protected static final int SPACING = 2;
         protected static final int BACKGROUND_OFFSET = 1;
@@ -814,7 +812,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             if (PackedPacks.CONFIG.isDevMode()) {
                 int size = DEV_SPRITE_SIZE;
                 int iconX = (left + width) - size - DEV_SPRITE_MARGIN_RIGHT;
+
+                guiGraphics.pose().pushPose();
+                guiGraphics.pose().translate(0, 0, 1f);
                 this.renderDevSprites(guiGraphics, top, iconX, size);
+                guiGraphics.pose().popPose();
             }
         }
 
