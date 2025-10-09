@@ -127,13 +127,13 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
             Profile profile = PackedPacks.CONFIG.isDevMode() ? AvailablePackList.this.packAssets.getProfile() : null;
             if (profile == null) return;
 
-            PackOverride override = this.hasOverride(Profile::isHidden);
+            PackOverrideScope override = this.hasOverride(Profile::isHidden);
             builder.add(devItem(HIDDEN)
-                    .icon(() -> override == PackOverride.GLOBAL
+                    .icon(() -> override == PackOverrideScope.GLOBAL
                             ? Sprite.of16(ResourceUtil.getIcon("radio_globe"))
                             : Toggleable.getDefaultIcon(profile.isHidden(this.pack))
                     )
-                    .activeWhen(() -> !AvailablePackList.this.isLocked() && override != PackOverride.GLOBAL)
+                    .activeWhen(() -> !AvailablePackList.this.isLocked() && override != PackOverrideScope.GLOBAL)
                     .action(() -> this.updateHidden(!profile.isHidden(this.pack)))
                     .closeOnInteract(false)
                     .build());
