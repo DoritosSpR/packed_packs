@@ -74,8 +74,12 @@ public class PackRepositoryHelper implements PackAssets {
         ((FilteredPackSelectionModel) this.model).packed_packs$filterHidden(false);
     }
 
-    public ImmutableList<Pack> getPacks() {
-        return ImmutableList.copyOf(this.availablePacks.values());
+    public List<Pack> getPacks() {
+        return List.copyOf(this.availablePacks.values());
+    }
+
+    public List<Pack> getFlattenedPacks() {
+        return this.flattenPacks(List.copyOf(this.availablePacks.values()));
     }
 
     public PackGroup getPacksByRequirement() {
@@ -279,7 +283,7 @@ public class PackRepositoryHelper implements PackAssets {
             String packId = pack.getId();
 
             packIds.add(packId);
-            if (!hasHighContrast && packId.equals(HIGH_CONTRAST_ID)) {
+            if (!hasHighContrast && packId.equals(PackUtil.HIGH_CONTRAST_ID)) {
                 hasHighContrast = true;
             }
         }

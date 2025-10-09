@@ -857,9 +857,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             if (this.isSelected()) {
                 return PackListBase.this.packAssets.flattenPacks(PackListBase.this.copySelection()).toArray(Pack[]::new);
             }
-            if (this.pack instanceof FolderPack folderPack) {
-                return PackListBase.this.packAssets.flattenPacks(List.of(folderPack)).toArray(Pack[]::new);
-            }
             return new Pack[]{this.pack};
         }
 

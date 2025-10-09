@@ -35,9 +35,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public interface PackAssets extends PackOptions {
-    String HIGH_CONTRAST_ID = "high_contrast";
-    String VANILLA_ID = "vanilla";
-    String FABRIC_ID = "fabric";
     String ICON_FILENAME = "pack.png";
     String ZIP_PACK_EXTENSION = ".zip";
     ResourceLocation DEFAULT_FOLDER_ICON = ResourceUtil.getResource("textures/misc/unknown_folder.png");

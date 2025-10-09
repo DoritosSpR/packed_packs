@@ -23,6 +23,10 @@ import java.nio.file.*;
 import java.util.*;
 
 public class PackUtil {
+    public static final String HIGH_CONTRAST_ID = "high_contrast";
+    public static final String VANILLA_ID = "vanilla";
+    public static final String FABRIC_ID = "fabric";
+
     // Changing these fields would be breaking changes
     private static final String FILE_PREFIX = "file/";
     private static final String DELIMITER = "/";
@@ -88,6 +92,10 @@ public class PackUtil {
         PackSource packSource = pack.getPackSource();
         //noinspection UnstableApiUsage
         return packSource == PackSource.BUILT_IN || packSource instanceof BuiltinModResourcePackSource;
+    }
+
+    public static boolean isEssential(Pack pack) {
+        return pack.getId().equals(VANILLA_ID) || pack.getId().equals(FABRIC_ID);
     }
 
     public static boolean isFeature(Pack pack) {
