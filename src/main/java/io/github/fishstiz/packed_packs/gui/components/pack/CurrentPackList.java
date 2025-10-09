@@ -9,6 +9,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.PackOverride;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
@@ -541,27 +542,27 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
         protected void renderDevSprites(GuiGraphics guiGraphics, int top, int left, int size) {
             int iconX = left;
 
-            PackOverride positionOverride = this.hasOverride(Profile::overridesPosition);
+            PackOverrideScope positionOverride = this.hasOverride(Profile::overridesPosition);
             if (positionOverride.booleanValue()) {
                 boolean fixedTop = CurrentPackList.this.packAssets.getPosition(this.pack) == Pack.Position.TOP;
                 guiGraphics.fill(iconX, top, iconX + size, top + size, positionOverride.backgroundColor());
                 pick(fixedTop, ARROW_UP_SPRITE, ARROW_DOWN_SPRITE).render(guiGraphics, iconX, top, size, size);
                 iconX -= size;
             }
-            PackOverride requiredOverride = this.hasOverride(Profile::overridesRequired);
+            PackOverrideScope requiredOverride = this.hasOverride(Profile::overridesRequired);
             if (requiredOverride.booleanValue()) {
                 boolean required = CurrentPackList.this.packAssets.isRequired(this.pack);
                 guiGraphics.fill(iconX, top, iconX + size, top + size, requiredOverride.backgroundColor());
                 pick(required, LOCK_SPRITE_SMALL, UNLOCK_SPRITE_SMALL).render(guiGraphics, iconX, top, size, size);
                 iconX -= size;
             }
-            PackOverride hiddenOverride = this.hasOverride(Profile::isHidden);
+            PackOverrideScope hiddenOverride = this.hasOverride(Profile::isHidden);
             if (hiddenOverride.booleanValue()) {
                 guiGraphics.fill(iconX, top, iconX + size, top + size, hiddenOverride.backgroundColor());
                 EYE_SLASH_SPRITE.render(guiGraphics, iconX, top, size, size);
                 iconX -= size;
             }
-            PackOverride included = this.hasOverride(Profile::includes);
+            PackOverrideScope included = this.hasOverride(Profile::includes);
             if (included.global() && !((ConfiguredPack) this.pack).packed_packs$getMetadata().compatibility().isCompatible()) {
                 guiGraphics.fill(iconX, top, iconX + size, top + size, included.backgroundColor());
                 X_SQUARE.render(guiGraphics, iconX, top, size, size);
@@ -576,7 +577,7 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             }
         }
 
-        private void updatePosition(@Nullable Pack.Position position) {
+        private void updatePosition(@Nullable PackOverride.Position position) {
             Profile profile = CurrentPackList.this.packAssets.getProfile();
             if (profile != null) {
                 profile.setPacks(CurrentPackList.this.copyFlattenedPacks());
@@ -648,14 +649,19 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
                             .action(() -> this.updatePosition(null))
                             .closeOnInteract(false)
                             .build())
+                    .addChild(devItem(CommonComponents.GUI_NO)
+                            .icon(() -> getDefaultIcon(profile.overridesPosition(this.pack) && !profile.isFixed(this.pack)))
+                            .action(() -> this.updatePosition(PackOverride.Position.UNFIXED))
+                            .closeOnInteract(false)
+                            .build())
                     .addChild(devItem(FIXED_TOP)
-                            .icon(() -> getDefaultIcon(profile.getPosition(this.pack) == Pack.Position.TOP))
-                            .action(() -> this.updatePosition(Pack.Position.TOP))
+                            .icon(() -> getDefaultIcon(profile.getPositionOverride(this.pack) == PackOverride.Position.TOP))
+                            .action(() -> this.updatePosition(PackOverride.Position.TOP))
                             .closeOnInteract(false)
                             .build())
                     .addChild(devItem(FIXED_BOTTOM)
-                            .icon(() -> getDefaultIcon(profile.getPosition(this.pack) == Pack.Position.BOTTOM))
-                            .action(() -> this.updatePosition(Pack.Position.BOTTOM))
+                            .icon(() -> getDefaultIcon(profile.getPositionOverride(this.pack) == PackOverride.Position.BOTTOM))
+                            .action(() -> this.updatePosition(PackOverride.Position.BOTTOM))
                             .closeOnInteract(false)
                             .build())
                     .build());
