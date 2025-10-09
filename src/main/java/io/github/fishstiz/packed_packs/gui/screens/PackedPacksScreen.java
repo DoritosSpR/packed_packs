@@ -159,7 +159,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     @Override
     public void removed() {
         this.closeWatcher();
-        this.updateProfile(this.profiles.getProfile());
+        this.syncProfile(this.profiles.getProfile());
         PackedPacks.CONFIG.save();
         Preferences.INSTANCE.save();
     }
@@ -443,7 +443,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     public void commit() {
         this.currentPacks.getSearchField().setValue("");
-        this.updateProfile(this.profiles.getProfile());
+        this.syncProfile(this.profiles.getProfile());
         this.repository.selectPacks(this.currentPacks.getList().copyPacks());
 
         if (this.repository.isResourcePacks()) {
@@ -542,9 +542,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.clearHistory();
     }
 
-    public void updateProfile(@Nullable Profile profile) {
+    public void syncProfile(@Nullable Profile profile) {
         if (profile != null) {
-            profile.setPacks(this.currentPacks.getList().copyFlattenedPacks());
+            profile.syncPacks(this.repository.getFlattenedPacks(), this.currentPacks.getList().copyFlattenedPacks());
         }
     }
 
