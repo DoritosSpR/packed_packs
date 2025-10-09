@@ -5,20 +5,16 @@ import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
-import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.Preferences;
-import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
-import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
-import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
@@ -43,7 +39,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
 
 import static com.google.common.primitives.Ints.contains;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
@@ -53,11 +48,6 @@ import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
 public abstract class PackListBase<T extends PackListBase<T>.Entry> extends AbstractFixedListWidget<T> implements PackList, ContainerEventHandlerPatch, ContextMenuContainer {
-    protected static final Component HIDDEN = ResourceUtil.getText("profile.override.hidden");
-    protected static final Sprite EYE_SLASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("eye_slash"));
-    protected static final Sprite X_SQUARE = Sprite.of16(ResourceUtil.getIcon("x_square"));
-    protected static final int DEV_SPRITE_SIZE = 16;
-    protected static final int DEV_SPRITE_MARGIN_RIGHT = 8;
     protected static final int Y_OFFSET = 1;
     protected static final int ITEM_HEIGHT = 35;
     protected static final int ROW_GAP = 3;
@@ -566,6 +556,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         protected final List<NarratableEntry> narratables = new ArrayList<>();
         protected final Pack pack;
         private final PackWidget packWidget;
+        private final @Nullable PackListDevMenu devMenu;
         private FidgetzButton<FolderPack> folderWidget;
         private MouseSelectionState mouseSelectionState = MouseSelectionState.INACTIVE;
         private long lastClickTime = 0;
@@ -598,6 +589,8 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
                                 .build()
                 ));
             }
+
+            this.devMenu = PackedPacks.CONFIG.isDevMode() ? new PackListDevMenu(PackListBase.this, this.pack) : null;
 
             ModAdditions.addToEntry(PackListBase.this.packAssets.isResourcePacks(), this);
         }
@@ -830,73 +823,9 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             this.renderForeground(guiGraphics, innerTop, left, width, innerHeight, mouseX, mouseY, hovering, partialTick);
             this.renderTop(guiGraphics, mouseX, mouseY, partialTick);
 
-            if (PackedPacks.CONFIG.isDevMode()) {
-                int size = DEV_SPRITE_SIZE;
-                int iconX = (left + width) - size - DEV_SPRITE_MARGIN_RIGHT;
-                this.renderDevSprites(guiGraphics, innerTop, iconX, size);
+            if (this.devMenu != null) {
+                this.devMenu.renderDevSprites(guiGraphics, innerTop, left, width);
             }
-        }
-
-        protected void renderDevSprites(GuiGraphics guiGraphics, int top, int left, int size) {
-            int iconX = left;
-
-            PackOverrideScope hiddenOverride = this.hasOverride(Profile::isHidden);
-            if (hiddenOverride.booleanValue()) {
-                guiGraphics.fill(iconX, top, iconX + size, top + size, hiddenOverride.backgroundColor());
-                EYE_SLASH_SPRITE.render(guiGraphics, iconX, top, size, size);
-                iconX -= size;
-            }
-            PackOverrideScope included = this.hasOverride(Profile::includes);
-            if (included.global() && !((ConfiguredPack) this.pack).packed_packs$getMetadata().compatibility().isCompatible()) {
-                guiGraphics.fill(iconX, top, iconX + size, top + size, included.backgroundColor());
-                X_SQUARE.render(guiGraphics, iconX, top, size, size);
-            }
-        }
-
-        protected Pack[] selectionOrPack() {
-            if (this.isSelected()) {
-                return PackListBase.this.packAssets.flattenPacks(PackListBase.this.copySelection()).toArray(Pack[]::new);
-            }
-            return new Pack[]{this.pack};
-        }
-
-
-        protected boolean isOverriddenByDefault(BiPredicate<Profile, Pack> defaultOption) {
-            Profile selectedProfile = PackListBase.this.packAssets.getProfile();
-            if (selectedProfile == null) return false;
-
-            Profile defaultProfile = PackListBase.this.packAssets.getConfig().getDefaultProfile();
-            if (defaultProfile != null) {
-                if (defaultProfile.getId() == selectedProfile.getId()) {
-                    return false;
-                }
-                return defaultOption.test(defaultProfile, this.pack);
-            }
-            return false;
-        }
-
-        protected PackOverrideScope hasOverride(BiPredicate<Profile, Pack> option) {
-            Profile defaultProfile = PackListBase.this.packAssets.getConfig().getDefaultProfile();
-            Profile currentProfile = PackListBase.this.packAssets.getProfile();
-            PackOverrideScope packOverride = PackOverrideScope.NONE;
-
-            if (defaultProfile != null && option.test(defaultProfile, this.pack)) {
-                packOverride = PackOverrideScope.GLOBAL;
-            }
-            if (currentProfile != null && option.test(currentProfile, this.pack)) {
-                packOverride = !packOverride.booleanValue() ? PackOverrideScope.LOCAL : PackOverrideScope.COMPOSITE;
-            }
-            return packOverride;
-        }
-
-        protected void updateHidden(boolean hidden) {
-            Profile profile = PackListBase.this.packAssets.getProfile();
-            if (profile != null) {
-                profile.setHidden(hidden, this.selectionOrPack());
-            }
-        }
-
-        protected void onBuildHeader(ContextMenuItemBuilder builder) {
         }
 
         @Override
@@ -904,7 +833,8 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             PackListBase.this.setFocused(this);
             ContextMenuContainer.super.buildItems(builder
                             .add(new PackMenuHeader(this.pack, this.packWidget.getSprite()))
-                            .then(this::onBuildHeader)
+                            .whenNonNull(this.devMenu)
+                            .ifTrue(PackListDevMenu::onBuildHeader)
                             .whenNonNull(this.folderWidget)
                             .ifTrue(b -> b
                                     .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this::openFolder)
@@ -972,31 +902,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             INACTIVE,
             SELECTING_ONE,
             SELECTING_MANY
-        }
-    }
-
-    protected enum PackOverrideScope {
-        NONE(Theme.WHITE.withAlpha(0)),
-        LOCAL(Theme.BLACK.withAlpha(0.75f)),
-        GLOBAL(Theme.BLUE_500.withAlpha(0.75f)),
-        COMPOSITE(Theme.PURPLE_500.withAlpha(0.75f));
-
-        private final int backgroundColor;
-
-        PackOverrideScope(int backgroundColor) {
-            this.backgroundColor = backgroundColor;
-        }
-
-        boolean booleanValue() {
-            return this != NONE;
-        }
-
-        boolean global() {
-            return this == GLOBAL || this == COMPOSITE;
-        }
-
-        int backgroundColor() {
-            return this.backgroundColor;
         }
     }
 }

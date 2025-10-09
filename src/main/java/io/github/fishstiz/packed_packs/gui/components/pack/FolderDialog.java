@@ -84,7 +84,6 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
 
         this.setBoundingBox(parent);
         this.updateBounds();
-        this.root().onChangeParent(parent);
     }
 
     @Override

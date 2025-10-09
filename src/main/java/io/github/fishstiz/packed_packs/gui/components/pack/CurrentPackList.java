@@ -8,13 +8,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.GradientRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
-import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.config.PackOverride;
-import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
-import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
-import io.github.fishstiz.packed_packs.util.PackUtil;
-import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
@@ -22,8 +16,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.network.chat.CommonComponents;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +25,6 @@ import java.util.List;
 import java.util.function.*;
 
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
-import static io.github.fishstiz.packed_packs.gui.metadata.Toggleable.getDefaultIcon;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
@@ -47,13 +38,6 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
     private static final Sprite MOVE_UP_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_up"));
     private static final Sprite MOVE_DOWN_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_down_highlighted"));
     private static final Sprite MOVE_DOWN_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/move_down"));
-    private static final Sprite ARROW_UP_SPRITE = Sprite.of16(ResourceUtil.getIcon("arrow_up"));
-    private static final Sprite ARROW_DOWN_SPRITE = Sprite.of16(ResourceUtil.getIcon("arrow_down"));
-    private static final Component REQUIRED = ResourceUtil.getText("profile.override.required");
-    private static final Component FIXED_POSITION = ResourceUtil.getText("profile.override.fixed");
-    private static final Component FIXED_TOP = ResourceUtil.getText("profile.override.fixed.top");
-    private static final Component FIXED_BOTTOM = ResourceUtil.getText("profile.override.fixed.bottom");
-    private static final Component REMOVE_OVERRIDES = ResourceUtil.getText("profile.override.remove");
     private static final Theme DROP_THEME = Theme.GREEN_500;
     private static final ColoredRect DROP_INDEX = new ColoredRect(DROP_THEME.getARGB());
     private static final GradientRect SCROLL_UP = GradientRect.fromTop(DROP_THEME.withAlpha(0.75f), DROP_THEME.withAlpha(0));
@@ -537,133 +521,6 @@ public class CurrentPackList extends PackListBase<CurrentPackList.Entry> {
             if (hoveringButton) {
                 guiGraphics.requestCursor(CursorTypes.POINTING_HAND);
             }
-        }
-
-        @Override
-        protected void renderDevSprites(GuiGraphics guiGraphics, int top, int left, int size) {
-            int iconX = left;
-
-            PackOverrideScope positionOverride = this.hasOverride(Profile::overridesPosition);
-            if (positionOverride.booleanValue()) {
-                boolean fixedTop = CurrentPackList.this.packAssets.getPosition(this.pack) == Pack.Position.TOP;
-                guiGraphics.fill(iconX, top, iconX + size, top + size, positionOverride.backgroundColor());
-                pick(fixedTop, ARROW_UP_SPRITE, ARROW_DOWN_SPRITE).render(guiGraphics, iconX, top, size, size);
-                iconX -= size;
-            }
-            PackOverrideScope requiredOverride = this.hasOverride(Profile::overridesRequired);
-            if (requiredOverride.booleanValue()) {
-                boolean required = CurrentPackList.this.packAssets.isRequired(this.pack);
-                guiGraphics.fill(iconX, top, iconX + size, top + size, requiredOverride.backgroundColor());
-                pick(required, LOCK_SPRITE_SMALL, UNLOCK_SPRITE_SMALL).render(guiGraphics, iconX, top, size, size);
-                iconX -= size;
-            }
-            PackOverrideScope hiddenOverride = this.hasOverride(Profile::isHidden);
-            if (hiddenOverride.booleanValue()) {
-                guiGraphics.fill(iconX, top, iconX + size, top + size, hiddenOverride.backgroundColor());
-                EYE_SLASH_SPRITE.render(guiGraphics, iconX, top, size, size);
-                iconX -= size;
-            }
-            PackOverrideScope included = this.hasOverride(Profile::includes);
-            if (included.global() && !((ConfiguredPack) this.pack).packed_packs$getMetadata().compatibility().isCompatible()) {
-                guiGraphics.fill(iconX, top, iconX + size, top + size, included.backgroundColor());
-                X_SQUARE.render(guiGraphics, iconX, top, size, size);
-            }
-        }
-
-        private void updateRequired(@Nullable Boolean required) {
-            Profile profile = CurrentPackList.this.packAssets.getProfile();
-            if (profile != null) {
-                profile.setPacks(CurrentPackList.this.copyFlattenedPacks());
-                profile.setRequired(required, this.selectionOrPack());
-            }
-        }
-
-        private void updatePosition(@Nullable PackOverride.Position position) {
-            Profile profile = CurrentPackList.this.packAssets.getProfile();
-            if (profile != null) {
-                profile.setPacks(CurrentPackList.this.copyFlattenedPacks());
-                profile.setPosition(position, this.selectionOrPack());
-            }
-        }
-
-        private void resetOverrides() {
-            this.updateHidden(false);
-            this.updateRequired(null);
-            this.updatePosition(null);
-        }
-
-        private boolean isOptionActive(BiPredicate<Profile, Pack> option) {
-            return !CurrentPackList.this.isLocked() && !this.isOverriddenByDefault(option);
-        }
-
-        private Sprite getIcon(boolean active, BiPredicate<Profile, Pack> defaultOption) {
-            return this.isOverriddenByDefault(defaultOption) ? Sprite.of16(ResourceUtil.getIcon("radio_globe")) : getDefaultIcon(active);
-        }
-
-        @Override
-        protected void onBuildHeader(ContextMenuItemBuilder builder) {
-            Profile profile = PackedPacks.CONFIG.isDevMode() ? CurrentPackList.this.packAssets.getProfile() : null;
-            if (profile == null) return;
-
-            builder.add(devItem(HIDDEN)
-                    .icon(() -> this.getIcon(profile.isHidden(this.pack), Profile::isHidden))
-                    .activeWhen(() -> this.isOptionActive(Profile::isHidden))
-                    .action(() -> this.updateHidden(!profile.isHidden(this.pack)))
-                    .closeOnInteract(false)
-                    .build());
-
-            builder.add(devParent(REQUIRED)
-                    .icon(() -> this.getIcon(profile.overridesRequired(this.pack), Profile::overridesRequired))
-                    .activeWhen(() -> this.isOptionActive(Profile::overridesRequired))
-                    .closeOnInteract(false)
-                    .addChild(devItem(CommonComponents.OPTION_OFF)
-                            .icon(() -> getDefaultIcon(!profile.overridesRequired(this.pack)))
-                            .action(() -> this.updateRequired(null))
-                            .closeOnInteract(false)
-                            .build())
-                    .addChild(devItem(CommonComponents.GUI_NO)
-                            .icon(() -> getDefaultIcon(
-                                    profile.overridesRequired(this.pack) &&
-                                    !profile.isRequired(this.pack)
-                            ))
-                            .activeWhen(() -> !PackUtil.isEssential(this.pack))
-                            .action(() -> this.updateRequired(false))
-                            .closeOnInteract(false)
-                            .build())
-                    .addChild(devItem(CommonComponents.GUI_YES)
-                            .icon(() -> getDefaultIcon(profile.isRequired(this.pack)))
-                            .action(() -> this.updateRequired(true))
-                            .closeOnInteract(false)
-                            .build())
-                    .build());
-
-            builder.add(devParent(FIXED_POSITION)
-                    .icon(() -> this.getIcon(profile.overridesPosition(this.pack), Profile::overridesPosition))
-                    .activeWhen(() -> this.isOptionActive(Profile::overridesPosition))
-                    .closeOnInteract(false)
-                    .addChild(devItem(CommonComponents.OPTION_OFF)
-                            .icon(() -> getDefaultIcon(!profile.overridesPosition(this.pack)))
-                            .action(() -> this.updatePosition(null))
-                            .closeOnInteract(false)
-                            .build())
-                    .addChild(devItem(CommonComponents.GUI_NO)
-                            .icon(() -> getDefaultIcon(profile.overridesPosition(this.pack) && !profile.isFixed(this.pack)))
-                            .action(() -> this.updatePosition(PackOverride.Position.UNFIXED))
-                            .closeOnInteract(false)
-                            .build())
-                    .addChild(devItem(FIXED_TOP)
-                            .icon(() -> getDefaultIcon(profile.getPositionOverride(this.pack) == PackOverride.Position.TOP))
-                            .action(() -> this.updatePosition(PackOverride.Position.TOP))
-                            .closeOnInteract(false)
-                            .build())
-                    .addChild(devItem(FIXED_BOTTOM)
-                            .icon(() -> getDefaultIcon(profile.getPositionOverride(this.pack) == PackOverride.Position.BOTTOM))
-                            .action(() -> this.updatePosition(PackOverride.Position.BOTTOM))
-                            .closeOnInteract(false)
-                            .build())
-                    .build());
-
-            builder.add(devItem(REMOVE_OVERRIDES).action(this::resetOverrides).build()).separator();
         }
     }
 
