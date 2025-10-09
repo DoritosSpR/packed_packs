@@ -191,12 +191,6 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
             this.children.forEach(consumer);
         }
 
-        private void reselect() {
-            if (this.isSelected()) {
-                ProfileList.this.onSelect.accept(this.profile);
-            }
-        }
-
         @Override
         public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
             if (!PackedPacks.CONFIG.isDevMode()) return;
@@ -207,13 +201,13 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
                     .action(() -> {
                         ProfileList.this.config.setDefaultProfile(this.isDefault() ? null : this.profile);
                         ProfileList.this.refresh();
-                        this.reselect();
+                        ProfileList.this.onSelect.accept(this.profile);
                     })
                     .build());
             builder.add(GuiConstants.devItem(ResourceUtil.getText("profile." + (this.profile.isLocked() ? "unlock" : "lock")))
                     .icon(this.profile.isLocked() ? LOCK_SPRITE_SMALL : UNLOCK_SPRITE_SMALL)
                     .action(() -> {
-                        this.reselect();
+                        if (this.isSelected()) ProfileList.this.onSelect.accept(this.profile);
                         this.profile.setLocked(!this.profile.isLocked());
                         ProfileList.this.refresh();
                     })
