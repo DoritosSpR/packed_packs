@@ -1,7 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import com.google.common.collect.ImmutableList;
-import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.client.gui.GuiGraphics;
@@ -9,14 +8,8 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 
 public class FolderPackList extends CurrentPackList {
-    private PackList parent;
-
     public FolderPackList(PackAssets packAssets, PackListEventListener listener) {
         super(packAssets, listener);
-    }
-
-    void onChangeParent(PackList parent) {
-        this.parent = parent;
     }
 
     @Override
@@ -49,13 +42,6 @@ public class FolderPackList extends CurrentPackList {
         @Override
         public boolean isTransferable() {
             return false;
-        }
-
-        @Override
-        protected void onBuildHeader(ContextMenuItemBuilder builder) {
-            if (FolderPackList.this.parent instanceof CurrentPackList) {
-                super.onBuildHeader(builder);
-            }
         }
     }
 }
