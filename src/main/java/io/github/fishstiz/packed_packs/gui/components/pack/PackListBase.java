@@ -828,13 +828,13 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         protected void renderDevSprites(GuiGraphics guiGraphics, int top, int left, int size) {
             int iconX = left;
 
-            PackOverride hiddenOverride = this.hasOverride(Profile::isHidden);
+            PackOverrideScope hiddenOverride = this.hasOverride(Profile::isHidden);
             if (hiddenOverride.booleanValue()) {
                 guiGraphics.fill(iconX, top, iconX + size, top + size, hiddenOverride.backgroundColor());
                 EYE_SLASH_SPRITE.render(guiGraphics, iconX, top, size, size);
                 iconX -= size;
             }
-            PackOverride included = this.hasOverride(Profile::includes);
+            PackOverrideScope included = this.hasOverride(Profile::includes);
             if (included.global() && !((ConfiguredPack) this.pack).packed_packs$getMetadata().compatibility().isCompatible()) {
                 guiGraphics.fill(iconX, top, iconX + size, top + size, included.backgroundColor());
                 X_SQUARE.render(guiGraphics, iconX, top, size, size);
@@ -866,16 +866,16 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return false;
         }
 
-        protected PackOverride hasOverride(BiPredicate<Profile, Pack> option) {
+        protected PackOverrideScope hasOverride(BiPredicate<Profile, Pack> option) {
             Profile defaultProfile = PackListBase.this.packAssets.getConfig().getDefaultProfile();
             Profile currentProfile = PackListBase.this.packAssets.getProfile();
-            PackOverride packOverride = PackOverride.NONE;
+            PackOverrideScope packOverride = PackOverrideScope.NONE;
 
             if (defaultProfile != null && option.test(defaultProfile, this.pack)) {
-                packOverride = PackOverride.GLOBAL;
+                packOverride = PackOverrideScope.GLOBAL;
             }
             if (currentProfile != null && option.test(currentProfile, this.pack)) {
-                packOverride = !packOverride.booleanValue() ? PackOverride.LOCAL : PackOverride.COMPOSITE;
+                packOverride = !packOverride.booleanValue() ? PackOverrideScope.LOCAL : PackOverrideScope.COMPOSITE;
             }
             return packOverride;
         }
@@ -981,7 +981,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
     }
 
-    protected enum PackOverride {
+    protected enum PackOverrideScope {
         NONE(Theme.WHITE.withAlpha(0)),
         LOCAL(Theme.BLACK.withAlpha(0.75f)),
         GLOBAL(Theme.BLUE_500.withAlpha(0.75f)),
@@ -989,7 +989,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
         private final int backgroundColor;
 
-        PackOverride(int backgroundColor) {
+        PackOverrideScope(int backgroundColor) {
             this.backgroundColor = backgroundColor;
         }
 
