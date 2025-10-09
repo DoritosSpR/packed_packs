@@ -90,7 +90,7 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
 
     @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
+        this.isHovered = this.isHovered && this.isHovered(mouseX, mouseY);
 
         if (!this.spriteOnly) {
             super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
@@ -125,11 +125,6 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
         if (!this.hasSprite()) {
             super.renderString(guiGraphics, font, color);
         }
-    }
-
-    @Override
-    public boolean isMouseOver(double mouseX, double mouseY) {
-        return super.isMouseOver(mouseX, mouseY) && Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     @Override
