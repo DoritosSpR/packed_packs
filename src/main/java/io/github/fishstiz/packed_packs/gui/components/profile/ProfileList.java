@@ -213,9 +213,9 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
             builder.add(GuiConstants.devItem(ResourceUtil.getText("profile." + (this.profile.isLocked() ? "unlock" : "lock")))
                     .icon(this.profile.isLocked() ? LOCK_SPRITE_SMALL : UNLOCK_SPRITE_SMALL)
                     .action(() -> {
+                        this.reselect();
                         this.profile.setLocked(!this.profile.isLocked());
                         ProfileList.this.refresh();
-                        this.reselect();
                     })
                     .build());
         }
