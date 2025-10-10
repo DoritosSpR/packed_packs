@@ -9,7 +9,6 @@ import java.util.function.Supplier;
 
 public class ConfigLoader {
     private static final Gson GSON = new GsonBuilder()
-            .serializeNulls()
             .setPrettyPrinting()
             .registerTypeAdapter(PackOverride.class, new PackOverride.Adapter())
             .registerTypeAdapter(Profile.class, new Profile.Deserializer())
