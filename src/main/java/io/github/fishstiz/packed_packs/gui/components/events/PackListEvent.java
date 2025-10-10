@@ -2,7 +2,15 @@ package io.github.fishstiz.packed_packs.gui.components.events;
 
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 
-public interface PackListEvent {
+public sealed interface PackListEvent permits
+        BasicEvent,
+        DragEvent,
+        DropEvent,
+        FileEvent,
+        MoveEvent,
+        QueryEvent,
+        RequestTransferEvent,
+        SelectionEvent {
     PackList target();
 
     boolean pushToHistory();
