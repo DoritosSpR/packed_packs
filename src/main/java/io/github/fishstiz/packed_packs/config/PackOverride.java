@@ -82,9 +82,7 @@ public final class PackOverride implements Serializable {
     static class Adapter implements JsonSerializer<PackOverride>, JsonDeserializer<PackOverride> {
         @Override
         public JsonElement serialize(PackOverride src, Type typeOfSrc, JsonSerializationContext context) {
-            if (!src.hasOverride()) {
-                throw new IllegalStateException("Cannot serialize pack override with no override.");
-            }
+            if (!src.hasOverride()) return null;
 
             JsonObject obj = new JsonObject();
             if (src.hidden() != null) obj.addProperty(HIDDEN_SERIALIZED_NAME, src.hidden());
