@@ -11,6 +11,7 @@ import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
@@ -26,18 +27,23 @@ import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
 public record PackListDevMenu(PackListBase<?> list, Pack pack) {
     private static final int DEV_SPRITE_SIZE = 16;
     private static final int DEV_SPRITE_MARGIN_RIGHT = 8;
-    private static final Component HIDDEN = ResourceUtil.getText("profile.override.hidden");
     private static final Sprite EYE_SLASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("eye_slash"));
     private static final Sprite X_SQUARE = Sprite.of16(ResourceUtil.getIcon("x_square"));
     private static final Sprite ARROW_UP_SPRITE = Sprite.of16(ResourceUtil.getIcon("arrow_up"));
     private static final Sprite ARROW_DOWN_SPRITE = Sprite.of16(ResourceUtil.getIcon("arrow_down"));
     private static final Sprite ARROWS_SPRITE = Sprite.of16(ResourceUtil.getIcon("arrows_vertical"));
     private static final Sprite RADIO_GLOBAL = Sprite.of16(ResourceUtil.getIcon("radio_globe"));
-    private static final Component REQUIRED = ResourceUtil.getText("profile.override.required");
-    private static final Component FIXED_POSITION = ResourceUtil.getText("profile.override.fixed");
-    private static final Component FIXED_TOP = ResourceUtil.getText("profile.override.fixed.top");
-    private static final Component FIXED_BOTTOM = ResourceUtil.getText("profile.override.fixed.bottom");
-    private static final Component REMOVE_OVERRIDES = ResourceUtil.getText("profile.override.remove");
+    private static final Component HIDDEN = overrideText("hidden");
+    private static final Component REQUIRED = overrideText("required");
+    private static final Component FIXED_POSITION = overrideText("fixed");
+    private static final Component FIXED_TOP = overrideText("fixed.top");
+    private static final Component FIXED_BOTTOM = overrideText("fixed.bottom");
+    private static final Component REMOVE_OVERRIDES = overrideText("remove");
+    private static final Tooltip REQUIRED_NO_DISABLED_INFO = Tooltip.create(overrideText("required.no.disabled.info"));
+
+    private static Component overrideText(String keySuffix) {
+        return ResourceUtil.getText("profile.override." + keySuffix);
+    }
 
     private PackOverrideScope hasOverride(BiPredicate<Profile, Pack> option) {
         Profile defaultProfile = this.list.packAssets.getConfig().getDefaultProfile();
@@ -126,6 +132,11 @@ public record PackListDevMenu(PackListBase<?> list, Pack pack) {
         return this.hasOverride(defaultOption) == PackOverrideScope.GLOBAL ? RADIO_GLOBAL : getDefaultIcon(active);
     }
 
+    private boolean canDisableRequired() {
+        Profile profile = this.list.packAssets.getProfile();
+        return profile != null && profile == this.list.packAssets.getConfig().getDefaultProfile() && !PackUtil.isEssential(this.pack);
+    }
+
     public void onBuildHeader(ContextMenuItemBuilder builder) {
         Profile profile = this.list.packAssets.getProfile();
         if (profile == null) return;
@@ -137,7 +148,7 @@ public record PackListDevMenu(PackListBase<?> list, Pack pack) {
                 .closeOnInteract(false)
                 .build());
 
-        builder.add(devParent(REQUIRED)
+        builder.add(devItem(REQUIRED)
                 .icon(() -> this.getIcon(profile.overridesRequired(this.pack), Profile::overridesRequired))
                 .activeWhen(() -> this.hasOverride(Profile::overridesRequired) != PackOverrideScope.GLOBAL &&
                                   !((IPack) this.pack).packed_packs$nestedPack())
@@ -149,7 +160,8 @@ public record PackListDevMenu(PackListBase<?> list, Pack pack) {
                         .build())
                 .addChild(devItem(CommonComponents.GUI_NO)
                         .icon(() -> getDefaultIcon(profile.overridesRequired(this.pack) && !profile.isRequired(this.pack)))
-                        .activeWhen(() -> !PackUtil.isEssential(this.pack))
+                        .activeWhen(this::canDisableRequired)
+                        .tooltip(() -> !this.canDisableRequired() && !PackUtil.isEssential(pack) ? REQUIRED_NO_DISABLED_INFO : null)
                         .action(() -> this.updateRequired(false))
                         .closeOnInteract(false)
                         .build())
@@ -160,7 +172,7 @@ public record PackListDevMenu(PackListBase<?> list, Pack pack) {
                         .build())
                 .build());
 
-        builder.add(devParent(FIXED_POSITION)
+        builder.add(devItem(FIXED_POSITION)
                 .icon(() -> this.getIcon(profile.overridesPosition(this.pack), Profile::overridesPosition))
                 .activeWhen(() -> this.hasOverride(Profile::overridesPosition) != PackOverrideScope.GLOBAL)
                 .closeOnInteract(false)

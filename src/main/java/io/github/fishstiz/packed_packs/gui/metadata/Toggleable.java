@@ -55,7 +55,7 @@ public record Toggleable(
         builder.add(itemBuilder().build());
     }
 
-    public MenuItemBuilder<?> itemBuilder() {
+    public MenuItemBuilder itemBuilder() {
         return MenuItem.builder(this.text.apply(this.toggled.get()))
                 .background(GuiConstants.DEVELOPER_MODE_ITEM_BACKGROUND)
                 .icon(() -> this.icon != null ? this.icon.apply(this.toggled.get()) : null)
