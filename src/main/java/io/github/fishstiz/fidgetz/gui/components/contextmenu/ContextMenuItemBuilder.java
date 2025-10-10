@@ -60,14 +60,14 @@ public class ContextMenuItemBuilder {
         return this.add(MenuItem.builder(text).action(action).build());
     }
 
-    public ContextMenuItemBuilder parent(Function<List<MenuItem>, ParentMenuItem> parentItemFactory, Consumer<ContextMenuItemBuilder> builderAction) {
+    public ContextMenuItemBuilder parent(Function<List<MenuItem>, MenuItem> parentItemFactory, Consumer<ContextMenuItemBuilder> builderAction) {
         ContextMenuItemBuilder builder = new ContextMenuItemBuilder();
         builderAction.accept(builder);
         return this.add(parentItemFactory.apply(builder.build()));
     }
 
     public ContextMenuItemBuilder parent(Component text, Consumer<ContextMenuItemBuilder> builderAction) {
-        return this.parent(children -> ParentMenuItem.builder(text, children).build(), builderAction);
+        return this.parent(children -> MenuItem.builder(text).addChildren(children).build(), builderAction);
     }
 
     public ConditionalChain when(boolean condition) {

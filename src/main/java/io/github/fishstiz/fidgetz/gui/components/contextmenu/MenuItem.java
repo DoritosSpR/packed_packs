@@ -3,12 +3,16 @@ package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.ARGBColor;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.List;
+
 public interface MenuItem {
-    MenuItem SEPARATOR = MenuItem.builder(CommonComponents.EMPTY)
+    MenuItem SEPARATOR = builder(CommonComponents.EMPTY)
             .closeOnInteract(false)
             .autoSeparate(false)
             .build();
@@ -22,6 +26,10 @@ public interface MenuItem {
     }
 
     default @Nullable Sprite icon() {
+        return null;
+    }
+
+    default @Nullable Tooltip tooltip() {
         return null;
     }
 
@@ -41,7 +49,15 @@ public interface MenuItem {
         return this.active() ? ARGBColor.WHITE : ContextMenu.DEFAULT_TEXT_INACTIVE_COLOR;
     }
 
-    static MenuItemBuilder<?> builder(Component text) {
-        return new MenuItemBuilder<>(text);
+    default List<? extends MenuItem> children() {
+        return Collections.emptyList();
+    }
+
+    default boolean parent() {
+        return !this.children().isEmpty();
+    }
+
+    static MenuItemBuilder builder(Component text) {
+        return new MenuItemBuilder(text);
     }
 }

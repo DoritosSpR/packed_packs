@@ -71,20 +71,14 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         this.childMenus.clear();
     }
 
-    private ItemWidget<?> createItemWidget(MenuItem item) {
-        switch (item) {
-            case ParentMenuItem parentItem -> {
-                ContextMenu childMenu = Builder.ofChild(this.builder, this).setDirection(this.direction).build();
-                this.childMenus.add(childMenu);
-                return new ParentItemWidget(MIN_WIDTH, this.spacing, parentItem, this, childMenu);
-            }
-            case RenderableMenuItem renderableMenuItem -> {
-                return new CustomItemWidget(MIN_WIDTH, this.spacing, renderableMenuItem, this);
-            }
-            default -> {
-                return new ItemWidget<>(MIN_WIDTH, this.spacing, item, this);
-            }
+    private ItemWidget createItemWidget(MenuItem item) {
+        if (!item.parent()) {
+            return new ItemWidget(MIN_WIDTH, this.spacing, item, this);
         }
+
+        ContextMenu childMenu = Builder.ofChild(this.builder, this).setDirection(this.direction).build();
+        this.childMenus.add(childMenu);
+        return new ParentItemWidget(MIN_WIDTH, this.spacing, item, this, childMenu);
     }
 
     private void setItems(List<? extends MenuItem> items) {
@@ -267,14 +261,14 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         }
     }
 
-    private static class ItemWidget<T extends MenuItem> extends AbstractWidget implements Fidgetz {
+    private static class ItemWidget extends AbstractWidget implements Fidgetz {
         private static final int HOVER_OVERLAY_COLOR = ARGBColor.withAlpha(ARGBColor.WHITE, 0.1f);
         private final FidgetzText<Void> text;
         protected final ContextMenu parent;
-        protected final T item;
+        protected final MenuItem item;
         protected final int spacing;
 
-        private ItemWidget(int width, int spacing, T item, ContextMenu parent) {
+        private ItemWidget(int width, int spacing, MenuItem item, ContextMenu parent) {
             super(0, 0, width, ITEM_HEIGHT, item.text());
             this.spacing = spacing;
             this.text = FidgetzText.<Void>builder()
@@ -338,6 +332,8 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
 
         @Override
         protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+            this.setTooltip(this.item.tooltip());
+
             this.isHovered = this.isHovered && this.isMouseOver(mouseX, mouseY);
 
             int x = this.getX();
@@ -383,11 +379,11 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         }
     }
 
-    private static class ParentItemWidget extends ItemWidget<ParentMenuItem> {
+    private static class ParentItemWidget extends ItemWidget {
         private static final String CARET_RIGHT = ">";
         private final ContextMenu child;
 
-        ParentItemWidget(int width, int spacing, ParentMenuItem item, ContextMenu parent, ContextMenu child) {
+        ParentItemWidget(int width, int spacing, MenuItem item, ContextMenu parent, ContextMenu child) {
             super(width, spacing, item, parent);
             this.child = child;
         }
@@ -473,17 +469,6 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
             } else if (hovered && !this.child.isOpen() && (sibling == null || !sibling.forceOpen && !sibling.isHoveredAtDirection(mouseX, mouseY))) {
                 this.openChild();
             }
-        }
-    }
-
-    private static class CustomItemWidget extends ItemWidget<RenderableMenuItem> {
-        private CustomItemWidget(int width, int spacing, RenderableMenuItem item, ContextMenu parent) {
-            super(width, spacing, item, parent);
-        }
-
-        @Override
-        protected void renderForeground(GuiGraphics guiGraphics, int x, int y, int width, int height, boolean hovered, double mouseX, double mouseY, float partialTick) {
-            this.item.renderer().render(guiGraphics, x, y, width, height, partialTick);
         }
     }
 

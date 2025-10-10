@@ -139,7 +139,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
 
     private boolean canOperateFolder() {
         return this.folderPack != null &&
-               !this.root().packAssets.isEnabled(this.folderPack) &&
+               ObjectsUtil.testNullable(this.root().getEntry(this.folderPack), PackListBase.Entry::canOperateFile) &&
                PackAssets.validatePackPath(this.folderPack) != null;
     }
 
