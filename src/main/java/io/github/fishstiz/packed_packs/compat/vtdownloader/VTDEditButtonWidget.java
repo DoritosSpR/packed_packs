@@ -57,7 +57,7 @@ public class VTDEditButtonWidget extends AbstractButton implements ContextMenuPr
         this.active = this.editable;
     }
 
-    public static @Nullable VTDEditButtonWidget create(Screen previous, PackListBase<?>.Entry entry) {
+    public static @Nullable VTDEditButtonWidget create(Screen previous, PackListBase.Entry entry) {
         return entry.getPack().getDescription().getString().contains(VT_DESCRIPTION_MARKER)
                 ? new VTDEditButtonWidget(entry, previous, new PackWrapperDelegatorAbstractionEpicModelEntry(entry.getPack()), entry.canOperateFile())
                 : null;

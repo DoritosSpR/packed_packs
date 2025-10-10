@@ -1,12 +1,8 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
-import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 
-public final class FileDeleteEvent extends PackListEvent {
-    public FileDeleteEvent(PackList target) {
-        super(target);
-    }
-
+public record FileDeleteEvent(PackListBase target) implements PackListEvent {
     @Override
     public boolean pushToHistory() {
         return false;

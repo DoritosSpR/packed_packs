@@ -1,17 +1,9 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
-import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 
-public abstract class PackListEvent {
-    protected final PackList target;
+public interface PackListEvent {
+    PackListBase target();
 
-    protected PackListEvent(PackList target) {
-        this.target = target;
-    }
-
-    public final PackList target() {
-        return this.target;
-    }
-
-    public abstract boolean pushToHistory();
+    boolean pushToHistory();
 }

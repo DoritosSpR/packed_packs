@@ -27,7 +27,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     private final FidgetzButton<Void> closeButton;
     private final FidgetzText<Void> folderTitle;
     private Sprite folderSprite = Sprite.of16(PackAssets.DEFAULT_FOLDER_ICON);
-    private PackList parent;
+    private PackListBase parent;
     private FolderPack folderPack;
 
     private FolderDialog(Builder builder) {
@@ -76,7 +76,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         this.folderTitle.setWidth(bounds.getRight() - this.folderTitle.getX() - GuiConstants.SPACING * 2);
     }
 
-    public void updateFolder(PackList parent, FolderPack folderPack, PackAssets packAssets) {
+    public void updateFolder(PackListBase parent, FolderPack folderPack, PackAssets packAssets) {
         this.parent = parent;
         this.folderPack = folderPack;
         this.folderTitle.setMessage(folderPack.getTitle());
@@ -104,7 +104,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         }
     }
 
-    public @Nullable PackList getParent() {
+    public @Nullable PackListBase getParent() {
         return this.parent;
     }
 
@@ -157,8 +157,8 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     public void onRename(Pack pack, Component newName) {
-        if (this.parent instanceof PackListBase<?> packListBase && pack == this.folderPack) {
-            PackListBase<?>.Entry entry = packListBase.getEntry(this.folderPack);
+        if (this.parent != null && pack == this.folderPack) {
+            PackListBase.Entry entry = this.parent.getEntry(this.folderPack);
             if (entry != null) {
                 entry.onRename(newName);
             }

@@ -1,15 +1,9 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
-public class BasicEvent extends PackListEvent {
-    private final boolean shouldPush;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 
-    public BasicEvent(boolean shouldPush) {
-        super(null);
-        this.shouldPush = shouldPush;
-    }
-
-    @Override
-    public boolean pushToHistory() {
-        return this.shouldPush;
+public record BasicEvent(PackListBase target, boolean pushToHistory) implements PackListEvent {
+    public BasicEvent(boolean pushToHistory) {
+        this(null, pushToHistory);
     }
 }

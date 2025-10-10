@@ -1,24 +1,17 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
-import com.google.common.collect.ImmutableList;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 import net.minecraft.server.packs.repository.Pack;
 
-public final class SelectionEvent extends PackListEvent {
-    private final ImmutableList<Pack> selected;
+import java.util.List;
 
-    public SelectionEvent(PackList target) {
-        super(target);
-
-        this.selected = target.copySelection();
+public record SelectionEvent(PackListBase target, List<Pack> selected) implements PackListEvent {
+    public SelectionEvent(PackListBase target) {
+        this(target, target.copySelection());
     }
 
     @Override
     public boolean pushToHistory() {
         return true;
-    }
-
-    public ImmutableList<Pack> selected() {
-        return this.selected;
     }
 }
