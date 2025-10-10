@@ -67,7 +67,6 @@ import static io.github.fishstiz.packed_packs.util.PackUtil.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
 public class PackedPacksScreen extends PackListEventHandler implements
-        ProfilesLayout.Listener,
         ToggleableDialogContainer,
         ContextMenuContainer,
         Restorable<PackedPacksScreen.Snapshot> {
@@ -501,7 +500,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.useSelected();
     }
 
-    @Override
     public void onProfileChange(@Nullable Profile previous, @Nullable Profile current) {
         if (previous != null) {
             previous.setPacks(this.currentPacks.getList().copyFlattenedPacks());
@@ -524,7 +522,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.repositionElements();
     }
 
-    @Override
     public void onProfileCopy(@Nullable Profile original, @NotNull Profile copy) {
         copy.setPacks(this.currentPacks.getList().copyFlattenedPacks());
     }
