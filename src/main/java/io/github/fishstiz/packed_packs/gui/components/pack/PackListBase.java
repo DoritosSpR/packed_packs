@@ -12,6 +12,7 @@ import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
 import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
 import io.github.fishstiz.packed_packs.transform.mixin.gui.AbstractSelectionListAccessor;
@@ -45,7 +46,10 @@ import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
-public abstract class PackListBase<T extends PackListBase<T>.Entry> extends AbstractDynamicList<T> implements PackList, ContainerEventHandlerPatch, ContextMenuContainer {
+public abstract class PackListBase extends AbstractDynamicList<PackListBase.Entry> implements
+        Restorable<PackListBase.Snapshot>,
+        ContainerEventHandlerPatch,
+        ContextMenuContainer {
     protected static final int OFFSET_Y = 2;
     protected static final int ITEM_HEIGHT = 32;
     protected static final int ROW_GAP = 3;
@@ -65,11 +69,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.queryPacks();
     }
 
-    protected abstract @NotNull T createEntry(Pack pack, int index);
+    protected abstract @NotNull Entry createEntry(Pack pack, int index);
 
-    public @Nullable T getEntry(@Nullable Pack pack) {
+    public @Nullable Entry getEntry(@Nullable Pack pack) {
         if (pack == null) return null;
-        for (T entry : this.children()) {
+        for (Entry entry : this.children()) {
             if (Objects.equals(entry.pack, pack)) return entry;
         }
         return null;
@@ -80,7 +84,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         for (int i = 0; i < this.queried.size(); i++) {
             this.addEntry(this.createEntry(this.queried.get(i), i));
         }
-        T focused = this.getFocused();
+        Entry focused = this.getFocused();
         if (focused != null && !this.queried.contains(focused.pack)) {
             this.setFocused(null);
         }
@@ -124,21 +128,18 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.scrollToTop();
     }
 
-    @Override
-    public @NotNull ImmutableList<Pack> copyPacks() {
+    public @NotNull List<Pack> copyPacks() {
         return ImmutableList.copyOf(this.packs);
     }
 
-    public ImmutableList<Pack> copyFlattenedPacks() {
+    public List<Pack> copyFlattenedPacks() {
         return ImmutableList.copyOf(this.packAssets.flattenPacks(this.packs));
     }
 
-    @Override
-    public @NotNull ImmutableList<Pack> copySelection() {
+    public @NotNull List<Pack> copySelection() {
         return ImmutableList.copyOf(this.selection);
     }
 
-    @Override
     public @NotNull Query copyQuery() {
         return this.query.copy();
     }
@@ -150,7 +151,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         return sortedSelection;
     }
 
-    public ImmutableList<Pack> getOrderedSelection() {
+    public List<Pack> getOrderedSelection() {
         return ImmutableList.copyOf(this.orderSelection(this.selection));
     }
 
@@ -167,7 +168,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         return this.getIndicesFromSelection(this.selection);
     }
 
-    @Override
     public void clearSelection() {
         this.selection.clear();
     }
@@ -208,13 +208,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
     }
 
-    @Override
     public void add(Pack pack) {
         this.addPack(pack);
         this.queryPacks();
     }
 
-    @Override
     public void addAll(List<Pack> packs) {
         for (Pack pack : packs) {
             this.addPack(pack);
@@ -222,7 +220,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.queryPacks();
     }
 
-    @Override
     public boolean move(Pack pack, int to) {
         if (this.packAssets.isFixed(pack)) return false;
 
@@ -238,7 +235,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         return true;
     }
 
-    @Override
     public boolean moveAll(List<Pack> selection, int to) {
         if (selection == null || selection.isEmpty() || to < 0 || to > this.packs.size()) {
             return false;
@@ -266,13 +262,11 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
     }
 
-    @Override
     public void remove(Pack pack) {
         this.removePack(pack);
         this.queryPacks();
     }
 
-    @Override
     public void removeAll(List<Pack> packs) {
         for (Pack pack : packs) {
             this.removePack(pack);
@@ -285,7 +279,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     @Override
-    public @Nullable T getSelected() {
+    public @Nullable Entry getSelected() {
         return this.getLastSelected() != null ? this.getEntry(this.getLastSelected()) : super.getSelected();
     }
 
@@ -293,12 +287,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         return this.selection.contains(pack);
     }
 
-    @Override
-    public boolean isHovered() {
-        return super.isHovered();
-    }
-
-    @Override
     public boolean isLocked() {
         return this.packAssets.isLocked();
     }
@@ -307,11 +295,10 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         Optional.ofNullable(this.getEntry(this.getLastSelected())).ifPresent(this::ensureVisible);
     }
 
-    @Override
     public void unselect(Pack pack) {
         this.selection.remove(pack);
 
-        T entry = this.getEntry(pack);
+        Entry entry = this.getEntry(pack);
         if (entry == this.getFocused()) {
             this.setFocused(null);
         }
@@ -320,25 +307,22 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
     }
 
-    @Override
     public void select(Pack pack) {
         if (pack != null && this.queried.contains(pack)) {
             this.selection.remove(pack);
             this.selection.add(pack);
-            T entry = this.getEntry(pack);
+            Entry entry = this.getEntry(pack);
             this.setFocused(entry);
             this.setSelected(entry);
         }
     }
 
-    @Override
     public void selectAll(List<Pack> packs) {
         for (Pack pack : packs) {
             this.select(pack);
         }
     }
 
-    @Override
     public void selectExclusive(Pack pack) {
         this.clearSelection();
         this.select(pack);
@@ -352,7 +336,6 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
     }
 
-    @Override
     public void selectRange(Pack pack) {
         Pack selectionStart = this.getLastSelected();
         int lastSelectedIndex = this.queried.indexOf(selectionStart);
@@ -380,6 +363,10 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.select(pack);
     }
 
+    public boolean isTransferable(Pack pack) {
+        return testNullable(this.getEntry(pack), PackListBase.Entry::isTransferable);
+    }
+
     public void transferAll() {
         List<Pack> payload = new ArrayList<>();
 
@@ -391,7 +378,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         }
 
         if (!payload.isEmpty()) {
-            this.sendEvent(new RequestTransferEvent(this, payload, this.getLastSelected()));
+            this.sendEvent(new RequestTransferEvent(this, this.getLastSelected(), payload));
         }
     }
 
@@ -399,16 +386,19 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.listener.onEvent(event);
     }
 
-    protected abstract @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY);
+    public abstract boolean canDrop(PackListBase source, List<Pack> payload, Pack trigger, double mouseX, double mouseY);
 
-    @Override
-    public final void drop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+    protected abstract @Nullable List<Pack> handleDrop(PackListBase source, List<Pack> payload, Pack trigger, double mouseX, double mouseY);
+
+    public abstract void renderDroppableZone(GuiGraphics guiGraphics, PackListBase source, List<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick);
+
+    public final void drop(PackListBase source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         List<Pack> dropped = this.handleDrop(source, payload, trigger, mouseX, mouseY);
         if (dropped != null && !dropped.isEmpty()) {
             if (source != this) {
                 this.sendEvent(new DropEvent(source, this, dropped));
             } else {
-                this.sendEvent(new MoveEvent(this, dropped, trigger));
+                this.sendEvent(new MoveEvent(this, trigger, dropped));
             }
         }
     }
@@ -418,7 +408,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     }
 
     private @Nullable ComponentPath handleArrowNavigation(FocusNavigationEvent.ArrowNavigation arrowNavigation) {
-        T entry = switch (arrowNavigation.direction()) {
+        Entry entry = switch (arrowNavigation.direction()) {
             case UP -> this.getPreviousEntry();
             case DOWN -> this.getNextEntry();
             default -> null;
@@ -441,7 +431,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent event) {
         if (!this.isFocused()) {
             Pack lastSelected = this.getLastSelected();
-            T entry = null;
+            Entry entry = null;
             if (lastSelected != null) {
                 entry = this.getEntry(lastSelected);
             } else if (!this.children().isEmpty()) {
@@ -502,7 +492,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
     protected void renderListItems(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.renderListItems(guiGraphics, mouseX, mouseY, partialTick);
 
-        T focused = this.getFocused();
+        Entry focused = this.getFocused();
         if (focused != null && focused.isFocused() && this.children().contains(focused)) {
             int outlineTop = focused.getY() - Entry.BACKGROUND_OFFSET;
             int outlineHeight = focused.getHeight() + Entry.BACKGROUND_OFFSET * 2;
@@ -514,9 +504,12 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         return !this.scrollbarVisible() || mouseX < this.getScrollbarPosition();
     }
 
-    @Override
+    public @NotNull Snapshot captureState() {
+        return new Snapshot(this, this.copyPacks(), this.copySelection(), this.copyQuery());
+    }
+
     public void replaceState(@NotNull Snapshot snapshot) {
-        Pack focused = mapOrNull(this.getFocused(), PackList.Entry::getPack);
+        Pack focused = mapOrNull(this.getFocused(), PackListBase.Entry::getPack);
         this.packs.clear();
 
         for (Pack pack : snapshot.packs()) {
@@ -535,7 +528,20 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
         this.setFocused(this.getEntry(focused));
     }
 
-    public abstract class Entry extends AbstractDynamicList<T>.Entry implements PackList.Entry, ContextMenuContainer {
+    public record Snapshot(
+            PackListBase target,
+            List<Pack> packs,
+            List<Pack> selection,
+            Query query
+    ) implements Restorable.Snapshot<PackListBase.Snapshot> {
+        public PackListBase.Snapshot validate(List<Pack> validPacks) {
+            List<Pack> validated = new ArrayList<>(this.packs);
+            validated.retainAll(validPacks);
+            return new PackListBase.Snapshot(this.target, ImmutableList.copyOf(validated), this.selection, this.query);
+        }
+    }
+
+    public abstract class Entry extends AbstractDynamicList<Entry>.Entry implements ContextMenuContainer {
         private static final double DRAG_THRESHOLD = 1.0;
         private static final Tooltip FOLDER_OPEN_INFO = Tooltip.create(FolderPack.FOLDER_OPEN_TEXT);
         protected static final int SPACING = 2;
@@ -603,12 +609,10 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return renderable;
         }
 
-        @Override
         public boolean isTransferable() {
             return !PackListBase.this.isLocked();
         }
 
-        @Override
         public Pack getPack() {
             return this.pack;
         }
@@ -632,7 +636,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
 
             if (!payload.isEmpty()) {
                 Pack trigger = this.isTransferable() ? this.pack : null;
-                PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, payload, trigger));
+                PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, trigger, payload));
                 return true;
             }
 
@@ -648,7 +652,7 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             return this.sendSelection();
         }
 
-        private void fireClickEvent(BiConsumer<PackListBase<T>, Pack> selector, MouseSelectionState state) {
+        private void fireClickEvent(BiConsumer<PackListBase, Pack> selector, MouseSelectionState state) {
             this.mouseSelectionState = state;
             selector.accept(PackListBase.this, this.pack);
             PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));

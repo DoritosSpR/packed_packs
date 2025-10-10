@@ -49,7 +49,7 @@ public class ModAdditions {
         });
     }
 
-    public static void addToEntry(boolean resourcePacks, PackListBase<?>.Entry packListEntry) {
+    public static void addToEntry(boolean resourcePacks, PackListBase.Entry packListEntry) {
         if (resourcePacks) {
             Mod.RESPACKOPTS.wrapError(packListEntry, entry -> {
                 if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.respackoptsButton.get()) {

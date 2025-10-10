@@ -24,7 +24,7 @@ import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.devItem;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
 
-public record PackListDevMenu(PackListBase<?> list, Pack pack) {
+public record PackListDevMenu(PackListBase list, Pack pack) {
     private static final int DEV_SPRITE_SIZE = 16;
     private static final int DEV_SPRITE_MARGIN_RIGHT = 8;
     private static final Sprite EYE_SLASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("eye_slash"));

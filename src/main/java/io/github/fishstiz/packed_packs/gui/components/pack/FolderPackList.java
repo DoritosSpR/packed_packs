@@ -1,11 +1,12 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
-import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 public class FolderPackList extends CurrentPackList {
     public FolderPackList(PackAssets packAssets, PackListEventListener listener) {
@@ -23,12 +24,12 @@ public class FolderPackList extends CurrentPackList {
     }
 
     @Override
-    public boolean canDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+    public boolean canDrop(PackListBase source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         return source == this && super.canDrop(source, payload, trigger, mouseX, mouseY);
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackListBase source, List<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
         if (source == this) {
             super.renderDroppableZone(guiGraphics, source, payload, trigger, mouseX, mouseY, partialTick);
         }
