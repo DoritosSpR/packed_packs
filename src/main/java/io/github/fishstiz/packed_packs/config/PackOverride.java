@@ -32,7 +32,7 @@ public final class PackOverride implements Serializable {
     }
 
     public boolean hasOverride() {
-        return this.hidden != null || this.required != null || this.position != null;
+        return Boolean.TRUE.equals(this.hidden) || this.required != null || this.position != null;
     }
 
     public @Nullable Boolean hidden() {
