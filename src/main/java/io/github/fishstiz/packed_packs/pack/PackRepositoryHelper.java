@@ -137,11 +137,46 @@ public class PackRepositoryHelper implements PackAssets {
         return this.validatePacks(this.groupByFolders(unselected), this.groupByFolders(selected));
     }
 
+    public void validateOverrides(Pack pack) {
+        Profile profile = this.resolver.profileSupplier().get();
+        if (profile == null) return;
+
+        Profile defaultProfile = this.getConfig().getDefaultProfile();
+        if (defaultProfile != null && defaultProfile.overridesRequired(pack)) {
+            return;
+        }
+
+        if (profile.overridesRequired(pack) && !profile.isRequired(pack)) {
+            profile.setRequired(null, pack);
+        }
+    }
+
     private void addValidPacks(List<Pack> source, Set<Pack> seen, ObjectOpenHashSet<Pack> validPacks, List<Pack> target) {
         for (Pack pack : source) {
+            this.validateOverrides(pack);
             Pack validPack = validPacks.get(pack); // metadata can change
             if (validPack != null && (seen.add(pack))) {
                 target.add(validPack);
+            }
+        }
+    }
+
+    private void addValidPacks(
+            List<Pack> source,
+            Set<Pack> seen,
+            ObjectOpenHashSet<Pack> validPacks,
+            List<Pack> targetUnselected,
+            List<Pack> targetSelected
+    ) {
+        for (Pack pack : source) {
+            this.validateOverrides(pack);
+            Pack validPack = validPacks.get(pack);
+            if (validPack != null && seen.add(pack)) {
+                if (this.isRequired(validPack)) {
+                    this.getPosition(validPack).insert(targetSelected, validPack, this::getSelectionConfig, true);
+                } else {
+                    targetUnselected.add(validPack);
+                }
             }
         }
     }
@@ -158,7 +193,7 @@ public class PackRepositoryHelper implements PackAssets {
         List<Pack> validUnselected = new ObjectArrayList<>(unselected.size());
 
         this.addValidPacks(selected, seen, validPacks, validSelected);
-        this.addValidPacks(unselected, seen, validPacks, validUnselected);
+        this.addValidPacks(unselected, seen, validPacks, validUnselected, validSelected);
 
         for (Pack validPack : validPacks) {
             if (seen.add(validPack)) {

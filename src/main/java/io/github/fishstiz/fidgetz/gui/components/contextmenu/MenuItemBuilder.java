@@ -4,93 +4,120 @@ import com.google.common.util.concurrent.Runnables;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.util.ARGBColor;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.ARGB;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-public class MenuItemBuilder<B extends MenuItemBuilder<B>> {
-    protected final Component text;
-    protected Runnable action = Runnables.doNothing();
-    protected RenderableRect background;
-    protected Supplier<@Nullable Sprite> iconSupplier;
-    protected boolean shouldCloseOnInteract = true;
-    protected boolean shouldAutoSeparate = true;
-    protected BooleanSupplier activeSupplier;
-    protected IntSupplier textColorSupplier;
+public class MenuItemBuilder {
+    private final List<MenuItem> children = new ObjectArrayList<>();
+    private final Component text;
+    private Runnable action = Runnables.doNothing();
+    private RenderableRect background;
+    private Supplier<@Nullable Sprite> iconSupplier;
+    private Supplier<Tooltip> tooltipSupplier;
+    private boolean shouldCloseOnInteract = true;
+    private boolean shouldAutoSeparate = true;
+    private BooleanSupplier activeSupplier;
+    private IntSupplier textColorSupplier;
 
-    protected MenuItemBuilder(Component text) {
+    MenuItemBuilder(Component text) {
         this.text = text;
     }
 
-    @SuppressWarnings("unchecked")
-    protected B self() {
-        return (B) this;
-    }
-
-    public B action(Runnable action) {
+    public MenuItemBuilder action(Runnable action) {
         this.action = action;
-        return this.self();
+        return this;
     }
 
-    public B background(@Nullable RenderableRect background) {
+    public MenuItemBuilder background(@Nullable RenderableRect background) {
         this.background = background;
-        return this.self();
+        return this;
     }
 
-    public B background(int backgroundColor) {
+    public MenuItemBuilder background(int backgroundColor) {
         this.background = new ColoredRect(backgroundColor);
-        return this.self();
+        return this;
     }
 
-    public B icon(@Nullable Sprite icon) {
+    public MenuItemBuilder icon(@Nullable Sprite icon) {
         this.iconSupplier = () -> icon;
-        return this.self();
+        return this;
     }
 
-    public B icon(Supplier<@Nullable Sprite> icon) {
+    public MenuItemBuilder icon(Supplier<@Nullable Sprite> icon) {
         this.iconSupplier = icon;
-        return this.self();
+        return this;
     }
 
-    public B closeOnInteract(boolean value) {
+    public MenuItemBuilder tooltip(Supplier<@Nullable Tooltip> tooltipSupplier) {
+        this.tooltipSupplier = tooltipSupplier;
+        return this;
+    }
+
+    public MenuItemBuilder tooltip(Tooltip tooltip) {
+        return this.tooltip(() -> tooltip);
+    }
+
+    public MenuItemBuilder closeOnInteract(boolean value) {
         this.shouldCloseOnInteract = value;
-        return this.self();
+        return this;
     }
 
-    public B autoSeparate(boolean value) {
+    public MenuItemBuilder autoSeparate(boolean value) {
         this.shouldAutoSeparate = value;
-        return this.self();
+        return this;
     }
 
-    public B activeWhen(BooleanSupplier activeSupplier) {
+    public MenuItemBuilder activeWhen(BooleanSupplier activeSupplier) {
         this.activeSupplier = activeSupplier;
-        return this.self();
+        return this;
     }
 
-    public B textColor(IntSupplier textColorSupplier) {
+    public MenuItemBuilder textColor(IntSupplier textColorSupplier) {
         this.textColorSupplier = textColorSupplier;
-        return this.self();
+        return this;
     }
 
-    public B textColor(int textColor) {
+    public MenuItemBuilder textColor(int textColor) {
         this.textColorSupplier = () -> textColor;
-        return this.self();
+        return this;
     }
 
-    protected void setDefaults() {
+    public MenuItemBuilder addChild(MenuItem child) {
+        this.children.add(child);
+        return this;
+    }
+
+    public MenuItemBuilder addChildren(Collection<MenuItem> children) {
+        this.children.addAll(children);
+        return this;
+    }
+
+    private void setDefaults() {
+        if (this.iconSupplier == null) {
+            this.iconSupplier = MenuItemBuilder::nullSupplier;
+        }
+        if (this.tooltipSupplier == null) {
+            this.tooltipSupplier = MenuItemBuilder::nullSupplier;
+        }
         if (this.activeSupplier == null) {
             this.activeSupplier = () -> true;
         }
         if (this.textColorSupplier == null) {
-            this.textColorSupplier = () -> this.activeSupplier.getAsBoolean() ? ARGB.white(1) : ContextMenu.DEFAULT_TEXT_INACTIVE_COLOR;
+            this.textColorSupplier = () -> this.activeSupplier.getAsBoolean() ? ARGBColor.WHITE : ContextMenu.DEFAULT_TEXT_INACTIVE_COLOR;
         }
-        if (this.iconSupplier == null) {
-            this.iconSupplier = () -> null;
-        }
+    }
+
+    private static <T> T nullSupplier() {
+        return null;
     }
 
     public MenuItem build() {
@@ -101,10 +128,12 @@ public class MenuItemBuilder<B extends MenuItemBuilder<B>> {
                 this.action,
                 this.background,
                 this.iconSupplier,
+                this.tooltipSupplier,
                 this.shouldCloseOnInteract,
                 this.shouldAutoSeparate,
                 this.activeSupplier,
-                this.textColorSupplier
+                this.textColorSupplier,
+                this.children
         );
     }
 
@@ -113,10 +142,12 @@ public class MenuItemBuilder<B extends MenuItemBuilder<B>> {
             Runnable action,
             RenderableRect background,
             Supplier<@Nullable Sprite> iconSupplier,
+            Supplier<@Nullable Tooltip> tooltipSupplier,
             boolean shouldCloseOnInteract,
             boolean shouldAutoSeparate,
             BooleanSupplier activeSupplier,
-            IntSupplier textColorSupplier
+            IntSupplier textColorSupplier,
+            List<MenuItem> children
     ) implements MenuItem {
         @Override
         public boolean active() {
@@ -131,6 +162,11 @@ public class MenuItemBuilder<B extends MenuItemBuilder<B>> {
         @Override
         public @Nullable Sprite icon() {
             return this.iconSupplier.get();
+        }
+
+        @Override
+        public @Nullable Tooltip tooltip() {
+            return this.tooltipSupplier.get();
         }
     }
 }
