@@ -96,7 +96,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private final FileRenameModal fileRenameModal;
     private final ContextMenu contextMenu;
     private final List<ToggleableDialog<?>> dialogs;
-    private final List<PackListBase> packLists;
+    private final List<PackList> packLists;
     private List<Path> additionalFolders;
     private CompletableFuture<Void> refreshFuture;
     private PackWatcher watcher;
@@ -453,8 +453,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
     }
 
-    private void replacePacks(PackListBase list, ImmutableList<Pack> packs) {
-        list.replaceState(new PackListBase.Snapshot(list, packs, list.copySelection(), list.copyQuery()));
+    private void replacePacks(PackList list, ImmutableList<Pack> packs) {
+        list.replaceState(new PackList.Snapshot(list, packs, list.copySelection(), list.copyQuery()));
     }
 
     private void revalidateFolder() {
@@ -469,8 +469,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     public void revalidatePacks() {
-        PackListBase availableList = this.availablePacks.getList();
-        PackListBase currentList = this.currentPacks.getList();
+        PackList availableList = this.availablePacks.getList();
+        PackList currentList = this.currentPacks.getList();
         PackGroup packs = this.repository.validatePacks(availableList.copyPacks(), currentList.copyPacks());
         this.repository.clearIconCache();
         this.replacePacks(availableList, packs.unselected());
@@ -554,12 +554,12 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    public @NotNull List<PackListBase> getPackLists() {
+    public @NotNull List<PackList> getPackLists() {
         return this.packLists;
     }
 
     @Override
-    public @Nullable PackListBase getDestination(PackListBase source) {
+    public @Nullable PackList getDestination(PackList source) {
         if (source == this.availablePacks.getList()) {
             return this.currentPacks.getList();
         } else if (source == this.currentPacks.getList()) {
@@ -569,7 +569,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    protected void transferFocus(PackListBase source, PackListBase destination) {
+    protected void transferFocus(PackList source, PackList destination) {
         super.transferFocus(source, destination);
 
         if (destination == currentPacks.getList()) {
@@ -612,7 +612,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
             return;
         }
 
-        PackListBase.Entry entry = event.target().getEntry(event.trigger());
+        PackList.Entry entry = event.target().getEntry(event.trigger());
         if (entry != null) {
             this.focus(ComponentPath.path(entry, event.target(), this.folderDialog, this));
         } else {
@@ -772,7 +772,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (isClickBack(mouseEvent)) {
             return this.history.undo();
         }
-        if (isLeftClick(mouseEvent) && !(this.getFocused() instanceof PackListBase)) {
+        if (isLeftClick(mouseEvent) && !(this.getFocused() instanceof PackList)) {
             this.setFocused(this.children().getFirst());
             this.layout.visitWidgets(w -> w.setFocused(false));
         }
@@ -827,8 +827,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     public record Snapshot(
             PackedPacksScreen target,
-            PackListBase.Snapshot availablePacks,
-            PackListBase.Snapshot currentPacks
+            PackList.Snapshot availablePacks,
+            PackList.Snapshot currentPacks
     ) implements Restorable.Snapshot<Snapshot> {
     }
 }

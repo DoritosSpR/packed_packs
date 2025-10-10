@@ -49,8 +49,8 @@ import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
-public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.Entry> implements
-        Restorable<PackListBase.Snapshot>,
+public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> implements
+        Restorable<PackList.Snapshot>,
         ContainerEventHandlerPatch,
         ContextMenuContainer {
     protected static final int Y_OFFSET = 1;
@@ -63,7 +63,7 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
     private final PackListEventListener listener;
     private final Query query;
 
-    protected PackListBase(PackAssets packAssets, PackListEventListener listener) {
+    protected PackList(PackAssets packAssets, PackListEventListener listener) {
         super(ITEM_HEIGHT);
 
         this.query = new Query();
@@ -371,7 +371,7 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
     }
 
     public boolean isTransferable(Pack pack) {
-        return testNullable(this.getEntry(pack), PackListBase.Entry::isTransferable);
+        return testNullable(this.getEntry(pack), PackList.Entry::isTransferable);
     }
 
     public void transferAll() {
@@ -393,13 +393,13 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
         this.listener.onEvent(event);
     }
 
-    public abstract boolean canDrop(PackListBase source, List<Pack> payload, Pack trigger, double mouseX, double mouseY);
+    public abstract boolean canDrop(PackList source, List<Pack> payload, Pack trigger, double mouseX, double mouseY);
 
-    protected abstract @Nullable List<Pack> handleDrop(PackListBase source, List<Pack> payload, Pack trigger, double mouseX, double mouseY);
+    protected abstract @Nullable List<Pack> handleDrop(PackList source, List<Pack> payload, Pack trigger, double mouseX, double mouseY);
 
-    public abstract void renderDroppableZone(GuiGraphics guiGraphics, PackListBase source, List<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick);
+    public abstract void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick);
 
-    public final void drop(PackListBase source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+    public final void drop(PackList source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         List<Pack> dropped = this.handleDrop(source, payload, trigger, mouseX, mouseY);
         if (dropped != null && !dropped.isEmpty()) {
             if (source != this) {
@@ -517,7 +517,7 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
     }
 
     public void replaceState(@NotNull Snapshot snapshot) {
-        Pack focused = mapOrNull(this.getFocused(), PackListBase.Entry::getPack);
+        Pack focused = mapOrNull(this.getFocused(), PackList.Entry::getPack);
         this.packs.clear();
 
         for (Pack pack : snapshot.packs()) {
@@ -537,15 +537,15 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
     }
 
     public record Snapshot(
-            PackListBase target,
+            PackList target,
             List<Pack> packs,
             List<Pack> selection,
             Query query
-    ) implements Restorable.Snapshot<PackListBase.Snapshot> {
-        public PackListBase.Snapshot validate(List<Pack> validPacks) {
+    ) implements Restorable.Snapshot<PackList.Snapshot> {
+        public PackList.Snapshot validate(List<Pack> validPacks) {
             List<Pack> validated = new ArrayList<>(this.packs);
             validated.retainAll(validPacks);
-            return new PackListBase.Snapshot(this.target, ImmutableList.copyOf(validated), this.selection, this.query);
+            return new PackList.Snapshot(this.target, ImmutableList.copyOf(validated), this.selection, this.query);
         }
     }
 
@@ -574,9 +574,9 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
             this.pack = pack;
             this.packWidget = this.addRenderableWidget(new PackWidget(
                     this.pack,
-                    PackListBase.this.packAssets,
+                    PackList.this.packAssets,
                     this.getX(),
-                    PackListBase.this.getRowTop(this.index),
+                    PackList.this.getRowTop(this.index),
                     this.getWidth(),
                     ITEM_HEIGHT - ROW_GAP,
                     H_SPACING
@@ -596,9 +596,9 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
                 ));
             }
 
-            this.devMenu = PackedPacks.CONFIG.isDevMode() ? new PackListDevMenu(PackListBase.this, this.pack) : null;
+            this.devMenu = PackedPacks.CONFIG.isDevMode() ? new PackListDevMenu(PackList.this, this.pack) : null;
 
-            ModAdditions.addToEntry(PackListBase.this.packAssets.isResourcePacks(), this);
+            ModAdditions.addToEntry(PackList.this.packAssets.isResourcePacks(), this);
         }
 
         public <U extends GuiEventListener & Renderable> U addRenderableWidget(U widget) {
@@ -620,7 +620,7 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
         }
 
         public boolean isTransferable() {
-            return !PackListBase.this.isLocked();
+            return !PackList.this.isLocked();
         }
 
         public Pack getPack() {
@@ -628,25 +628,25 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
         }
 
         public boolean isSelected() {
-            return PackListBase.this.selection.contains(this.pack);
+            return PackList.this.selection.contains(this.pack);
         }
 
         public boolean isSelectedLast() {
-            return mapOrDefault(PackListBase.this.getLastSelected(), false, p -> Objects.equals(p, this.pack));
+            return mapOrDefault(PackList.this.getLastSelected(), false, p -> Objects.equals(p, this.pack));
         }
 
         private boolean sendSelection() {
             List<Pack> payload = new ArrayList<>();
 
-            for (Pack selected : PackListBase.this.getOrderedSelection().reversed()) {
-                if (PackListBase.this.isTransferable(selected)) {
+            for (Pack selected : PackList.this.getOrderedSelection().reversed()) {
+                if (PackList.this.isTransferable(selected)) {
                     payload.add(selected);
                 }
             }
 
             if (!payload.isEmpty()) {
                 Pack trigger = this.isTransferable() ? this.pack : null;
-                PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, trigger, payload));
+                PackList.this.sendEvent(new RequestTransferEvent(PackList.this, trigger, payload));
                 return true;
             }
 
@@ -655,17 +655,17 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
 
         public boolean transfer() {
             if (!this.isSelected() && this.isTransferable()) {
-                PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, this.pack));
+                PackList.this.sendEvent(new RequestTransferEvent(PackList.this, this.pack));
                 return true;
             }
 
             return this.sendSelection();
         }
 
-        private void fireClickEvent(BiConsumer<PackListBase, Pack> selector, MouseSelectionState state) {
+        private void fireClickEvent(BiConsumer<PackList, Pack> selector, MouseSelectionState state) {
             this.mouseSelectionState = state;
-            selector.accept(PackListBase.this, this.pack);
-            PackListBase.this.sendEvent(new SelectionEvent(PackListBase.this));
+            selector.accept(PackList.this, this.pack);
+            PackList.this.sendEvent(new SelectionEvent(PackList.this));
         }
 
         private boolean exceedsDragThreshold(double dragX, double dragY) {
@@ -674,7 +674,7 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
 
         @Override
         public boolean isMouseOver(double mouseX, double mouseY) {
-            return PackListBase.this.isHovered() && PackListBase.this.beforeScrollbarX(mouseX) && super.isMouseOver(mouseX, mouseY);
+            return PackList.this.isHovered() && PackList.this.beforeScrollbarX(mouseX) && super.isMouseOver(mouseX, mouseY);
         }
 
         protected boolean canDrag() {
@@ -696,17 +696,17 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
             if (isLeftClick(mouseButtonEvent) && this.isMouseOver(mouseButtonEvent.x(), mouseButtonEvent.y())) {
                 boolean doubleClickedLocal = this.updateDoubleClick();
                 if (!isRangeModifierActive() && !isSelectModifierActive() && doubleClickedLocal && this.isTransferable()) {
-                    PackListBase.this.sendEvent(new RequestTransferEvent(PackListBase.this, this.pack));
+                    PackList.this.sendEvent(new RequestTransferEvent(PackList.this, this.pack));
                     return false;
                 }
                 if (isRangeModifierActive()) {
-                    this.fireClickEvent(PackListBase::selectRange, MouseSelectionState.SELECTING_MANY);
+                    this.fireClickEvent(PackList::selectRange, MouseSelectionState.SELECTING_MANY);
                 } else if (isSelectModifierActive()) {
-                    this.fireClickEvent(PackListBase::selectToggle, MouseSelectionState.SELECTING_MANY);
+                    this.fireClickEvent(PackList::selectToggle, MouseSelectionState.SELECTING_MANY);
                 } else if (!this.isSelected()) {
-                    this.fireClickEvent(PackListBase::selectExclusive, MouseSelectionState.SELECTING_ONE);
+                    this.fireClickEvent(PackList::selectExclusive, MouseSelectionState.SELECTING_ONE);
                 } else if (this.isSelected() && !this.isSelectedLast()) {
-                    this.fireClickEvent(PackListBase::select, MouseSelectionState.SELECTING_ONE);
+                    this.fireClickEvent(PackList::select, MouseSelectionState.SELECTING_ONE);
                 } else {
                     this.mouseSelectionState = MouseSelectionState.SELECTING_ONE;
                 }
@@ -721,8 +721,8 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
             if (this.isSelectedLast()
                 && this.isMouseOver(mouseButtonEvent.x(), mouseButtonEvent.y())
                 && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE
-                && PackListBase.this.selection.size() > 1) {
-                this.fireClickEvent(PackListBase::selectExclusive, MouseSelectionState.INACTIVE);
+                && PackList.this.selection.size() > 1) {
+                this.fireClickEvent(PackList::selectExclusive, MouseSelectionState.INACTIVE);
                 return true;
             }
             this.mouseSelectionState = MouseSelectionState.INACTIVE;
@@ -736,9 +736,9 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
                 return false;
             }
             if (this.exceedsDragThreshold(dragX, dragY) && this.canDrag()) {
-                PackListBase.this.sendEvent(new DragEvent(
-                        PackListBase.this,
-                        PackListBase.this.getOrderedSelection().reversed(),
+                PackList.this.sendEvent(new DragEvent(
+                        PackList.this,
+                        PackList.this.getOrderedSelection().reversed(),
                         this.pack,
                         this.packWidget.getSprite()
                 ));
@@ -773,7 +773,7 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
         }
 
         public void renderBack(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            if (!this.pack.getCompatibility().isCompatible() && !PackListBase.this.packAssets.getConfig().isIncompatibleWarningsHidden()) {
+            if (!this.pack.getCompatibility().isCompatible() && !PackList.this.packAssets.getConfig().isIncompatibleWarningsHidden()) {
                 int backgroundLeft = left + BACKGROUND_MARGIN;
                 int backgroundTop = top + BACKGROUND_MARGIN;
                 int backgroundRight = backgroundLeft + width - BACKGROUND_MARGIN;
@@ -834,7 +834,7 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
 
         @Override
         public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
-            PackListBase.this.setFocused(this);
+            PackList.this.setFocused(this);
             ContextMenuContainer.super.buildItems(builder
                             .add(new PackMenuHeader(this.pack, this.packWidget.getSprite()))
                             .whenNonNull(this.devMenu)
@@ -857,12 +857,12 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
         }
 
         private void openFolder() {
-            PackListBase.this.openFolder(this.folderWidget.getMetadata());
+            PackList.this.openFolder(this.folderWidget.getMetadata());
         }
 
         private boolean hasOverride() {
-            Profile profile = PackListBase.this.packAssets.getProfile();
-            Profile defaultProfile = PackListBase.this.packAssets.getConfig().getDefaultProfile();
+            Profile profile = PackList.this.packAssets.getProfile();
+            Profile defaultProfile = PackList.this.packAssets.getConfig().getDefaultProfile();
 
             return testNullable(profile, p -> p.hasOverride(this.pack)) ||
                    testNullable(defaultProfile, p -> p.hasOverride(this.pack));
@@ -870,23 +870,23 @@ public abstract class PackListBase extends AbstractFixedListWidget<PackListBase.
 
         public boolean canOperateFile() {
             return !this.hasOverride() &&
-                   !PackListBase.this.isLocked() &&
-                   !PackListBase.this.packAssets.isFixed(this.pack) &&
-                   !PackListBase.this.packAssets.isRequired(this.pack) &&
-                   !PackListBase.this.packAssets.isEnabled(this.pack) &&
+                   !PackList.this.isLocked() &&
+                   !PackList.this.packAssets.isFixed(this.pack) &&
+                   !PackList.this.packAssets.isRequired(this.pack) &&
+                   !PackList.this.packAssets.isEnabled(this.pack) &&
                    PackAssets.validatePackPath(this.pack) != null;
         }
 
         public void deletePack() {
-            if (PackListBase.this.packAssets.deletePack(this.pack)) {
+            if (PackList.this.packAssets.deletePack(this.pack)) {
                 this.stale = true;
-                PackListBase.this.remove(this.pack);
-                PackListBase.this.sendEvent(new FileDeleteEvent(PackListBase.this));
+                PackList.this.remove(this.pack);
+                PackList.this.sendEvent(new FileDeleteEvent(PackList.this));
             }
         }
 
         public void renamePack() {
-            PackListBase.this.sendEvent(new FileRenameOpenEvent(PackListBase.this, this.pack));
+            PackList.this.sendEvent(new FileRenameOpenEvent(PackList.this, this.pack));
         }
 
         public void onRename(Component newName) {

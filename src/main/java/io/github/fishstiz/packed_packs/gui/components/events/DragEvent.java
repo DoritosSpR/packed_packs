@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.gui.components.events;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -14,7 +14,7 @@ import net.minecraft.server.packs.repository.Pack;
 import java.util.List;
 
 public record DragEvent(
-        PackListBase target,
+        PackList target,
         List<Pack> payload,
         Pack trigger,
         Sprite sprite

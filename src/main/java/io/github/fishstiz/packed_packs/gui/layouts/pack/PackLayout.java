@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.gui.layouts.pack;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.gui.metadata.GridWrapper;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
@@ -15,13 +15,13 @@ import org.jetbrains.annotations.NotNull;
 public abstract class PackLayout {
     private static final Component SEARCH_HINT = ResourceUtil.getText("search");
     private static final Component TRANSFER_INFO = ResourceUtil.getText("transfer_all.info");
-    protected final PackListBase list;
+    protected final PackList list;
     private final GridWrapper<FlexLayout> header;
     private final ToggleableEditBox<Void> searchField;
     private final FidgetzButton<Void> transferButton;
     private FlexLayout layout;
 
-    protected PackLayout(PackListBase list) {
+    protected PackLayout(PackList list) {
         this.list = list;
         this.header = new GridWrapper<>(FlexLayout.horizontal(this.list::getWidth).spacing(GuiConstants.SPACING), GuiConstants.SPACING);
         this.searchField = ToggleableEditBox.<Void>builder()
@@ -48,7 +48,7 @@ public abstract class PackLayout {
         this.layout.arrangeElements();
     }
 
-    public PackListBase getList() {
+    public PackList getList() {
         return this.list;
     }
 
