@@ -7,7 +7,7 @@ import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModScreenFactory;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
 import io.github.fishstiz.packed_packs.config.Preferences;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
@@ -55,7 +55,7 @@ public class VTDEditButtonWidget extends AbstractButton implements ContextMenuPr
         this.active = this.editable;
     }
 
-    public static @Nullable VTDEditButtonWidget create(Screen previous, PackListBase.Entry entry) {
+    public static @Nullable VTDEditButtonWidget create(Screen previous, PackList.Entry entry) {
         return entry.getPack().getDescription().getString().contains(VT_DESCRIPTION_MARKER)
                 ? new VTDEditButtonWidget(entry, previous, new PackWrapperDelegatorAbstractionEpicModelEntry(entry.getPack()), entry.canOperateFile())
                 : null;

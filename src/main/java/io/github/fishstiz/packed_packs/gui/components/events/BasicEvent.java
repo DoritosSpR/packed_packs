@@ -1,8 +1,8 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
-import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 
-public record BasicEvent(PackListBase target, boolean pushToHistory) implements PackListEvent {
+public record BasicEvent(PackList target, boolean pushToHistory) implements PackListEvent {
     public BasicEvent(boolean pushToHistory) {
         this(null, pushToHistory);
     }

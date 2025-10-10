@@ -27,7 +27,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     private final FidgetzButton<Void> closeButton;
     private final FidgetzText<Void> folderTitle;
     private Sprite folderSprite = Sprite.of16(PackAssets.DEFAULT_FOLDER_ICON);
-    private PackListBase parent;
+    private PackList parent;
     private FolderPack folderPack;
 
     private FolderDialog(Builder builder) {
@@ -77,7 +77,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         this.folderTitle.setWidth(bounds.getRight() - this.folderTitle.getX() - GuiConstants.SPACING * 2);
     }
 
-    public void updateFolder(PackListBase parent, FolderPack folderPack, PackAssets packAssets) {
+    public void updateFolder(PackList parent, FolderPack folderPack, PackAssets packAssets) {
         this.parent = parent;
         this.folderPack = folderPack;
         this.folderTitle.setMessage(folderPack.getTitle());
@@ -105,7 +105,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         }
     }
 
-    public @Nullable PackListBase getParent() {
+    public @Nullable PackList getParent() {
         return this.parent;
     }
 
@@ -139,7 +139,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
 
     private boolean canOperateFolder() {
         return this.folderPack != null &&
-               ObjectsUtil.testNullable(this.root().getEntry(this.folderPack), PackListBase.Entry::canOperateFile) &&
+               ObjectsUtil.testNullable(this.root().getEntry(this.folderPack), PackList.Entry::canOperateFile) &&
                PackAssets.validatePackPath(this.folderPack) != null;
     }
 
@@ -159,7 +159,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
 
     public void onRename(Pack pack, Component newName) {
         if (this.parent != null && pack == this.folderPack) {
-            PackListBase.Entry entry = this.parent.getEntry(this.folderPack);
+            PackList.Entry entry = this.parent.getEntry(this.folderPack);
             if (entry != null) {
                 entry.onRename(newName);
             }
