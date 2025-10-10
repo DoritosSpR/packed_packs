@@ -9,7 +9,7 @@ import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsWidget;
 import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFactory;
 import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDEditButtonWidget;
 import io.github.fishstiz.packed_packs.config.Preferences;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -49,7 +49,7 @@ public class ModAdditions {
         });
     }
 
-    public static void addToEntry(boolean resourcePacks, PackListBase.Entry packListEntry) {
+    public static void addToEntry(boolean resourcePacks, PackList.Entry packListEntry) {
         if (resourcePacks) {
             Mod.RESPACKOPTS.wrapError(packListEntry, entry -> {
                 if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.respackoptsButton.get()) {

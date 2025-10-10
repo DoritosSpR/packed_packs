@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
-import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import org.jetbrains.annotations.NotNull;
@@ -27,7 +27,7 @@ public interface DragEventHandler extends ContainerEventHandler {
 
     default void onRelease(@NotNull DragEvent event, double mouseX, double mouseY) {
         Optional<GuiEventListener> child = this.getChildAt(mouseX, mouseY);
-        if (child.isPresent() && child.get() instanceof PackListBase packList && !packList.isLocked()) {
+        if (child.isPresent() && child.get() instanceof PackList packList && !packList.isLocked()) {
             packList.drop(event.target(), event.payload(), event.trigger(), mouseX, mouseY);
         }
     }

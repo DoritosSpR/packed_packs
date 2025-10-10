@@ -24,12 +24,12 @@ public class FolderPackList extends CurrentPackList {
     }
 
     @Override
-    public boolean canDrop(PackListBase source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+    public boolean canDrop(PackList source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         return source == this && super.canDrop(source, payload, trigger, mouseX, mouseY);
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, PackListBase source, List<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
         if (source == this) {
             super.renderDroppableZone(guiGraphics, source, payload, trigger, mouseX, mouseY, partialTick);
         }
