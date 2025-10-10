@@ -27,6 +27,7 @@
   "packed_packs.profile.default.unset": "Unset as Default",
   "packed_packs.profile.override.hidden": "Hidden",
   "packed_packs.profile.override.required": "Required",
+  "packed_packs.profile.override.required.no.disabled.info": "This option can only be selected in the default profile.",
   "packed_packs.profile.override.fixed": "Fixed Position",
   "packed_packs.profile.override.fixed.top": "TOP",
   "packed_packs.profile.override.fixed.bottom": "BOTTOM",

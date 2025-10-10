@@ -733,7 +733,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                                         .action(() -> profile.setPacks(this.currentPacks.getList().copyFlattenedPacks()))
                                         .build())
                                 .separator())
-                        .add(devParent(ResourceUtil.getText("preferences"))
+                        .add(devItem(ResourceUtil.getText("preferences"))
                                 .addChildren(Toggleable.preferences())
                                 .addChild(devItem(ResourceUtil.getText("preferences.reset"))
                                         .action(Preferences.INSTANCE::reset)
