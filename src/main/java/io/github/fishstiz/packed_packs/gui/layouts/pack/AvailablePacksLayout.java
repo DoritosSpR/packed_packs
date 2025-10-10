@@ -18,7 +18,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
-public final class AvailablePacksLayout extends PackLayout<AvailablePackList> {
+public final class AvailablePacksLayout extends PackLayout {
     private static final Component SORT_TEXT = ResourceUtil.getText("sort");
     private static final Component COMPAT_TEXT = ResourceUtil.getText("hide_incompatible");
     private static final Component COMPAT_INFO = ResourceUtil.getText("hide_incompatible.info");

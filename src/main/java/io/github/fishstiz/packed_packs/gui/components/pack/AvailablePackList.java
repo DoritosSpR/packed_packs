@@ -1,7 +1,5 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
-import com.google.common.collect.ImmutableList;
-import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
@@ -23,7 +21,7 @@ import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
 import static java.util.Optional.ofNullable;
 
-public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
+public class AvailablePackList extends PackListBase {
     private static final Sprite SELECT_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/select_highlighted"));
     private static final Sprite SELECT_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/select"));
     private static final Theme DROP_ZONE_THEME = Theme.RED_700;
@@ -38,17 +36,17 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
         return new Entry(pack, index);
     }
 
-    private boolean isInvalidDrop(PackList source, ImmutableList<Pack> payload, Pack trigger) {
+    private boolean isInvalidDrop(PackListBase source, List<Pack> payload, Pack trigger) {
         return source == this || source instanceof FolderPackList || payload.isEmpty() || !source.isTransferable(trigger);
     }
 
     @Override
-    public boolean canDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+    public boolean canDrop(PackListBase source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         return this.isMouseOver(mouseX, mouseY) && !this.isInvalidDrop(source, payload, trigger);
     }
 
     @Override
-    protected @Nullable List<Pack> handleDrop(PackList source, ImmutableList<Pack> payload, Pack trigger, double mouseX, double mouseY) {
+    protected @Nullable List<Pack> handleDrop(PackListBase source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
         if (this.isInvalidDrop(source, payload, trigger)) return null;
 
         List<Pack> dropped = new ArrayList<>();
@@ -69,7 +67,7 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, ImmutableList<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackListBase source, List<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
         if (this.isInvalidDrop(source, payload, trigger)) return;
 
         int width = this.scrollbarVisible() ? this.getWidth() - this.scrollbarOffset : this.getWidth();
@@ -81,7 +79,7 @@ public class AvailablePackList extends PackListBase<AvailablePackList.Entry> {
         guiGraphics.renderOutline(this.getX(), this.getY(), width, this.getHeight(), DROP_ZONE_THEME.getARGB());
     }
 
-    public class Entry extends PackListBase<Entry>.Entry {
+    public class Entry extends PackListBase.Entry {
         private Entry(Pack pack, int index) {
             super(pack, index);
         }
