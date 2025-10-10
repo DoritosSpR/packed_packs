@@ -17,7 +17,6 @@ import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -32,50 +31,52 @@ public class ProfilesLayout {
     private static final Component NEW_TEXT = ResourceUtil.getText("profile.new");
     private static final Component NEW_INFO = ResourceUtil.getText("profile.new.info");
     private static final Component COPY_TEXT = ResourceUtil.getText("profile.copy");
-    private static final int MAX_WIDTH = 150;
+    private static final int MAX_WIDTH = SPACING * 20;
     private final Config.Packs config;
     private final Sidebar sidebar;
-    private final Listener listener;
-    private final ToggleableEditBox<Void> nameField = ToggleableEditBox.<Void>builder()
-            .setHint(UNNAMED_TEXT)
-            .setMaxLength(Profile.NAME_MAX_LENGTH)
-            .setFilter(value -> value != null && (value.isEmpty() || !value.isBlank()))
-            .addListener(this::onNameChange)
-            .build();
-    private final FidgetzButton<Void> toggleNameButton = FidgetzButton.<Void>builder()
-            .makeSquare()
-            .setTooltip(Tooltip.create(EDIT_NAME_TEXT))
-            .setSprite(new ButtonSprites(
-                    new Sprite(ResourceUtil.getIcon("edit"), Size.of16()),
-                    new Sprite(ResourceUtil.getIcon("edit_inactive"), Size.of16()),
-                    this::getToggleSpriteRenderer
-            ))
-            .setOnPress(this.nameField::toggle)
-            .build();
-    private final FidgetzButton<Void> noProfileButton = FidgetzButton.<Void>builder()
-            .setMessage(NO_PROFILE_TEXT)
-            .setOnPress(() -> this.setProfile(null))
-            .build();
+    private final PackedPacksScreen screen;
+    private final ToggleableEditBox<Void> nameField;
+    private final FidgetzButton<Void> toggleNameButton;
+    private final FidgetzButton<Void> noProfileButton;
     private final ProfileList profileList;
     private @Nullable Profile profile;
 
     public ProfilesLayout(@Nullable Profile profile, Config.Packs config, PackedPacksScreen screen) {
         this.config = config;
+        this.screen = screen;
         this.sidebar = Sidebar.builder(screen)
                 .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
                 .setMaxWidth(MAX_WIDTH)
                 .setTitle(TITLE_TEXT, true)
                 .build();
-        this.listener = screen;
-        this.profileList = new ProfileList(this.config, this::getProfile, this::removeProfile, this::setProfile);
-        this.noProfileButton.addListener(() -> this.sidebar.setOpen(false));
+        this.nameField = ToggleableEditBox.<Void>builder()
+                .setHint(UNNAMED_TEXT)
+                .setMaxLength(Profile.NAME_MAX_LENGTH)
+                .setFilter(value -> value != null && (value.isEmpty() || !value.isBlank()))
+                .addListener(this::onNameChange)
+                .build();
+        this.toggleNameButton = FidgetzButton.<Void>builder()
+                .makeSquare()
+                .setTooltip(Tooltip.create(EDIT_NAME_TEXT))
+                .setSprite(new ButtonSprites(
+                        new Sprite(ResourceUtil.getIcon("edit"), Size.of16()),
+                        new Sprite(ResourceUtil.getIcon("edit_inactive"), Size.of16()),
+                        this::getToggleSpriteRenderer
+                ))
+                .setOnPress(this.nameField::toggle)
+                .build();
+        this.noProfileButton = FidgetzButton.<Void>builder()
+                .setMessage(NO_PROFILE_TEXT)
+                .setOnPress(() -> this.setProfile(null))
+                .build();
+        this.profileList = new ProfileList(this.config, this);
         this.profile = profile;
     }
 
     public void initContents() {
         LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(GuiConstants.SPACING);
-        FlexLayout actions = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
-        FlexLayout list = FlexLayout.horizontal(this::getMaxWidth);
+        FlexLayout actions = FlexLayout.horizontal(() -> MAX_WIDTH).spacing(GuiConstants.SPACING);
+        FlexLayout list = FlexLayout.horizontal(() -> MAX_WIDTH);
 
         actions.addFlexChild(this.noProfileButton);
         actions.addFlexChild(
@@ -132,7 +133,7 @@ public class ProfilesLayout {
         this.profileList.scheduleRefresh();
     }
 
-    private void updateGuiState(@Nullable Profile profile) {
+    public void updateGuiState(@Nullable Profile profile) {
         this.nameField.setEditable(false);
 
         boolean hasProfile = profile != null;
@@ -145,10 +146,10 @@ public class ProfilesLayout {
         this.toggleNameButton.active = hasProfile && !profile.isLocked();
     }
 
-    private void setProfile(@Nullable Profile profile) {
+    public void setProfile(@Nullable Profile profile) {
         Profile previous = this.profile;
         this.profile = profile;
-        this.listener.onProfileChange(previous, this.profile);
+        this.screen.onProfileChange(previous, this.profile);
         this.updateGuiState(profile);
     }
 
@@ -161,14 +162,14 @@ public class ProfilesLayout {
                 ? this.profile.copy()
                 : new Profile(NO_PROFILE_TEXT.getString() + " - " + COPY_TEXT.getString());
 
-        this.listener.onProfileCopy(this.profile, copiedProfile);
+        this.screen.onProfileCopy(this.profile, copiedProfile);
         this.config.addProfile(copiedProfile);
         this.setProfile(copiedProfile);
         this.sidebar.setOpen(false);
         this.profileList.refresh();
     }
 
-    private void removeProfile(Profile profile) {
+    public void removeProfile(Profile profile) {
         if (profile != null && this.profile == profile) {
             List<Profile> profiles = this.config.getProfiles();
             if (!profiles.isEmpty()) {
@@ -181,11 +182,5 @@ public class ProfilesLayout {
         }
         this.config.removeProfile(profile);
         this.profileList.refresh();
-    }
-
-    public interface Listener {
-        void onProfileChange(@Nullable Profile previous, @Nullable Profile current);
-
-        void onProfileCopy(@Nullable Profile original, @NotNull Profile copy);
     }
 }

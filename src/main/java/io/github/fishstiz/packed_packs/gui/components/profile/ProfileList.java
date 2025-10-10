@@ -15,10 +15,10 @@ import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
+import io.github.fishstiz.packed_packs.gui.layouts.ProfilesLayout;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
@@ -30,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
@@ -42,20 +41,15 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     private static final Sprite TRASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("trash"));
     private static final Sprite STAR_OUTLINE_SPRITE = Sprite.of16(ResourceUtil.getIcon("star_outline"));
     private final PollingDebouncer<Void> debouncedRefresh = new SimplePollingDebouncer<>(this::refresh, 200);
+    private final ProfilesLayout layout;
     private final Config.Packs config;
-    private final Supplier<Profile> current;
-    private final Consumer<Profile> onDelete;
-    private final Consumer<Profile> onSelect;
     private List<Profile> profiles;
 
-    public ProfileList(Config.Packs config, Supplier<Profile> current, Consumer<Profile> onDelete, Consumer<Profile> onSelect) {
+    public ProfileList(Config.Packs config, ProfilesLayout profilesLayout) {
         super(ITEM_HEIGHT);
 
         this.config = config;
-        this.current = current;
-        this.onDelete = onDelete;
-        this.onSelect = onSelect;
-
+        this.layout = profilesLayout;
         this.refresh();
     }
 
@@ -110,14 +104,14 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
                     .setSprite(this.isDefault()
                             ? ButtonSprites.of(STAR_SPRITE) : profile.isLocked()
                             ? ButtonSprites.unclamp(LOCK_SPRITE) : ButtonSprites.of(TRASH_SPRITE))
-                    .setOnPress(() -> ProfileList.this.onDelete.accept(this.profile))
+                    .setOnPress(() -> ProfileList.this.layout.removeProfile(this.profile))
                     .build();
             this.deleteButton.active = !profile.isLocked() && !this.isDefault();
             if (this.deleteButton.active) this.deleteButton.setTooltip(DELETE_INFO);
 
             this.selectButton = FidgetzButton.<Void>builder()
                     .setMessage(Component.literal(this.profile.getName()))
-                    .setOnPress(() -> ProfileList.this.onSelect.accept(this.profile))
+                    .setOnPress(() -> ProfileList.this.layout.setProfile(this.profile))
                     .build();
 
             this.children.add(this.deleteButton);
@@ -126,7 +120,7 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
 
         @Override
         public void renderContent(GuiGraphics guiGraphics, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            this.selectButton.active = ProfileList.this.current.get() != this.profile;
+            this.selectButton.active = ProfileList.this.layout.getProfile() != this.profile;
 
             int left = this.getX();
             int top = this.getY();
@@ -167,13 +161,11 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
         }
 
         private boolean isDefault() {
-            return ProfileList.this.config.getDefaultProfile() == this.profile ||
-                   ObjectsUtil.testNullable(ProfileList.this.config.getDefaultProfile(), p -> p.getId() == this.profile.getId());
+            return ProfileList.this.config.getDefaultProfile() == this.profile;
         }
 
         private boolean isSelected() {
-            return ProfileList.this.current.get() == this.profile ||
-                   ObjectsUtil.testNullable(ProfileList.this.current.get(), p -> p.getId() == this.profile.getId());
+            return ProfileList.this.layout.getProfile() == this.profile;
         }
 
         @Override
@@ -201,15 +193,17 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
                     .action(() -> {
                         ProfileList.this.config.setDefaultProfile(this.isDefault() ? null : this.profile);
                         ProfileList.this.refresh();
-                        ProfileList.this.onSelect.accept(this.profile);
+                        ProfileList.this.layout.setProfile(this.profile);
                     })
                     .build());
             builder.add(GuiConstants.devItem(ResourceUtil.getText("profile." + (this.profile.isLocked() ? "unlock" : "lock")))
                     .icon(this.profile.isLocked() ? LOCK_SPRITE_SMALL : UNLOCK_SPRITE_SMALL)
                     .action(() -> {
-                        if (this.isSelected()) ProfileList.this.onSelect.accept(this.profile);
+                        boolean selected = this.isSelected();
+                        if (selected) ProfileList.this.layout.setProfile(this.profile);
                         this.profile.setLocked(!this.profile.isLocked());
                         ProfileList.this.refresh();
+                        if (selected) ProfileList.this.layout.updateGuiState(this.profile);
                     })
                     .build());
         }
