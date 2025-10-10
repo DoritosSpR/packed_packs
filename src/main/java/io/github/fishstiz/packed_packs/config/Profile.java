@@ -87,7 +87,11 @@ public class Profile implements PackOptions, Serializable {
         if (!this.locked) {
             this.packIds = new ObjectLinkedOpenHashSet<>(PackUtil.extractPackIds(selected));
             Set<String> availableIds = new ObjectOpenHashSet<>(PackUtil.extractPackIds(available));
-            this.overrides.keySet().removeIf(id -> !this.packIds.contains(id) && !availableIds.contains(id));
+            this.overrides.entrySet().removeIf(entry -> {
+                PackOverride override = entry.getValue();
+                String packId = entry.getKey();
+                return !override.hasOverride() || (!this.packIds.contains(packId) && !availableIds.contains(packId));
+            });
         }
     }
 
@@ -182,7 +186,7 @@ public class Profile implements PackOptions, Serializable {
         return entry != null && entry.hasOverride();
     }
 
-    private <T> void  applyOrRemoveOverride(String packId, T property, BiConsumer<PackOverride, T> setter) {
+    private <T> void applyOrRemoveOverride(String packId, T property, BiConsumer<PackOverride, T> setter) {
         PackOverride override = this.overrides.computeIfAbsent(packId, id -> new PackOverride());
         setter.accept(override, property);
         if (!override.hasOverride()) this.overrides.remove(packId);
