@@ -54,7 +54,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
             .build();
     private final PackAssets packAssets;
     private Sprite sprite = Sprite.of16(PackAssets.DEFAULT_ICON);
-    private PackListBase packList;
+    private PackList packList;
     private Pack pack;
     private String oldName;
 
@@ -100,7 +100,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         this.nameEditor.setValue("");
     }
 
-    public void open(PackListBase packList, Pack pack) {
+    public void open(PackList packList, Pack pack) {
         this.packList = packList;
         this.pack = pack;
         this.sprite = Sprite.of16(PackAssets.getDefaultIcon(pack));
@@ -143,7 +143,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
     private void onClose(boolean open) {
         if (open) return;
 
-        PackListBase target = this.packList;
+        PackList target = this.packList;
         Pack trigger = this.pack;
 
         if (target != null) {
@@ -163,7 +163,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         if (this.packAssets.renamePack(this.pack, sanitizedName)) {
             Component sanitizedNameText = Component.literal(sanitizedName);
             if (this.packList != null) {
-                PackListBase.Entry entry = this.packList.getEntry(this.pack);
+                PackList.Entry entry = this.packList.getEntry(this.pack);
                 if (entry != null) {
                     entry.onRename(sanitizedNameText);
                 }
