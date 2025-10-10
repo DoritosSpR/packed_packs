@@ -2,8 +2,6 @@ package io.github.fishstiz.packed_packs.util.constants;
 
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItem;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
-import io.github.fishstiz.fidgetz.gui.components.contextmenu.ParentMenuItem;
-import io.github.fishstiz.fidgetz.gui.components.contextmenu.ParentMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
@@ -25,11 +23,7 @@ public class GuiConstants {
     private GuiConstants() {
     }
 
-    public static MenuItemBuilder<?> devItem(Component text) {
+    public static MenuItemBuilder devItem(Component text) {
         return MenuItem.builder(text).background(GuiConstants.DEVELOPER_MODE_ITEM_BACKGROUND);
-    }
-
-    public static ParentMenuItemBuilder devParent(Component text) {
-        return ParentMenuItem.builder(text).background(GuiConstants.DEVELOPER_MODE_ITEM_BACKGROUND);
     }
 }

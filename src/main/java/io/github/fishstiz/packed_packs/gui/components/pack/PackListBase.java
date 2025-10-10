@@ -9,6 +9,7 @@ import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.Preferences;
+import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
@@ -840,8 +841,17 @@ public abstract class PackListBase<T extends PackListBase<T>.Entry> extends Abst
             PackListBase.this.openFolder(this.folderWidget.getMetadata());
         }
 
+        private boolean hasOverride() {
+            Profile profile = PackListBase.this.packAssets.getProfile();
+            Profile defaultProfile = PackListBase.this.packAssets.getConfig().getDefaultProfile();
+
+            return testNullable(profile, p -> p.hasOverride(this.pack)) ||
+                   testNullable(defaultProfile, p -> p.hasOverride(this.pack));
+        }
+
         public boolean canOperateFile() {
-            return !PackListBase.this.isLocked() &&
+            return !this.hasOverride() &&
+                   !PackListBase.this.isLocked() &&
                    !PackListBase.this.packAssets.isFixed(this.pack) &&
                    !PackListBase.this.packAssets.isRequired(this.pack) &&
                    !PackListBase.this.packAssets.isEnabled(this.pack) &&

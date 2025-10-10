@@ -177,6 +177,11 @@ public class Profile implements PackOptions, Serializable {
         return entry != null && property.apply(entry) != null;
     }
 
+    public boolean hasOverride(Pack pack) {
+        PackOverride entry = this.overrides.get(pack.getId());
+        return entry != null && entry.hasOverride();
+    }
+
     private <T> void applyOrRemoveOverride(String packId, T property, BiConsumer<PackOverride, T> setter) {
         PackOverride override = this.overrides.computeIfAbsent(packId, id -> new PackOverride());
         setter.accept(override, property);
