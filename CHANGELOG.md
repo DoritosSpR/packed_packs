@@ -1,38 +1,11 @@
-### Developer Mode
-- Press `Ctrl` + `Shift` + `I` to toggle Developer Mode.
-- Additional options will appear in the context menu when in developer mode.
-- Lock profiles. ([#29](https://github.com/fishstiz/packed_packs/issues/29))
-- **Override pack properties** in profiles.
-- Set a **Default Profile** for resource and data packs.
-- Toggle the visibility of specific widgets under **Preferences**.
-
-#### Profile Pack Overrides
-- Only enabled for the profile unless its set as the **default**.
-- Override required and position properties of packs.
-- Hide packs.
-
-#### Default Profiles
-- **Pack overrides** under the default profile are enabled **globally**.
-- Packs under the default profile are automatically marked as compatible.
-- Resource Packs
-  - Applies when the `options.txt` file is missing.
-- Data Packs
-  - Applies when creating a new world.
-
-#### Preferences
-- Toggle visibility of:
-    - original screen button
-    - options button
-    - action bar button
-    - hide incompatible button
-    - show packs button in folder packs
-    - ETF button (if installed)
-    - Respackopts button (if installed)
-    - VTD button and pencil (if installed)
-
-### Other Changes
-- No longer opens the last viewed profile when opening the Packed Packs screen.
-- 1.21.9:
-  - Fixed list not scrolling in keyboard navigation.
-  - Fixed double click detection not localized to widget level.
-  - Fixed being able to disable a required pack by double-clicking.
+- Added option to unfix fixed position of pack.
+- Enabled fixed and required overrides for the available packs list.
+- Disabled option to unrequire a pack on non-default profiles. (as it gets added anyway if removed)
+- Updating the required override now moves the packs where it should.
+- Fixed unsaved changes being discarded when toggling the lock on the current profile.
+- Fixed overrides being cleared when disabling the pack.
+- Config format for overrides has changed. If you used overrides in 1.3.0-beta.1, the format will automatically be
+  converted in this update.
+    - **WARNING**: the automatic conversion for overrides will be removed on stable release, and may cause your config
+      to reset or game to crash if your overrides hasn't been converted by then.  
+- **This is a beta version, things may break or change!** Submit your feedback [here](https://github.com/fishstiz/packed_packs/issues).
