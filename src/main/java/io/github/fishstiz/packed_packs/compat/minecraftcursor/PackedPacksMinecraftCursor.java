@@ -4,7 +4,7 @@ import io.github.fishstiz.minecraftcursor.api.*;
 import io.github.fishstiz.packed_packs.gui.components.events.DragEvent;
 import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 
@@ -37,10 +37,10 @@ public class PackedPacksMinecraftCursor implements MinecraftCursorInitializer {
     private void updateDraggingCursor(PackedPacksScreen screen, double mouseX, double mouseY) {
         DragEvent dragEvent = screen.getDragged();
         if (dragEvent != null) {
-            PackList source = dragEvent.target();
+            PackListBase source = dragEvent.target();
             boolean validDrop = false;
 
-            for (PackList destination : screen.getPackLists()) {
+            for (PackListBase destination : screen.getPackLists()) {
                 if (destination.isMouseOver(mouseX, mouseY)) {
                     validDrop = source == destination ||
                                 destination instanceof CurrentPackList scrollable && scrollable.isScrolling() ||

@@ -7,7 +7,7 @@ import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
-public final class CurrentPacksLayout extends PackLayout<CurrentPackList> {
+public final class CurrentPacksLayout extends PackLayout {
     public CurrentPacksLayout(PackAssets packAssets, PackListEventListener listener) {
         super(new CurrentPackList(packAssets, listener));
     }

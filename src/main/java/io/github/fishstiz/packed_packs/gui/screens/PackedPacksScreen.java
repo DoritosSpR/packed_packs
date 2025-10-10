@@ -93,7 +93,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private final FileRenameModal fileRenameModal;
     private final ContextMenu contextMenu;
     private final List<ToggleableDialog<?>> dialogs;
-    private final List<PackList> packLists;
+    private final List<PackListBase> packLists;
     private List<Path> additionalFolders;
     private CompletableFuture<Void> refreshFuture;
     private PackWatcher watcher;
@@ -450,8 +450,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
     }
 
-    private void replacePacks(PackList list, ImmutableList<Pack> packs) {
-        list.replaceState(new PackList.Snapshot(list, packs, list.copySelection(), list.copyQuery()));
+    private void replacePacks(PackListBase list, ImmutableList<Pack> packs) {
+        list.replaceState(new PackListBase.Snapshot(list, packs, list.copySelection(), list.copyQuery()));
     }
 
     private void revalidateFolder() {
@@ -466,8 +466,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     public void revalidatePacks() {
-        PackList availableList = this.availablePacks.getList();
-        PackList currentList = this.currentPacks.getList();
+        PackListBase availableList = this.availablePacks.getList();
+        PackListBase currentList = this.currentPacks.getList();
         PackGroup packs = this.repository.validatePacks(availableList.copyPacks(), currentList.copyPacks());
         this.repository.clearIconCache();
         this.replacePacks(availableList, packs.unselected());
@@ -551,12 +551,12 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    public @NotNull List<PackList> getPackLists() {
+    public @NotNull List<PackListBase> getPackLists() {
         return this.packLists;
     }
 
     @Override
-    public @Nullable PackList getDestination(PackList source) {
+    public @Nullable PackListBase getDestination(PackListBase source) {
         if (source == this.availablePacks.getList()) {
             return this.currentPacks.getList();
         } else if (source == this.currentPacks.getList()) {
@@ -566,7 +566,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    protected void transferFocus(PackList source, PackList destination) {
+    protected void transferFocus(PackListBase source, PackListBase destination) {
         super.transferFocus(source, destination);
 
         if (destination == currentPacks.getList()) {
@@ -609,7 +609,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
             return;
         }
 
-        PackList.Entry entry = event.target().getEntry(event.trigger());
+        PackListBase.Entry entry = event.target().getEntry(event.trigger());
         if (entry != null) {
             this.focus(ComponentPath.path(entry, event.target(), this.folderDialog, this));
         } else {
@@ -646,15 +646,15 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
     }
 
-    public @Nullable PackLayout<?> getLayoutFromSelectedList() {
+    public @Nullable PackLayout getLayoutFromSelectedList() {
         return ObjectsUtil.firstNonNull(
-                ObjectsUtil.<PackLayout<?>>pick(this.availablePacks, this.currentPacks, pl -> pl.getList() == this.getFocused()),
-                ObjectsUtil.<PackLayout<?>>pick(this.availablePacks, this.currentPacks, pl -> pl.getList().isHovered()),
-                ObjectsUtil.<PackLayout<?>>pick(this.availablePacks, this.currentPacks, pl -> pl.getList().isFocused())
+                ObjectsUtil.pick(this.availablePacks, this.currentPacks, pl -> pl.getList() == this.getFocused()),
+                ObjectsUtil.pick(this.availablePacks, this.currentPacks, pl -> pl.getList().isHovered()),
+                ObjectsUtil.pick(this.availablePacks, this.currentPacks, pl -> pl.getList().isFocused())
         );
     }
 
-    public ToggleableEditBox<Void> focusSearchField(@NotNull PackLayout<?> packLayout) {
+    public ToggleableEditBox<Void> focusSearchField(@NotNull PackLayout packLayout) {
         if (!this.showActionBar) this.toggleActionBar();
         ToggleableEditBox<Void> searchField = packLayout.getSearchField();
         this.focus(searchField);
@@ -667,7 +667,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
             return true;
         }
         if (codePoint != KEY_SPACE && noModifiers(modifiers)) {
-            PackLayout<?> packLayout = this.getLayoutFromSelectedList();
+            PackLayout packLayout = this.getLayoutFromSelectedList();
             if (packLayout != null && !packLayout.getSearchField().isFocused()) {
                 return this.focusSearchField(packLayout).charTyped(codePoint, modifiers);
             }
@@ -703,7 +703,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
             return this.history.undo();
         }
         if (keyCode == KEY_BACKSPACE) {
-            PackLayout<?> packLayout = this.getLayoutFromSelectedList();
+            PackLayout packLayout = this.getLayoutFromSelectedList();
             if (packLayout != null) {
                 ToggleableEditBox<Void> searchField = packLayout.getSearchField();
                 if (!searchField.isFocused() && !searchField.getValue().isEmpty()) {
@@ -769,7 +769,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (isClickBack(button)) {
             return this.history.undo();
         }
-        if (isLeftClick(button) && !(this.getFocused() instanceof PackList)) {
+        if (isLeftClick(button) && !(this.getFocused() instanceof PackListBase)) {
             this.setFocused(this.children().getFirst());
             this.layout.visitWidgets(w -> w.setFocused(false));
         }
@@ -824,8 +824,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     public record Snapshot(
             PackedPacksScreen target,
-            PackList.Snapshot availablePacks,
-            PackList.Snapshot currentPacks
+            PackListBase.Snapshot availablePacks,
+            PackListBase.Snapshot currentPacks
     ) implements Restorable.Snapshot<Snapshot> {
     }
 }
