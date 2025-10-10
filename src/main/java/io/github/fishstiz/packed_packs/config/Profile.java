@@ -93,7 +93,7 @@ public class Profile implements PackOptions, Serializable {
 
     public void setHidden(boolean hidden, Pack... packs) {
         for (Pack pack : packs) {
-            this.applyOrRemoveOverride(pack.getId(), hidden, PackOverride::setHidden);
+            this.applyOrRemoveOverride(pack.getId(), hidden ? true : null, PackOverride::setHidden);
         }
     }
 
@@ -182,7 +182,7 @@ public class Profile implements PackOptions, Serializable {
         return entry != null && entry.hasOverride();
     }
 
-    private <T> void applyOrRemoveOverride(String packId, T property, BiConsumer<PackOverride, T> setter) {
+    private <T> void  applyOrRemoveOverride(String packId, T property, BiConsumer<PackOverride, T> setter) {
         PackOverride override = this.overrides.computeIfAbsent(packId, id -> new PackOverride());
         setter.accept(override, property);
         if (!override.hasOverride()) this.overrides.remove(packId);
