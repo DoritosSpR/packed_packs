@@ -1,9 +1,8 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
-import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackListBase;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -13,7 +12,12 @@ import net.minecraft.server.packs.repository.Pack;
 
 import java.util.List;
 
-public final class DragEvent extends PackListEvent implements Renderable {
+public record DragEvent(
+        PackListBase target,
+        List<Pack> payload,
+        Pack trigger,
+        Sprite sprite
+) implements PackListEvent, Renderable {
     private static final ColoredRect BACKGROUND = new ColoredRect(Theme.GRAY_800.getARGB());
     private static final ColoredRect OVERLAY = new ColoredRect(Theme.BLACK.withAlpha(0.5f));
     private static final ColoredRect NUM_BACKGROUND = new ColoredRect(Theme.BLUE_500.getARGB());
@@ -23,33 +27,18 @@ public final class DragEvent extends PackListEvent implements Renderable {
     private static final int ICON_OFFSET_X = ICON_SIZE / 2;
     private static final int ICON_OFFSET_Y = ICON_SIZE - OFFSET_Y;
     private static final int NUM_OFFSET_Y = NUM_SIZE - OFFSET_Y + (ICON_SIZE - NUM_SIZE) / 2;
-    private final ImmutableList<Pack> payload;
-    private final Pack trigger;
-    private final Sprite sprite;
 
-    public DragEvent(PackList target, List<Pack> selection, Pack trigger, Sprite sprite) {
-        super(target);
-
-        if (selection.isEmpty()) {
-            throw new IllegalStateException("Cannot create drag event with empty selection.");
+    public DragEvent {
+        if (payload.isEmpty()) {
+            throw new IllegalStateException("Cannot create drag event with empty payload.");
         }
 
-        this.payload = ImmutableList.copyOf(selection);
-        this.trigger = trigger;
-        this.sprite = sprite;
+        payload = List.copyOf(payload);
     }
 
     @Override
     public boolean pushToHistory() {
         return false;
-    }
-
-    public ImmutableList<Pack> payload() {
-        return this.payload;
-    }
-
-    public Pack trigger() {
-        return this.trigger;
     }
 
     @Override
