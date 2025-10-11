@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.pack.folder;
 
-import io.github.fishstiz.packed_packs.pack.PackAssets;
+import io.github.fishstiz.packed_packs.util.PackUtil;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.PackResources;
@@ -25,8 +25,8 @@ public record FolderResources(PackLocationInfo location, Path path) implements P
     @Override
     public @Nullable IoSupplier<InputStream> getRootResource(String... elements) {
         if (elements.length > 0) {
-            if (Objects.equals(elements[0], PackAssets.ICON_FILENAME)) {
-                return () -> Files.newInputStream(this.path.resolve(PackAssets.ICON_FILENAME));
+            if (Objects.equals(elements[0], PackUtil.ICON_FILENAME)) {
+                return () -> Files.newInputStream(this.path.resolve(PackUtil.ICON_FILENAME));
             } else if (Objects.equals(elements[0], FOLDER_CONFIG_FILENAME)) {
                 return () -> Files.newInputStream(this.path.resolve(FOLDER_CONFIG_FILENAME));
             }

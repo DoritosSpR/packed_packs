@@ -9,19 +9,21 @@ import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.Preferences;
-import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.pack.PackAssetManager;
+import io.github.fishstiz.packed_packs.pack.PackFileOperations;
+import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.transform.mixin.gui.AbstractSelectionListAccessor;
 import io.github.fishstiz.packed_packs.util.PackUtil;
+import io.github.fishstiz.packed_packs.util.ToastUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.Util;
@@ -43,6 +45,7 @@ import java.util.function.BiConsumer;
 import static com.google.common.primitives.Ints.contains;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
@@ -53,19 +56,22 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
     protected static final int OFFSET_Y = 2;
     protected static final int ITEM_HEIGHT = 32;
     protected static final int ROW_GAP = 3;
-    protected final PackAssets packAssets;
+    protected final PackOptionsContext options;
+    protected final PackAssetManager assets;
+    protected final PackFileOperations fileOps;
     protected final List<Pack> packs = new ObjectArrayList<>();
     private final List<Pack> queried = new ObjectArrayList<>();
     private final List<Pack> selection = new ObjectArrayList<>();
     private final PackListEventListener listener;
     private final Query query;
 
-    protected PackList(PackAssets packAssets, PackListEventListener listener) {
+    protected PackList(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
         super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, OFFSET_Y, ROW_GAP);
-
-        this.query = new Query();
-        this.packAssets = packAssets;
+        this.options = options;
+        this.assets = assets;
         this.listener = listener;
+        this.fileOps = fileOps;
+        this.query = new Query();
         this.queryPacks();
     }
 
@@ -101,7 +107,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         if (PackedPacks.CONFIG.isDevMode()) {
             this.queried.addAll(this.packs);
         } else {
-            CollectionsUtil.addIf(this.queried, this.packs, pack -> !this.packAssets.isHidden(pack));
+            CollectionsUtil.addIf(this.queried, this.packs, pack -> !this.options.isHidden(pack));
         }
 
         this.query.apply(this.queried);
@@ -129,15 +135,11 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
     }
 
     public @NotNull List<Pack> copyPacks() {
-        return ImmutableList.copyOf(this.packs);
-    }
-
-    public List<Pack> copyFlattenedPacks() {
-        return ImmutableList.copyOf(this.packAssets.flattenPacks(this.packs));
+        return List.copyOf(this.packs);
     }
 
     public @NotNull List<Pack> copySelection() {
-        return ImmutableList.copyOf(this.selection);
+        return List.copyOf(this.selection);
     }
 
     public @NotNull Query copyQuery() {
@@ -201,7 +203,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         if (pack != null && !this.packs.contains(pack)) {
             int index = 0;
             for (Pack p : this.packs) {
-                if (!this.packAssets.isFixed(p) || this.packAssets.getPosition(p) == Pack.Position.BOTTOM) break;
+                if (!this.options.isFixed(p) || this.options.getPosition(p) == Pack.Position.BOTTOM) break;
                 index++;
             }
             this.packs.add(index, pack);
@@ -221,7 +223,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
     }
 
     public boolean move(Pack pack, int to) {
-        if (this.packAssets.isFixed(pack)) return false;
+        if (this.options.isFixed(pack)) return false;
 
         int from = this.packs.indexOf(pack);
         if (from == -1 || to < 0 || to >= this.packs.size() || from == to) {
@@ -288,7 +290,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
     }
 
     public boolean isLocked() {
-        return this.packAssets.isLocked();
+        return this.options.isLocked();
     }
 
     public void scrollToLastSelected() {
@@ -565,7 +567,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
             this.pack = pack;
             this.packWidget = this.addRenderableWidget(new PackWidget(
                     this.pack,
-                    PackList.this.packAssets,
+                    PackList.this.assets,
                     this.getX(),
                     PackList.this.getRowTop(this.index),
                     this.getWidth(),
@@ -586,9 +588,11 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
                 ));
             }
 
-            this.devMenu = PackedPacks.CONFIG.isDevMode() ? new PackListDevMenu(PackList.this, this.pack) : null;
+            this.devMenu = PackedPacks.CONFIG.isDevMode()
+                    ? new PackListDevMenu(PackList.this.options, this.pack, this::getPackOrSelection, this::onRequire)
+                    : null;
 
-            ModAdditions.addToEntry(PackList.this.packAssets.isResourcePacks(), this);
+            ModAdditions.addToEntry(PackList.this.options.getConfig().packType(), this);
         }
 
         public <U extends GuiEventListener & Renderable> U addRenderableWidget(U widget) {
@@ -625,8 +629,12 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
             return mapOrDefault(PackList.this.getLastSelected(), false, p -> Objects.equals(p, this.pack));
         }
 
+        protected void sendPacks(Pack trigger, List<Pack> payload) {
+            PackList.this.sendEvent(new RequestTransferEvent(PackList.this, trigger, payload));
+        }
+
         private boolean sendSelection() {
-            List<Pack> payload = new ArrayList<>();
+            List<Pack> payload = new ObjectArrayList<>();
 
             for (Pack selected : PackList.this.getOrderedSelection().reversed()) {
                 if (PackList.this.isTransferable(selected)) {
@@ -636,11 +644,19 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
 
             if (!payload.isEmpty()) {
                 Pack trigger = this.isTransferable() ? this.pack : null;
-                PackList.this.sendEvent(new RequestTransferEvent(PackList.this, trigger, payload));
+                this.sendPacks(trigger, payload);
                 return true;
             }
 
             return false;
+        }
+
+        public List<Pack> getPackOrSelection() {
+            if (!this.isSelected()) {
+                return List.of(this.pack);
+            }
+
+            return PackList.this.getOrderedSelection().reversed();
         }
 
         public boolean transfer() {
@@ -650,6 +666,9 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
             }
 
             return this.sendSelection();
+        }
+
+        protected void onRequire(Pack trigger, List<Pack> requiredPacks) {
         }
 
         private void fireClickEvent(BiConsumer<PackList, Pack> selector, MouseSelectionState state) {
@@ -764,7 +783,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
 
         @Override
         public void renderBack(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTick) {
-            if (!this.pack.getCompatibility().isCompatible() && !PackList.this.packAssets.getConfig().isIncompatibleWarningsHidden()) {
+            if (!this.pack.getCompatibility().isCompatible() && !PackList.this.options.getConfig().isIncompatibleWarningsHidden()) {
                 int backgroundLeft = this.getX() + BACKGROUND_OFFSET;
                 int backgroundRight = backgroundLeft + this.getWidth() - BACKGROUND_OFFSET * 2;
                 guiGraphics.fill(backgroundLeft, this.getY(), backgroundRight, this.getBottom(), Theme.RED_900.getARGB());
@@ -839,10 +858,10 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
                             )
                             .whenNonNull(((FilePack) this.pack).packed_packs$getPath())
                             .ifTrue(b -> b
-                                    .simpleItem(PackAssets.RENAME_FILE_TEXT, this::canOperateFile, this::renamePack)
-                                    .simpleItem(PackAssets.DELETE_FILE_TEXT, this::canOperateFile, this::deletePack)
-                                    .simpleItem(PackAssets.OPEN_FILE_TEXT, () -> PackUtil.openPack(this.pack))
-                                    .simpleItem(PackAssets.OPEN_PARENT_TEXT, () -> PackUtil.openParent(this.pack))
+                                    .simpleItem(RENAME_FILE_TEXT, this::canOperateFile, this::renamePack)
+                                    .simpleItem(DELETE_FILE_TEXT, this::canOperateFile, this::deletePack)
+                                    .simpleItem(OPEN_FILE_TEXT, () -> PackUtil.openPack(this.pack))
+                                    .simpleItem(OPEN_PARENT_TEXT, () -> PackUtil.openParent(this.pack))
                             ),
                     mouseX,
                     mouseY
@@ -853,28 +872,17 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
             PackList.this.openFolder(this.folderWidget.getMetadata());
         }
 
-        private boolean hasOverride() {
-            Profile profile = PackList.this.packAssets.getProfile();
-            Profile defaultProfile = PackList.this.packAssets.getConfig().getDefaultProfile();
-
-            return testNullable(profile, p -> p.hasOverride(this.pack)) ||
-                   testNullable(defaultProfile, p -> p.hasOverride(this.pack));
-        }
-
         public boolean canOperateFile() {
-            return !this.hasOverride() &&
-                   !PackList.this.isLocked() &&
-                   !PackList.this.packAssets.isFixed(this.pack) &&
-                   !PackList.this.packAssets.isRequired(this.pack) &&
-                   !PackList.this.packAssets.isEnabled(this.pack) &&
-                   PackAssets.validatePackPath(this.pack) != null;
+            return PackList.this.fileOps.isOperable(this.pack);
         }
 
         public void deletePack() {
-            if (PackList.this.packAssets.deletePack(this.pack)) {
+            if (PackList.this.fileOps.deletePack(this.pack)) {
                 this.stale = true;
                 PackList.this.remove(this.pack);
                 PackList.this.sendEvent(new FileDeleteEvent(PackList.this));
+            } else {
+                ToastUtil.onFileFailToast(ToastUtil.getDeleteFailText(this.pack.getTitle().getString()));
             }
         }
 

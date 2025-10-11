@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
+import net.minecraft.server.packs.PackType;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -23,8 +24,8 @@ public class ModAdditions {
     private ModAdditions() {
     }
 
-    public static void addToHeader(boolean resourcePacks, FlexLayout header, PackSelectionScreen original) {
-        if (resourcePacks) {
+    public static void addToHeader(PackType packType, FlexLayout header, PackSelectionScreen original) {
+        if (packType == PackType.CLIENT_RESOURCES) {
             Screen currentScreen = Minecraft.getInstance().screen;
 
             Mod.ETF.wrapError(header, currentScreen, (layout, previous) -> {
@@ -49,8 +50,8 @@ public class ModAdditions {
         });
     }
 
-    public static void addToEntry(boolean resourcePacks, PackList.Entry packListEntry) {
-        if (resourcePacks) {
+    public static void addToEntry(PackType packType, PackList.Entry packListEntry) {
+        if (packType == PackType.CLIENT_RESOURCES) {
             Mod.RESPACKOPTS.wrapError(packListEntry, entry -> {
                 if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.respackoptsButton.get()) {
                     RespackoptsWidget respackOptsWidget = RespackoptsWidget.create(entry, entry.getPack());
@@ -73,8 +74,8 @@ public class ModAdditions {
     /**
      * @return mod id requesting reload
      */
-    public static @Nullable String shouldCommit(boolean resourcePacks) {
-        if (resourcePacks && Mod.RESPACKOPTS.wrapError(RespackoptsWidget::isForceReload, false)) {
+    public static @Nullable String shouldCommit(PackType packType) {
+        if (packType == PackType.CLIENT_RESOURCES && Mod.RESPACKOPTS.wrapError(RespackoptsWidget::isForceReload, false)) {
             return Mod.RESPACKOPTS.getId();
         }
         return null;

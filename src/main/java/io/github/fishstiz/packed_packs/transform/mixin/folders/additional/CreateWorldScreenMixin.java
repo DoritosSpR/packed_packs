@@ -3,7 +3,6 @@ package io.github.fishstiz.packed_packs.transform.mixin.folders.additional;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
@@ -30,7 +29,7 @@ public abstract class CreateWorldScreenMixin {
                 .stream()
                 .map(path -> path.toAbsolutePath().normalize())
                 .distinct()
-                .map(path -> new FolderRepositorySource(path, PackType.SERVER_DATA, PackAssets.SOURCE, minecraft.directoryValidator()))
+                .map(path -> new FolderRepositorySource(path, PackType.SERVER_DATA, PackUtil.PACK_SOURCE, minecraft.directoryValidator()))
                 .toArray(RepositorySource[]::new);
 
         return original.call((Object) ArrayUtils.addAll(sources, folders));

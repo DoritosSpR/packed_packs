@@ -8,7 +8,6 @@ import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.repository.FolderRepositorySource;
@@ -81,7 +80,7 @@ public abstract class FolderRepositorySourceMixin {
             remap = false
     ))
     private static void suppressLogOnFolderDiscovery(Logger instance, String s, Object o, Operation<Void> original, @Share("suppressLog") LocalBooleanRef suppressLogRef) {
-        if (!suppressLogRef.get() && !(o instanceof Path p && (p.endsWith(FolderResources.FOLDER_CONFIG_FILENAME) || p.endsWith(PackAssets.ICON_FILENAME)))) {
+        if (!suppressLogRef.get() && !(o instanceof Path p && (p.endsWith(FolderResources.FOLDER_CONFIG_FILENAME) || p.endsWith(PackUtil.ICON_FILENAME)))) {
             original.call(instance, s, o);
         }
         suppressLogRef.set(false);
