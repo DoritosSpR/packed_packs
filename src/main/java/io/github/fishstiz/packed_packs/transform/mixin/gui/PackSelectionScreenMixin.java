@@ -71,7 +71,7 @@ public abstract class PackSelectionScreenMixin extends Screen implements PackSel
                 .makeSquare()
                 .setTooltip(Tooltip.create(ResourceUtil.getModName()))
                 .setSprite(new Sprite(ResourceUtil.getIcon("packed_packs"), Size.of16()))
-                .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(previous, this.packed_packs$original)))
+                .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(this.minecraft, previous, this.packed_packs$original)))
                 .setMetadata(new GridWrapper<>(original.call(instance, spacing), spacing))
                 .build();
 

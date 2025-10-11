@@ -2,10 +2,11 @@ package io.github.fishstiz.packed_packs.pack.folder;
 
 import io.github.fishstiz.packed_packs.config.ConfigLoader;
 import io.github.fishstiz.packed_packs.config.Folder;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
+import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.*;
@@ -19,24 +20,35 @@ import java.io.InputStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 public class FolderPack extends Pack implements FilePack {
     public static final Component FOLDER_OPEN_TEXT = ResourceUtil.getText("folder.open");
     public static final Component FOLDER_DESCRIPTION = ResourceUtil.getText("folder");
     public static final PackSelectionConfig FOLDER_SELECTION_CONFIG = new PackSelectionConfig(false, Position.TOP, false);
     public static final Metadata FOLDER_METADATA = new Metadata(FOLDER_DESCRIPTION, PackCompatibility.COMPATIBLE, FeatureFlagSet.of(), Collections.emptyList());
+    private final Function<String, List<Pack>> nestedPacksProvider;
     private final Path path;
 
-    public FolderPack(String id, String name, Path path) {
+    public FolderPack(String id, String name, Function<String, List<Pack>> nestedPacksProvider, Path path) {
         super(
-                new PackLocationInfo(id, Component.literal(name), PackAssets.SOURCE, Optional.empty()),
+                new PackLocationInfo(id, Component.literal(name), PackUtil.PACK_SOURCE, Optional.empty()),
                 new FolderResourcesSupplier(path),
                 FOLDER_METADATA,
                 FOLDER_SELECTION_CONFIG
         );
+        this.nestedPacksProvider = nestedPacksProvider;
         this.path = path;
+    }
+
+    public List<Pack> flatten() {
+        List<Pack> result = new ObjectArrayList<>();
+        result.add(this);
+        result.addAll(ObjectsUtil.getOrDefault(this.nestedPacksProvider.apply(this.getId()), Collections.emptyList()));
+        return result;
     }
 
     public CompletableFuture<Folder> loadConfig() {
@@ -49,7 +61,7 @@ public class FolderPack extends Pack implements FilePack {
                 try (InputStream inputStream = configIoSupplier.get()) {
                     return ConfigLoader.load(inputStream, Folder.class);
                 }
-            } catch(NoSuchFileException e) {
+            } catch (NoSuchFileException e) {
                 return ObjectsUtil.peek(new Folder(), this::saveConfig);
             } catch (IOException e) {
                 return new Folder();

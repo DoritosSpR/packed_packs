@@ -2,8 +2,8 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,7 +16,7 @@ import net.minecraft.server.packs.repository.Pack;
 class PackWidget extends AbstractWidget {
     private static final int DESCRIPTION_LINES = 2;
     private final Pack pack;
-    private final PackAssets packAssets;
+    private final PackAssetManager assetManager;
     private final FidgetzText<Void> title = FidgetzText.<Void>builder()
             .setHeight(Minecraft.getInstance().font.lineHeight)
             .setColor(ChatFormatting.WHITE.getColor())
@@ -28,14 +28,14 @@ class PackWidget extends AbstractWidget {
     private final int spacing;
     private boolean lazyLoaded = false;
 
-    PackWidget(Pack pack, PackAssets packAssets, int x, int y, int width, int height, int spacing) {
+    PackWidget(Pack pack, PackAssetManager assetManager, int x, int y, int width, int height, int spacing) {
         super(x, y, width, height, pack.getTitle());
 
         this.pack = pack;
-        this.packAssets = packAssets;
+        this.assetManager = assetManager;
         this.title.setMessage(pack.getTitle());
         this.spacing = spacing;
-        this.sprite = Sprite.of32(PackAssets.getDefaultIcon(pack));
+        this.sprite = Sprite.of32(PackAssetManager.getDefaultIcon(pack));
 
         this.cacheDescription();
     }
@@ -82,7 +82,7 @@ class PackWidget extends AbstractWidget {
     protected void renderSprite(GuiGraphics guiGraphics, float partialTick) {
         if (!this.lazyLoaded) { // lazy loads icon as this is not called if not in view
             this.lazyLoaded = true;
-            this.packAssets.getOrLoadIcon(this.pack, icon -> this.sprite = Sprite.of32(icon));
+            this.assetManager.getOrLoadIcon(this.pack, icon -> this.sprite = Sprite.of32(icon));
         }
 
         int x = this.getX() + this.spacing;
