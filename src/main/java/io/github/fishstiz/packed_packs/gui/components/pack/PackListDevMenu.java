@@ -5,7 +5,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.config.PackOverride;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
@@ -151,7 +151,7 @@ public record PackListDevMenu(PackList list, Pack pack) {
         builder.add(devItem(REQUIRED)
                 .icon(() -> this.getIcon(profile.overridesRequired(this.pack), Profile::overridesRequired))
                 .activeWhen(() -> this.hasOverride(Profile::overridesRequired) != PackOverrideScope.GLOBAL &&
-                                  !((IPack) this.pack).packed_packs$nestedPack())
+                                  !((FilePack) this.pack).packed_packs$nestedPack())
                 .closeOnInteract(false)
                 .addChild(devItem(CommonComponents.OPTION_OFF)
                         .icon(() -> getDefaultIcon(!profile.overridesRequired(this.pack)))

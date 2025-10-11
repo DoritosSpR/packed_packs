@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.util;
 import com.sun.jna.platform.FileUtils;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.transform.mixin.UtilAccess;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
@@ -59,7 +59,7 @@ public class PackUtil {
     }
 
     public static long getLastUpdatedEpochMs(Pack pack) {
-        Path path = ((IPack) pack).packed_packs$getPath();
+        Path path = ((FilePack) pack).packed_packs$getPath();
         if (path == null) {
             return -1;
         }
@@ -125,14 +125,14 @@ public class PackUtil {
     }
 
     public static void openPack(Pack pack) {
-        var path = ((IPack) pack).packed_packs$getPath();
+        var path = ((FilePack) pack).packed_packs$getPath();
         if (path != null) {
             Util.getPlatform().openPath(path);
         }
     }
 
     public static void openParent(Pack pack) {
-        var path = ((IPack) pack).packed_packs$getPath();
+        var path = ((FilePack) pack).packed_packs$getPath();
         if (path != null) {
             PackUtil.openParent(path);
         }
