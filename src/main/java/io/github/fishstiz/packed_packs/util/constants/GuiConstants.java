@@ -19,6 +19,10 @@ public class GuiConstants {
     public static final Sprite UNLOCK_SPRITE_SMALL = Sprite.of16(ResourceUtil.getIcon("unlock"));
     public static final Sprite LOCK_SPRITE_SMALL = Sprite.of16(ResourceUtil.getIcon("lock"));
     public static final Sprite STAR_SPRITE = Sprite.of16(ResourceUtil.getIcon("star"));
+    public static final Component OPEN_FILE_TEXT = ResourceUtil.getText("file.open");
+    public static final Component OPEN_PARENT_TEXT = ResourceUtil.getText("file.parent.open");
+    public static final Component RENAME_FILE_TEXT = ResourceUtil.getText("file.rename");
+    public static final Component DELETE_FILE_TEXT = ResourceUtil.getText("file.delete");
 
     private GuiConstants() {
     }

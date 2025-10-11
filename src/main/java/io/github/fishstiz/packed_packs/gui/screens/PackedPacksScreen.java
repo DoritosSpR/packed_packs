@@ -20,13 +20,11 @@ import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
-import io.github.fishstiz.packed_packs.pack.PackGroup;
-import io.github.fishstiz.packed_packs.pack.PackWatcher;
+import io.github.fishstiz.packed_packs.pack.*;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.util.ToastUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
-import io.github.fishstiz.packed_packs.pack.PackRepositoryHelper;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.layouts.*;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
@@ -40,6 +38,7 @@ import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
@@ -55,6 +54,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -83,7 +83,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private static final Component RESET_ENABLED_TEXT = ResourceUtil.getText("reset_enabled");
     private final Screen previous;
     private final PackSelectionScreenArgs original;
-    private final PackRepositoryHelper repository;
+    private final PackAssetManager assetManager;
+    private final PackRepositoryManager repository;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final HistoryManager<Snapshot> history = new HistoryManager<>();
     private final ImmediateDebouncer<String> searchListener = new ImmediateDebouncer<>(this::clearHistory, 250);
@@ -103,22 +104,26 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
     private boolean initialized = false;
 
-    private PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, @Nullable Profile profile, @Nullable PackGroup packs) {
+    public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original) {
         super(ResourceUtil.getModName());
 
+        this.minecraft = minecraft;
         this.previous = previous;
         this.original = original;
         this.packsConfig = PackedPacks.CONFIG.get(original.packType());
-        this.profiles = new ProfilesLayout(profile, this.packsConfig, this);
-        this.repository = new PackRepositoryHelper(this.original.repository(), this.original.packDir(), this.packsConfig, this.profiles::getProfile);
-        this.availablePacks = new AvailablePacksLayout(this.repository, this);
-        this.currentPacks = new CurrentPacksLayout(this.repository, this);
+        this.profiles = new ProfilesLayout(this, this.packsConfig, this::onProfileChange, this::onProfileCopy);
+        this.assetManager = new PackAssetManager(this.minecraft);
+        PackOptionsContext options = new PackOptionsContext(this.profiles::getProfile, this.packsConfig);
+        this.repository = new PackRepositoryManager(this.original.repository(), options, this.original.packDir());
+        PackFileOperations fileOps = new PackFileOperations(options, this.repository);
+        this.availablePacks = new AvailablePacksLayout(options, this.assetManager, fileOps, this);
+        this.currentPacks = new CurrentPacksLayout(options, this.assetManager, fileOps, this);
         this.options = Modal.builder(this, new OptionsLayout().layout())
                 .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
                 .setCaptureFocus(true)
                 .build();
-        this.folderDialog = FolderDialog.create(this, this.repository);
-        this.fileRenameModal = new FileRenameModal(this, this.repository);
+        this.folderDialog = FolderDialog.create(this, options, this.assetManager, fileOps);
+        this.fileRenameModal = new FileRenameModal(this, fileOps, this.assetManager);
         this.contextMenu = ContextMenu.builder(this)
                 .setSpacing(SPACING)
                 .setBackground(Theme.GRAY_800.getARGB())
@@ -127,26 +132,17 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.dialogs = List.of(this.options, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
         this.packLists = List.of(this.folderDialog.root(), this.availablePacks.getList(), this.currentPacks.getList());
         this.initAdditionalFolders();
-
-        if (profile != null) {
-            this.applyProfile(profile);
-        } else if (packs == null) {
-            this.useSelected();
-        } else {
-            this.applyPacks(packs.unselected(), packs.selected());
-        }
+        this.useSelected();
     }
 
-    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original) {
-        this(previous, original, null, null);
+    public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original, Profile profile) {
+        this(minecraft, previous, original);
+        this.profiles.setProfile(profile);
     }
 
-    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, Profile profile) {
-        this(previous, original, profile, null);
-    }
-
-    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, PackGroup packs) {
-        this(previous, original, null, packs);
+    public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original, PackGroup packs) {
+        this(minecraft, previous, original);
+        this.applyPacks(packs.unselected(), packs.selected());
     }
 
     @Override
@@ -228,7 +224,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         header.addFlexChild(this.profiles.getNameField());
 
         PackSelectionScreen packSelectionScreen = this.previous instanceof PackSelectionScreen s ? s : this.original.createDummy();
-        ModAdditions.addToHeader(this.repository.isResourcePacks(), header, packSelectionScreen);
+        ModAdditions.addToHeader(this.packsConfig.packType(), header, packSelectionScreen);
 
         if (devMode || Preferences.INSTANCE.optionsWidget.get()) {
             header.addChild(
@@ -276,7 +272,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                         .build()
         );
 
-        if (this.repository.isResourcePacks()) {
+        if (this.packsConfig.packType() == PackType.CLIENT_RESOURCES) {
             secondColumn.addFlexChild(FidgetzButton.builder().setMessage(APPLY_TEXT).setOnPress(this::commit).build());
         }
 
@@ -299,11 +295,11 @@ public class PackedPacksScreen extends PackListEventHandler implements
         Profile profile = this.profiles.getProfile();
 
         if (profile != null) {
-            profile.setPacks(this.currentPacks.getList().copyFlattenedPacks());
-            screen = new PackedPacksScreen(this.previous, this.original, profile);
+            profile.setPacks(this.currentPacks.getList().copyPacks());
+            screen = new PackedPacksScreen(this.minecraft, this.previous, this.original, profile);
         } else {
             PackGroup packs = PackGroup.of(this.currentPacks.getList().copyPacks(), this.availablePacks.getList().copyPacks());
-            screen = new PackedPacksScreen(this.previous, this.original, packs);
+            screen = new PackedPacksScreen(this.minecraft, this.previous, this.original, packs);
         }
 
         this.minecraft.setScreen(screen);
@@ -366,7 +362,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     public void onClose() {
         if (this.minecraft == null) return;
 
-        String commitRequestor = ModAdditions.shouldCommit(this.repository.isResourcePacks());
+        String commitRequestor = ModAdditions.shouldCommit(this.packsConfig.packType());
         if (commitRequestor != null) {
             this.commit();
             PackedPacks.LOGGER.info("[packed_packs] Commiting packs on close at the request of mod '{}'.", commitRequestor);
@@ -374,7 +370,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
             this.commit();
         }
 
-        if (!this.repository.isResourcePacks() && !(this.previous instanceof PackSelectionScreen)) {
+        if (this.packsConfig.packType() == PackType.SERVER_DATA && !(this.previous instanceof PackSelectionScreen)) {
             this.original.output().accept(this.repository.getRepository()); // validate datapacks
             return;
         }
@@ -448,7 +444,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.syncProfile(this.profiles.getProfile());
         this.repository.selectPacks(this.currentPacks.getList().copyPacks());
 
-        if (this.repository.isResourcePacks()) {
+        if (this.packsConfig.packType() == PackType.CLIENT_RESOURCES) {
             this.original.output().accept(this.repository.getRepository());
         }
     }
@@ -472,7 +468,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         PackList availableList = this.availablePacks.getList();
         PackList currentList = this.currentPacks.getList();
         PackGroup packs = this.repository.validatePacks(availableList.copyPacks(), currentList.copyPacks());
-        this.repository.clearIconCache();
+        this.assetManager.clearIconCache();
         this.replacePacks(availableList, packs.unselected());
         this.replacePacks(currentList, packs.selected());
         this.revalidateFolder();
@@ -505,7 +501,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     public void onProfileChange(@Nullable Profile previous, @Nullable Profile current) {
         if (previous != null) {
-            previous.setPacks(this.currentPacks.getList().copyFlattenedPacks());
+            previous.setPacks(this.currentPacks.getList().copyPacks());
         }
 
         if (current == null) {
@@ -526,7 +522,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     public void onProfileCopy(@Nullable Profile original, @NotNull Profile copy) {
-        copy.setPacks(this.currentPacks.getList().copyFlattenedPacks());
+        copy.setPacks(this.currentPacks.getList().copyPacks());
     }
 
     private void applyProfile(@NotNull Profile profile) {
@@ -544,7 +540,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     public void syncProfile(@Nullable Profile profile) {
         if (profile != null) {
-            profile.syncPacks(this.repository.getFlattenedPacks(), this.currentPacks.getList().copyFlattenedPacks());
+            profile.syncPacks(this.repository.getPacks(), this.currentPacks.getList().copyPacks());
         }
     }
 
@@ -579,7 +575,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     private void onFolderOpen(FolderOpenEvent event) {
         this.folderDialog.root().reload(this.repository.getNestedPacks(event.opened()));
-        this.folderDialog.updateFolder(event.target(), event.opened(), this.repository);
+        this.folderDialog.updateFolder(event.target(), event.opened(), this.assetManager);
         this.folderDialog.setOpen(true);
     }
 
@@ -730,7 +726,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                         .whenNonNull(this.profiles.getProfile())
                         .ifTrue((profile, b) -> b.
                                 add(devItem(ResourceUtil.getText("profile.save"))
-                                        .action(() -> profile.setPacks(this.currentPacks.getList().copyFlattenedPacks()))
+                                        .action(() -> profile.setPacks(this.currentPacks.getList().copyPacks()))
                                         .build())
                                 .separator())
                         .add(devItem(ResourceUtil.getText("preferences"))

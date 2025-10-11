@@ -55,6 +55,10 @@ public class ObjectsUtil {
         return mapOrDefault(obj, null, mapper);
     }
 
+    public static <T> void ifPresent(T obj, Consumer<T> consumer) {
+        if (obj != null) consumer.accept(obj);
+    }
+
     public static <T> T getOrDefault(@Nullable T obj, T defaultValue) {
         return obj != null ? obj : defaultValue;
     }

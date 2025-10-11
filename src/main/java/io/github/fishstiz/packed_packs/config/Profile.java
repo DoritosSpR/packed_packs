@@ -79,12 +79,17 @@ public class Profile implements PackOptions, Serializable {
 
     public void setPacks(Collection<Pack> selected) {
         if (!this.locked) {
+            selected = PackUtil.flattenPacks(selected);
+
             this.packIds = new ObjectLinkedOpenHashSet<>(PackUtil.extractPackIds(selected));
         }
     }
 
     public void syncPacks(Collection<Pack> available, Collection<Pack> selected) {
         if (!this.locked) {
+            available = PackUtil.flattenPacks(available);
+            selected = PackUtil.flattenPacks(selected);
+
             this.packIds = new ObjectLinkedOpenHashSet<>(PackUtil.extractPackIds(selected));
             Set<String> availableIds = new ObjectOpenHashSet<>(PackUtil.extractPackIds(available));
             this.overrides.entrySet().removeIf(entry -> {
@@ -95,26 +100,36 @@ public class Profile implements PackOptions, Serializable {
         }
     }
 
-    public void setHidden(boolean hidden, Pack... packs) {
-        for (Pack pack : packs) {
-            this.applyOrRemoveOverride(pack.getId(), hidden ? true : null, PackOverride::setHidden);
+    public void setHidden(boolean hidden, Collection<Pack> packs) {
+        for (Pack pack : PackUtil.flattenPacks(packs)) {
+            this.setHidden(hidden, pack);
         }
     }
 
-    public void setRequired(@Nullable Boolean required, Pack... packs) {
-        for (Pack pack : packs) {
-            if (Boolean.FALSE.equals(required) && PackUtil.isEssential(pack)) {
-                continue;
-            }
+    public void setHidden(boolean hidden, Pack pack) {
+        this.applyOrRemoveOverride(pack.getId(), hidden ? true : null, PackOverride::setHidden);
+    }
 
+    public void setRequired(@Nullable Boolean required, Collection<Pack> packs) {
+        for (Pack pack : PackUtil.flattenPacks(packs)) {
+            this.setRequired(required, pack);
+        }
+     }
+
+    public void setRequired(@Nullable Boolean required, Pack pack) {
+        if (!Boolean.FALSE.equals(required) || !PackUtil.isEssential(pack)) {
             this.applyOrRemoveOverride(pack.getId(), required, PackOverride::setRequired);
         }
     }
 
-    public void setPosition(@Nullable PackOverride.Position position, Pack... packs) {
-        for (Pack pack : packs) {
-            this.applyOrRemoveOverride(pack.getId(), position, PackOverride::setPosition);
+    public void setPosition(@Nullable PackOverride.Position position, Collection<Pack> packs) {
+        for (Pack pack : PackUtil.flattenPacks(packs)) {
+            this.setPosition(position, pack);
         }
+    }
+
+    public void setPosition(@Nullable PackOverride.Position position, Pack pack) {
+        this.applyOrRemoveOverride(pack.getId(), position, PackOverride::setPosition);
     }
 
     public void setLocked(boolean locked) {
@@ -157,7 +172,6 @@ public class Profile implements PackOptions, Serializable {
         }
         return null;
     }
-
 
     @Override
     public @Nullable PackSelectionConfig getSelectionConfig(Pack pack) {

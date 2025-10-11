@@ -71,15 +71,14 @@ public record PackOptionsResolver(
     }
 
     private boolean hasOverride(Pack pack, BiPredicate<Profile, Pack> option) {
-        Profile defaultProfile = this.profileSupplier.get();
-        Profile selected = this.config.getDefaultProfile();
+        Profile defaultProfile = this.config.getDefaultProfile();
+        Profile selected = this.profileSupplier.get();
 
         if (defaultProfile != null && option.test(defaultProfile, pack)) {
             return true;
         }
         return selected != null && option.test(selected, pack);
     }
-
 
     private <T> T getOrDefault(Pack pack, BiFunction<PackOptions, Pack, T> option, Predicate<T> predicate, Function<Pack, T> defaultValue) {
         T value = option.apply(this, pack);

@@ -7,9 +7,11 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.pack.PackAssetManager;
+import io.github.fishstiz.packed_packs.pack.PackFileOperations;
+import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.input.KeyEvent;
@@ -44,8 +46,8 @@ public class CurrentPackList extends PackList {
     private static final double SCROLL_STEP = 10;
     private boolean scrolling;
 
-    public CurrentPackList(PackAssets packAssets, PackListEventListener listener) {
-        super(packAssets, listener);
+    public CurrentPackList(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
+        super(options, assets, fileOps, listener);
     }
 
     @Override
@@ -146,8 +148,8 @@ public class CurrentPackList extends PackList {
         int maxDropIndex = this.packs.size();
         for (int i = 0; i < this.packs.size(); i++) {
             Pack pack = this.packs.get(i);
-            if (this.packAssets.isFixed(pack)) {
-                switch (this.packAssets.getPosition(pack)) {
+            if (this.options.isFixed(pack)) {
+                switch (this.options.getPosition(pack)) {
                     case TOP -> minDropIndex = i + 1;
                     case BOTTOM -> maxDropIndex = Math.min(i, maxDropIndex);
                 }
@@ -163,7 +165,7 @@ public class CurrentPackList extends PackList {
         if (source != this) {
             return source.isTransferable(trigger);
         }
-        if (this.packAssets.isFixed(trigger) || this.isMouserOverSelection(payload, mouseX, mouseY)) {
+        if (this.options.isFixed(trigger) || this.isMouserOverSelection(payload, mouseX, mouseY)) {
             return false;
         }
 
@@ -192,7 +194,7 @@ public class CurrentPackList extends PackList {
             int minDropIndex = 0;
             for (int i = 0; i < this.packs.size(); i++) {
                 Pack pack = this.packs.get(i);
-                if (this.packAssets.isFixed(pack) && this.packAssets.getPosition(pack) == Pack.Position.TOP) {
+                if (this.options.isFixed(pack) && this.options.getPosition(pack) == Pack.Position.TOP) {
                     minDropIndex = i + 1;
                 }
             }
@@ -201,7 +203,7 @@ public class CurrentPackList extends PackList {
 
         if (source == this) {
             List<Pack> movable = new ObjectArrayList<>(payload);
-            movable.removeIf(this.packAssets::isFixed);
+            movable.removeIf(this.options::isFixed);
             return this.moveAll(this.orderSelection(movable), dropPackIndex) ? payload : null;
         }
 
@@ -279,7 +281,7 @@ public class CurrentPackList extends PackList {
 
         @Override
         public boolean isTransferable() {
-            return !CurrentPackList.this.packAssets.isRequired(this.pack) &&
+            return !CurrentPackList.this.options.isRequired(this.pack) &&
                    !CurrentPackList.this.isLocked() &&
                    !this.isStale();
         }
@@ -290,7 +292,7 @@ public class CurrentPackList extends PackList {
         }
 
         public boolean isFixed() {
-            return CurrentPackList.this.packAssets.isFixed(this.pack) ||
+            return CurrentPackList.this.options.isFixed(this.pack) ||
                    CurrentPackList.this.isQueried() ||
                    CurrentPackList.this.isLocked() ||
                    this.isStale();
@@ -309,7 +311,7 @@ public class CurrentPackList extends PackList {
                     return index > -1 &&
                            index < size - 1 &&
                            moveIndex > -1 &&
-                           !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
+                           !CurrentPackList.this.options.isFixed(CurrentPackList.this.packs.get(moveIndex));
                 }
             }
 
@@ -318,7 +320,7 @@ public class CurrentPackList extends PackList {
             return index > -1 &&
                    index < size - 1 &&
                    moveIndex > -1 &&
-                   !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
+                   !CurrentPackList.this.options.isFixed(CurrentPackList.this.packs.get(moveIndex));
         }
 
         public boolean canMoveUp() {
@@ -332,7 +334,7 @@ public class CurrentPackList extends PackList {
                     int moveIndex = index > -1 ? ((Entry) entry).getMoveUpIndex() : -1;
                     return index > 0 &&
                            moveIndex > -1 &&
-                           !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
+                           !CurrentPackList.this.options.isFixed(CurrentPackList.this.packs.get(moveIndex));
                 }
             }
 
@@ -340,7 +342,7 @@ public class CurrentPackList extends PackList {
             int moveIndex = this.getMoveUpIndex();
             return index > 0 &&
                    moveIndex > -1 &&
-                   !CurrentPackList.this.packAssets.isFixed(CurrentPackList.this.packs.get(moveIndex));
+                   !CurrentPackList.this.options.isFixed(CurrentPackList.this.packs.get(moveIndex));
         }
 
         public boolean isMouseOverRemove(double mouseX, double mouseY) {
@@ -383,10 +385,10 @@ public class CurrentPackList extends PackList {
         protected int getMoveUpIndex() {
             for (int i = this.getPackIndex() - 1; i >= 0; i--) {
                 Pack nextPack = CurrentPackList.this.packs.get(i);
-                if (CurrentPackList.this.packAssets.isFixed(nextPack)) {
+                if (CurrentPackList.this.options.isFixed(nextPack)) {
                     return -1;
                 }
-                if (!CurrentPackList.this.packAssets.isHidden(nextPack)) {
+                if (!CurrentPackList.this.options.isHidden(nextPack)) {
                     return i;
                 }
             }
@@ -396,10 +398,10 @@ public class CurrentPackList extends PackList {
         protected int getMoveDownIndex() {
             for (int i = this.getPackIndex() + 1; i < CurrentPackList.this.packs.size(); i++) {
                 Pack nextPack = CurrentPackList.this.packs.get(i);
-                if (CurrentPackList.this.packAssets.isFixed(nextPack)) {
+                if (CurrentPackList.this.options.isFixed(nextPack)) {
                     return -1;
                 }
-                if (!CurrentPackList.this.packAssets.isHidden(nextPack)) {
+                if (!CurrentPackList.this.options.isHidden(nextPack)) {
                     return i;
                 }
             }
