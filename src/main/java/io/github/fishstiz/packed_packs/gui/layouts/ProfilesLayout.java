@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.gui.layouts;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
+import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
@@ -11,15 +12,14 @@ import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.profile.ProfileList;
 import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
-import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.LayoutSettings;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
@@ -34,16 +34,20 @@ public class ProfilesLayout {
     private static final int MAX_WIDTH = SPACING * 20;
     private final Config.Packs config;
     private final Sidebar sidebar;
-    private final PackedPacksScreen screen;
+    private final CopyListener copyListener;
     private final ToggleableEditBox<Void> nameField;
     private final FidgetzButton<Void> toggleNameButton;
     private final FidgetzButton<Void> noProfileButton;
     private final ProfileList profileList;
-    private @Nullable Profile profile;
 
-    public ProfilesLayout(@Nullable Profile profile, Config.Packs config, PackedPacksScreen screen) {
+    public <S extends Screen & ToggleableDialogContainer> ProfilesLayout(
+            S screen,
+            Config.Packs config,
+            ProfileList.SelectListener selectListener,
+            CopyListener copyListener
+    ) {
         this.config = config;
-        this.screen = screen;
+        this.copyListener = copyListener;
         this.sidebar = Sidebar.builder(screen)
                 .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
                 .setMaxWidth(MAX_WIDTH)
@@ -69,14 +73,13 @@ public class ProfilesLayout {
                 .setMessage(NO_PROFILE_TEXT)
                 .setOnPress(() -> this.setProfile(null))
                 .build();
-        this.profileList = new ProfileList(this.config, this);
-        this.profile = profile;
+        this.profileList = new ProfileList(this.config, selectListener, this::updateGuiState);
     }
 
     public void initContents() {
         LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(GuiConstants.SPACING);
-        FlexLayout actions = FlexLayout.horizontal(() -> MAX_WIDTH).spacing(GuiConstants.SPACING);
-        FlexLayout list = FlexLayout.horizontal(() -> MAX_WIDTH);
+        FlexLayout actions = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
+        FlexLayout list = FlexLayout.horizontal(this::getMaxWidth);
 
         actions.addFlexChild(this.noProfileButton);
         actions.addFlexChild(
@@ -93,13 +96,14 @@ public class ProfilesLayout {
         this.sidebar.root().layout().arrangeElements();
         this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
 
-        this.updateGuiState(this.profile);
+        this.updateGuiState(this.profileList.getSelectedProfile());
     }
 
     private RenderableRect getToggleSpriteRenderer(Sprite sprite) {
-        if (this.profile != null && this.profile.isLocked()) {
+        Profile profile = this.profileList.getSelectedProfile();
+        if (profile != null && profile.isLocked()) {
             Profile defaultProfile = this.config.getDefaultProfile();
-            return this.profile == defaultProfile ? STAR_SPRITE::renderClamped : LOCK_SPRITE;
+            return profile == defaultProfile ? STAR_SPRITE::renderClamped : LOCK_SPRITE;
         }
         return sprite::renderClamped;
     }
@@ -121,19 +125,20 @@ public class ProfilesLayout {
     }
 
     private void onNameChange(String value) {
-        if (this.profile != null) {
+        Profile profile = this.profileList.getSelectedProfile();
+        if (profile != null) {
             String name = value;
 
             if (value.isEmpty()) {
                 name = UNNAMED_TEXT.getString();
             }
 
-            this.profile.setName(name);
+            profile.setName(name);
         }
         this.profileList.scheduleRefresh();
     }
 
-    public void updateGuiState(@Nullable Profile profile) {
+    private void updateGuiState(@Nullable Profile profile) {
         this.nameField.setEditable(false);
 
         boolean hasProfile = profile != null;
@@ -147,40 +152,27 @@ public class ProfilesLayout {
     }
 
     public void setProfile(@Nullable Profile profile) {
-        Profile previous = this.profile;
-        this.profile = profile;
-        this.screen.onProfileChange(previous, this.profile);
-        this.updateGuiState(profile);
+        this.profileList.selectProfile(profile);
     }
 
     public @Nullable Profile getProfile() {
-        return this.profile;
+        return this.profileList.getSelectedProfile();
     }
 
     private void copyProfile() {
-        Profile copiedProfile = this.profile != null
-                ? this.profile.copy()
+        Profile selectedProfile = this.profileList.getSelectedProfile();
+        Profile copiedProfile = selectedProfile != null
+                ? selectedProfile.copy()
                 : new Profile(NO_PROFILE_TEXT.getString() + " - " + COPY_TEXT.getString());
 
-        this.screen.onProfileCopy(this.profile, copiedProfile);
+        this.copyListener.onCopy(selectedProfile, copiedProfile);
         this.config.addProfile(copiedProfile);
         this.setProfile(copiedProfile);
         this.sidebar.setOpen(false);
         this.profileList.refresh();
     }
 
-    public void removeProfile(Profile profile) {
-        if (profile != null && this.profile == profile) {
-            List<Profile> profiles = this.config.getProfiles();
-            if (!profiles.isEmpty()) {
-                int index = profiles.indexOf(profile);
-                Profile previous = (index > 0) ? profiles.get(index - 1) : null;
-                this.setProfile(previous);
-            } else {
-                this.setProfile(null);
-            }
-        }
-        this.config.removeProfile(profile);
-        this.profileList.refresh();
+    public interface CopyListener {
+        void onCopy(@Nullable Profile original, @NotNull Profile copy);
     }
 }

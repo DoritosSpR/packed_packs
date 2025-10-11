@@ -2,14 +2,18 @@ package io.github.fishstiz.packed_packs.util;
 
 import com.sun.jna.platform.FileUtils;
 import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.transform.mixin.UtilAccess;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;
+import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.repository.Pack;
@@ -26,6 +30,11 @@ public class PackUtil {
     public static final String HIGH_CONTRAST_ID = "high_contrast";
     public static final String VANILLA_ID = "vanilla";
     public static final String FABRIC_ID = "fabric";
+    public static final String ZIP_PACK_EXTENSION = ".zip";
+    public static final String ICON_FILENAME = "pack.png";
+    public static final PackSource PACK_SOURCE = PackSource.create(name ->
+            Component.translatable("pack.nameAndSource", name, ResourceUtil.getModName().withStyle(ChatFormatting.YELLOW))
+                    .withStyle(ChatFormatting.GRAY), false);
 
     // Changing these fields would be breaking changes
     private static final String FILE_PREFIX = "file/";
@@ -104,6 +113,40 @@ public class PackUtil {
 
     public static boolean isNonPackDirectory(Path path) {
         return Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && !hasMcmeta(path);
+    }
+
+    public static boolean isZipPack(Pack pack) {
+        Path path = validatePackPath(pack);
+        return path != null && Files.isRegularFile(path) && PackUtil.fileName(path).endsWith(ZIP_PACK_EXTENSION);
+    }
+
+    public static List<Pack> flattenPacks(Collection<Pack> packs) {
+        List<Pack> flattened = new ObjectArrayList<>();
+        for (Pack pack : packs) {
+            if (pack instanceof FolderPack folderPack) {
+                flattened.addAll(folderPack.flatten());
+            } else {
+                flattened.add(pack);
+            }
+        }
+        return flattened;
+    }
+
+    public static Path validatePackPath(Pack pack) {
+        if (pack == null) {
+            return null;
+        }
+        Path path = ((FilePack) pack).packed_packs$getPath();
+        if (path == null) {
+            return null;
+        }
+
+        try {
+            return Files.exists(path) ? path : null;
+        } catch (Exception e) {
+            PackedPacks.LOGGER.error("[packed_packs] Could not read file: '{}'", path);
+            return null;
+        }
     }
 
     public static List<Path> mapValidDirectories(List<String> paths) {

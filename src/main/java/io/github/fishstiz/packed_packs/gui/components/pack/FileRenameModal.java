@@ -7,7 +7,10 @@ import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.FileRenameCloseEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.FileRenameEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
+import io.github.fishstiz.packed_packs.pack.PackAssetManager;
+import io.github.fishstiz.packed_packs.pack.PackFileOperations;
+import io.github.fishstiz.packed_packs.util.PackUtil;
+import io.github.fishstiz.packed_packs.util.ToastUtil;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.layouts.LayoutSettings;
@@ -26,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-import static io.github.fishstiz.packed_packs.pack.PackAssets.ZIP_PACK_EXTENSION;
+import static io.github.fishstiz.packed_packs.util.PackUtil.ZIP_PACK_EXTENSION;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.SPACING;
 
 public class FileRenameModal extends Modal<LinearLayout> {
@@ -35,7 +38,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
     private static final int SHADOW_SIZE = 24;
     private static final int TITLE_HEIGHT = 16;
     private static final Pattern ILLEGAL_CHAR_PATTERN = Pattern.compile(".*[<>:\"/\\\\|?*].*");
-    private static final Sprite DEFAULT_SPRITE = Sprite.of16(PackAssets.DEFAULT_ICON);
+    private static final Sprite DEFAULT_SPRITE = Sprite.of16(PackAssetManager.DEFAULT_ICON);
     private final ToggleableEditBox<Void> nameEditor = ToggleableEditBox.<Void>builder()
             .setEditable(true)
             .addListener(this::handleChange)
@@ -52,15 +55,22 @@ public class FileRenameModal extends Modal<LinearLayout> {
             .setOnPress(this::saveName)
             .setMessage(CommonComponents.GUI_DONE)
             .build();
-    private final PackAssets packAssets;
-    private Sprite sprite = Sprite.of16(PackAssets.DEFAULT_ICON);
+    private final PackFileOperations fileOps;
+    private final PackAssetManager assets;
+    private Sprite sprite = DEFAULT_SPRITE;
     private PackList packList;
     private Pack pack;
     private String oldName;
 
-    public <S extends Screen & ToggleableDialogContainer & PackListEventListener> FileRenameModal(S screen, PackAssets packAssets) {
+    public <S extends Screen & ToggleableDialogContainer & PackListEventListener> FileRenameModal(
+            S screen,
+            PackFileOperations fileOps,
+            PackAssetManager assets
+    ) {
         super(Modal.builder(screen, LinearLayout.vertical()));
-        this.packAssets = packAssets;
+
+        this.fileOps = fileOps;
+        this.assets = assets;
 
         LayoutSettings rootLayoutSettings = LayoutSettings.defaults().paddingHorizontal(SPACING).paddingTop(SPACING);
         this.root().layout().addChild(this.title, rootLayoutSettings);
@@ -103,13 +113,13 @@ public class FileRenameModal extends Modal<LinearLayout> {
     public void open(PackList packList, Pack pack) {
         this.packList = packList;
         this.pack = pack;
-        this.sprite = Sprite.of16(PackAssets.getDefaultIcon(pack));
-        this.packAssets.getOrLoadIcon(pack, icon -> this.sprite = Sprite.of16(icon));
+        this.sprite = Sprite.of16(PackAssetManager.getDefaultIcon(pack));
+        this.assets.getOrLoadIcon(pack, icon -> this.sprite = Sprite.of16(icon));
         this.title.setMessage(pack.getTitle());
 
         this.oldName = sanitizeNameForEdit(pack);
         this.nameEditor.setValue(this.oldName);
-        this.nameEditor.setSuggestion(PackAssets.isZipPack(pack) ? ZIP_PACK_EXTENSION : null);
+        this.nameEditor.setSuggestion(PackUtil.isZipPack(pack) ? ZIP_PACK_EXTENSION : null);
         this.saveButton.active = false;
 
         this.setOpen(true);
@@ -126,7 +136,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         if (input == null || input.isBlank()) {
             return false;
         }
-        if (this.pack == null || PackAssets.validatePackPath(pack) == null) {
+        if (this.pack == null || PackUtil.validatePackPath(pack) == null) {
             return false;
         }
         String trimmed = input.trim();
@@ -160,7 +170,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         }
 
         String sanitizedName = sanitizeNameForSave(this.pack, newName);
-        if (this.packAssets.renamePack(this.pack, sanitizedName)) {
+        if (this.fileOps.renamePack(this.pack, sanitizedName)) {
             Component sanitizedNameText = Component.literal(sanitizedName);
             if (this.packList != null) {
                 PackList.Entry entry = this.packList.getEntry(this.pack);
@@ -172,17 +182,19 @@ public class FileRenameModal extends Modal<LinearLayout> {
             ((PackListEventListener) this.screen).onEvent(new FileRenameEvent(this.packList, this.pack, sanitizedNameText));
             this.setOpen(false);
             this.clearReferences();
+        } else {
+            ToastUtil.onFileFailToast(ToastUtil.getRenameFailText(pack.getTitle().getString(), newName));
         }
     }
 
     private static String sanitizeNameForEdit(Pack pack) {
         String name = pack.getTitle().getString();
-        return PackAssets.isZipPack(pack) ? name.replaceFirst(Pattern.quote(ZIP_PACK_EXTENSION) + "$", "") : name;
+        return PackUtil.isZipPack(pack) ? name.replaceFirst(Pattern.quote(ZIP_PACK_EXTENSION) + "$", "") : name;
     }
 
     private static String sanitizeNameForSave(Pack pack, String newName) {
         newName = FilenameUtils.getName(newName).trim();
-        return PackAssets.isZipPack(pack) ? newName + ZIP_PACK_EXTENSION : newName;
+        return PackUtil.isZipPack(pack) ? newName + ZIP_PACK_EXTENSION : newName;
     }
 
     private static boolean testIllegalChars(@NotNull String input) {

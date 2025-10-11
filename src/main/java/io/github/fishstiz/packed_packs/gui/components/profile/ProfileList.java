@@ -14,7 +14,6 @@ import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
-import io.github.fishstiz.packed_packs.gui.layouts.ProfilesLayout;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
@@ -25,6 +24,7 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,15 +40,18 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
     private static final Sprite TRASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("trash"));
     private static final Sprite STAR_OUTLINE_SPRITE = Sprite.of16(ResourceUtil.getIcon("star_outline"));
     private final PollingDebouncer<Void> debouncedRefresh = new SimplePollingDebouncer<>(this::refresh, 200);
-    private final ProfilesLayout layout;
+    private final SelectListener selectListener;
+    private final UpdateListener updateListener;
     private final Config.Packs config;
     private List<Profile> profiles;
+    private @Nullable Profile selectedProfile;
 
-    public ProfileList(Config.Packs config, ProfilesLayout profilesLayout) {
+    public ProfileList(Config.Packs config, SelectListener selectListener, UpdateListener updateListener) {
         super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, 0, 0);
 
         this.config = config;
-        this.layout = profilesLayout;
+        this.selectListener = selectListener;
+        this.updateListener = updateListener;
         this.refresh();
     }
 
@@ -63,6 +66,37 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
         for (int i = 0; i < this.profiles.size(); i++) {
             this.addEntry(new Entry(this.profiles.get(i), i));
         }
+    }
+
+    public @Nullable Profile getSelectedProfile() {
+        return this.selectedProfile;
+    }
+
+    public void selectProfile(@Nullable Profile profile) {
+        Profile previous = this.selectedProfile;
+        this.selectedProfile = profile;
+        this.selectListener.onSelect(previous, profile);
+        this.updateListener.onUpdate(profile);
+    }
+
+    public void removeProfile(Profile profile) {
+        if (profile != null && this.selectedProfile == profile) {
+            List<Profile> profiles = this.config.getProfiles();
+            if (!profiles.isEmpty()) {
+                int index = profiles.indexOf(profile);
+                Profile previous = (index > 0) ? profiles.get(index - 1) : null;
+                this.selectProfile(previous);
+            } else {
+                this.selectProfile(null);
+            }
+        }
+        this.config.removeProfile(profile);
+        this.refresh();
+    }
+
+    private void resync() {
+        this.selectListener.onSelect(this.selectedProfile, this.selectedProfile);
+        this.updateListener.onUpdate(this.selectedProfile);
     }
 
     @Override
@@ -103,14 +137,14 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
                     .setSprite(this.isDefault()
                             ? ButtonSprites.of(STAR_SPRITE) : profile.isLocked()
                             ? ButtonSprites.unclamp(LOCK_SPRITE) : ButtonSprites.of(TRASH_SPRITE))
-                    .setOnPress(() -> ProfileList.this.layout.removeProfile(this.profile))
+                    .setOnPress(this::remove)
                     .build();
             this.deleteButton.active = !profile.isLocked() && !this.isDefault();
             if (this.deleteButton.active) this.deleteButton.setTooltip(DELETE_INFO);
 
             this.selectButton = FidgetzButton.<Void>builder()
                     .setMessage(Component.literal(this.profile.getName()))
-                    .setOnPress(() -> ProfileList.this.layout.setProfile(this.profile))
+                    .setOnPress(this::select)
                     .build();
 
             this.children.add(this.deleteButton);
@@ -119,7 +153,7 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
 
         @Override
         public void render(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            this.selectButton.active = ProfileList.this.layout.getProfile() != this.profile;
+            this.selectButton.active = ProfileList.this.selectedProfile != this.profile;
 
             this.deleteButton.setPosition(left, top);
             this.selectButton.setPosition(left + this.deleteButton.getWidth(), top);
@@ -154,12 +188,40 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
             }
         }
 
+        private void toggleLock() {
+            boolean selected = this.isSelected();
+            if (selected) ProfileList.this.resync();
+
+            this.profile.setLocked(!this.profile.isLocked());
+            ProfileList.this.refresh();
+            if (selected) ProfileList.this.updateListener.onUpdate(this.profile);
+        }
+
+        private void toggleDefault() {
+            ProfileList.this.config.setDefaultProfile(this.isDefault() ? null : this.profile);
+            ProfileList.this.refresh();
+
+            if (!this.isSelected() && this.isDefault()) {
+                this.select();
+            } else {
+                ProfileList.this.resync();
+            }
+        }
+
+        private void remove() {
+            ProfileList.this.removeProfile(this.profile);
+        }
+
+        private void select() {
+            ProfileList.this.selectProfile(this.profile);
+        }
+
         private boolean isDefault() {
             return ProfileList.this.config.getDefaultProfile() == this.profile;
         }
 
         private boolean isSelected() {
-            return ProfileList.this.layout.getProfile() == this.profile;
+            return ProfileList.this.selectedProfile == this.profile;
         }
 
         @Override
@@ -184,22 +246,22 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
             builder.separatorIfNonEmpty();
             builder.add(GuiConstants.devItem(ResourceUtil.getText("profile.default." + (this.isDefault() ? "unset" : "set")))
                     .icon(() -> this.isDefault() ? STAR_SPRITE : STAR_OUTLINE_SPRITE)
-                    .action(() -> {
-                        ProfileList.this.config.setDefaultProfile(this.isDefault() ? null : this.profile);
-                        ProfileList.this.refresh();
-                        ProfileList.this.layout.setProfile(this.profile);
-                    })
+                    .action(this::toggleDefault)
                     .build());
             builder.add(GuiConstants.devItem(ResourceUtil.getText("profile." + (this.profile.isLocked() ? "unlock" : "lock")))
                     .icon(this.profile.isLocked() ? LOCK_SPRITE_SMALL : UNLOCK_SPRITE_SMALL)
-                    .action(() -> {
-                        boolean selected = this.isSelected();
-                        if (selected) ProfileList.this.layout.setProfile(this.profile);
-                        this.profile.setLocked(!this.profile.isLocked());
-                        ProfileList.this.refresh();
-                        if (selected) ProfileList.this.layout.updateGuiState(this.profile);
-                    })
+                    .action(this::toggleLock)
                     .build());
         }
+    }
+
+    @FunctionalInterface
+    public interface SelectListener {
+        void onSelect(Profile previous, Profile selected);
+    }
+
+    @FunctionalInterface
+    public interface UpdateListener {
+        void onUpdate(Profile profile);
     }
 }

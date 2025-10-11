@@ -1,7 +1,9 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import io.github.fishstiz.packed_packs.gui.components.events.*;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
+import io.github.fishstiz.packed_packs.pack.PackAssetManager;
+import io.github.fishstiz.packed_packs.pack.PackFileOperations;
+import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
@@ -9,8 +11,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public class FolderPackList extends CurrentPackList {
-    public FolderPackList(PackAssets packAssets, PackListEventListener listener) {
-        super(packAssets, listener);
+    public FolderPackList(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
+        super(options, assets, fileOps, listener);
     }
 
     @Override

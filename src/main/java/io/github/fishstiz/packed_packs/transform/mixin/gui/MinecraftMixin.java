@@ -27,7 +27,7 @@ public abstract class MinecraftMixin {
             PackSelectionScreenArgs args = PackSelectionScreenArgs.extract(packScreen);
             if (PackedPacks.CONFIG.get(args.packType()).isReplaceOriginal()) {
                 ((PackSelectionScreenAccessor) packScreen).invokeCloseWatcher();
-                guiScreen = new PackedPacksScreen(this.screen, args);
+                guiScreen = new PackedPacksScreen((Minecraft) (Object) this, this.screen, args);
             }
         }
         original.call(guiScreen);
