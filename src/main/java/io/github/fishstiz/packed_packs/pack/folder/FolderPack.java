@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.pack.folder;
 import io.github.fishstiz.packed_packs.config.ConfigLoader;
 import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.Util;
@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-public class FolderPack extends Pack implements IPack {
+public class FolderPack extends Pack implements FilePack {
     public static final Component FOLDER_OPEN_TEXT = ResourceUtil.getText("folder.open");
     public static final Component FOLDER_DESCRIPTION = ResourceUtil.getText("folder");
     public static final PackSelectionConfig FOLDER_SELECTION_CONFIG = new PackSelectionConfig(false, Position.TOP, false);

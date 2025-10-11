@@ -10,7 +10,7 @@ import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
@@ -121,7 +121,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
                                 .simpleItem(BACK_TEXT, () -> this.setOpen(false))
                                 .when(this.root().getChildAt(mouseX, mouseY).isEmpty())
                                 .ifTrue(b -> b
-                                        .whenNonNull(ObjectsUtil.mapOrNull(this.folderPack, IPack::packed_packs$getPath))
+                                        .whenNonNull(ObjectsUtil.mapOrNull(this.folderPack, FilePack::packed_packs$getPath))
                                         .ifTrue((path, operationsMenuBuilder) -> operationsMenuBuilder
                                                 .separator()
                                                 .simpleItem(PackAssets.RENAME_FILE_TEXT, this::canOperateFolder, this::renameDirectory)
