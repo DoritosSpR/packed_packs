@@ -8,7 +8,7 @@ import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.config.PackOptions;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.ToastUtil;
@@ -105,7 +105,7 @@ public interface PackAssets extends PackOptions {
         if (pack == null) {
             return null;
         }
-        Path path = ((IPack) pack).packed_packs$getPath();
+        Path path = ((FilePack) pack).packed_packs$getPath();
         if (path == null) {
             return null;
         }
