@@ -4,7 +4,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 
-public interface IPack {
+public interface FilePack {
     default boolean packed_packs$nestedPack() {
         return false;
     }

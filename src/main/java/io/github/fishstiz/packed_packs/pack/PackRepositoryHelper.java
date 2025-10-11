@@ -9,7 +9,7 @@ import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilteredPackSelectionModel;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.transform.mixin.folders.additional.FolderRepositorySourceAccessor;
 import io.github.fishstiz.packed_packs.transform.mixin.folders.additional.PackRepositoryAccessor;
@@ -276,9 +276,9 @@ public class PackRepositoryHelper implements PackAssets {
      */
     private void populateAvailablePacks(Collection<Pack> packs) {
         for (Pack pack : packs) {
-            IPack _pack = (IPack) pack;
-            if (_pack.packed_packs$nestedPack()) {
-                Path folderPath = Objects.requireNonNull(_pack.packed_packs$getPath()).getParent();
+            FilePack filePack = (FilePack) pack;
+            if (filePack.packed_packs$nestedPack()) {
+                Path folderPath = Objects.requireNonNull(filePack.packed_packs$getPath()).getParent();
                 String folderName = PackUtil.generatePackName(folderPath);
                 String folderId = PackUtil.generatePackId(folderName);
                 if (!this.availablePacks.containsKey(folderId)) {

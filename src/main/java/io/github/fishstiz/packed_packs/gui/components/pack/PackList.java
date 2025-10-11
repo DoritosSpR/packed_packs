@@ -14,7 +14,7 @@ import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.transform.mixin.gui.AbstractSelectionListAccessor;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
@@ -837,7 +837,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
                                     .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this::openFolder)
                                     .separator()
                             )
-                            .whenNonNull(((IPack) this.pack).packed_packs$getPath())
+                            .whenNonNull(((FilePack) this.pack).packed_packs$getPath())
                             .ifTrue(b -> b
                                     .simpleItem(PackAssets.RENAME_FILE_TEXT, this::canOperateFile, this::renamePack)
                                     .simpleItem(PackAssets.DELETE_FILE_TEXT, this::canOperateFile, this::deletePack)
