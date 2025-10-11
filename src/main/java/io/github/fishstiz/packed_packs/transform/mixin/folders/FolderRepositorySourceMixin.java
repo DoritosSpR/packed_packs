@@ -7,7 +7,7 @@ import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
-import io.github.fishstiz.packed_packs.transform.interfaces.IPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.pack.PackAssets;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import net.minecraft.server.packs.PackLocationInfo;
@@ -97,7 +97,7 @@ public abstract class FolderRepositorySourceMixin {
 
     @ModifyArg(method = "method_45272", at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V"))
     private Object bindDirToNestedPack(Object arg, @Local(argsOnly = true) Path path) {
-        if (arg instanceof IPack pack) {
+        if (arg instanceof FilePack pack) {
             pack.packed_packs$setNestedPack(IS_SUBDIRECTORY.get());
             pack.packed_packs$setPath(path);
         }
