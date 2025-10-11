@@ -7,7 +7,6 @@ import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
-import io.github.fishstiz.packed_packs.transform.interfaces.FilteredPackSelectionModel;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.transform.mixin.folders.additional.FolderRepositorySourceAccessor;
@@ -71,7 +70,7 @@ public class PackRepositoryHelper implements PackAssets {
 
     private void refreshModel() {
         this.model = new PackSelectionModel(Consumers.nop(), PackAssets::getDefaultIcon, this.repository, Consumers.nop());
-        ((FilteredPackSelectionModel) this.model).packed_packs$filterHidden(false);
+        ((PackSelectionModelAccessor) this.model).packed_packs$filterHidden(false);
     }
 
     public List<Pack> getPacks() {
