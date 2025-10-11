@@ -4,9 +4,11 @@ import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.pack.PackAssetManager;
+import io.github.fishstiz.packed_packs.pack.PackFileOperations;
+import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
@@ -27,8 +29,8 @@ public class AvailablePackList extends PackList {
     private static final Theme DROP_ZONE_THEME = Theme.RED_700;
     private static final ColoredRect DROP_ZONE = new ColoredRect(DROP_ZONE_THEME.withAlpha(0.25f));
 
-    public AvailablePackList(PackAssets packAssets, PackListEventListener listener) {
-        super(packAssets, listener);
+    public AvailablePackList(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
+        super(options, assets, fileOps, listener);
     }
 
     @Override
@@ -113,6 +115,11 @@ public class AvailablePackList extends PackList {
             if (this.isTransferable()) {
                 pick(!this.isMouseOverSelect(mouseX, mouseY), SELECT_SPRITE, SELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
             }
+        }
+
+        @Override
+        protected void onRequire(Pack trigger, List<Pack> requiredPacks) {
+            this.sendPacks(trigger, requiredPacks);
         }
     }
 }

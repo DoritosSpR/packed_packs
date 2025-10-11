@@ -4,12 +4,13 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuil
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.config.PackOverride;
 import io.github.fishstiz.packed_packs.config.Profile;
+import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
+import io.github.fishstiz.packed_packs.pack.ProfileScope;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.CommonComponents;
@@ -17,14 +18,22 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 
 import static io.github.fishstiz.packed_packs.gui.metadata.Toggleable.getDefaultIcon;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.devItem;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
 
-public record PackListDevMenu(PackList list, Pack pack) {
+public record PackListDevMenu(
+        PackOptionsContext options,
+        Pack pack,
+        Supplier<List<Pack>> selection,
+        BiConsumer<Pack, List<Pack>> onRequire
+) {
     private static final int DEV_SPRITE_SIZE = 16;
     private static final int DEV_SPRITE_MARGIN_RIGHT = 8;
     private static final Sprite EYE_SLASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("eye_slash"));
@@ -45,74 +54,52 @@ public record PackListDevMenu(PackList list, Pack pack) {
         return ResourceUtil.getText("profile.override." + keySuffix);
     }
 
-    private PackOverrideScope hasOverride(BiPredicate<Profile, Pack> option) {
-        Profile defaultProfile = this.list.packAssets.getConfig().getDefaultProfile();
-        Profile currentProfile = this.list.packAssets.getProfile();
-        PackOverrideScope packOverride = PackOverrideScope.NONE;
-
-        if (defaultProfile != null && option.test(defaultProfile, this.pack)) {
-            packOverride = PackOverrideScope.GLOBAL;
-        }
-        if (currentProfile != null && option.test(currentProfile, this.pack)) {
-            packOverride = !packOverride.booleanValue() ? PackOverrideScope.LOCAL : PackOverrideScope.COMPOSITE;
-        }
-        return packOverride;
+    private ProfileScope hasOverride(BiPredicate<Profile, Pack> option) {
+        return this.options.hasOverride(this.pack, option);
     }
 
     public void renderDevSprites(GuiGraphics guiGraphics, int top, int left, int width) {
         int size = DEV_SPRITE_SIZE;
         int iconX = (left + width) - size - DEV_SPRITE_MARGIN_RIGHT;
 
-        PackOverrideScope positionOverride = this.hasOverride(Profile::overridesPosition);
-        if (positionOverride.booleanValue()) {
-            boolean unfixed = !this.list.packAssets.isFixed(this.pack);
-            boolean fixedTop = this.list.packAssets.getPosition(this.pack) == Pack.Position.TOP;
-            guiGraphics.fill(iconX, top, iconX + size, top + size, positionOverride.backgroundColor());
+        ProfileScope positionOverride = this.hasOverride(Profile::overridesPosition);
+        if (positionOverride.exists()) {
+            boolean unfixed = !this.options.isFixed(this.pack);
+            boolean fixedTop = this.options.getPosition(this.pack) == Pack.Position.TOP;
+            guiGraphics.fill(iconX, top, iconX + size, top + size, getBackgroundColor(positionOverride));
             pick(unfixed, ARROWS_SPRITE, pick(fixedTop, ARROW_UP_SPRITE, ARROW_DOWN_SPRITE)).render(guiGraphics, iconX, top, size, size);
             iconX -= size;
         }
-        PackOverrideScope requiredOverride = this.hasOverride(Profile::overridesRequired);
-        if (requiredOverride.booleanValue()) {
-            boolean required = this.list.packAssets.isRequired(this.pack);
-            guiGraphics.fill(iconX, top, iconX + size, top + size, requiredOverride.backgroundColor());
+        ProfileScope requiredOverride = this.hasOverride(Profile::overridesRequired);
+        if (requiredOverride.exists()) {
+            boolean required = this.options.isRequired(this.pack);
+            guiGraphics.fill(iconX, top, iconX + size, top + size, getBackgroundColor(requiredOverride));
             pick(required, LOCK_SPRITE_SMALL, UNLOCK_SPRITE_SMALL).render(guiGraphics, iconX, top, size, size);
             iconX -= size;
         }
-        PackOverrideScope hiddenOverride = this.hasOverride(Profile::isHidden);
-        if (hiddenOverride.booleanValue()) {
-            guiGraphics.fill(iconX, top, iconX + size, top + size, hiddenOverride.backgroundColor());
+        ProfileScope hiddenOverride = this.hasOverride(Profile::isHidden);
+        if (hiddenOverride.exists()) {
+            guiGraphics.fill(iconX, top, iconX + size, top + size, getBackgroundColor(hiddenOverride));
             EYE_SLASH_SPRITE.render(guiGraphics, iconX, top, size, size);
             iconX -= size;
         }
-        PackOverrideScope included = this.hasOverride(Profile::includes);
+        ProfileScope included = this.hasOverride(Profile::includes);
         if (included.global() && !((ConfiguredPack) this.pack).packed_packs$getMetadata().compatibility().isCompatible()) {
             guiGraphics.fill(iconX, top, iconX + size, top + size, Theme.RED_700.withAlpha(0.75f));
             X_SQUARE.render(guiGraphics, iconX, top, size, size);
         }
     }
 
-    private Pack[] selectionOrPack() {
-        if (ObjectsUtil.testNullable(this.list.getEntry(this.pack), PackList.Entry::isSelected)) {
-            return this.list.packAssets.flattenPacks(this.list.copySelection()).toArray(Pack[]::new);
-        }
-        return new Pack[]{this.pack};
-    }
-
     private void updateRequired(@Nullable Boolean required) {
-        Profile profile = this.list.packAssets.getProfile();
-        if (profile != null) {
-            profile.setRequired(required, this.selectionOrPack());
-            if (Boolean.TRUE.equals(required) && this.list instanceof AvailablePackList) {
-                ObjectsUtil.mapOrNull(this.list.getEntry(this.pack), PackList.Entry::transfer);
-            }
-        }
+        this.options.getProfile().ifPresent(profile -> {
+            List<Pack> selected = this.selection.get();
+            profile.setRequired(required, this.selection.get());
+            if (Boolean.TRUE.equals(required)) this.onRequire.accept(this.pack, selected);
+        });
     }
 
     private void updatePosition(@Nullable PackOverride.Position position) {
-        Profile profile = this.list.packAssets.getProfile();
-        if (profile != null) {
-            profile.setPosition(position, this.selectionOrPack());
-        }
+        this.options.getProfile().ifPresent(profile -> profile.setPosition(position, this.selection.get()));
     }
 
     private void resetOverrides() {
@@ -122,35 +109,31 @@ public record PackListDevMenu(PackList list, Pack pack) {
     }
 
     private void updateHidden(boolean hidden) {
-        Profile profile = this.list.packAssets.getProfile();
-        if (profile != null) {
-            profile.setHidden(hidden, this.selectionOrPack());
-        }
+        this.options.getProfile().ifPresent(profile -> profile.setHidden(hidden, this.selection.get()));
     }
 
     private Sprite getIcon(boolean active, BiPredicate<Profile, Pack> defaultOption) {
-        return this.hasOverride(defaultOption) == PackOverrideScope.GLOBAL ? RADIO_GLOBAL : getDefaultIcon(active);
+        return this.hasOverride(defaultOption) == ProfileScope.GLOBAL ? RADIO_GLOBAL : getDefaultIcon(active);
     }
 
     private boolean canDisableRequired() {
-        Profile profile = this.list.packAssets.getProfile();
-        return profile != null && profile == this.list.packAssets.getConfig().getDefaultProfile() && !PackUtil.isEssential(this.pack);
+        return this.options.isDefaultProfile() && !PackUtil.isEssential(this.pack);
     }
 
     public void onBuildHeader(ContextMenuItemBuilder builder) {
-        Profile profile = this.list.packAssets.getProfile();
+        Profile profile = this.options.getProfile().orElse(null);
         if (profile == null) return;
 
         builder.add(devItem(HIDDEN)
                 .icon(() -> this.getIcon(profile.isHidden(this.pack), Profile::isHidden))
-                .activeWhen(() -> this.hasOverride(Profile::isHidden) != PackOverrideScope.GLOBAL)
+                .activeWhen(() -> this.hasOverride(Profile::isHidden) != ProfileScope.GLOBAL)
                 .action(() -> this.updateHidden(!profile.isHidden(this.pack)))
                 .closeOnInteract(false)
                 .build());
 
         builder.add(devItem(REQUIRED)
                 .icon(() -> this.getIcon(profile.overridesRequired(this.pack), Profile::overridesRequired))
-                .activeWhen(() -> this.hasOverride(Profile::overridesRequired) != PackOverrideScope.GLOBAL &&
+                .activeWhen(() -> this.hasOverride(Profile::overridesRequired) != ProfileScope.GLOBAL &&
                                   !((FilePack) this.pack).packed_packs$nestedPack())
                 .closeOnInteract(false)
                 .addChild(devItem(CommonComponents.OPTION_OFF)
@@ -174,7 +157,7 @@ public record PackListDevMenu(PackList list, Pack pack) {
 
         builder.add(devItem(FIXED_POSITION)
                 .icon(() -> this.getIcon(profile.overridesPosition(this.pack), Profile::overridesPosition))
-                .activeWhen(() -> this.hasOverride(Profile::overridesPosition) != PackOverrideScope.GLOBAL)
+                .activeWhen(() -> this.hasOverride(Profile::overridesPosition) != ProfileScope.GLOBAL)
                 .closeOnInteract(false)
                 .addChild(devItem(CommonComponents.OPTION_OFF)
                         .icon(() -> getDefaultIcon(!profile.overridesPosition(this.pack)))
@@ -201,28 +184,12 @@ public record PackListDevMenu(PackList list, Pack pack) {
         builder.add(devItem(REMOVE_OVERRIDES).action(this::resetOverrides).build()).separator();
     }
 
-    enum PackOverrideScope {
-        NONE(Theme.WHITE.withAlpha(0)),
-        LOCAL(Theme.BLACK.withAlpha(0.75f)),
-        GLOBAL(Theme.BLUE_500.withAlpha(0.75f)),
-        COMPOSITE(Theme.PURPLE_500.withAlpha(0.75f));
-
-        private final int backgroundColor;
-
-        PackOverrideScope(int backgroundColor) {
-            this.backgroundColor = backgroundColor;
-        }
-
-        boolean booleanValue() {
-            return this != NONE;
-        }
-
-        boolean global() {
-            return this == GLOBAL || this == COMPOSITE;
-        }
-
-        int backgroundColor() {
-            return this.backgroundColor;
-        }
+    private static int getBackgroundColor(ProfileScope overrideScope) {
+        return switch (overrideScope) {
+            case NONE -> Theme.WHITE.withAlpha(0);
+            case LOCAL -> Theme.BLACK.withAlpha(0.75f);
+            case GLOBAL -> Theme.BLUE_500.withAlpha(0.75f);
+            case COMPOSITE -> Theme.PURPLE_500.withAlpha(0.75f);
+        };
     }
 }

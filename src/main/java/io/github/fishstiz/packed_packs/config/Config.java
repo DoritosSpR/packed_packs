@@ -97,7 +97,7 @@ public class Config implements Serializable {
         }
     }
 
-    public static class Packs implements Serializable {
+    public abstract static class Packs implements Serializable {
         private boolean replaceOriginal = true;
         private boolean hideIncompatibleWarnings = false;
         private final List<String> additionalFolders = new ObjectArrayList<>();
@@ -105,6 +105,8 @@ public class Config implements Serializable {
         private long autoIncrement = 0;
         private final List<Profile> profiles = new ObjectArrayList<>();
         private transient @Nullable Profile cachedDefaultProfile = null;
+
+        public abstract PackType packType();
 
         public @Nullable Profile getDefaultProfile() {
             if (this.defaultProfile == null) {
@@ -177,10 +179,19 @@ public class Config implements Serializable {
     }
 
     public static class DataPacks extends Packs {
+        @Override
+        public PackType packType() {
+            return PackType.SERVER_DATA;
+        }
     }
 
     public static class ResourcePacks extends Packs {
         private boolean applyOnClose = true;
+
+        @Override
+        public PackType packType() {
+            return PackType.CLIENT_RESOURCES;
+        }
 
         public boolean isApplyOnClose() {
             return this.applyOnClose;

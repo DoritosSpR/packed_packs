@@ -12,8 +12,10 @@ import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.components.events.QueryEvent;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.pack.PackAssetManager;
+import io.github.fishstiz.packed_packs.pack.PackFileOperations;
+import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
@@ -26,8 +28,8 @@ public final class AvailablePacksLayout extends PackLayout {
     private CyclicButton<Query.SortOption, Void> sortButton;
     private ToggleButton<Void> compatButton;
 
-    public AvailablePacksLayout(PackAssets packAssets, PackListEventListener listener) {
-        super(new AvailablePackList(packAssets, listener));
+    public AvailablePacksLayout(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
+        super(new AvailablePackList(options, assets, fileOps, listener));
         this.eventListener = listener;
     }
 

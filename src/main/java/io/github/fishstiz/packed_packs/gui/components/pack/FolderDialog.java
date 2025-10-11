@@ -8,11 +8,12 @@ import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
-import io.github.fishstiz.packed_packs.pack.PackAssets;
+import io.github.fishstiz.packed_packs.pack.PackAssetManager;
+import io.github.fishstiz.packed_packs.pack.PackFileOperations;
+import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
-import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -21,12 +22,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
 
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
+
 public class FolderDialog extends ToggleableDialog<FolderPackList> implements ContextMenuContainer {
     private static final Component BACK_TEXT = CommonComponents.GUI_BACK.copy().append(CommonComponents.ELLIPSIS);
     private static final int HEADER_HEIGHT = 16;
     private final FidgetzButton<Void> closeButton;
     private final FidgetzText<Void> folderTitle;
-    private Sprite folderSprite = Sprite.of16(PackAssets.DEFAULT_FOLDER_ICON);
+    private Sprite folderSprite = Sprite.of16(PackAssetManager.DEFAULT_FOLDER_ICON);
     private PackList parent;
     private FolderPack folderPack;
 
@@ -38,13 +41,13 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         this.closeButton = this.addRenderableWidget(
                 FidgetzButton.<Void>builder()
                         .setOnPress(() -> this.sendEvent(new FolderCloseEvent(this.root(), this.folderPack)))
-                        .makeSquare(GuiConstants.CROSS_SPRITE.width)
+                        .makeSquare(CROSS_SPRITE.width)
                         .spriteOnly()
                         .build()
         );
         this.folderTitle = this.addRenderableWidget(
                 FidgetzText.<Void>builder()
-                        .setHeight(GuiConstants.CROSS_SPRITE.height)
+                        .setHeight(CROSS_SPRITE.height)
                         .setOffsetY(1)
                         .setShadow(true)
                         .alignLeft()
@@ -64,24 +67,24 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         int parentWidth = bounds.getWidth();
         int parentHeight = bounds.getHeight();
 
-        int left = parentX + GuiConstants.SPACING;
-        int top = parentY + GuiConstants.SPACING;
-        int right = (parentX + parentWidth) - GuiConstants.SPACING;
-        int bottom = (parentY + parentHeight) - GuiConstants.SPACING;
+        int left = parentX + SPACING;
+        int top = parentY + SPACING;
+        int right = (parentX + parentWidth) - SPACING;
+        int bottom = (parentY + parentHeight) - SPACING;
 
-        this.root().setPosition(left, top + HEADER_HEIGHT + GuiConstants.SPACING);
+        this.root().setPosition(left, top + HEADER_HEIGHT + SPACING);
         this.root().setWidth(right - left);
         this.root().setHeight(bottom - this.root().getY());
         this.closeButton.setPosition(left, top);
-        this.folderTitle.setPosition(left + this.closeButton.getWidth() + GuiConstants.SPACING, top);
-        this.folderTitle.setWidth(bounds.getRight() - this.folderTitle.getX() - GuiConstants.SPACING * 2);
+        this.folderTitle.setPosition(left + this.closeButton.getWidth() + SPACING, top);
+        this.folderTitle.setWidth(bounds.getRight() - this.folderTitle.getX() - SPACING * 2);
     }
 
-    public void updateFolder(PackList parent, FolderPack folderPack, PackAssets packAssets) {
+    public void updateFolder(PackList parent, FolderPack folderPack, PackAssetManager assets) {
         this.parent = parent;
         this.folderPack = folderPack;
         this.folderTitle.setMessage(folderPack.getTitle());
-        packAssets.getOrLoadIcon(folderPack, icon -> this.folderSprite = Sprite.of16(icon));
+        assets.getOrLoadIcon(folderPack, icon -> this.folderSprite = Sprite.of16(icon));
 
         this.setBoundingBox(parent);
         this.updateBounds();
@@ -97,11 +100,11 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     protected void renderForeground(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
         int left = this.closeButton.getX();
         int top = this.closeButton.getY();
-        this.folderSprite.renderClamped(guiGraphics, left, top, GuiConstants.CROSS_SPRITE.width, GuiConstants.CROSS_SPRITE.height, partialTick);
+        this.folderSprite.renderClamped(guiGraphics, left, top, CROSS_SPRITE.width, CROSS_SPRITE.height, partialTick);
 
         if (this.closeButton.isHovered()) {
-            GuiConstants.WHITE_OVERLAY.render(guiGraphics, left, top, GuiConstants.CROSS_SPRITE.width, GuiConstants.CROSS_SPRITE.height);
-            GuiConstants.CROSS_SPRITE.render(guiGraphics, left, top);
+            WHITE_OVERLAY.render(guiGraphics, left, top, CROSS_SPRITE.width, CROSS_SPRITE.height);
+            CROSS_SPRITE.render(guiGraphics, left, top);
         }
     }
 
@@ -125,10 +128,10 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
                                         .whenNonNull(ObjectsUtil.mapOrNull(this.folderPack, FilePack::packed_packs$getPath))
                                         .ifTrue((path, operationsMenuBuilder) -> operationsMenuBuilder
                                                 .separator()
-                                                .simpleItem(PackAssets.RENAME_FILE_TEXT, this::canOperateFolder, this::renameDirectory)
-                                                .simpleItem(PackAssets.DELETE_FILE_TEXT, this::canOperateFolder, this::deleteDirectory)
-                                                .simpleItem(PackAssets.OPEN_FILE_TEXT, () -> PackUtil.openPack(this.folderPack))
-                                                .simpleItem(PackAssets.OPEN_PARENT_TEXT, () -> PackUtil.openParent(this.folderPack))
+                                                .simpleItem(RENAME_FILE_TEXT, this::canOperateFolder, this::renameDirectory)
+                                                .simpleItem(DELETE_FILE_TEXT, this::canOperateFolder, this::deleteDirectory)
+                                                .simpleItem(OPEN_FILE_TEXT, () -> PackUtil.openPack(this.folderPack))
+                                                .simpleItem(OPEN_PARENT_TEXT, () -> PackUtil.openParent(this.folderPack))
                                         )
                                 )
                         ),
@@ -140,7 +143,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     private boolean canOperateFolder() {
         return this.folderPack != null &&
                ObjectsUtil.testNullable(this.root().getEntry(this.folderPack), PackList.Entry::canOperateFile) &&
-               PackAssets.validatePackPath(this.folderPack) != null;
+               PackUtil.validatePackPath(this.folderPack) != null;
     }
 
     private void renameDirectory() {
@@ -150,7 +153,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     private void deleteDirectory() {
-        if (this.root().packAssets.deletePack(this.folderPack)) {
+        if (this.root().fileOps.deletePack(this.folderPack)) {
             this.setOpen(false);
             this.root().remove(this.folderPack);
             this.sendEvent(new FileDeleteEvent(this.root()));
@@ -171,8 +174,13 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         ((PackListEventListener) this.screen).onEvent(event);
     }
 
-    public static <S extends Screen & ToggleableDialogContainer & PackListEventListener> FolderDialog create(S screen, PackAssets packAssets) {
-        return new Builder(screen, new FolderPackList(packAssets, screen))
+    public static <S extends Screen & ToggleableDialogContainer & PackListEventListener> FolderDialog create(
+            S screen,
+            PackOptionsContext options,
+            PackAssetManager assets,
+            PackFileOperations fileOps
+    ) {
+        return new Builder(screen, new FolderPackList(options, assets, fileOps, screen))
                 .setBackground(DrawUtil.DEMO_BACKGROUND)
                 .build();
     }
