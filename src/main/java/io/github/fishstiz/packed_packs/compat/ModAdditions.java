@@ -1,89 +1,90 @@
 package io.github.fishstiz.packed_packs.compat;
 
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.compat.etf.ETFButtonFactory;
-import io.github.fishstiz.packed_packs.compat.resourcify.ResourcifyButtons;
-import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsUtil;
-import io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsWidget;
-import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFactory;
-import io.github.fishstiz.packed_packs.compat.vtdownloader.VTDEditButtonWidget;
-import io.github.fishstiz.packed_packs.config.Preferences;
+import io.github.fishstiz.packed_packs.compat.api.ModExtension;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
+import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.server.packs.PackType;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 
+import static io.github.fishstiz.packed_packs.PackedPacks.LOGGER;
+import static io.github.fishstiz.packed_packs.PackedPacks.MOD_ID;
+
 public class ModAdditions {
+    private static final List<ModExtension> EXTENSIONS;
+
+    static {
+        List<ModExtension> extensions = FabricLoader.getInstance().getEntrypoints(MOD_ID, ModExtension.class);
+        EXTENSIONS = extensions.isEmpty()
+                ? Collections.emptyList()
+                : CollectionsUtil.topoSort(extensions, ModExtension::id, ModExtension::loadAfter);
+    }
+
     private ModAdditions() {
     }
 
-    public static void addToHeader(PackType packType, FlexLayout header, PackSelectionScreen original) {
-        if (packType == PackType.CLIENT_RESOURCES) {
-            Screen currentScreen = Minecraft.getInstance().screen;
-
-            Mod.ETF.wrapError(header, currentScreen, (layout, previous) -> {
-                if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.etfButton.get()) {
-                    layout.addChild(ETFButtonFactory.create(previous));
-                }
-            });
-            Mod.VTD.wrapError(header, currentScreen, (layout, previous) -> {
-                if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.vtdButton.get()) {
-                    layout.addChild(VTDButtonFactory.create(previous));
-                }
-            });
-        }
-
-        Mod.RESOURCIFY.wrapError(header, original, original.getTitle(), (layout, packScreen, title) -> {
-            List<? extends Button> resourcifyButtons = ResourcifyButtons.getButtons(packScreen, title);
-            if (resourcifyButtons != null) {
-                for (Button button : resourcifyButtons.reversed()) { // buttons are manually positioned in reverse
-                    layout.addChild(button);
-                }
+    public static void onCreateHeader(PackType packType, FlexLayout header, PackSelectionScreen original) {
+        for (ModExtension ext : EXTENSIONS) {
+            try {
+                ext.onCreateHeader(packType, header, original);
+            } catch (Exception e) {
+                LOGGER.error("[packed_packs] Error while creating header from extension {} ", ext.id(), e);
             }
-        });
+        }
     }
 
-    public static void addToEntry(PackType packType, PackList.Entry packListEntry) {
-        if (packType == PackType.CLIENT_RESOURCES) {
-            Mod.RESPACKOPTS.wrapError(packListEntry, entry -> {
-                if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.respackoptsButton.get()) {
-                    RespackoptsWidget respackOptsWidget = RespackoptsWidget.create(entry, entry.pack());
-                    if (respackOptsWidget != null) {
-                        entry.addTopRenderableOnly(entry.prependWidget(respackOptsWidget));
-                    }
-                }
-            });
-            Mod.VTD.wrapError(packListEntry, entry -> {
-                if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.vtdEditButton.get()) {
-                    VTDEditButtonWidget vtdEditButtonWidget = VTDEditButtonWidget.create(Minecraft.getInstance().screen, entry);
-                    if (vtdEditButtonWidget != null) {
-                        entry.addTopRenderableOnly(entry.prependWidget(vtdEditButtonWidget));
-                    }
-                }
-            });
+    public static void onCreateEntry(PackType packType, PackList.Entry entry) {
+        for (ModExtension ext : EXTENSIONS) {
+            try {
+                ext.onCreateEntry(packType, entry);
+            } catch (Exception e) {
+                LOGGER.error("[packed_packs] Error while creating entry for pack {} from extension {} ", entry.pack().getId(), ext.id(), e);
+            }
+        }
+    }
+
+    public static void onCreatePreferencesMenu(PackType packType, ContextMenuItemBuilder contextMenuItemBuilder) {
+        for (ModExtension ext : EXTENSIONS) {
+            try {
+                ext.onCreatePreferencesMenu(packType, contextMenuItemBuilder);
+            } catch (Exception e) {
+                LOGGER.error("[packed_packs] Error while building context menu from extension {} ", ext.id(), e);
+            }
         }
     }
 
     /**
      * @return mod id requesting reload
      */
-    public static @Nullable String shouldCommit(PackType packType) {
-        if (packType == PackType.CLIENT_RESOURCES && Mod.RESPACKOPTS.wrapError(RespackoptsWidget::isForceReload, false)) {
-            return Mod.RESPACKOPTS.getId();
+    public static @Nullable String forceCommitOnClose(PackType packType) {
+        for (ModExtension ext : EXTENSIONS) {
+            try {
+                if (ext.forceCommitOnClose(packType)) {
+                    return ext.id().toString();
+                }
+            } catch (Exception e) {
+                LOGGER.error("[packed_packs] Error while closing screen from extension {} ", ext.id(), e);
+            }
         }
         return null;
     }
 
-    public static boolean discontinueChanges(Path path) {
-        if (Mod.RESPACKOPTS.wrapError(RespackoptsUtil::isRespackOptsFile, false, path)) {
-            return true;
+    public static boolean shouldIgnoreChange(PackType packType, Path path) {
+        for (ModExtension ext : EXTENSIONS) {
+            try {
+                if (ext.shouldIgnoreChange(packType, path)) {
+                    return true;
+                }
+            } catch (Exception e) {
+                LOGGER.error("[packed_packs] Error while detecting file change from extension {} ", ext.id(), e);
+            }
         }
         return false;
     }
