@@ -128,7 +128,7 @@ public class AvailablePackList extends PackList {
 
         @Override
         protected void renderForeground(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            if (!this.isMouseOver(mouseX, mouseY) && !this.isSelectedLast()) return;
+            if (!hovering && !this.isSelectedLast()) return;
 
             int x = left + SPACING;
             GuiConstants.WHITE_OVERLAY.render(guiGraphics, x, top, SELECT_SPRITE.width, SELECT_SPRITE.height);
