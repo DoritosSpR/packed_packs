@@ -183,8 +183,11 @@ public record PackListDevMenu(
                 .build());
 
         builder.add(devItem(REQUIRED)
-                .icon(() -> this.getIcon(profile.overridesRequired(this.pack()), Profile::overridesRequired))
-                .activeWhen(() -> this.hasOverride(Profile::overridesRequired) != ProfileScope.GLOBAL &&
+                .icon(() -> this.options.isLocked()
+                        ? LOCK_SPRITE_SMALL
+                        : this.getIcon(profile.overridesRequired(this.pack()), Profile::overridesRequired))
+                .activeWhen(() -> !this.options.isLocked() &&
+                                  this.hasOverride(Profile::overridesRequired) != ProfileScope.GLOBAL &&
                                   !((FilePack) this.pack()).packed_packs$nestedPack())
                 .closeOnInteract(false)
                 .addChild(devItem(CommonComponents.OPTION_OFF)
