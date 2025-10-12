@@ -71,7 +71,7 @@ public class FolderPack extends Pack implements FilePack {
 
     public void saveConfig(Folder folder) {
         if (folder != null) {
-            ConfigLoader.save(folder, this.path.resolve(FolderResources.FOLDER_CONFIG_FILENAME).toFile());
+            folder.save(this.path.resolve(FolderResources.FOLDER_CONFIG_FILENAME));
         }
     }
 

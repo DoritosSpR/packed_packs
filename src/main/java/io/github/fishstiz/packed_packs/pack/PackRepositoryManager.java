@@ -104,8 +104,6 @@ public class PackRepositoryManager {
             // just in case
             PackedPacks.LOGGER.warn("[packed_packs] Failed to mutate PackSelectionModel lists. Report this issue to mod author.");
         }
-
-        this.regenerateAvailablePacks();
     }
 
     /**
@@ -340,7 +338,7 @@ public class PackRepositoryManager {
 
     public boolean isEnabled(Pack pack) {
         if (pack instanceof FolderPack folderPack) {
-            for (Pack nestedPack : this.getNestedPacks(folderPack)) {
+            for (Pack nestedPack : this.folderPacks.get(folderPack.getId())) {
                 if (this.selectedPacksCache.contains(nestedPack.getId())) {
                     return true;
                 }
