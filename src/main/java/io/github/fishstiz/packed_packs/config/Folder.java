@@ -5,15 +5,18 @@ import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import net.minecraft.server.packs.repository.Pack;
 
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Folder implements Serializable {
-    @SuppressWarnings("FieldCanBeLocal")
     private List<String> packIds = new ArrayList<>();
 
     public boolean trySetPacks(List<Pack> packs) {
-        List<String> newPackIds = PackUtil.extractPackIds(packs);
+        return this.trySetPackIds(PackUtil.extractPackIds(packs));
+    }
+
+    public boolean trySetPackIds(List<String> newPackIds) {
         if (!CollectionsUtil.equalsOrdered(packIds, newPackIds)) {
             this.packIds = newPackIds;
             return true;
@@ -23,5 +26,9 @@ public class Folder implements Serializable {
 
     public List<String> getPackIds() {
         return List.copyOf(this.packIds);
+    }
+
+    public void save(Path path) {
+        ConfigLoader.save(this, path.toFile());
     }
 }
