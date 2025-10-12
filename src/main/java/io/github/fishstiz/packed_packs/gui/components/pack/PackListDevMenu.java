@@ -20,8 +20,8 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 
 import static io.github.fishstiz.packed_packs.gui.metadata.Toggleable.getDefaultIcon;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
@@ -31,7 +31,7 @@ import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
 public record PackListDevMenu(
         PackOptionsContext options,
         SelectionContext<Pack> context,
-        BiConsumer<Pack, List<Pack>> onRequire
+        @Nullable Consumer<Event<?>> listener
 ) {
     private static final int DEV_SPRITE_SIZE = 16;
     private static final int DEV_SPRITE_MARGIN_RIGHT = 8;
@@ -49,6 +49,42 @@ public record PackListDevMenu(
     private static final Component REMOVE_OVERRIDES = overrideText("remove");
     private static final Tooltip REQUIRED_NO_DISABLED_INFO = Tooltip.create(overrideText("required.no.disabled.info"));
 
+    public PackListDevMenu(PackOptionsContext options, SelectionContext<Pack> context) {
+        this(options, context, null);
+    }
+
+    public sealed interface Event<T> {
+        Pack trigger();
+
+        List<Pack> packs();
+
+        T value();
+
+        record Hide(Pack trigger, Boolean value, List<Pack> packs) implements Event<Boolean> {
+        }
+
+        record Require(Pack trigger, @Nullable Boolean value, List<Pack> packs) implements Event<Boolean> {
+        }
+
+        record Reposition(
+                Pack trigger,
+                @Nullable PackOverride.Position value,
+                List<Pack> packs
+        ) implements Event<PackOverride.Position> {
+        }
+    }
+
+    @FunctionalInterface
+    private interface EventFactory<T> {
+        Event<T> create(Pack pack, T value, List<Pack> packs);
+    }
+
+    private <T> void notifyListener(T value, List<Pack> packs, EventFactory<T> eventFactory) {
+        if (this.listener != null) {
+            this.listener.accept(eventFactory.create(this.pack(), value, packs));
+        }
+    }
+
     private static Component overrideText(String keySuffix) {
         return ResourceUtil.getText("profile.override." + keySuffix);
     }
@@ -62,10 +98,7 @@ public record PackListDevMenu(
     }
 
     private List<Pack> getPackOrSelection() {
-        if (!this.context.isSelected()) {
-            return List.of(this.context.item());
-        }
-        return List.copyOf(this.context.selection().reversed());
+        return this.context.getItemOrSelection();
     }
 
     public void renderDevSprites(GuiGraphics guiGraphics, int top, int left, int width) {
@@ -100,26 +133,34 @@ public record PackListDevMenu(
         }
     }
 
+    private void updateHidden(boolean hidden) {
+        this.options.getProfile().ifPresent(profile -> {
+            List<Pack> selected = this.getPackOrSelection();
+            profile.setHidden(hidden, selected);
+            this.notifyListener(hidden, selected, Event.Hide::new);
+        });
+    }
+
     private void updateRequired(@Nullable Boolean required) {
         this.options.getProfile().ifPresent(profile -> {
             List<Pack> selected = this.getPackOrSelection();
             profile.setRequired(required, selected);
-            if (Boolean.TRUE.equals(required)) this.onRequire.accept(this.pack(), selected);
+            this.notifyListener(required, selected, Event.Require::new);
         });
     }
 
     private void updatePosition(@Nullable PackOverride.Position position) {
-        this.options.getProfile().ifPresent(profile -> profile.setPosition(position, this.getPackOrSelection()));
+        this.options.getProfile().ifPresent(profile -> {
+            List<Pack> selected = this.getPackOrSelection();
+            profile.setPosition(position, selected);
+            this.notifyListener(position, selected, Event.Reposition::new);
+        });
     }
 
     private void resetOverrides() {
         this.updateHidden(false);
         this.updateRequired(null);
         this.updatePosition(null);
-    }
-
-    private void updateHidden(boolean hidden) {
-        this.options.getProfile().ifPresent(profile -> profile.setHidden(hidden, this.getPackOrSelection()));
     }
 
     private Sprite getIcon(boolean active, BiPredicate<Profile, Pack> defaultOption) {
