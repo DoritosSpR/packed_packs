@@ -3,7 +3,6 @@ package io.github.fishstiz.packed_packs.gui.screens;
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import io.github.fishstiz.packed_packs.compat.cursors_extended.CursorsExtended;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
-import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
@@ -103,6 +102,8 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
 
     protected abstract @Nullable PackList getDestination(PackList source);
 
+    protected abstract boolean isUnlocked();
+
     @Override
     public void onEvent(PackListEvent event) {
         switch (event) {
@@ -120,9 +121,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
     public void onRelease(@NotNull DragEvent event, double mouseX, double mouseY) {
         for (PackList packList : this.getPackLists()) {
             if (packList.isHovered()) {
-                if (!packList.isLocked()) {
-                    packList.drop(event.target(), event.payload(), event.trigger(), mouseX, mouseY);
-                }
+                packList.drop(event, mouseX, mouseY);
                 return;
             }
         }
@@ -137,16 +136,11 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
             PackList source = event.target();
             boolean validDrop = false;
 
-            if (!source.isLocked()) {
+            if (this.isUnlocked()) {
                 for (PackList list : this.getPackLists()) {
-                    if (!list.isLocked()) {
-                        list.renderDroppableZone(guiGraphics, event.target(), event.payload(), event.trigger(), mouseX, mouseY, partialTick);
-
-                        if (!validDrop && list.isMouseOver(mouseX, mouseY)) {
-                            validDrop = source == list ||
-                                        list instanceof CurrentPackList scrollable && scrollable.isScrolling() ||
-                                        list.canDrop(event.target(), event.payload(), event.trigger(), mouseX, mouseY);
-                        }
+                    list.renderDroppableZone(guiGraphics, event, mouseX, mouseY, partialTick);
+                    if (!validDrop && list.isMouseOver(mouseX, mouseY)) {
+                        validDrop = source == list || list.canDrop(event, mouseX, mouseY);
                     }
                 }
             }

@@ -8,6 +8,7 @@ import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.gui.components.MouseSelectionHandler;
 import io.github.fishstiz.packed_packs.gui.components.SelectionContext;
+import io.github.fishstiz.packed_packs.gui.components.events.DragEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
@@ -136,8 +137,17 @@ public class CurrentPackList extends PackList {
     }
 
     @Override
-    public boolean canDrop(PackList source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
-        if (this.scrolling || this.isQueried() || this.isLocked() || payload.isEmpty() || (source != this && !(source instanceof AvailablePackList))) {
+    protected boolean canInteract(PackList source) {
+        return true;
+    }
+
+    @Override
+    public boolean canDrop(DragEvent dragEvent, double mouseX, double mouseY) {
+        PackList source = dragEvent.target();
+        List<Pack> payload = dragEvent.payload();
+        Pack trigger = dragEvent.trigger();
+
+        if (this.scrolling || this.isQueried() || this.options.isLocked() || payload.isEmpty() || !source.canInteract(this)) {
             return false;
         }
 
@@ -187,11 +197,13 @@ public class CurrentPackList extends PackList {
     }
 
     @Override
-    protected @Nullable List<Pack> handleDrop(PackList source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
-        if (!this.canDrop(source, payload, trigger, mouseX, mouseY)) return null;
+    protected @Nullable List<Pack> handleDrop(DragEvent dragEvent, double mouseX, double mouseY) {
+        if (!this.canDrop(dragEvent, mouseX, mouseY)) return null;
+
+        PackList source = dragEvent.target();
+        List<Pack> payload = dragEvent.payload();
 
         int dropPackIndex = this.toPackIndex(this.getDropIndex(mouseY));
-
         if (dropPackIndex == -1) {
             int minDropIndex = 0;
             for (int i = 0; i < this.packs.size(); i++) {
@@ -219,7 +231,7 @@ public class CurrentPackList extends PackList {
             }
         }
         source.removeAll(dropped);
-        this.select(trigger);
+        this.select(dragEvent.trigger());
 
         return dropped;
     }
@@ -239,8 +251,9 @@ public class CurrentPackList extends PackList {
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
-        if (this.isLocked() || source.isLocked() || (source != this && source instanceof FolderPackList)) {
+    public void renderDroppableZone(GuiGraphics guiGraphics, DragEvent dragEvent, int mouseX, int mouseY, float partialTick) {
+        PackList source = dragEvent.target();
+        if (this.options.isLocked() || !source.canInteract(this)) {
             return;
         }
 
@@ -264,16 +277,12 @@ public class CurrentPackList extends PackList {
                 this.scrolling = false;
             }
 
-            if (this.canDrop(source, payload, trigger, mouseX, mouseY)) {
+            if (this.canDrop(dragEvent, mouseX, mouseY)) {
                 this.renderDropIndex(guiGraphics, mouseY, x, width);
             }
         }
 
         DrawUtil.renderOutline(guiGraphics, x, y, width, height, DROP_THEME.getARGB());
-    }
-
-    public boolean isScrolling() {
-        return this.scrolling;
     }
 
     public class Entry extends PackList.Entry {
@@ -283,9 +292,7 @@ public class CurrentPackList extends PackList {
 
         @Override
         public boolean isTransferable() {
-            return !CurrentPackList.this.options.isRequired(this.pack()) &&
-                   !CurrentPackList.this.isLocked() &&
-                   !this.isStale();
+            return super.isTransferable() && !CurrentPackList.this.options.isRequired(this.pack());
         }
 
         @Override
@@ -299,7 +306,7 @@ public class CurrentPackList extends PackList {
         public boolean isFixed() {
             return CurrentPackList.this.options.isFixed(this.pack()) ||
                    CurrentPackList.this.isQueried() ||
-                   CurrentPackList.this.isLocked() ||
+                   CurrentPackList.this.options.isLocked() ||
                    this.isStale();
         }
 
