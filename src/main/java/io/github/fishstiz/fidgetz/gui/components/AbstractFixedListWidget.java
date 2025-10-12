@@ -12,13 +12,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
-public abstract class AbstractDynamicList<T extends AbstractDynamicList<T>.Entry> extends ContainerObjectSelectionList<T> {
+public abstract class AbstractFixedListWidget<T extends AbstractFixedListWidget<T>.Entry> extends ContainerObjectSelectionList<T> {
     protected static final int DEFAULT_SCROLLBAR_OFFSET = 6;
     protected int scrollbarOffset;
     protected int offsetY;
     protected int rowGap;
 
-    protected AbstractDynamicList(int itemHeight, int scrollbarOffset, int offsetY, int rowGap) {
+    protected AbstractFixedListWidget(int itemHeight, int scrollbarOffset, int offsetY, int rowGap) {
         super(Minecraft.getInstance(), 0, 0, 0, itemHeight);
 
         this.scrollbarOffset = scrollbarOffset;
@@ -29,6 +29,14 @@ public abstract class AbstractDynamicList<T extends AbstractDynamicList<T>.Entry
     @Override
     protected int getScrollbarPosition() {
         return this.getRight() - this.scrollbarOffset;
+    }
+
+    protected boolean beforeScrollbarX(double mouseX) {
+        return !this.scrollbarVisible() || mouseX < this.getScrollbarPosition();
+    }
+
+    public int getMaxPosition() {
+        return this.getItemCount() * this.itemHeight + this.offsetY;
     }
 
     @Override
@@ -109,23 +117,23 @@ public abstract class AbstractDynamicList<T extends AbstractDynamicList<T>.Entry
 
         @Override
         public int getX() {
-            return AbstractDynamicList.this.getX();
+            return AbstractFixedListWidget.this.getX();
         }
 
         @Override
         public int getY() {
-            return AbstractDynamicList.this.getRowTop(this.index);
+            return AbstractFixedListWidget.this.getRowTop(this.index);
         }
 
         @Override
         public int getWidth() {
-            int offset = AbstractDynamicList.this.scrollbarVisible() ? AbstractDynamicList.this.scrollbarOffset : 0;
-            return AbstractDynamicList.this.getWidth() - offset;
+            int offset = AbstractFixedListWidget.this.scrollbarVisible() ? AbstractFixedListWidget.this.scrollbarOffset : 0;
+            return AbstractFixedListWidget.this.getWidth() - offset;
         }
 
         @Override
         public int getHeight() {
-            return AbstractDynamicList.this.itemHeight;
+            return AbstractFixedListWidget.this.itemHeight;
         }
 
         public int getRight() {
