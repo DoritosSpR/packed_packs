@@ -42,6 +42,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.AlertScreen;
@@ -70,6 +71,7 @@ import static io.github.fishstiz.packed_packs.util.PackUtil.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
 public class PackedPacksScreen extends PackListEventHandler implements
+        HoverStateHandler,
         ToggleableDialogContainer,
         ContextMenuContainer,
         Restorable<PackedPacksScreen.Snapshot> {
@@ -103,6 +105,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private PackWatcher watcher;
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
     private boolean initialized = false;
+    private @Nullable GuiEventListener hoveredElement;
 
     public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original) {
         super(ResourceUtil.getModName());
@@ -777,14 +780,20 @@ public class PackedPacksScreen extends PackListEventHandler implements
         return false;
     }
 
-
     @Override
     public List<ToggleableDialog<?>> getDialogs() {
         return this.dialogs;
     }
 
     @Override
+    public @Nullable GuiEventListener getHovered() {
+        return this.hoveredElement;
+    }
+
+    @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.hoveredElement = this.findHovered(mouseX, mouseY);
+
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
         if (PackedPacks.CONFIG.isDevMode()) {

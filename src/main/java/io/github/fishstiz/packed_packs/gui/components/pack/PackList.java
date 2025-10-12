@@ -482,14 +482,9 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     @Override
     public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
         boolean scrolling = this.updateScrolling(mouseButtonEvent);
-        return ContainerEventHandlerPatch.super.mouseClickedAt(mouseButtonEvent, doubleClicked) || scrolling;
-    }
-
-    @Override
-    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // this.isHovered is evaluated right before renderWidget on AbstractWidget#render
-        this.isHovered = this.isHovered && GuiUtil.isHovered(this, mouseX, mouseY);
-        super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+        return this.isMouseOver(mouseButtonEvent.x(), mouseButtonEvent.y()) &&
+               ContainerEventHandlerPatch.super.mouseClickedAt(mouseButtonEvent, doubleClicked) ||
+               scrolling;
     }
 
     @Override
@@ -508,10 +503,6 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     public int maxScrollAmount() {
         int maxScrollAmount = super.maxScrollAmount();
         return maxScrollAmount > 0 ? maxScrollAmount + Y_OFFSET : maxScrollAmount;
-    }
-
-    protected boolean beforeScrollbarX(double mouseX) {
-        return !this.scrollbarVisible() || mouseX < this.scrollBarX();
     }
 
     public @NotNull Snapshot captureState() {
@@ -699,7 +690,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
         @Override
         public boolean isMouseOver(double mouseX, double mouseY) {
-            return PackList.this.isHovered() && PackList.this.beforeScrollbarX(mouseX) && super.isMouseOver(mouseX, mouseY);
+            return PackList.this.beforeScrollbarX(mouseX) && super.isMouseOver(mouseX, mouseY);
         }
 
         @Override
@@ -777,7 +768,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
         @Override
         public void renderContent(GuiGraphics guiGraphics, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            hovering = hovering && this.isMouseOver(mouseX, mouseY);
+            hovering = hovering && PackList.this.beforeScrollbarX(mouseX) && GuiUtil.isHovered(this, mouseX, mouseY);
 
             int left = this.getX();
             int top = this.getY();

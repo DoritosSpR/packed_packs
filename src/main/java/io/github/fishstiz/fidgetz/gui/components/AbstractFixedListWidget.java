@@ -34,6 +34,10 @@ public abstract class AbstractFixedListWidget<T extends AbstractFixedListWidget<
         return super.isOverScrollbar(mouseX, mouseY) && this.isHovered();
     }
 
+    protected boolean beforeScrollbarX(double mouseX) {
+        return !this.scrollbarVisible() || mouseX < this.scrollBarX();
+    }
+
     public void setClampedScrollAmount(double scrollAmount) {
         this.setScrollAmount(Math.clamp(scrollAmount, 0d, this.maxScrollAmount()));
     }
