@@ -9,8 +9,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
 public class FolderPackList extends CurrentPackList {
     public FolderPackList(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
         super(options, assets, fileOps, listener);
@@ -27,14 +25,19 @@ public class FolderPackList extends CurrentPackList {
     }
 
     @Override
-    public boolean canDrop(PackList source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
-        return source == this && super.canDrop(source, payload, trigger, mouseX, mouseY);
+    protected boolean canInteract(PackList source) {
+        return source == this;
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick) {
-        if (source == this) {
-            super.renderDroppableZone(guiGraphics, source, payload, trigger, mouseX, mouseY, partialTick);
+    public boolean canDrop(DragEvent dragEvent, double mouseX, double mouseY) {
+        return this.canInteract(dragEvent.target()) && super.canDrop(dragEvent, mouseX, mouseY);
+    }
+
+    @Override
+    public void renderDroppableZone(GuiGraphics guiGraphics, DragEvent dragEvent, int mouseX, int mouseY, float partialTick) {
+        if (dragEvent.target() == this) {
+            super.renderDroppableZone(guiGraphics, dragEvent, mouseX, mouseY, partialTick);
         }
     }
 
