@@ -721,27 +721,26 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
         @Override
         public boolean keyPressed(KeyEvent keyEvent) {
-            boolean keyPressed = super.keyPressed(keyEvent);
-            if (!keyPressed) {
-                if (isOpenFile(keyEvent)) {
-                    PackUtil.openPack(this.pack());
-                    return true;
-                }
-                if (isOpenFolder(keyEvent)) {
-                    PackUtil.openParent(this.pack());
-                    return true;
-                }
-                if (this.canOperateFile()) {
-                    if (isDelete(keyEvent)) {
-                        this.deletePack();
-                        return true;
-                    } else if (isRename(keyEvent)) {
-                        this.renamePack();
-                        return true;
-                    }
-                }
+            if (super.keyPressed(keyEvent)) {
+                return true;
             }
-            return keyPressed;
+            if (isOpenFile(keyEvent)) {
+                PackUtil.openPack(this.pack());
+                return true;
+            }
+            if (isOpenFolder(keyEvent)) {
+                PackUtil.openParent(this.pack());
+                return true;
+            }
+            if (isDelete(keyEvent) && this.canOperateFile()) {
+                this.deletePack();
+                return true;
+            }
+            if (isRename(keyEvent) && this.canOperateFile()) {
+                this.renamePack();
+                return true;
+            }
+            return false;
         }
 
         public void renderBack(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
@@ -829,7 +828,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         }
 
         private void openFolder() {
-            PackList.this.openFolder(this.folderWidget.getMetadata());
+            PackList.this.openFolder(Objects.requireNonNull(this.folderWidget, "Cannot open folder without folder widget").getMetadata());
         }
 
         public boolean canOperateFile() {
@@ -863,12 +862,12 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         }
 
         @Override
-        public @NotNull List<? extends GuiEventListener> children() {
+        public @NotNull List<GuiEventListener> children() {
             return this.children;
         }
 
         @Override
-        public @NotNull List<? extends NarratableEntry> narratables() {
+        public @NotNull List<NarratableEntry> narratables() {
             return this.narratables;
         }
     }
