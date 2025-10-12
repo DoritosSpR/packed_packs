@@ -44,7 +44,7 @@ public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E>
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return Fidgetz.super.isMouseOver(mouseX, mouseY);
+        return this.visible && Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     @Override

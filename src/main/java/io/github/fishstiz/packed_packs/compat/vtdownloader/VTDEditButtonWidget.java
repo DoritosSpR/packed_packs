@@ -63,7 +63,7 @@ public class VTDEditButtonWidget extends AbstractButton implements ContextMenuPr
 
     @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
+        this.isHovered = this.isHovered && Fidgetz.super.isHovered(mouseX, mouseY);
 
         int pencilX = this.container.getX() + this.container.getWidth() - PENCIL_SIZE - PENCIL_MARGIN_RIGHT;
         int pencilY = this.container.getY() + this.container.getHeight() - PENCIL_SIZE;
@@ -88,6 +88,11 @@ public class VTDEditButtonWidget extends AbstractButton implements ContextMenuPr
         if (this.toggleable != null) {
             this.toggleable.render(guiGraphics, this.getX(), this.getY(), this.getWidth(), this.getHeight(), partialTick);
         }
+    }
+
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return this.visible && Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     @Override
