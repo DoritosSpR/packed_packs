@@ -116,7 +116,7 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return Fidgetz.super.isMouseOver(mouseX, mouseY);
+        return this.visible && Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     protected void updateCursor(GuiGraphics guiGraphics) {

@@ -500,7 +500,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
 
         @Override
         public boolean isMouseOver(double mouseX, double mouseY) {
-            return GuiUtil.containsPoint(this, mouseX, mouseY);
+            return this.visible && GuiUtil.containsPoint(this, mouseX, mouseY);
         }
 
         @Override
