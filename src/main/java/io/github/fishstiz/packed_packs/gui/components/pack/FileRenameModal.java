@@ -9,9 +9,9 @@ import io.github.fishstiz.packed_packs.gui.components.events.FileRenameEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
-import io.github.fishstiz.packed_packs.util.InputUtil;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ToastUtil;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.layouts.LayoutSettings;
@@ -247,7 +247,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         if (this.nameEditor.isFocused() &&
             event instanceof FocusNavigationEvent.ArrowNavigation(ScreenDirection direction) &&
             direction.getAxis() == ScreenAxis.HORIZONTAL) {
-            if (!InputUtil.hasShiftDown()) {
+            if (!Minecraft.getInstance().hasShiftDown()) {
                 this.nameEditor.setHighlightPos(this.nameEditor.getCursorPosition());
             }
             return ComponentPath.path(this.nameEditor, this);

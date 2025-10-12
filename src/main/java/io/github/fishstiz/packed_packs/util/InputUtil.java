@@ -1,8 +1,6 @@
 package io.github.fishstiz.packed_packs.util;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -99,24 +97,10 @@ public class InputUtil {
     }
 
     public static boolean isRangeModifierActive() {
-        return hasShiftDown();
+        return Minecraft.getInstance().hasShiftDown();
     }
 
     public static boolean isSelectModifierActive() {
-        return hasControlDown();
-    }
-
-    public static boolean hasControlDown() {
-        return Util.getPlatform() == Util.OS.OSX
-                ? InputConstants.isKeyDown(WINDOW, KEY_LSUPER) || InputConstants.isKeyDown(WINDOW, KEY_RSUPER)
-                : InputConstants.isKeyDown(WINDOW, KEY_LCONTROL) || InputConstants.isKeyDown(WINDOW, KEY_RCONTROL);
-    }
-
-    public static boolean hasShiftDown() {
-        return InputConstants.isKeyDown(WINDOW, KEY_LSHIFT) || InputConstants.isKeyDown(WINDOW, KEY_RSHIFT);
-    }
-
-    public static boolean hasAltDown() {
-        return InputConstants.isKeyDown(WINDOW, KEY_LALT) || InputConstants.isKeyDown(WINDOW, KEY_RALT);
+        return Minecraft.getInstance().hasControlDown();
     }
 }

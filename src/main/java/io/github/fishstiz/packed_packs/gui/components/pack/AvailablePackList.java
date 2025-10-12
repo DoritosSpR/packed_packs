@@ -5,6 +5,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
+import io.github.fishstiz.packed_packs.gui.components.SelectionContext;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
@@ -37,8 +38,8 @@ public class AvailablePackList extends PackList {
     }
 
     @Override
-    protected @NotNull Entry createEntry(Pack pack, int index) {
-        return new Entry(pack, index);
+    protected @NotNull Entry createEntry(SelectionContext<Pack> context, int index) {
+        return new Entry(context, index);
     }
 
     private boolean isInvalidDrop(PackList source, List<Pack> payload, Pack trigger) {
@@ -85,8 +86,8 @@ public class AvailablePackList extends PackList {
     }
 
     public class Entry extends PackList.Entry {
-        private Entry(Pack pack, int index) {
-            super(pack, index);
+        private Entry(SelectionContext<Pack> context, int index) {
+            super(context, index);
         }
 
         @Override
