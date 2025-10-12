@@ -91,6 +91,16 @@ public class AvailablePackList extends PackList {
         }
 
         @Override
+        protected @Nullable PackListDevMenu createDevMenu(PackOptionsContext options, SelectionContext<Pack> context) {
+            return new PackListDevMenu(options, context, event -> {
+                if (event instanceof PackListDevMenu.Event.Require(Pack trigger, Boolean value, List<Pack> required) &&
+                    Boolean.TRUE.equals(value)) {
+                    this.sendPacks(trigger, required);
+                }
+            });
+        }
+
+        @Override
         public boolean isTransferable() {
             return !this.isStale() && !AvailablePackList.this.isLocked();
         }
@@ -121,11 +131,6 @@ public class AvailablePackList extends PackList {
                 pick(!overSelect, SELECT_SPRITE, SELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
                 if (overSelect) guiGraphics.requestCursor(CursorTypes.POINTING_HAND);
             }
-        }
-
-        @Override
-        protected void onRequire(Pack trigger, List<Pack> requiredPacks) {
-            this.sendPacks(trigger, requiredPacks);
         }
     }
 }
