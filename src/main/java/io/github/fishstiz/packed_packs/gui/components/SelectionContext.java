@@ -15,4 +15,8 @@ public record SelectionContext<T>(List<T> selection, T item) {
     public boolean isSelectedLast() {
         return !this.selection.isEmpty() && this.selection.getLast() == this.item;
     }
+
+    public List<T> getItemOrSelection() {
+        return this.isSelected() ? List.copyOf(this.selection) : List.of(this.item);
+    }
 }
