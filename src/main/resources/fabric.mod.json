@@ -21,6 +21,12 @@
   "entrypoints": {
     "modmenu": [
       "io.github.fishstiz.packed_packs.compat.modmenu.PackedPacksModMenu"
+    ],
+    "packed_packs": [
+      "io.github.fishstiz.packed_packs.compat.etf.ETFModExtension",
+      "io.github.fishstiz.packed_packs.compat.resourcify.ResourcifyModExtension",
+      "io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsModExtension",
+      "io.github.fishstiz.packed_packs.compat.vtdownloader.VTDModExtension"
     ]
   },
   "mixins": [

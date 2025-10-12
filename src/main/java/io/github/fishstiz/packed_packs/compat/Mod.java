@@ -1,7 +1,9 @@
 package io.github.fishstiz.packed_packs.compat;
 
 import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.util.TriConsumer;
 
 import java.util.function.BiConsumer;
@@ -30,6 +32,10 @@ public enum Mod {
 
     public boolean isLoaded() {
         return this.loaded;
+    }
+
+    public ResourceLocation getInternalId() {
+        return ResourceUtil.getResource(this.getId());
     }
 
     private void logError(Throwable e) {

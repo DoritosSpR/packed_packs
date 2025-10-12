@@ -5,6 +5,7 @@ import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import net.minecraft.Util;
+import net.minecraft.server.packs.PackType;
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
@@ -36,12 +37,12 @@ public class PackWatcher implements AutoCloseable {
     private final DirectoryListener directoryListener = new DirectoryListener();
     private long lastPollTime;
 
-    public PackWatcher(Collection<Path> directories, Runnable onChangeCallback) {
+    public PackWatcher(PackType packType, Collection<Path> directories, Runnable onChangeCallback) {
         this.monitor.setThreadFactory(r -> {
             throw new IllegalStateException("PackWatcher monitor should not be creating a new thread.");
         });
         this.onChangeCallback = new ConcurrentPollingDebouncer<>(path -> {
-            if (!this.closed.get() && !ModAdditions.discontinueChanges(path)) {
+            if (!this.closed.get() && !ModAdditions.shouldIgnoreChange(packType, path)) {
                 onChangeCallback.run();
             }
         }, DEBOUNCED_CHANGE_DELAY_MS);
