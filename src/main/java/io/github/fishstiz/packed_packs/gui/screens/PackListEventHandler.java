@@ -1,7 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.screens;
 
 import io.github.fishstiz.packed_packs.gui.components.events.*;
-import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
@@ -14,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public abstract class PackListEventHandler extends Screen implements PackListEventListener, DragEventHandler {
+    private final DragEventRenderer dragEventRenderer = new DragEventRenderer();
     private DragEvent dragged;
 
     protected PackListEventHandler(Component title) {
@@ -130,23 +130,16 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
         DragEvent event = this.getDragged();
         if (event != null) {
             PackList source = event.target();
-            boolean validDrop = false;
 
             if (!source.isLocked()) {
                 for (PackList list : this.getPackLists()) {
                     if (!list.isLocked()) {
                         list.renderDroppableZone(guiGraphics, event.target(), event.payload(), event.trigger(), mouseX, mouseY, partialTick);
-
-                        if (!validDrop && list.isMouseOver(mouseX, mouseY)) {
-                            validDrop = source == list ||
-                                        list instanceof CurrentPackList scrollable && scrollable.isScrolling() ||
-                                        list.canDrop(event.target(), event.payload(), event.trigger(), mouseX, mouseY);
-                        }
                     }
                 }
             }
 
-            event.render(guiGraphics, mouseX, mouseY, partialTick);
+            this.dragEventRenderer.renderDragEvent(event, guiGraphics, mouseX, mouseY, partialTick);
         }
     }
 
