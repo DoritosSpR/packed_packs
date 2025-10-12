@@ -4,6 +4,8 @@ import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.GradientRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
+import io.github.fishstiz.packed_packs.gui.components.MouseSelectionHandler;
+import io.github.fishstiz.packed_packs.gui.components.SelectionContext;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
@@ -47,7 +49,7 @@ public class CurrentPackList extends PackList {
     }
 
     @Override
-    protected @NotNull Entry createEntry(Pack pack, int index) {
+    protected @NotNull Entry createEntry(SelectionContext<Pack> pack, int index) {
         return new Entry(pack, index);
     }
 
@@ -101,10 +103,10 @@ public class CurrentPackList extends PackList {
         List<PackList.Entry> children = this.children();
 
         if (dropIndex == -1) {
-            return !children.isEmpty() ? this.packs.indexOf(this.children().getLast().getPack()) + 1 : -1;
+            return !children.isEmpty() ? this.packs.indexOf(this.children().getLast().pack()) + 1 : -1;
         }
 
-        return Math.clamp(this.packs.indexOf(this.children().get(dropIndex).getPack()), 0, this.packs.size());
+        return Math.clamp(this.packs.indexOf(this.children().get(dropIndex).pack()), 0, this.packs.size());
     }
 
     private boolean isMouserOverSelection(List<Pack> selection, double mouseX, double mouseY) {
@@ -267,24 +269,27 @@ public class CurrentPackList extends PackList {
     }
 
     public class Entry extends PackList.Entry {
-        protected Entry(Pack pack, int index) {
-            super(pack, index);
+        protected Entry(SelectionContext<Pack> context, int index) {
+            super(context, index);
         }
 
         @Override
         public boolean isTransferable() {
-            return !CurrentPackList.this.options.isRequired(this.pack) &&
+            return !CurrentPackList.this.options.isRequired(this.pack()) &&
                    !CurrentPackList.this.isLocked() &&
                    !this.isStale();
         }
 
         @Override
-        protected boolean canDrag() {
-            return !this.isFixed() && super.canDrag();
+        protected boolean handleMouseAction(MouseSelectionHandler.Action action) {
+            if (action == MouseSelectionHandler.Action.DRAG) {
+                return !this.isFixed() && super.handleMouseAction(action);
+            }
+            return super.handleMouseAction(action);
         }
 
         public boolean isFixed() {
-            return CurrentPackList.this.options.isFixed(this.pack) ||
+            return CurrentPackList.this.options.isFixed(this.pack()) ||
                    CurrentPackList.this.isQueried() ||
                    CurrentPackList.this.isLocked() ||
                    this.isStale();
@@ -371,7 +376,7 @@ public class CurrentPackList extends PackList {
         }
 
         protected int getPackIndex() {
-            return CurrentPackList.this.packs.indexOf(this.pack);
+            return CurrentPackList.this.packs.indexOf(this.pack());
         }
 
         protected int getMoveUpIndex() {
@@ -421,8 +426,8 @@ public class CurrentPackList extends PackList {
         }
 
         private void sendMoveEvent(List<Pack> moved) {
-            CurrentPackList.this.sendEvent(new MoveEvent(CurrentPackList.this, this.pack, moved));
-            PackList.Entry entry = CurrentPackList.this.getEntry(this.pack);
+            CurrentPackList.this.sendEvent(new MoveEvent(CurrentPackList.this, this.pack(), moved));
+            PackList.Entry entry = CurrentPackList.this.getEntry(this.pack());
             if (entry != null) CurrentPackList.this.ensureVisible(entry);
         }
 
@@ -435,9 +440,9 @@ public class CurrentPackList extends PackList {
                 int packIndex = this.getPackIndex();
                 if (packIndex > -1) {
                     int targetIndex = direction.isUp() ? this.getMoveUpIndex() : this.getMoveDownIndex();
-                    if (targetIndex > -1 && CurrentPackList.this.move(this.pack, targetIndex)) {
-                        CurrentPackList.this.selectExclusive(this.pack);
-                        this.sendMoveEvent(List.of(this.pack));
+                    if (targetIndex > -1 && CurrentPackList.this.move(this.pack(), targetIndex)) {
+                        CurrentPackList.this.selectExclusive(this.pack());
+                        this.sendMoveEvent(List.of(this.pack()));
                         return true;
                     }
                 }

@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
+import io.github.fishstiz.packed_packs.gui.components.SelectionContext;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
@@ -16,8 +17,8 @@ public class FolderPackList extends CurrentPackList {
     }
 
     @Override
-    protected @NotNull Entry createEntry(Pack pack, int index) {
-        return new SubPackEntry(pack, index);
+    protected @NotNull Entry createEntry(SelectionContext<Pack> context, int index) {
+        return new SubPackEntry(context, index);
     }
 
     @Override
@@ -38,8 +39,8 @@ public class FolderPackList extends CurrentPackList {
     }
 
     protected class SubPackEntry extends Entry {
-        protected SubPackEntry(Pack pack, int index) {
-            super(pack, index);
+        protected SubPackEntry(SelectionContext<Pack> context, int index) {
+            super(context, index);
         }
 
         @Override
