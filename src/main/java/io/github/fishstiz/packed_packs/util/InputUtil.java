@@ -1,7 +1,8 @@
 package io.github.fishstiz.packed_packs.util;
 
 import static com.mojang.blaze3d.platform.InputConstants.*;
-import static net.minecraft.client.gui.screens.Screen.*;
+import static net.minecraft.client.gui.screens.Screen.hasControlDown;
+import static net.minecraft.client.gui.screens.Screen.hasShiftDown;
 
 public class InputUtil {
     public static final String DEV_MODE_SHORTCUT = "CTRL + SHIFT + I";
