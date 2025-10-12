@@ -8,13 +8,14 @@ import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.compat.Mod;
+import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.packs.PackType;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -41,14 +42,6 @@ public record Toggleable(
 
     public void toggle() {
         this.toggler.accept(!this.toggled.get());
-    }
-
-    public static <T extends FidgetzButton.Builder<?, ?>> T applyPref(Preferences.Preference<Boolean> pref, T builder) {
-        if (PackedPacks.CONFIG.isDevMode()) {
-            Toggleable toggleablePref = new Toggleable(pref);
-            builder.setForeground(toggleablePref).setContextMenuBuilder((btn, b) -> toggleablePref.buildContext(b.separatorIfNonEmpty()));
-        }
-        return builder;
     }
 
     public void buildContext(ContextMenuItemBuilder builder) {
@@ -87,14 +80,22 @@ public record Toggleable(
         return enabled ? GuiConstants.RADIO_ON_SPRITE : GuiConstants.RADIO_OFF_SPRITE;
     }
 
-    private static MenuItem fromPref(Preferences.Preference<Boolean> pref) {
+    public static MenuItem fromPref(Preferences.Preference<Boolean> pref) {
         return new Toggleable(pref)
                 .itemBuilder()
                 .closeOnInteract(false)
                 .build();
     }
 
-    public static List<MenuItem> preferences() {
+    public static <T extends FidgetzButton.Builder<?, ?>> T applyPref(Preferences.Preference<Boolean> pref, T builder) {
+        if (PackedPacks.CONFIG.isDevMode()) {
+            Toggleable toggleablePref = new Toggleable(pref);
+            builder.setForeground(toggleablePref).setContextMenuBuilder((btn, b) -> toggleablePref.buildContext(b.separatorIfNonEmpty()));
+        }
+        return builder;
+    }
+
+    public static List<MenuItem> preferences(PackType packType) {
         Preferences prefs = Preferences.INSTANCE;
         ContextMenuItemBuilder builder = new ContextMenuItemBuilder();
 
@@ -104,16 +105,7 @@ public record Toggleable(
         builder.add(fromPref(prefs.toggleIncompatibleWidget));
         builder.add(fromPref(prefs.folderPackWidget));
 
-        if (Mod.ETF.isLoaded()) {
-            builder.add(fromPref(prefs.etfButton));
-        }
-        if (Mod.RESPACKOPTS.isLoaded()) {
-            builder.add(fromPref(prefs.respackoptsButton));
-        }
-        if (Mod.VTD.isLoaded()) {
-            builder.add(fromPref(prefs.vtdButton));
-            builder.add(fromPref(prefs.vtdEditButton));
-        }
+        ModAdditions.onCreatePreferencesMenu(packType, builder);
 
         return builder.build();
     }

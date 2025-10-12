@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.util.lang;
 
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
@@ -128,5 +129,63 @@ public class CollectionsUtil {
             }
         }
         return null;
+    }
+
+    public static <T, K extends Comparable<? super K>> List<T> topoSort(
+            Collection<T> collection,
+            Function<T, K> keyFn,
+            Function<T, @Nullable K> predecessorKeyFn
+    ) {
+        Map<K, T> nodes = toMap(collection, keyFn);
+        Map<K, Set<K>> successorMap = new Object2ObjectOpenHashMap<>(collection.size());
+        Map<K, Integer> inDegree = new Object2IntOpenHashMap<>(collection.size());
+
+        for (K key : nodes.keySet()) {
+            successorMap.put(key, new ObjectOpenHashSet<>());
+            inDegree.put(key, 0);
+        }
+
+        for (T node : collection) {
+            K predecessorKey = predecessorKeyFn.apply(node);
+            K currentKey = keyFn.apply(node);
+
+            if (currentKey == null) continue;
+
+            if (predecessorKey != null && nodes.containsKey(predecessorKey)) {
+                successorMap.get(predecessorKey).add(currentKey);
+                inDegree.merge(currentKey, 1, Integer::sum);
+            }
+        }
+
+        Queue<K> queue = new PriorityQueue<>();
+        for (Map.Entry<K, Integer> entry : inDegree.entrySet()) {
+            if (entry.getValue() == 0) {
+                queue.add(entry.getKey());
+            }
+        }
+
+        List<T> orderedList = new ObjectArrayList<>(collection.size());
+        while (!queue.isEmpty()) {
+            K currentKey = queue.poll();
+            orderedList.add(nodes.get(currentKey));
+
+            for (K dependentKey : successorMap.getOrDefault(currentKey, Collections.emptySet())) {
+                int newInDegree = inDegree.get(dependentKey) - 1;
+                inDegree.put(dependentKey, newInDegree);
+
+                if (newInDegree == 0) {
+                    queue.add(dependentKey);
+                }
+            }
+        }
+
+        if (orderedList.size() != collection.size()) {
+            Set<K> seen = map(orderedList, keyFn, ObjectOpenHashSet::new);
+            List<T> cyclicNodes = filter(collection, node -> !seen.contains(keyFn.apply(node)), ObjectArrayList::new);
+            cyclicNodes.sort(Comparator.comparing(keyFn));
+            orderedList.addAll(cyclicNodes);
+        }
+
+        return orderedList;
     }
 }
