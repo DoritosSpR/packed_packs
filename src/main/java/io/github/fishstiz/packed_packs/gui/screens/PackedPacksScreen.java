@@ -641,7 +641,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
             }
         }
 
-        if (event.pushToHistory() && notFolderDialogEvent) {
+        if (this.isUnlocked() && event.pushToHistory() && notFolderDialogEvent) {
             this.history.push(this.captureState());
         }
     }
@@ -763,10 +763,10 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (ToggleableDialogContainer.super.mouseClicked(mouseEvent, doubleClicked)) {
             return true;
         }
-        if (isClickForward(mouseEvent)) {
+        if (isClickForward(mouseEvent) && this.isUnlocked()) {
             return this.history.redo();
         }
-        if (isClickBack(mouseEvent)) {
+        if (isClickBack(mouseEvent) && this.isUnlocked()) {
             return this.history.undo();
         }
         if (isLeftClick(mouseEvent) && !(this.getFocused() instanceof PackList)) {
