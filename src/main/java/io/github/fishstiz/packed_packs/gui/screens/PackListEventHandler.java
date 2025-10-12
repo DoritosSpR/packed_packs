@@ -18,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public abstract class PackListEventHandler extends Screen implements PackListEventListener, DragEventHandler {
+    private final DragEventRenderer dragEventRenderer = new DragEventRenderer();
     private DragEvent dragged;
 
     protected PackListEventHandler(Component title) {
@@ -150,7 +151,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
                 }
             }
 
-            event.render(guiGraphics, mouseX, mouseY, partialTick);
+            this.dragEventRenderer.renderDragEvent(event, guiGraphics, mouseX, mouseY, partialTick);
             guiGraphics.requestCursor(validDrop ? CursorsExtended.GRABBING : CursorTypes.NOT_ALLOWED);
         }
     }
