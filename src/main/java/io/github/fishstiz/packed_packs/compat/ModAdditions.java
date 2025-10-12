@@ -54,7 +54,7 @@ public class ModAdditions {
         if (packType == PackType.CLIENT_RESOURCES) {
             Mod.RESPACKOPTS.wrapError(packListEntry, entry -> {
                 if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.respackoptsButton.get()) {
-                    RespackoptsWidget respackOptsWidget = RespackoptsWidget.create(entry, entry.getPack());
+                    RespackoptsWidget respackOptsWidget = RespackoptsWidget.create(entry, entry.pack());
                     if (respackOptsWidget != null) {
                         entry.addTopRenderableOnly(entry.prependWidget(respackOptsWidget));
                     }

@@ -9,6 +9,8 @@ import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.Preferences;
+import io.github.fishstiz.packed_packs.gui.components.MouseSelectionHandler;
+import io.github.fishstiz.packed_packs.gui.components.SelectionContext;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.history.Restorable;
@@ -25,7 +27,6 @@ import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.Util;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
@@ -39,7 +40,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.BiConsumer;
 
 import static com.google.common.primitives.Ints.contains;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
@@ -74,12 +74,12 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         this.queryPacks();
     }
 
-    protected abstract @NotNull Entry createEntry(Pack pack, int index);
+    protected abstract @NotNull Entry createEntry(SelectionContext<Pack> context, int index);
 
     public @Nullable Entry getEntry(@Nullable Pack pack) {
         if (pack == null) return null;
         for (Entry entry : this.children()) {
-            if (Objects.equals(entry.pack, pack)) return entry;
+            if (Objects.equals(entry.pack(), pack)) return entry;
         }
         return null;
     }
@@ -87,10 +87,10 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
     protected void refreshEntries() {
         this.clearEntries();
         for (int i = 0; i < this.queried.size(); i++) {
-            this.addEntry(this.createEntry(this.queried.get(i), i));
+            this.addEntry(this.createEntry(new SelectionContext<>(this.selection, this.queried.get(i)), i));
         }
         Entry focused = this.getFocused();
-        if (focused != null && !this.queried.contains(focused.pack)) {
+        if (focused != null && !this.queried.contains(focused.pack())) {
             this.setFocused(null);
         }
         this.clampScrollAmount();
@@ -416,9 +416,9 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         };
         if (entry != null) {
             if (isRangeModifierActive()) {
-                this.selectRange(entry.pack);
+                this.selectRange(entry.pack());
             } else {
-                this.selectExclusive(entry.pack);
+                this.selectExclusive(entry.pack());
             }
             this.sendEvent(new SelectionEvent(this));
             this.ensureVisible(entry);
@@ -439,7 +439,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
                 entry = this.getFirstElement();
             }
             if (entry != null) {
-                this.select(entry.pack);
+                this.select(entry.pack());
                 this.ensureVisible(entry);
                 return ComponentPath.path(entry, this);
             }
@@ -456,7 +456,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         Entry entry = this.getEntry(this.getLastSelected());
         if (entry != null
             && entry.folderWidget != null
-            && entry.getPack() instanceof FolderPack folderPack
+            && entry.pack() instanceof FolderPack folderPack
             && this.selection.size() == 1
             && isExpandFolder(keyCode, modifiers)) {
             this.openFolder(folderPack);
@@ -505,7 +505,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
     }
 
     public void replaceState(@NotNull Snapshot snapshot) {
-        Pack focused = mapOrNull(this.getFocused(), PackList.Entry::getPack);
+        Pack focused = mapOrNull(this.getFocused(), PackList.Entry::pack);
         this.packs.clear();
 
         for (Pack pack : snapshot.packs()) {
@@ -538,7 +538,6 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
     }
 
     public abstract class Entry extends AbstractDynamicList<Entry>.Entry implements ContainerEventHandlerPatch, ContextMenuContainer {
-        private static final double DRAG_THRESHOLD = 1.0;
         private static final Tooltip FOLDER_OPEN_INFO = Tooltip.create(FolderPack.FOLDER_OPEN_TEXT);
         protected static final int SPACING = 2;
         protected static final int BACKGROUND_OFFSET = 1;
@@ -547,20 +546,19 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         protected final List<Renderable> renderables = new ArrayList<>();
         protected final List<Renderable> topRenderables = new ArrayList<>();
         protected final List<NarratableEntry> narratables = new ArrayList<>();
-        protected final Pack pack;
+        private final MouseSelectionHandler<Pack> selectionHandler;
+        private final SelectionContext<Pack> context;
         private final PackWidget packWidget;
         private final @Nullable PackListDevMenu devMenu;
         private FidgetzButton<FolderPack> folderWidget;
-        private MouseSelectionState mouseSelectionState = MouseSelectionState.INACTIVE;
-        private long lastClickTime = 0;
         private boolean stale = false;
 
-        protected Entry(Pack pack, int index) {
+        protected Entry(SelectionContext<Pack> context, int index) {
             super(index);
-
-            this.pack = pack;
+            this.context = context;
+            this.selectionHandler = new MouseSelectionHandler<>(this, context);
             this.packWidget = this.addRenderableWidget(new PackWidget(
-                    this.pack,
+                    this.pack(),
                     PackList.this.assets,
                     this.getX(),
                     PackList.this.getRowTop(this.index),
@@ -568,8 +566,8 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
                     PackList.this.itemHeight,
                     SPACING
             ));
-
-            if (this.pack instanceof FolderPack folderPack && (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.folderPackWidget.get())) {
+            boolean devMode = PackedPacks.CONFIG.isDevMode();
+            if (this.pack() instanceof FolderPack folderPack && (devMode || Preferences.INSTANCE.folderPackWidget.get())) {
                 this.folderWidget = this.addTopRenderableOnly(this.prependWidget(
                         Toggleable.applyPref(Preferences.INSTANCE.folderPackWidget, FidgetzButton.<FolderPack>builder())
                                 .setTooltip(FOLDER_OPEN_INFO)
@@ -581,12 +579,12 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
                                 .build()
                 ));
             }
-
-            this.devMenu = PackedPacks.CONFIG.isDevMode()
-                    ? new PackListDevMenu(PackList.this.options, this.pack, this::getPackOrSelection, this::onRequire)
-                    : null;
-
+            this.devMenu = devMode ? new PackListDevMenu(PackList.this.options, this.context, this::onRequire) : null;
             ModAdditions.addToEntry(PackList.this.options.getConfig().packType(), this);
+        }
+
+        public Pack pack() {
+            return this.context.item();
         }
 
         public <U extends GuiEventListener & Renderable> U addRenderableWidget(U widget) {
@@ -611,16 +609,12 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
             return !PackList.this.isLocked();
         }
 
-        public Pack getPack() {
-            return this.pack;
-        }
-
         public boolean isSelected() {
-            return PackList.this.selection.contains(this.pack);
+            return this.context.isSelected();
         }
 
         public boolean isSelectedLast() {
-            return mapOrDefault(PackList.this.getLastSelected(), false, p -> Objects.equals(p, this.pack));
+            return this.context.isSelectedLast();
         }
 
         protected void sendPacks(Pack trigger, List<Pack> payload) {
@@ -637,7 +631,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
             }
 
             if (!payload.isEmpty()) {
-                Pack trigger = this.isTransferable() ? this.pack : null;
+                Pack trigger = this.isTransferable() ? this.pack() : null;
                 this.sendPacks(trigger, payload);
                 return true;
             }
@@ -645,17 +639,9 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
             return false;
         }
 
-        public List<Pack> getPackOrSelection() {
-            if (!this.isSelected()) {
-                return List.of(this.pack);
-            }
-
-            return PackList.this.getOrderedSelection().reversed();
-        }
-
         public boolean transfer() {
             if (!this.isSelected() && this.isTransferable()) {
-                PackList.this.sendEvent(new RequestTransferEvent(PackList.this, this.pack));
+                PackList.this.sendEvent(new RequestTransferEvent(PackList.this, this.pack()));
                 return true;
             }
 
@@ -665,14 +651,33 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         protected void onRequire(Pack trigger, List<Pack> requiredPacks) {
         }
 
-        private void fireClickEvent(BiConsumer<PackList, Pack> selector, MouseSelectionState state) {
-            this.mouseSelectionState = state;
-            selector.accept(PackList.this, this.pack);
-            PackList.this.sendEvent(new SelectionEvent(PackList.this));
-        }
+        protected boolean handleMouseAction(MouseSelectionHandler.Action action) {
+            if (!action.shouldDispatch() || this.isStale()) return false;
 
-        private boolean exceedsDragThreshold(double dragX, double dragY) {
-            return Math.hypot(dragX, dragY) > DRAG_THRESHOLD;
+            switch (action) {
+                case SELECT -> PackList.this.select(this.pack());
+                case SELECT_TOGGLE -> PackList.this.selectToggle(this.pack());
+                case SELECT_EXCLUSIVE -> PackList.this.selectExclusive(this.pack());
+                case SELECT_RANGE -> PackList.this.selectRange(this.pack());
+                case TRANSFER -> {
+                    if (this.isTransferable()) {
+                        PackList.this.sendEvent(new RequestTransferEvent(PackList.this, this.pack()));
+                        return false;
+                    }
+                }
+                case DRAG -> PackList.this.sendEvent(new DragEvent(
+                        PackList.this,
+                        PackList.this.getOrderedSelection().reversed(),
+                        this.pack(),
+                        this.packWidget.getSprite()
+                ));
+            }
+
+            if (action.shouldSelect()) {
+                PackList.this.sendEvent(new SelectionEvent(PackList.this));
+            }
+
+            return true;
         }
 
         @Override
@@ -680,74 +685,22 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
             return PackList.this.isHovered() && PackList.this.beforeScrollbarX(mouseX) && super.isMouseOver(mouseX, mouseY);
         }
 
-        protected boolean canDrag() {
-            return this.isSelected() && !this.isStale() && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE;
-        }
-
-        public boolean updateDoubleClick() {
-            long currentTime = Util.getMillis();
-            boolean doubleClicked = (currentTime - this.lastClickTime) < DOUBLE_CLICK_THRESHOLD_MS;
-            this.lastClickTime = currentTime;
-            return doubleClicked;
-        }
-
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (ContainerEventHandlerPatch.super.mouseClicked(mouseX, mouseY, button)) {
                 return false;
             }
-            if (isLeftClick(button) && this.isMouseOver(mouseX, mouseY)) {
-                boolean doubleClickedLocal = this.updateDoubleClick();
-                if (!isRangeModifierActive() && !isSelectModifierActive() && doubleClickedLocal && this.isTransferable()) {
-                    PackList.this.sendEvent(new RequestTransferEvent(PackList.this, this.pack));
-                    return false;
-                }
-                if (isRangeModifierActive()) {
-                    this.fireClickEvent(PackList::selectRange, MouseSelectionState.SELECTING_MANY);
-                } else if (isSelectModifierActive()) {
-                    this.fireClickEvent(PackList::selectToggle, MouseSelectionState.SELECTING_MANY);
-                } else if (!this.isSelected()) {
-                    this.fireClickEvent(PackList::selectExclusive, MouseSelectionState.SELECTING_ONE);
-                } else if (this.isSelected() && !this.isSelectedLast()) {
-                    this.fireClickEvent(PackList::select, MouseSelectionState.SELECTING_ONE);
-                } else {
-                    this.mouseSelectionState = MouseSelectionState.SELECTING_ONE;
-                }
-                return true;
-            }
-            this.mouseSelectionState = MouseSelectionState.INACTIVE;
-            return false;
+            return this.handleMouseAction(this.selectionHandler.mouseClicked(mouseX, mouseY, button));
         }
 
         @Override
         public boolean mouseReleased(double mouseX, double mouseY, int button) {
-            if (this.isSelectedLast()
-                && this.isMouseOver(mouseX, mouseY)
-                && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE
-                && PackList.this.selection.size() > 1) {
-                this.fireClickEvent(PackList::selectExclusive, MouseSelectionState.INACTIVE);
-                return true;
-            }
-            this.mouseSelectionState = MouseSelectionState.INACTIVE;
-            return false;
+            return this.handleMouseAction(this.selectionHandler.mouseReleased(mouseX, mouseY, button));
         }
 
         @Override
         public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-            if (!this.isMouseOver(mouseX, mouseY)) {
-                this.mouseSelectionState = MouseSelectionState.INACTIVE;
-                return false;
-            }
-            if (this.exceedsDragThreshold(dragX, dragY) && this.canDrag()) {
-                PackList.this.sendEvent(new DragEvent(
-                        PackList.this,
-                        PackList.this.getOrderedSelection().reversed(),
-                        this.pack,
-                        this.packWidget.getSprite()
-                ));
-                return true;
-            }
-            return false;
+            return this.handleMouseAction(this.selectionHandler.mouseDragged(mouseX, mouseY, button, dragX, dragY));
         }
 
         @Override
@@ -755,11 +708,11 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
             boolean keyPressed = super.keyPressed(keyCode, scanCode, modifiers);
             if (!keyPressed) {
                 if (isOpenFile(keyCode, modifiers)) {
-                    PackUtil.openPack(this.pack);
+                    PackUtil.openPack(this.pack());
                     return true;
                 }
                 if (isOpenFolder(keyCode, modifiers)) {
-                    PackUtil.openParent(this.pack);
+                    PackUtil.openParent(this.pack());
                     return true;
                 }
                 if (this.canOperateFile()) {
@@ -777,7 +730,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
 
         @Override
         public void renderBack(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTick) {
-            if (!this.pack.getCompatibility().isCompatible() && !PackList.this.options.getConfig().isIncompatibleWarningsHidden()) {
+            if (!this.pack().getCompatibility().isCompatible() && !PackList.this.options.getConfig().isIncompatibleWarningsHidden()) {
                 int backgroundLeft = this.getX() + BACKGROUND_OFFSET;
                 int backgroundRight = backgroundLeft + this.getWidth() - BACKGROUND_OFFSET * 2;
                 guiGraphics.fill(backgroundLeft, this.getY(), backgroundRight, this.getBottom(), Theme.RED_900.getARGB());
@@ -839,7 +792,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
             PackList.this.setFocused(this);
             ContextMenuContainer.super.buildItems(builder
-                            .add(new PackMenuHeader(this.pack, this.packWidget.getSprite()))
+                            .add(new PackMenuHeader(this.pack(), this.packWidget.getSprite()))
                             .whenNonNull(this.devMenu)
                             .ifTrue(PackListDevMenu::onBuildHeader)
                             .whenNonNull(this.folderWidget)
@@ -847,12 +800,12 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
                                     .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this::openFolder)
                                     .separator()
                             )
-                            .whenNonNull(((FilePack) this.pack).packed_packs$getPath())
+                            .whenNonNull(((FilePack) this.pack()).packed_packs$getPath())
                             .ifTrue(b -> b
                                     .simpleItem(RENAME_FILE_TEXT, this::canOperateFile, this::renamePack)
                                     .simpleItem(DELETE_FILE_TEXT, this::canOperateFile, this::deletePack)
-                                    .simpleItem(OPEN_FILE_TEXT, () -> PackUtil.openPack(this.pack))
-                                    .simpleItem(OPEN_PARENT_TEXT, () -> PackUtil.openParent(this.pack))
+                                    .simpleItem(OPEN_FILE_TEXT, () -> PackUtil.openPack(this.pack()))
+                                    .simpleItem(OPEN_PARENT_TEXT, () -> PackUtil.openParent(this.pack()))
                             ),
                     mouseX,
                     mouseY
@@ -864,21 +817,21 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         }
 
         public boolean canOperateFile() {
-            return PackList.this.fileOps.isOperable(this.pack);
+            return PackList.this.fileOps.isOperable(this.pack());
         }
 
         public void deletePack() {
-            if (PackList.this.fileOps.deletePack(this.pack)) {
+            if (PackList.this.fileOps.deletePack(this.pack())) {
                 this.stale = true;
-                PackList.this.remove(this.pack);
+                PackList.this.remove(this.pack());
                 PackList.this.sendEvent(new FileDeleteEvent(PackList.this));
             } else {
-                ToastUtil.onFileFailToast(ToastUtil.getDeleteFailText(this.pack.getTitle().getString()));
+                ToastUtil.onFileFailToast(ToastUtil.getDeleteFailText(this.pack().getTitle().getString()));
             }
         }
 
         public void renamePack() {
-            PackList.this.sendEvent(new FileRenameOpenEvent(PackList.this, this.pack));
+            PackList.this.sendEvent(new FileRenameOpenEvent(PackList.this, this.pack()));
         }
 
         public void onRename(Component newName) {
@@ -911,12 +864,6 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         @Override
         public int getHeight() {
             return super.getHeight() + BACKGROUND_OFFSET * 2;
-        }
-
-        private enum MouseSelectionState {
-            INACTIVE,
-            SELECTING_ONE,
-            SELECTING_MANY
         }
     }
 }
