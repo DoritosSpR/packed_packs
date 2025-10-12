@@ -87,9 +87,13 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
 
     protected void refreshEntries() {
         this.clearEntries();
+
+        List<Pack> selectionView = Collections.unmodifiableList(this.selection);
+
         for (int i = 0; i < this.queried.size(); i++) {
-            this.addEntry(this.createEntry(new SelectionContext<>(this.selection, this.queried.get(i)), i));
+            this.addEntry(this.createEntry(new SelectionContext<>(selectionView, this.queried.get(i)), i));
         }
+
         Entry focused = this.getFocused();
         if (focused != null && !this.queried.contains(focused.pack())) {
             this.setFocused(null);
@@ -455,12 +459,8 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         Entry entry = this.getEntry(this.getLastSelected());
-        if (entry != null
-            && entry.folderWidget != null
-            && entry.pack() instanceof FolderPack folderPack
-            && this.selection.size() == 1
-            && isExpandFolder(keyCode, modifiers)) {
-            this.openFolder(folderPack);
+        if (isExpandFolder(keyCode, modifiers) && entry != null && entry.folderWidget != null && this.selection.size() == 1) {
+            this.openFolder(entry.folderWidget.getMetadata());
             return true;
         }
         if (isTransfer(keyCode, modifiers)) {

@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public class Query {
@@ -63,12 +64,17 @@ public class Query {
     void apply(final List<Pack> packs) {
         Objects.requireNonNull(packs);
 
-        if (this.hideIncompatible) {
-            packs.removeIf(pack -> !pack.getCompatibility().isCompatible());
-        }
-        if (this.search != null && !this.search.isEmpty()) {
-            packs.removeIf(pack -> !normalizeTitle(pack.getTitle().getString()).toLowerCase().contains(this.search.toLowerCase()));
-        }
+        String searchLowerCase = this.search != null && !this.search.isEmpty()
+                ? this.search.toLowerCase(Locale.ROOT)
+                : null;
+
+        packs.removeIf(pack -> {
+            if (this.hideIncompatible && !pack.getCompatibility().isCompatible()) {
+                return true;
+            }
+            return searchLowerCase != null && !normalizeTitle(pack.getTitle().getString()).toLowerCase().contains(searchLowerCase);
+        });
+
         if (this.sort != null) {
             packs.sort(this.sort.comparator);
         }

@@ -55,7 +55,7 @@ public class Preferences {
     }
 
     public void reset() {
-        this.options.values().forEach(Preferences::resetPreference);
+        this.options.values().forEach(Preference::reset);
     }
 
     public void save() {
@@ -75,10 +75,6 @@ public class Preferences {
 
     public static Function<String, Boolean> modPrefDeserializer(Mod mod) {
         return value -> !mod.isLoaded() || Boolean.parseBoolean(value);
-    }
-
-    public static <T> void resetPreference(Preference<T> preference) {
-        preference.set(preference.getDefault());
     }
 
     public class Preference<T> {
@@ -113,6 +109,10 @@ public class Preferences {
 
         public T getDefault() {
             return this.defaultValue;
+        }
+
+        public void reset() {
+            this.value = this.defaultValue;
         }
 
         void deserializeAndSet(@Nullable String value) {
