@@ -579,8 +579,12 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
                                 .build()
                 ));
             }
-            this.devMenu = devMode ? new PackListDevMenu(PackList.this.options, this.context, this::onRequire) : null;
+            this.devMenu = devMode ? createDevMenu(PackList.this.options, this.context) : null;
             ModAdditions.addToEntry(PackList.this.options.getConfig().packType(), this);
+        }
+
+        protected @Nullable PackListDevMenu createDevMenu(PackOptionsContext options, SelectionContext<Pack> context) {
+            return new PackListDevMenu(options, context);
         }
 
         public Pack pack() {
@@ -646,9 +650,6 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
             }
 
             return this.sendSelection();
-        }
-
-        protected void onRequire(Pack trigger, List<Pack> requiredPacks) {
         }
 
         protected boolean handleMouseAction(MouseSelectionHandler.Action action) {
