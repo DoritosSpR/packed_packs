@@ -28,6 +28,7 @@ import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
@@ -241,7 +242,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         if (selection == null || selection.isEmpty() || to < 0 || to > this.packs.size()) {
             return false;
         }
-        if (!new HashSet<>(this.packs).containsAll(selection)) {
+        if (!new ObjectOpenHashSet<>(this.packs).containsAll(selection)) {
             return false;
         }
 
@@ -287,10 +288,6 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
 
     public boolean isSelected(Pack pack) {
         return this.selection.contains(pack);
-    }
-
-    public boolean isLocked() {
-        return this.options.isLocked();
     }
 
     public void scrollToLastSelected() {
@@ -388,19 +385,23 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         this.listener.onEvent(event);
     }
 
-    public abstract boolean canDrop(PackList source, List<Pack> payload, Pack trigger, double mouseX, double mouseY);
+    protected abstract boolean canInteract(PackList source);
 
-    protected abstract @Nullable List<Pack> handleDrop(PackList source, List<Pack> payload, Pack trigger, double mouseX, double mouseY);
+    public abstract boolean canDrop(DragEvent dragEvent, double mouseX, double mouseY);
 
-    public abstract void renderDroppableZone(GuiGraphics guiGraphics, PackList source, List<Pack> payload, Pack trigger, int mouseX, int mouseY, float partialTick);
+    protected abstract @Nullable List<Pack> handleDrop(DragEvent dragEvent, double mouseX, double mouseY);
 
-    public final void drop(PackList source, List<Pack> payload, Pack trigger, double mouseX, double mouseY) {
-        List<Pack> dropped = this.handleDrop(source, payload, trigger, mouseX, mouseY);
+    public abstract void renderDroppableZone(GuiGraphics guiGraphics, DragEvent dragEvent, int mouseX, int mouseY, float partialTick);
+
+    public final void drop(DragEvent dragEvent, double mouseX, double mouseY) {
+        if (this.options.isLocked()) return;
+
+        List<Pack> dropped = this.handleDrop(dragEvent, mouseX, mouseY);
         if (dropped != null && !dropped.isEmpty()) {
-            if (source != this) {
-                this.sendEvent(new DropEvent(source, this, dropped));
+            if (dragEvent.target() != this) {
+                this.sendEvent(new DropEvent(dragEvent.target(), this, dropped));
             } else {
-                this.sendEvent(new MoveEvent(this, trigger, dropped));
+                this.sendEvent(new MoveEvent(this, dragEvent.trigger(), dropped));
             }
         }
     }
@@ -616,7 +617,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         }
 
         public boolean isTransferable() {
-            return !PackList.this.isLocked();
+            return !PackList.this.options.isLocked() && !this.isStale();
         }
 
         public boolean isSelected() {

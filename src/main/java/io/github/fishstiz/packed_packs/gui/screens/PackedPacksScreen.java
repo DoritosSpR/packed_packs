@@ -546,7 +546,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
     }
 
-    private boolean isUnlocked() {
+    @Override
+    public boolean isUnlocked() {
         Profile profile = this.profiles.getProfile();
         return profile == null || !profile.isLocked();
     }
