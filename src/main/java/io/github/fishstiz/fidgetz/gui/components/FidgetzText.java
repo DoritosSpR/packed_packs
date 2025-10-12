@@ -37,13 +37,13 @@ public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E>
 
     @Override
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.isHovered = this.isHovered && Fidgetz.super.isMouseOver(mouseX, mouseY);
+        this.isHovered = this.isHovered && Fidgetz.super.isHovered(mouseX, mouseY);
         super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return super.isMouseOver(mouseX, mouseY) && Fidgetz.super.isMouseOver(mouseX, mouseY);
+        return Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     @Override

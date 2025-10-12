@@ -114,6 +114,11 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
         this.updateCursor(guiGraphics);
     }
 
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return Fidgetz.super.isMouseOver(mouseX, mouseY);
+    }
+
     protected void updateCursor(GuiGraphics guiGraphics) {
         if (this.isHovered()) {
             guiGraphics.requestCursor(this.isActive() ? CursorTypes.POINTING_HAND : CursorTypes.NOT_ALLOWED);
