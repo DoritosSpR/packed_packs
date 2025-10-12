@@ -116,7 +116,7 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return Fidgetz.super.isMouseOver(mouseX, mouseY);
+        return this.isVisible() && Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     @Override

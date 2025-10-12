@@ -9,11 +9,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 
-import java.util.List;
-
 public class GuiUtil {
-    public static final List<GuiEventListener> EMPTY_CHILDREN = List.of();
-
     private GuiUtil() {
     }
 
