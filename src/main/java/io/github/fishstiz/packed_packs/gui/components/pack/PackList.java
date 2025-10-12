@@ -712,27 +712,26 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
 
         @Override
         public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-            boolean keyPressed = super.keyPressed(keyCode, scanCode, modifiers);
-            if (!keyPressed) {
-                if (isOpenFile(keyCode, modifiers)) {
-                    PackUtil.openPack(this.pack());
-                    return true;
-                }
-                if (isOpenFolder(keyCode, modifiers)) {
-                    PackUtil.openParent(this.pack());
-                    return true;
-                }
-                if (this.canOperateFile()) {
-                    if (isDelete(keyCode, modifiers)) {
-                        this.deletePack();
-                        return true;
-                    } else if (isRename(keyCode, modifiers)) {
-                        this.renamePack();
-                        return true;
-                    }
-                }
+            if (super.keyPressed(keyCode, scanCode, modifiers)) {
+                return true;
             }
-            return keyPressed;
+            if (isOpenFile(keyCode, modifiers)) {
+                PackUtil.openPack(this.pack());
+                return true;
+            }
+            if (isOpenFolder(keyCode, modifiers)) {
+                PackUtil.openParent(this.pack());
+                return true;
+            }
+            if (isDelete(keyCode, modifiers) && this.canOperateFile()) {
+                this.deletePack();
+                return true;
+            }
+            if (isRename(keyCode, modifiers) && this.canOperateFile()) {
+                this.renamePack();
+                return true;
+            }
+            return false;
         }
 
         @Override
@@ -823,7 +822,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         }
 
         private void openFolder() {
-            PackList.this.openFolder(this.folderWidget.getMetadata());
+            PackList.this.openFolder(Objects.requireNonNull(this.folderWidget, "Cannot open folder without folder widget").getMetadata());
         }
 
         public boolean canOperateFile() {
@@ -857,12 +856,12 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         }
 
         @Override
-        public @NotNull List<? extends GuiEventListener> children() {
+        public @NotNull List<GuiEventListener> children() {
             return this.children;
         }
 
         @Override
-        public @NotNull List<? extends NarratableEntry> narratables() {
+        public @NotNull List<NarratableEntry> narratables() {
             return this.narratables;
         }
 
