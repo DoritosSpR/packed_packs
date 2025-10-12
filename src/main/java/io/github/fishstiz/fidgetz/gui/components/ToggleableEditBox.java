@@ -6,6 +6,7 @@ import io.github.fishstiz.fidgetz.gui.Metadata;
 import io.github.fishstiz.fidgetz.util.LogUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +20,7 @@ import java.util.function.Predicate;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_LEFT;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_RIGHT;
 
-public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
+public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E> {
     private static final int DEFAULT_MAX_LENGTH = 32;
     private final List<Consumer<String>> listeners = new ArrayList<>();
     private final int hintColor;
@@ -114,6 +115,11 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
     }
 
     @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return Fidgetz.super.isMouseOver(mouseX, mouseY);
+    }
+
+    @Override
     public boolean isHovered() {
         return this.isEditing() && super.isHovered();
     }
@@ -138,6 +144,12 @@ public class ToggleableEditBox<E> extends EditBox implements Metadata<E> {
         }
 
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.isHovered = this.isHovered && Fidgetz.super.isHovered(mouseX, mouseY);
+        super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     @Override

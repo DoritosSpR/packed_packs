@@ -5,11 +5,12 @@ import io.github.fishstiz.fidgetz.transform.interfaces.IStringWidget;
 import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
-public class FidgetzText<E> extends StringWidget implements Metadata<E> {
+public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E> {
     private E metadata;
 
     private FidgetzText(Builder<E> builder) {
@@ -33,6 +34,17 @@ public class FidgetzText<E> extends StringWidget implements Metadata<E> {
 
     public void setOffsetY(int offsetY) {
         ((IStringWidget) this).fidgetz$setOffsetY(offsetY);
+    }
+
+    @Override
+    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.isHovered = this.isHovered && Fidgetz.super.isHovered(mouseX, mouseY);
+        super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return Fidgetz.super.isMouseOver(mouseX, mouseY);
     }
 
     @Override
