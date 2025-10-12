@@ -587,7 +587,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
                 ));
             }
             this.devMenu = devMode ? createDevMenu(PackList.this.options, this.context) : null;
-            ModAdditions.addToEntry(PackList.this.options.getConfig().packType(), this);
+            ModAdditions.onCreateEntry(PackList.this.options.getConfig().packType(), this);
         }
 
         protected @Nullable PackListDevMenu createDevMenu(PackOptionsContext options, SelectionContext<Pack> context) {

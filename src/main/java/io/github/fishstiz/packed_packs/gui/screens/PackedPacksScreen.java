@@ -226,7 +226,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         header.addFlexChild(this.profiles.getNameField());
 
         PackSelectionScreen packSelectionScreen = this.previous instanceof PackSelectionScreen s ? s : this.original.createDummy();
-        ModAdditions.addToHeader(this.packsConfig.packType(), header, packSelectionScreen);
+        ModAdditions.onCreateHeader(this.packsConfig.packType(), header, packSelectionScreen);
 
         if (devMode || Preferences.INSTANCE.optionsWidget.get()) {
             header.addChild(
@@ -364,7 +364,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     public void onClose() {
         if (this.minecraft == null) return;
 
-        String commitRequestor = ModAdditions.shouldCommit(this.packsConfig.packType());
+        String commitRequestor = ModAdditions.forceCommitOnClose(this.packsConfig.packType());
         if (commitRequestor != null) {
             this.commit();
             PackedPacks.LOGGER.info("[packed_packs] Commiting packs on close at the request of mod '{}'.", commitRequestor);
@@ -397,7 +397,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
             try {
                 List<Path> paths = CollectionsUtil.mutableListOf(this.repository.getBaseDir());
                 paths.addAll(this.additionalFolders);
-                this.watcher = new PackWatcher(paths, this::refreshPacks);
+                this.watcher = new PackWatcher(this.packsConfig.packType(), paths, this::refreshPacks);
             } catch (Exception e) {
                 PackedPacks.LOGGER.error("[packed_packs] Failed to initialize pack directory watcher.", e);
                 this.closeWatcher();
@@ -733,7 +733,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                                         .build())
                                 .separator())
                         .add(devItem(ResourceUtil.getText("preferences"))
-                                .addChildren(Toggleable.preferences())
+                                .addChildren(Toggleable.preferences(this.packsConfig.packType()))
                                 .addChild(devItem(ResourceUtil.getText("preferences.reset"))
                                         .action(Preferences.INSTANCE::reset)
                                         .build())
