@@ -98,6 +98,8 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
 
     protected abstract @Nullable PackList getDestination(PackList source);
 
+    protected abstract boolean isUnlocked();
+
     @Override
     public void onEvent(PackListEvent event) {
         switch (event) {
@@ -115,9 +117,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
     public void onRelease(@NotNull DragEvent event, double mouseX, double mouseY) {
         for (PackList packList : this.getPackLists()) {
             if (packList.isHovered()) {
-                if (!packList.isLocked()) {
-                    packList.drop(event.target(), event.payload(), event.trigger(), mouseX, mouseY);
-                }
+                packList.drop(event, mouseX, mouseY);
                 return;
             }
         }
@@ -129,13 +129,9 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
 
         DragEvent event = this.getDragged();
         if (event != null) {
-            PackList source = event.target();
-
-            if (!source.isLocked()) {
+            if (this.isUnlocked()) {
                 for (PackList list : this.getPackLists()) {
-                    if (!list.isLocked()) {
-                        list.renderDroppableZone(guiGraphics, event.target(), event.payload(), event.trigger(), mouseX, mouseY, partialTick);
-                    }
+                    list.renderDroppableZone(guiGraphics, event, mouseX, mouseY, partialTick);
                 }
             }
 
