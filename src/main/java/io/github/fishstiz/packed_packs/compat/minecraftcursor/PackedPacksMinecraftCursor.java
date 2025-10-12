@@ -42,9 +42,7 @@ public class PackedPacksMinecraftCursor implements MinecraftCursorInitializer {
 
             for (PackList destination : screen.getPackLists()) {
                 if (destination.isMouseOver(mouseX, mouseY)) {
-                    validDrop = source == destination ||
-                                destination instanceof CurrentPackList scrollable && scrollable.isScrolling() ||
-                                destination.canDrop(dragEvent.target(), dragEvent.payload(), dragEvent.trigger(), mouseX, mouseY);
+                    validDrop = source == destination || source.canDrop(dragEvent, mouseX, mouseY);
                     break;
                 }
             }
