@@ -49,7 +49,7 @@ import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
-public abstract class PackList extends AbstractDynamicList<PackList.Entry> implements
+public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> implements
         Restorable<PackList.Snapshot>,
         ContainerEventHandlerPatch,
         ContextMenuContainer {
@@ -475,14 +475,9 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         boolean scrolling = this.updateScrolling(mouseX, mouseY, button);
-        return ContainerEventHandlerPatch.super.mouseClickedAt(mouseX, mouseY, button) || scrolling;
-    }
-
-    @Override
-    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // this.isHovered is evaluated right before renderWidget on AbstractWidget#render
-        this.isHovered = this.isHovered && GuiUtil.isHovered(this, mouseX, mouseY);
-        super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+        return this.isMouseOver(mouseX, mouseY) &&
+               ContainerEventHandlerPatch.super.mouseClickedAt(mouseX, mouseY, button) ||
+               scrolling;
     }
 
     @Override
@@ -495,10 +490,6 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
             int outlineHeight = focused.getHeight() + Entry.BACKGROUND_OFFSET * 2;
             guiGraphics.renderOutline(focused.getX(), outlineTop, focused.getWidth(), outlineHeight, Theme.WHITE.getARGB());
         }
-    }
-
-    protected boolean beforeScrollbarX(double mouseX) {
-        return !this.scrollbarVisible() || mouseX < this.scrollBarX();
     }
 
     public @NotNull Snapshot captureState() {
@@ -538,7 +529,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
         }
     }
 
-    public abstract class Entry extends AbstractDynamicList<Entry>.Entry implements ContainerEventHandlerPatch, ContextMenuContainer {
+    public abstract class Entry extends AbstractFixedListWidget<Entry>.Entry implements ContainerEventHandlerPatch, ContextMenuContainer {
         private static final Tooltip FOLDER_OPEN_INFO = Tooltip.create(FolderPack.FOLDER_OPEN_TEXT);
         protected static final int SPACING = 2;
         protected static final int BACKGROUND_OFFSET = 1;
@@ -684,7 +675,7 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
 
         @Override
         public boolean isMouseOver(double mouseX, double mouseY) {
-            return PackList.this.isHovered() && PackList.this.beforeScrollbarX(mouseX) && super.isMouseOver(mouseX, mouseY);
+            return PackList.this.beforeScrollbarX(mouseX) && super.isMouseOver(mouseX, mouseY);
         }
 
         @Override
@@ -786,7 +777,9 @@ public abstract class PackList extends AbstractDynamicList<PackList.Entry> imple
 
         @Override
         public final void render(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            this.renderWidget(guiGraphics, top, left, width, height, mouseX, mouseY, hovering && PackList.this.isHovered() && PackList.this.beforeScrollbarX(mouseX), partialTick);
+            hovering = hovering && PackList.this.beforeScrollbarX(mouseX) && GuiUtil.isHovered(this, mouseX, mouseY);
+
+            this.renderWidget(guiGraphics, top, left, width, height, mouseX, mouseY, hovering, partialTick);
         }
 
         @Override

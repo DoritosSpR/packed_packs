@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.components.profile;
 
-import io.github.fishstiz.fidgetz.gui.components.AbstractDynamicList;
+import io.github.fishstiz.fidgetz.gui.components.AbstractFixedListWidget;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
-public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implements ContextMenuContainer {
+public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> implements ContextMenuContainer {
     private static final int ITEM_HEIGHT = 20;
     private static final Component EMPTY_TEXT = ResourceUtil.getText("profile.empty");
     private static final Component DELETE_TEXT = ResourceUtil.getText("profile.delete");
@@ -121,7 +121,7 @@ public class ProfileList extends AbstractDynamicList<ProfileList.Entry> implemen
         }
     }
 
-    public class Entry extends AbstractDynamicList<Entry>.Entry implements ContextMenuProvider {
+    public class Entry extends AbstractFixedListWidget<Entry>.Entry implements ContextMenuProvider {
         private final Profile profile;
         private final List<FidgetzButton<Void>> children = new ArrayList<>();
         private final FidgetzButton<Void> selectButton;

@@ -1,5 +1,6 @@
 package io.github.fishstiz.fidgetz.util;
 
+import io.github.fishstiz.fidgetz.gui.components.HoverStateHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -37,13 +38,34 @@ public class GuiUtil {
         return false;
     }
 
-    public static boolean isHovered(ContainerEventHandler container, GuiEventListener listener, double mouseX, double mouseY) {
+    public static GuiEventListener findHovered(ContainerEventHandler container, double mouseX, double mouseY) {
         for (GuiEventListener child : container.children()) {
-            if (child instanceof ContainerEventHandler nestedContainer && isHovered(nestedContainer, listener, mouseX, mouseY)) {
-                return true;
-            }
             if (child.isMouseOver(mouseX, mouseY)) {
-                return child == listener;
+                if (child instanceof ContainerEventHandler nestedContainer) {
+                    GuiEventListener hoveredElement = findHovered(nestedContainer, mouseX, mouseY);
+                    if (hoveredElement != null) {
+                        return hoveredElement;
+                    }
+                }
+                return child;
+            }
+        }
+        return null;
+    }
+
+    public static boolean isHovered(ContainerEventHandler container, GuiEventListener listener, double mouseX, double mouseY) {
+        if (container.isMouseOver(mouseX, mouseY)) {
+            if (container instanceof HoverStateHandler hoverStateHandler) {
+                return hoverStateHandler.getHovered() == listener;
+            }
+
+            for (GuiEventListener child : container.children()) {
+                if (child instanceof ContainerEventHandler nestedContainer && isHovered(nestedContainer, listener, mouseX, mouseY)) {
+                    return true;
+                }
+                if (child.isMouseOver(mouseX, mouseY)) {
+                    return child == listener;
+                }
             }
         }
         return false;
