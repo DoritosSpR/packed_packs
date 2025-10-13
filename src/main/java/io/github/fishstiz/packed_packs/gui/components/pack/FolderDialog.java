@@ -29,15 +29,22 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     private static final int HEADER_HEIGHT = 16;
     private final FidgetzButton<Void> closeButton;
     private final FidgetzText<Void> folderTitle;
+    private final PackFileOperations fileOps;
+    private final PackListEventListener listener;
     private Sprite folderSprite = Sprite.of16(PackAssetManager.DEFAULT_FOLDER_ICON);
     private PackList parent;
     private FolderPack folderPack;
 
-    private FolderDialog(Builder builder) {
-        super(builder);
+    public <S extends Screen & ToggleableDialogContainer & PackListEventListener> FolderDialog(
+            S screen,
+            PackOptionsContext options,
+            PackAssetManager assets,
+            PackFileOperations fileOps
+    ) {
+        super(builder(screen, new FolderPackList(options, assets, fileOps, screen)).setBackground(DrawUtil.DEMO_BACKGROUND));
 
-        this.root().visible = false;
-
+        this.listener = screen;
+        this.fileOps = fileOps;
         this.closeButton = this.addRenderableWidget(
                 FidgetzButton.<Void>builder()
                         .setOnPress(() -> this.sendEvent(new FolderCloseEvent(this.root(), this.folderPack)))
@@ -54,6 +61,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
                         .build()
         );
 
+        this.root().visible = false;
         this.addListener(open -> {
             this.root().visible = open;
             if (!open) this.sendEvent(new FolderCloseEvent(this.root(), this.folderPack));
@@ -141,8 +149,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     private boolean canOperateFolder() {
-        return this.folderPack != null &&
-               ObjectsUtil.testNullable(this.root().getEntry(this.folderPack), PackList.Entry::canOperateFile) &&
+        return ObjectsUtil.testNullable(this.folderPack, this.fileOps::isOperable) &&
                PackUtil.validatePackPath(this.folderPack) != null;
     }
 
@@ -153,7 +160,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     private void deleteDirectory() {
-        if (this.root().fileOps.deletePack(this.folderPack)) {
+        if (this.fileOps.deletePack(this.folderPack)) {
             this.setOpen(false);
             this.root().remove(this.folderPack);
             this.sendEvent(new FileDeleteEvent(this.root()));
@@ -171,28 +178,6 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     private void sendEvent(PackListEvent event) {
-        ((PackListEventListener) this.screen).onEvent(event);
-    }
-
-    public static <S extends Screen & ToggleableDialogContainer & PackListEventListener> FolderDialog create(
-            S screen,
-            PackOptionsContext options,
-            PackAssetManager assets,
-            PackFileOperations fileOps
-    ) {
-        return new Builder(screen, new FolderPackList(options, assets, fileOps, screen))
-                .setBackground(DrawUtil.DEMO_BACKGROUND)
-                .build();
-    }
-
-    private static class Builder extends ToggleableDialog.Builder<FolderPackList, Builder> {
-        protected <S extends Screen & ToggleableDialogContainer & PackListEventListener> Builder(S screen, FolderPackList root) {
-            super(screen, root);
-        }
-
-        @Override
-        public FolderDialog build() {
-            return new FolderDialog(this);
-        }
+        this.listener.onEvent(event);
     }
 }
