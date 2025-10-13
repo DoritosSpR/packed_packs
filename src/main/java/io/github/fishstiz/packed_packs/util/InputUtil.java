@@ -83,11 +83,16 @@ public class InputUtil {
     }
 
     public static boolean isDeveloperMode(KeyEvent keyEvent) {
-        return keyEvent.modifiers() == MOD_CONTROL + MOD_SHIFT && keyEvent.key() == KEY_I;
+        return noModifiers(keyEvent.modifiers()) && keyEvent.key() == KEY_F12 ||
+               keyEvent.modifiers() == MOD_CONTROL + MOD_SHIFT && keyEvent.key() == KEY_I;
     }
 
     public static boolean isSelectAll(KeyEvent keyEvent) {
         return keyEvent.modifiers() == MOD_CONTROL && keyEvent.key() == KEY_A;
+    }
+
+    public static boolean isSwitchDefaultProfile(KeyEvent keyEvent) {
+        return noModifiers(keyEvent.modifiers()) && keyEvent.key() == KEY_F1;
     }
 
     public static boolean noModifiers(int modifiers) {
