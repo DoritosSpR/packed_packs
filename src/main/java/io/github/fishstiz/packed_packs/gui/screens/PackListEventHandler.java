@@ -4,6 +4,8 @@ import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import io.github.fishstiz.packed_packs.compat.cursors_extended.CursorsExtended;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.pack.PackAssetManager;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -17,11 +19,15 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public abstract class PackListEventHandler extends Screen implements PackListEventListener, DragEventHandler {
-    private final DragEventRenderer dragEventRenderer = new DragEventRenderer();
+    protected final PackAssetManager assetManager;
+    private final DragEventRenderer dragEventRenderer;
     private DragEvent dragged;
 
-    protected PackListEventHandler(Component title) {
+    protected PackListEventHandler(Minecraft minecraft, Component title) {
         super(title);
+        this.minecraft = minecraft;
+        this.assetManager = new PackAssetManager(minecraft);
+        this.dragEventRenderer = new DragEventRenderer(this.assetManager);
     }
 
     protected void focus(ComponentPath path) {
