@@ -91,7 +91,7 @@ public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E>
         private Alignment alignment = Alignment.CENTER;
         private Component message = Component.empty();
         private Integer color;
-        private boolean shadow;
+        private boolean shadow = true;
         private E metadata;
 
         private Builder(Font font) {
