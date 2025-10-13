@@ -85,6 +85,10 @@ public class InputUtil {
         return modifiers == MOD_CONTROL + MOD_SHIFT && keyCode == KEY_I;
     }
 
+    public static boolean isSelectAll(int keyCode, int modifiers) {
+        return modifiers == MOD_CONTROL && keyCode == KEY_A;
+    }
+
     public static boolean noModifiers(int modifiers) {
         return modifiers == 0;
     }
