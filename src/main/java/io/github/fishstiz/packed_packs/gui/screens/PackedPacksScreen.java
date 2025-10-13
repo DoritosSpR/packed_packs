@@ -44,7 +44,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
-import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.AlertScreen;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.NoticeWithLinkScreen;
@@ -94,7 +93,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private final Config.Packs packsConfig;
     private final ProfilesLayout profiles;
     private final FolderDialog folderDialog;
-    private final Modal<LinearLayout> options;
+    private final Modal<OptionsLayout> optionsModal;
     private final FileRenameModal fileRenameModal;
     private final ContextMenu contextMenu;
     private final List<ToggleableDialog<?>> dialogs;
@@ -118,18 +117,18 @@ public class PackedPacksScreen extends PackListEventHandler implements
         PackFileOperations fileOps = new PackFileOperations(options, this.repository);
         this.availablePacks = new AvailablePacksLayout(options, this.assetManager, fileOps, this);
         this.currentPacks = new CurrentPacksLayout(options, this.assetManager, fileOps, this);
-        this.options = Modal.builder(this, new OptionsLayout().layout())
+        this.optionsModal = Modal.builder(this, new OptionsLayout())
                 .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
                 .setCaptureFocus(true)
                 .build();
-        this.folderDialog = FolderDialog.create(this, options, this.assetManager, fileOps);
+        this.folderDialog = new FolderDialog(this, options, this.assetManager, fileOps);
         this.fileRenameModal = new FileRenameModal(this, fileOps, this.assetManager);
         this.contextMenu = ContextMenu.builder(this)
                 .setSpacing(SPACING)
                 .setBackground(Theme.GRAY_800.getARGB())
                 .setBorderColor(Theme.GRAY_500.getARGB())
                 .build();
-        this.dialogs = List.of(this.options, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
+        this.dialogs = List.of(this.optionsModal, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
         this.packLists = List.of(this.folderDialog.root(), this.availablePacks.getList(), this.currentPacks.getList());
         this.initAdditionalFolders();
         this.useSelected();
@@ -173,9 +172,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.folderDialog.root().visitWidgets(this.folderDialog::addRenderableWidget);
         this.profiles.initContents();
         this.profiles.getSidebar().getCloseButton().addListener(this::setInitialFocus);
-        this.options.root().visitWidgets(this.options::addRenderableWidget);
+        this.optionsModal.root().visitWidgets(this.optionsModal::addRenderableWidget);
 
-        this.addWidget(this.options);
+        this.addWidget(this.optionsModal);
         this.addWidget(this.contextMenu);
         this.addWidget(this.fileRenameModal);
         this.addWidget(this.profiles.getSidebar());
@@ -185,7 +184,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.addRenderableOnly(this.profiles.getSidebar());
         this.addRenderableOnly(this.fileRenameModal);
         this.addRenderableOnly(this.contextMenu);
-        this.addRenderableOnly(this.options);
+        this.addRenderableOnly(this.optionsModal);
 
         this.clearHistory();
         this.repositionElements();
@@ -223,8 +222,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
         header.addChild(this.profiles.getToggleNameButton());
         header.addFlexChild(this.profiles.getNameField());
 
-        PackSelectionScreen packSelectionScreen = this.previous instanceof PackSelectionScreen s ? s : this.original.createDummy();
-        ModAdditions.onCreateHeader(this.packsConfig.packType(), header, packSelectionScreen);
+        PackSelectionScreen originalScreen = this.previous instanceof PackSelectionScreen s ? s : this.original.createDummy();
+
+        ModAdditions.onCreateHeader(this.packsConfig.packType(), header, originalScreen);
 
         if (devMode || Preferences.INSTANCE.optionsWidget.get()) {
             header.addChild(
@@ -233,7 +233,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                             .setMessage(OPTIONS_TEXT)
                             .setTooltip(Tooltip.create(OPTIONS_TEXT))
                             .setSprite(new Sprite(ResourceUtil.getIcon("gear"), Size.of16()))
-                            .setOnPress(this.options::toggle)
+                            .setOnPress(this.optionsModal::toggle)
                             .build()
             );
         }
@@ -252,8 +252,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     private FlexLayout createContents() {
         FlexLayout contents = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        this.availablePacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING), false));
-        this.currentPacks.init(contents.addFlexChild(FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING), false));
+        FlexLayout packLayout = FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING);
+        this.availablePacks.init(contents.addFlexChild(packLayout));
+        this.currentPacks.init(contents.addFlexChild(packLayout.copyLayout()));
         this.currentPacks.getSearchField().addListener(this.searchListener);
         this.availablePacks.getSearchField().addListener(this.searchListener);
         return contents;
@@ -427,7 +428,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.layout.arrangeElements();
         ((HeaderAndFooterLayoutAccess) this.layout).getContentsFrame().setY(this.layout.getHeaderHeight());
         this.profiles.getSidebar().repositionElements();
-        this.options.repositionElements();
+        this.optionsModal.repositionElements();
         this.fileRenameModal.repositionElements();
         this.contextMenu.setOpen(false);
         this.repositionLists();
@@ -702,6 +703,13 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (isUndo(keyEvent)) {
             return this.history.undo();
         }
+        if (isSelectAll(keyEvent)) {
+            PackLayout packLayout = this.getLayoutFromSelectedList();
+            if (packLayout != null) {
+                packLayout.getList().selectAll();
+                return true;
+            }
+        }
         if (keyEvent.key() == KEY_BACKSPACE) {
             PackLayout packLayout = this.getLayoutFromSelectedList();
             if (packLayout != null) {
@@ -756,7 +764,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     @Override
     public boolean mouseClicked(MouseButtonEvent mouseEvent, boolean doubleClicked) {
         this.setDragged(null);
-        if (isRightClick(mouseEvent) && !this.options.isMouseOver(mouseEvent.x(), mouseEvent.y())) {
+        if (isRightClick(mouseEvent) && !this.optionsModal.isMouseOver(mouseEvent.x(), mouseEvent.y())) {
             this.openContextMenu((int) mouseEvent.x(), (int) mouseEvent.y());
             return true;
         }

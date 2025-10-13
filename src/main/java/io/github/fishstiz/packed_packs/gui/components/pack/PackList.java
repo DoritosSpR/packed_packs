@@ -57,8 +57,8 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     protected static final int ROW_GAP = 3;
     protected final PackOptionsContext options;
     protected final PackAssetManager assets;
-    protected final PackFileOperations fileOps;
     protected final PackListModel list;
+    private final PackFileOperations fileOps;
     private final PackListEventListener listener;
 
     protected PackList(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
@@ -242,6 +242,10 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
             this.setFocused(entry);
             this.setSelected(entry);
         }
+    }
+
+    public void selectAll() {
+        this.list.getVisibleItems().forEach(this::select);
     }
 
     public void selectAll(List<Pack> packs) {
