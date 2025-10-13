@@ -137,7 +137,7 @@ public class CurrentPackList extends PackList {
         if (this.children().isEmpty()) {
             return true;
         }
-        if (this.options.isFixed(trigger) || this.isMouserOverSelection(payload, mouseX, mouseY)) {
+        if ((source == this && this.options.isFixed(trigger)) || this.isMouserOverSelection(payload, mouseX, mouseY)) {
             return false;
         }
         int dropIndex = this.getDropIndex(mouseY);
