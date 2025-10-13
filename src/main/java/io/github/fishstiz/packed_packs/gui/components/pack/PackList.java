@@ -1,6 +1,5 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
-import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
@@ -81,10 +80,8 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         return null;
     }
 
-    protected void refreshList() {
+    private void refreshEntries() {
         Entry focused = this.getFocused();
-
-        this.list.refresh();
         List<Pack> selection = this.list.getSelection();
         List<Pack> visiblePacks = this.list.getVisibleItems();
 
@@ -95,6 +92,11 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
         this.clampScrollAmount();
         this.setFocused(mapOrNull(focused, f -> this.getEntry(f.pack())));
+    }
+
+    protected void refreshList() {
+        this.list.refresh();
+        this.refreshEntries();
     }
 
     public void scrollToTop() {
@@ -109,14 +111,6 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
     public @NotNull List<Pack> copyPacks() {
         return List.copyOf(this.list.getItems());
-    }
-
-    public @NotNull List<Pack> copySelection() {
-        return List.copyOf(this.list.getSelection());
-    }
-
-    public @NotNull Query copyQuery() {
-        return this.list.copyQuery();
     }
 
     public List<Pack> getOrderedSelection() {
@@ -402,33 +396,42 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         return maxScrollAmount > 0 ? maxScrollAmount + Y_OFFSET : maxScrollAmount;
     }
 
-    public @NotNull Snapshot captureState() {
-        return new Snapshot(this, this.copyPacks(), this.copySelection(), this.copyQuery());
+    public @NotNull Snapshot captureState(String eventName) {
+        return new Snapshot(this);
     }
 
     public void replaceState(@NotNull Snapshot snapshot) {
-        Pack focused = mapOrNull(this.getFocused(), PackList.Entry::pack);
-        this.list.replaceAll(snapshot.packs);
-        this.list.query(snapshot.query());
-        this.refreshList();
-        this.clearSelection();
-        for (Pack selected : snapshot.selection()) {
-            this.select(selected);
-        }
-        this.setFocused(this.getEntry(focused));
+        snapshot.model.restore();
+        this.refreshEntries();
+        this.setFocused(this.getEntry(snapshot.focused));
+        this.setSelected(this.getEntry(snapshot.selected));
     }
 
     public record Snapshot(
             PackList target,
-            List<Pack> packs,
-            List<Pack> selection,
-            Query query
-    ) implements Restorable.Snapshot<PackList.Snapshot> {
-        public PackList.Snapshot validate(List<Pack> validPacks) {
-            List<Pack> validated = new ArrayList<>(this.packs);
-            validated.retainAll(validPacks);
-            return new PackList.Snapshot(this.target, ImmutableList.copyOf(validated), this.selection, this.query);
+            @Nullable Pack focused,
+            @Nullable Pack selected,
+            PackListModel.Snapshot model
+    ) implements Restorable.Snapshot<Snapshot> {
+        public Snapshot(PackList target, PackListModel.Snapshot model) {
+            this(target, extractPack(target.getFocused()), extractPack(target.getSelected()), model);
         }
+
+        public Snapshot(PackList target) {
+            this(target, target.list.captureState());
+        }
+
+        public Snapshot replaceAll(List<Pack> packs) {
+            return new Snapshot(this.target, this.focused, this.selected, this.model.replaceAll(packs));
+        }
+
+        public Snapshot retainAll(Set<Pack> packs) {
+            return new Snapshot(this.target, this.focused, this.selected, this.model.retainAll(packs));
+        }
+    }
+
+    private static @Nullable Pack extractPack(@Nullable Entry entry) {
+        return mapOrNull(entry, Entry::pack);
     }
 
     public abstract class Entry extends AbstractFixedListWidget<Entry>.Entry implements ContainerEventHandlerPatch, ContextMenuContainer {

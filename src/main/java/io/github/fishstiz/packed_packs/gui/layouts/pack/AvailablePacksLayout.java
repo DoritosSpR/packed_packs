@@ -7,10 +7,10 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Preferences;
+import io.github.fishstiz.packed_packs.gui.components.events.BasicEvent;
 import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
-import io.github.fishstiz.packed_packs.gui.components.events.QueryEvent;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
@@ -41,8 +41,8 @@ public final class AvailablePacksLayout extends PackLayout {
         return this.compatButton;
     }
 
-    private void sendQueryEvent() {
-        this.eventListener.onEvent(new QueryEvent(this.list));
+    private void recordEvent() {
+        this.eventListener.onEvent(new BasicEvent(this.list));
     }
 
     @Override
@@ -50,7 +50,7 @@ public final class AvailablePacksLayout extends PackLayout {
         this.sortButton = CyclicButton.<Query.SortOption, Void>builder(Query.SortOption.values())
                 .setPrefix(SORT_TEXT)
                 .makeSquare()
-                .addListener(value -> this.sendQueryEvent())
+                .addListener(value -> this.recordEvent())
                 .addListener(this.list::sort)
                 .addListener(PackedPacks.CONFIG::setSort)
                 .setValue(PackedPacks.CONFIG.getSort())
@@ -63,7 +63,7 @@ public final class AvailablePacksLayout extends PackLayout {
                         new Sprite(ResourceUtil.getIcon("incompatible"), Size.of16())
                 ))
                 .makeSquare()
-                .addListener(value -> this.sendQueryEvent())
+                .addListener(value -> this.recordEvent())
                 .addListener(this.list::hideIncompatible)
                 .addListener(PackedPacks.CONFIG::setHideIncompatible)
                 .setValue(PackedPacks.CONFIG.isHideIncompatible())
@@ -80,5 +80,10 @@ public final class AvailablePacksLayout extends PackLayout {
             header.addChild(compatButton);
         }
         header.addChild(this.getTransferButton());
+    }
+
+    public void saveFilters() {
+        PackedPacks.CONFIG.setHideIncompatible(this.compatButton.getValue());
+        PackedPacks.CONFIG.setSort(this.sortButton.getValue());
     }
 }
