@@ -18,48 +18,37 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public class Query implements Predicate<Pack>, Comparator<Pack> {
-    private boolean hideIncompatible = false;
-    private SortOption sort;
-    private String search;
+public record Query(
+        boolean hideIncompatible,
+        SortOption sort,
+        String search
+) implements Predicate<Pack>, Comparator<Pack> {
+    public Query {
+        search = search != null ? search.toLowerCase(Locale.ROOT) : null;
+    }
+
+    public Query(Query query) {
+        this(query.hideIncompatible, query.sort, query.search);
+    }
 
     Query() {
+        this(false, null, null);
     }
 
-    Query(boolean hideIncompatible, SortOption sort, String search) {
-        this.hideIncompatible = hideIncompatible;
-        this.sort = sort;
-        this.search = search != null ? search.toLowerCase(Locale.ROOT) : null;
+    public Query withHideIncompatible(boolean hideIncompatible) {
+        if (this.hideIncompatible == hideIncompatible) return this;
+        return new Query(hideIncompatible, this.sort, this.search);
     }
 
-    boolean setHideIncompatible(boolean hideIncompatible) {
-        boolean updated = this.hideIncompatible != hideIncompatible;
-        this.hideIncompatible = hideIncompatible;
-        return updated;
+    public Query withSort(SortOption sort) {
+        if (Objects.equals(this.sort, sort)) return this;
+        return new Query(this.hideIncompatible, sort, this.search);
     }
 
-    boolean setSort(SortOption sort) {
-        boolean updated = !Objects.equals(this.sort, sort);
-        this.sort = sort;
-        return updated;
-    }
-
-    boolean setSearch(String search) {
-        String searchLowerCase = search != null ? search.toLowerCase(Locale.ROOT) : null;
-        boolean updated = !Objects.equals(this.search, searchLowerCase);
-        this.search = searchLowerCase;
-        return updated;
-    }
-
-    boolean update(boolean incompatibleHidden, SortOption sort, String search) {
-        boolean updated = this.setHideIncompatible(incompatibleHidden);
-        updated |= this.setSort(sort);
-        updated |= this.setSearch(search);
-        return updated;
-    }
-
-    boolean update(Query query) {
-        return this.update(query.hideIncompatible, query.sort, query.search);
+    public Query withSearch(String search) {
+        String searchLower = search != null ? search.toLowerCase(Locale.ROOT) : null;
+        if (Objects.equals(this.search, searchLower)) return this;
+        return new Query(this.hideIncompatible, this.sort, searchLower);
     }
 
     @Override
@@ -81,24 +70,8 @@ public class Query implements Predicate<Pack>, Comparator<Pack> {
         return this.sort != null ? this.sort.comparator.compare(first, second) : 0;
     }
 
-    boolean isQuerying() {
+    boolean hasQuery() {
         return this.hideIncompatible || (this.search != null && !this.search.isEmpty()) || this.sort != null;
-    }
-
-    public Query copy() {
-        return new Query(this.hideIncompatible, this.sort, this.search);
-    }
-
-    public boolean isHideIncompatible() {
-        return this.hideIncompatible;
-    }
-
-    public SortOption getSort() {
-        return this.sort;
-    }
-
-    public String getSearch() {
-        return this.search;
     }
 
     public enum SortOption implements CyclicButton.SpriteOption {

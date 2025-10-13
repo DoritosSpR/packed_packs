@@ -2,46 +2,48 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.gui.components.SelectableList;
+import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
+import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.repository.Pack;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.ToIntFunction;
 
-public class PackListModel extends SelectableList<Pack> {
+public class PackListModel extends SelectableList<Pack> implements Restorable<PackListModel.Snapshot> {
     private final PackOptionsContext options;
-    private final Query query = new Query();
+    private Query query = new Query();
 
     public PackListModel(PackOptionsContext options) {
         this.options = options;
     }
 
-    public Query copyQuery() {
-        return this.query.copy();
-    }
-
-    public void query(Query query) {
-        this.query.update(query);
+    private boolean updateQuery(Query query) {
+        Query previousQuery = this.query;
+        this.query = Objects.requireNonNull(query, "query");
+        return !Objects.equals(this.query, previousQuery);
     }
 
     public boolean sort(Query.SortOption sort) {
-        return this.query.setSort(sort);
+        return this.updateQuery(this.query.withSort(sort));
     }
 
     public boolean search(String search) {
-        return this.query.setSearch(search);
+        return this.updateQuery(this.query.withSearch(search));
     }
 
     public boolean hideIncompatible(boolean hide) {
-        return this.query.setHideIncompatible(hide);
+        return this.updateQuery(this.query.withHideIncompatible(hide));
     }
 
     public boolean isQueried() {
-        return this.query.isQuerying();
+        return this.query.hasQuery();
     }
 
     @Override
@@ -58,7 +60,7 @@ public class PackListModel extends SelectableList<Pack> {
     @Override
     public void refresh() {
         super.refresh();
-        if (this.query.getSort() != null) {
+        if (this.query.sort() != null) {
             this.visibleItems.sort(this.query);
         }
     }
@@ -216,5 +218,36 @@ public class PackListModel extends SelectableList<Pack> {
         }
 
         return index >= minDropIndex && index <= maxDropIndex;
+    }
+
+    @Override
+    public void replaceState(@NotNull Snapshot snapshot) {
+        this.replaceAll(snapshot.packs);
+        this.clearSelection();
+        this.selectedItems.addAll(snapshot.selection);
+        this.query = new Query(snapshot.query);
+        this.refresh();
+    }
+
+    @Override
+    public @NotNull Snapshot captureState(String eventName) {
+        return new Snapshot(this, List.copyOf(this.items), List.copyOf(this.selectedItems), new Query(this.query));
+    }
+
+    public record Snapshot(
+            PackListModel target,
+            List<Pack> packs,
+            List<Pack> selection,
+            Query query
+    ) implements Restorable.Snapshot<Snapshot> {
+        public Snapshot retainAll(Set<Pack> validPacks) {
+            List<Pack> packs = new ObjectArrayList<>(this.packs.size());
+            CollectionsUtil.addIf(packs, this.packs, validPacks::contains);
+            return new Snapshot(this.target, List.copyOf(packs), this.selection, this.query);
+        }
+
+        public Snapshot replaceAll(List<Pack> packs) {
+            return new Snapshot(this.target, List.copyOf(packs), this.selection, this.query);
+        }
     }
 }

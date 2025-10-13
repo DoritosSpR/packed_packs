@@ -48,7 +48,7 @@ public abstract class PackLayout {
         this.layout.arrangeElements();
     }
 
-    public PackList getList() {
+    public PackList list() {
         return this.list;
     }
 
