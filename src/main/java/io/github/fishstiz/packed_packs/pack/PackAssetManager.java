@@ -34,6 +34,13 @@ public class PackAssetManager {
         this.minecraft = minecraft;
     }
 
+    public ResourceLocation getIcon(Pack pack) {
+        return this.cachedIcons.getOrDefault(pack.getId(), this.staleIcons != null
+                ? this.staleIcons.getOrDefault(pack.getId(), getDefaultIcon(pack))
+                : getDefaultIcon(pack)
+        );
+    }
+
     public void getOrLoadIcon(Pack pack, Consumer<ResourceLocation> iconCallback) {
         if (this.staleIcons != null) {
             ResourceLocation staleIcon = this.staleIcons.get(pack.getId());
