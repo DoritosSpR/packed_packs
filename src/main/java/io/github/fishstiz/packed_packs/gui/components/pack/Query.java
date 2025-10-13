@@ -14,11 +14,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Predicate;
 
-public class Query {
+public class Query implements Predicate<Pack>, Comparator<Pack> {
     private boolean hideIncompatible = false;
     private SortOption sort;
     private String search;
@@ -29,7 +29,7 @@ public class Query {
     Query(boolean hideIncompatible, SortOption sort, String search) {
         this.hideIncompatible = hideIncompatible;
         this.sort = sort;
-        this.search = search;
+        this.search = search != null ? search.toLowerCase(Locale.ROOT) : null;
     }
 
     boolean setHideIncompatible(boolean hideIncompatible) {
@@ -45,8 +45,9 @@ public class Query {
     }
 
     boolean setSearch(String search) {
-        boolean updated = !Objects.equals(this.search, search);
-        this.search = search;
+        String searchLowerCase = search != null ? search.toLowerCase(Locale.ROOT) : null;
+        boolean updated = !Objects.equals(this.search, searchLowerCase);
+        this.search = searchLowerCase;
         return updated;
     }
 
@@ -61,23 +62,23 @@ public class Query {
         return this.update(query.hideIncompatible, query.sort, query.search);
     }
 
-    void apply(final List<Pack> packs) {
-        Objects.requireNonNull(packs);
-
-        String searchLowerCase = this.search != null && !this.search.isEmpty()
-                ? this.search.toLowerCase(Locale.ROOT)
-                : null;
-
-        packs.removeIf(pack -> {
-            if (this.hideIncompatible && !pack.getCompatibility().isCompatible()) {
-                return true;
-            }
-            return searchLowerCase != null && !normalizeTitle(pack.getTitle().getString()).toLowerCase().contains(searchLowerCase);
-        });
-
-        if (this.sort != null) {
-            packs.sort(this.sort.comparator);
+    @Override
+    public boolean test(Pack pack) {
+        if (pack == null) {
+            return false;
         }
+        if (this.hideIncompatible && !pack.getCompatibility().isCompatible()) {
+            return false;
+        }
+        if (this.search != null && !normalizeTitle(pack.getTitle().getString()).toLowerCase(Locale.ROOT).contains(this.search)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int compare(Pack first, Pack second) {
+        return this.sort != null ? this.sort.comparator.compare(first, second) : 0;
     }
 
     boolean isQuerying() {

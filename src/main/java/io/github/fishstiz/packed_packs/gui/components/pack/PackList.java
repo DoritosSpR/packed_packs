@@ -25,9 +25,7 @@ import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
-import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
@@ -42,11 +40,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-import static com.google.common.primitives.Ints.contains;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
-import static io.github.fishstiz.packed_packs.util.lang.IntsUtil.hasGap;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
 
 public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> implements
@@ -59,20 +55,17 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     protected final PackOptionsContext options;
     protected final PackAssetManager assets;
     protected final PackFileOperations fileOps;
-    protected final List<Pack> packs = new ObjectArrayList<>();
-    private final List<Pack> queried = new ObjectArrayList<>();
-    private final List<Pack> selection = new ObjectArrayList<>();
+    protected final PackListModel list;
     private final PackListEventListener listener;
-    private final Query query;
 
     protected PackList(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
         super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, OFFSET_Y, ROW_GAP);
         this.options = options;
         this.assets = assets;
-        this.listener = listener;
         this.fileOps = fileOps;
-        this.query = new Query();
-        this.queryPacks();
+        this.listener = listener;
+        this.list = new PackListModel(this.options);
+        this.refreshList();
     }
 
     protected abstract @NotNull Entry createEntry(SelectionContext<Pack> context, int index);
@@ -85,38 +78,20 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         return null;
     }
 
-    protected void refreshEntries() {
-        this.clearEntries();
-
-        List<Pack> selectionView = Collections.unmodifiableList(this.selection);
-
-        for (int i = 0; i < this.queried.size(); i++) {
-            this.addEntry(this.createEntry(new SelectionContext<>(selectionView, this.queried.get(i)), i));
-        }
-
+    protected void refreshList() {
         Entry focused = this.getFocused();
-        if (focused != null && !this.queried.contains(focused.pack())) {
-            this.setFocused(null);
+
+        this.list.refresh();
+        List<Pack> selection = this.list.getSelection();
+        List<Pack> visiblePacks = this.list.getVisibleItems();
+
+        this.clearEntries();
+        for (int i = 0; i < visiblePacks.size(); i++) {
+            this.addEntry(this.createEntry(new SelectionContext<>(selection, visiblePacks.get(i)), i));
         }
+
         this.clampScrollAmount();
-    }
-
-    public boolean isQueried() {
-        return this.query.isQuerying();
-    }
-
-    protected void queryPacks() {
-        this.queried.clear();
-
-        if (PackedPacks.CONFIG.isDevMode()) {
-            this.queried.addAll(this.packs);
-        } else {
-            CollectionsUtil.addIf(this.queried, this.packs, pack -> !this.options.isHidden(pack));
-        }
-
-        this.query.apply(this.queried);
-        this.selection.retainAll(this.queried);
-        this.refreshEntries();
+        this.setFocused(mapOrNull(focused, f -> this.getEntry(f.pack())));
     }
 
     public void scrollToTop() {
@@ -124,164 +99,108 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     }
 
     public void reload(Collection<Pack> packs) {
-        this.packs.clear();
-
-        for (Pack pack : packs) {
-            if (pack != null && !this.packs.contains(pack)) {
-                this.packs.add(pack);
-            }
-        }
-
+        this.list.replaceAll(packs);
         this.setFocused(null);
-        this.clearSelection();
-        this.queryPacks();
-        this.scrollToTop();
+        this.refresh();
     }
 
     public @NotNull List<Pack> copyPacks() {
-        return List.copyOf(this.packs);
+        return List.copyOf(this.list.getItems());
     }
 
     public @NotNull List<Pack> copySelection() {
-        return List.copyOf(this.selection);
+        return List.copyOf(this.list.getSelection());
     }
 
     public @NotNull Query copyQuery() {
-        return this.query.copy();
-    }
-
-    protected List<Pack> orderSelection(List<Pack> selection) {
-        List<Pack> sortedSelection = new ArrayList<>(selection);
-        sortedSelection.retainAll(this.queried);
-        sortedSelection.sort(Comparator.comparingInt(this.queried::indexOf));
-        return sortedSelection;
+        return this.list.copyQuery();
     }
 
     public List<Pack> getOrderedSelection() {
-        return ImmutableList.copyOf(this.orderSelection(this.selection));
-    }
-
-    protected int[] getIndicesFromSelection(List<Pack> selection) {
-        int[] selectionIndices = new int[selection.size()];
-        for (int i = 0; i < selection.size(); i++) {
-            int index = this.queried.indexOf(selection.get(i));
-            selectionIndices[i] = index;
-        }
-        return selectionIndices;
-    }
-
-    protected int[] getSelectionIndices() {
-        return this.getIndicesFromSelection(this.selection);
+        return this.list.getOrderedSelection();
     }
 
     public void clearSelection() {
-        this.selection.clear();
+        this.list.clearSelection();
     }
 
     private void refresh() {
         this.clearSelection();
-        this.queryPacks();
+        this.refreshList();
         this.scrollToTop();
     }
 
     public void sort(Query.SortOption sort) {
-        if (this.query.setSort(sort)) {
+        if (this.list.sort(sort)) {
             this.refresh();
         }
     }
 
     public void hideIncompatible(boolean hideIncompatible) {
-        if (this.query.setHideIncompatible(hideIncompatible)) {
+        if (this.list.hideIncompatible(hideIncompatible)) {
             this.clearSelection();
-            this.queryPacks();
+            this.refreshList();
         }
     }
 
     public void search(@NotNull String search) {
-        if (this.query.setSearch(search)) {
+        if (this.list.search(search)) {
             this.refresh();
         }
     }
 
-    private void addPack(Pack pack) {
-        if (pack != null && !this.packs.contains(pack)) {
-            int index = 0;
-            for (Pack p : this.packs) {
-                if (!this.options.isFixed(p) || this.options.getPosition(p) == Pack.Position.BOTTOM) break;
-                index++;
-            }
-            this.packs.add(index, pack);
-        }
-    }
-
-    public void add(Pack pack) {
-        this.addPack(pack);
-        this.queryPacks();
+    public boolean isQueried() {
+        return this.list.isQueried();
     }
 
     public void addAll(List<Pack> packs) {
         for (Pack pack : packs) {
-            this.addPack(pack);
+            this.list.add(pack);
         }
-        this.queryPacks();
+        this.refreshList();
     }
 
-    public boolean move(Pack pack, int to) {
-        if (this.options.isFixed(pack)) return false;
-
-        int from = this.packs.indexOf(pack);
-        if (from == -1 || to < 0 || to >= this.packs.size() || from == to) {
-            return false;
-        }
-
-        this.packs.remove(from);
-        this.packs.add(to, pack);
-        this.queryPacks();
-        this.setFocused(this.getEntry(pack));
-        return true;
+    public void addOrMove(Pack pack, int to) {
+        this.list.insertOrMove(to, pack);
+        this.list.select(pack);
     }
 
     public boolean moveAll(List<Pack> selection, int to) {
-        if (selection == null || selection.isEmpty() || to < 0 || to > this.packs.size()) {
-            return false;
+        if (this.list.moveAll(to, selection)) {
+            this.refreshList();
+            return true;
         }
-        if (!new ObjectOpenHashSet<>(this.packs).containsAll(selection)) {
-            return false;
-        }
-
-        int index = to;
-        for (Pack pack : selection) {
-            int from = this.packs.indexOf(pack);
-            if (from < to) index--;
-        }
-
-        this.packs.removeAll(selection);
-        this.packs.addAll(index, selection);
-        this.queryPacks();
-
         return true;
     }
 
-    private void removePack(Pack pack) {
-        if (this.packs.remove(pack) && this.selection.remove(pack)) {
-            this.setFocused(null);
+    private boolean removePack(Pack pack) {
+        Entry focused = this.getFocused();
+        if (this.list.remove(pack)) {
+            if (focused != null && focused.pack().getId().equals(pack.getId())) {
+                this.setFocused(null);
+            }
+            return true;
         }
+        return false;
     }
 
     public void remove(Pack pack) {
         this.removePack(pack);
-        this.queryPacks();
+        this.refreshList();
     }
 
     public void removeAll(List<Pack> packs) {
+        boolean removed = false;
         for (Pack pack : packs) {
-            this.removePack(pack);
+            removed |= this.removePack(pack);
         }
-        this.queryPacks();
+        if (removed) {
+            this.refreshList();
+        }
     }
 
     public @Nullable Pack getLastSelected() {
-        return !this.selection.isEmpty() ? this.selection.getLast() : null;
+        return this.list.getLastSelected();
     }
 
     @Override
@@ -290,15 +209,15 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     }
 
     public boolean isSelected(Pack pack) {
-        return this.selection.contains(pack);
+        return this.list.isSelected(pack);
     }
 
     public void scrollToLastSelected() {
-        Optional.ofNullable(this.getEntry(this.getLastSelected())).ifPresent(this::ensureVisible);
+        ifPresent(this.getEntry(this.getLastSelected()), this::ensureVisible);
     }
 
     public void unselect(Pack pack) {
-        this.selection.remove(pack);
+        this.list.unselect(pack);
 
         Entry entry = this.getEntry(pack);
         if (entry == this.getFocused()) {
@@ -310,9 +229,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     }
 
     public void select(Pack pack) {
-        if (pack != null && this.queried.contains(pack)) {
-            this.selection.remove(pack);
-            this.selection.add(pack);
+        if (this.list.select(pack)) {
             Entry entry = this.getEntry(pack);
             this.setFocused(entry);
             this.setSelected(entry);
@@ -320,9 +237,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     }
 
     public void selectAll(List<Pack> packs) {
-        for (Pack pack : packs) {
-            this.select(pack);
-        }
+        packs.forEach(this::select);
     }
 
     public void selectExclusive(Pack pack) {
@@ -339,29 +254,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     }
 
     public void selectRange(Pack pack) {
-        Pack selectionStart = this.getLastSelected();
-        int lastSelectedIndex = this.queried.indexOf(selectionStart);
-        int selectedPackIndex = this.queried.indexOf(pack);
-        int[] selectionIndices = this.getSelectionIndices();
-        Arrays.sort(selectionIndices);
-
-        if (!(contains(selectionIndices, -1) || hasGap(selectionIndices, true)) && selectionIndices.length > 0) {
-            if (selectionIndices[0] == lastSelectedIndex) {
-                selectionStart = this.queried.get(selectionIndices[selectionIndices.length - 1]);
-            } else if (selectionIndices[selectionIndices.length - 1] == lastSelectedIndex) {
-                selectionStart = this.queried.get(selectionIndices[0]);
-            }
-        }
-
-        int startIndex = this.queried.indexOf(selectionStart);
-        if (selectedPackIndex != -1 && startIndex != -1) {
-            this.clearSelection();
-            for (int i = Math.min(selectedPackIndex, startIndex); i <= Math.max(selectedPackIndex, startIndex); i++) {
-                Pack selected = this.queried.get(i);
-                if (selected != pack) this.select(selected);
-            }
-        }
-
+        this.list.selectRange(pack);
         this.select(pack);
     }
 
@@ -371,14 +264,13 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
     public void transferAll() {
         List<Pack> payload = new ArrayList<>();
-
-        for (int i = this.queried.size() - 1; i >= 0; i--) {
-            Pack pack = this.queried.get(i);
+        List<Pack> visiblePacks = this.list.getVisibleItems();
+        for (int i = visiblePacks.size() - 1; i >= 0; i--) {
+            Pack pack = visiblePacks.get(i);
             if (this.isTransferable(pack)) {
                 payload.add(pack);
             }
         }
-
         if (!payload.isEmpty()) {
             this.sendEvent(new RequestTransferEvent(this, this.getLastSelected(), payload));
         }
@@ -392,7 +284,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
     public abstract boolean canDrop(DragEvent dragEvent, double mouseX, double mouseY);
 
-    protected abstract @Nullable List<Pack> handleDrop(DragEvent dragEvent, double mouseX, double mouseY);
+    protected abstract List<Pack> handleDrop(DragEvent dragEvent, double mouseX, double mouseY);
 
     public abstract void renderDroppableZone(GuiGraphics guiGraphics, DragEvent dragEvent, int mouseX, int mouseY, float partialTick);
 
@@ -400,7 +292,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         if (this.options.isLocked()) return;
 
         List<Pack> dropped = this.handleDrop(dragEvent, mouseX, mouseY);
-        if (dropped != null && !dropped.isEmpty()) {
+        if (!dropped.isEmpty()) {
             if (dragEvent.target() != this) {
                 this.sendEvent(new DropEvent(dragEvent.target(), this, dropped));
             } else {
@@ -459,7 +351,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         Entry entry = this.getEntry(this.getLastSelected());
-        if (isExpandFolder(keyCode, modifiers) && entry != null && entry.folderWidget != null && this.selection.size() == 1) {
+        if (isExpandFolder(keyCode, modifiers) && entry != null && entry.folderWidget != null && this.list.getSelection().size() == 1) {
             this.openFolder(entry.folderWidget.getMetadata());
             return true;
         }
@@ -498,17 +390,9 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
     public void replaceState(@NotNull Snapshot snapshot) {
         Pack focused = mapOrNull(this.getFocused(), PackList.Entry::pack);
-        this.packs.clear();
-
-        for (Pack pack : snapshot.packs()) {
-            if (pack != null && !this.packs.contains(pack)) {
-                this.packs.add(pack);
-            }
-        }
-
-        this.query.update(snapshot.query());
-        this.queryPacks();
-
+        this.list.replaceAll(snapshot.packs);
+        this.list.query(snapshot.query());
+        this.refreshList();
         this.clearSelection();
         for (Pack selected : snapshot.selection()) {
             this.select(selected);
@@ -534,12 +418,12 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         protected static final int SPACING = 2;
         protected static final int BACKGROUND_OFFSET = 1;
         protected static final ColoredRect SELECTED_OVERLAY = new ColoredRect(Theme.BLUE_500.withAlpha(0.25F));
-        protected final List<GuiEventListener> children = new ArrayList<>();
-        protected final List<Renderable> renderables = new ArrayList<>();
-        protected final List<Renderable> topRenderables = new ArrayList<>();
-        protected final List<NarratableEntry> narratables = new ArrayList<>();
+        protected final SelectionContext<Pack> context;
+        private final List<GuiEventListener> children = new ArrayList<>();
+        private final List<Renderable> renderables = new ArrayList<>();
+        private final List<Renderable> topRenderables = new ArrayList<>();
+        private final List<NarratableEntry> narratables = new ArrayList<>();
         private final MouseSelectionHandler<Pack> selectionHandler;
-        private final SelectionContext<Pack> context;
         private final PackWidget packWidget;
         private final @Nullable PackListDevMenu devMenu;
         private FidgetzButton<FolderPack> folderWidget;
@@ -658,12 +542,8 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
                         return false;
                     }
                 }
-                case DRAG -> PackList.this.sendEvent(new DragEvent(
-                        PackList.this,
-                        PackList.this.getOrderedSelection().reversed(),
-                        this.pack(),
-                        this.packWidget.getSprite()
-                ));
+                case DRAG ->
+                        PackList.this.sendEvent(new DragEvent(PackList.this, PackList.this.getOrderedSelection().reversed(), this.pack()));
             }
 
             if (action.shouldSelect()) {

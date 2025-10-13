@@ -82,7 +82,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private static final Component RESET_ENABLED_TEXT = ResourceUtil.getText("reset_enabled");
     private final Screen previous;
     private final PackSelectionScreenArgs original;
-    private final PackAssetManager assetManager;
     private final PackRepositoryManager repository;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final HistoryManager<Snapshot> history = new HistoryManager<>();
@@ -105,14 +104,12 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private @Nullable GuiEventListener hoveredElement;
 
     public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original) {
-        super(ResourceUtil.getModName());
+        super(minecraft, ResourceUtil.getModName());
 
-        this.minecraft = minecraft;
         this.previous = previous;
         this.original = original;
         this.packsConfig = PackedPacks.CONFIG.get(original.packType());
         this.profiles = new ProfilesLayout(this, this.packsConfig, this::onProfileChange, this::onProfileCopy);
-        this.assetManager = new PackAssetManager(this.minecraft);
         PackOptionsContext options = new PackOptionsContext(this.profiles::getProfile, this.packsConfig);
         this.repository = new PackRepositoryManager(this.original.repository(), options, this.original.packDir());
         PackFileOperations fileOps = new PackFileOperations(options, this.repository);
