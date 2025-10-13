@@ -687,12 +687,27 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.rebuildWidgets();
     }
 
+    public void switchDefaultProfile() {
+        Profile defaultProfile = this.packsConfig.getDefaultProfile();
+        if (defaultProfile != null) {
+            if (Objects.equals(this.profiles.getProfile(), defaultProfile)) {
+                this.profiles.setProfile(null);
+            } else {
+                this.profiles.setProfile(defaultProfile);
+            }
+        }
+    }
+
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         this.contextMenu.setOpen(false);
 
         if (isDeveloperMode(keyCode, modifiers)) {
             this.toggleDevMode();
+            return true;
+        }
+        if (isSwitchDefaultProfile(keyCode, modifiers)) {
+            this.switchDefaultProfile();
             return true;
         }
         if (isRefresh(keyCode, modifiers) && (this.refreshFuture == null || this.refreshFuture.isDone())) {
