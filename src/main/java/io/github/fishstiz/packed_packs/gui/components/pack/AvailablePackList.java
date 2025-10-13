@@ -17,13 +17,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
 import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
+import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.ifPresent;
 import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
-import static java.util.Optional.ofNullable;
 
 public class AvailablePackList extends PackList {
     private static final Sprite SELECT_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/select_highlighted"));
@@ -55,12 +56,14 @@ public class AvailablePackList extends PackList {
     }
 
     @Override
-    protected @Nullable List<Pack> handleDrop(DragEvent dragEvent, double mouseX, double mouseY) {
+    protected List<Pack> handleDrop(DragEvent dragEvent, double mouseX, double mouseY) {
         PackList source = dragEvent.target();
         List<Pack> payload = dragEvent.payload();
         Pack trigger = dragEvent.trigger();
 
-        if (this.isInvalidDrop(source, payload, trigger)) return null;
+        if (this.isInvalidDrop(source, payload, trigger)){
+            return Collections.emptyList();
+        }
 
         List<Pack> dropped = new ArrayList<>();
         for (Pack pack : payload) {
@@ -74,7 +77,7 @@ public class AvailablePackList extends PackList {
         this.addAll(dropped);
         this.selectAll(dropped);
         this.select(trigger);
-        ofNullable(this.getEntry(trigger)).ifPresent(this::ensureVisible);
+        ifPresent(this.getEntry(trigger), this::ensureVisible);
 
         return dropped;
     }
