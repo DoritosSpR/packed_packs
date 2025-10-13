@@ -8,10 +8,13 @@ public sealed interface PackListEvent permits
         DropEvent,
         FileEvent,
         MoveEvent,
-        QueryEvent,
         RequestTransferEvent,
         SelectionEvent {
     PackList target();
 
     boolean pushToHistory();
+
+    default String name() {
+        return this.getClass().getSimpleName();
+    }
 }
