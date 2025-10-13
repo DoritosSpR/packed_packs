@@ -82,11 +82,16 @@ public class InputUtil {
     }
 
     public static boolean isDeveloperMode(int keyCode, int modifiers) {
-        return modifiers == MOD_CONTROL + MOD_SHIFT && keyCode == KEY_I;
+        return  noModifiers(modifiers) && keyCode == KEY_F12 ||
+                modifiers == MOD_CONTROL + MOD_SHIFT && keyCode == KEY_I;
     }
 
     public static boolean isSelectAll(int keyCode, int modifiers) {
         return modifiers == MOD_CONTROL && keyCode == KEY_A;
+    }
+
+    public static boolean isSwitchDefaultProfile(int keyCode, int modifiers) {
+        return noModifiers(modifiers) && keyCode == KEY_F1;
     }
 
     public static boolean noModifiers(int modifiers) {
