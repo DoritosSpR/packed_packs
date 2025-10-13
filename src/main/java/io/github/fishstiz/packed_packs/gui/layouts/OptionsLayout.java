@@ -6,28 +6,30 @@ import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
-import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.layouts.Layout;
+import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.network.chat.Component;
 
-public class OptionsLayout {
+import java.util.function.Consumer;
+
+public class OptionsLayout implements Layout {
     private static final int CONTENT_WIDTH = 175;
-    private static final int DEFAULT_LABEL_COLOR = Theme.GRAY_800.getARGB();
     private static final Component REPLACE_SCREEN_TEXT = ResourceUtil.getText("options.replace_screen");
     private static final Config.ResourcePacks RESOURCEPACKS = PackedPacks.CONFIG.getResourcepacks();
     private static final Config.Packs DATAPACKS = PackedPacks.CONFIG.getDatapacks();
     private final LinearLayout layout;
 
-    public OptionsLayout(int labelColor) {
+    public OptionsLayout() {
         final int spacing = GuiConstants.SPACING;
         this.layout = LinearLayout.vertical();
         LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(spacing).paddingTop(spacing);
 
         this.layout.addChild(
                 FidgetzText.<Void>builder()
-                        .setMessage(ResourceUtil.getText("resource_packs").withColor(labelColor))
+                        .setMessage(ResourceUtil.getText("resource_packs"))
                         .alignLeft()
                         .build(),
                 layoutSettings.copy().paddingTop((spacing * 2) - spacing / 2)
@@ -60,7 +62,7 @@ public class OptionsLayout {
 
         this.layout.addChild(
                 FidgetzText.<Void>builder()
-                        .setMessage(Component.translatable("selectWorld.dataPacks").withColor(labelColor))
+                        .setMessage(Component.translatable("selectWorld.dataPacks"))
                         .alignLeft()
                         .build(),
                 layoutSettings.copy().paddingTop(spacing * 2)
@@ -87,11 +89,38 @@ public class OptionsLayout {
         this.layout.arrangeElements();
     }
 
-    public OptionsLayout() {
-        this(DEFAULT_LABEL_COLOR);
+    @Override
+    public void visitChildren(Consumer<LayoutElement> visitor) {
+        this.layout.visitChildren(visitor);
     }
 
-    public LinearLayout layout() {
-        return this.layout;
+    @Override
+    public void setX(int x) {
+        this.layout.setX(x);
+    }
+
+    @Override
+    public void setY(int y) {
+        this.layout.setY(y);
+    }
+
+    @Override
+    public int getX() {
+        return this.layout.getX();
+    }
+
+    @Override
+    public int getY() {
+        return this.layout.getY();
+    }
+
+    @Override
+    public int getWidth() {
+        return this.layout.getWidth();
+    }
+
+    @Override
+    public int getHeight() {
+        return this.layout.getHeight();
     }
 }
