@@ -14,6 +14,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.InputWithModifiers;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
@@ -153,7 +154,7 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
         private int y = 0;
         private int width = DEFAULT_WIDTH;
         private int height = DEFAULT_HEIGHT;
-        private Component message = Component.empty();
+        private Component message = CommonComponents.EMPTY;
         private Tooltip tooltip;
         private ButtonSprites sprites;
         private boolean spriteOnly = false;

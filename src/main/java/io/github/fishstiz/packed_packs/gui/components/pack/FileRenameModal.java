@@ -108,7 +108,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         this.pack = null;
         this.oldName = null;
         this.sprite = DEFAULT_SPRITE;
-        this.title.setMessage(Component.empty());
+        this.title.setMessage(CommonComponents.EMPTY);
         this.nameEditor.setValue("");
     }
 

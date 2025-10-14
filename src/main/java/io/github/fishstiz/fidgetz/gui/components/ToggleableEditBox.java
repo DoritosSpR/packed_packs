@@ -10,6 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
@@ -177,7 +178,7 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
         private int width = WidgetBuilder.DEFAULT_WIDTH;
         private int height = WidgetBuilder.DEFAULT_HEIGHT;
         private String value = "";
-        private Component hint = Component.empty();
+        private Component hint = CommonComponents.EMPTY;
         private boolean textShadow = true;
         private Integer textColor;
         private Integer hintColor;

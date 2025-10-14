@@ -7,7 +7,7 @@ import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.sounds.SoundManager;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.CommonComponents;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
@@ -18,7 +18,7 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
     private int minHeight;
 
     public LayoutWrapper(T layout, int minWidth, int minHeight) {
-        super(layout.getX(), layout.getY(), layout.getWidth(), layout.getHeight(), Component.empty());
+        super(layout.getX(), layout.getY(), layout.getWidth(), layout.getHeight(), CommonComponents.EMPTY);
 
         this.layout = layout;
         this.minWidth = minWidth;
