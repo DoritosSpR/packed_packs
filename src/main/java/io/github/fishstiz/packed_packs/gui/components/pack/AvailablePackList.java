@@ -42,7 +42,7 @@ public class AvailablePackList extends PackList {
     }
 
     @Override
-    protected boolean canInteract(PackList source) {
+    public boolean canInteract(PackList source) {
         return source != this;
     }
 

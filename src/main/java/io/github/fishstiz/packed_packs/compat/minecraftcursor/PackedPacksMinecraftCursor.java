@@ -40,10 +40,12 @@ public class PackedPacksMinecraftCursor implements MinecraftCursorInitializer {
             PackList source = dragEvent.target();
             boolean validDrop = false;
 
-            for (PackList destination : screen.getPackLists()) {
-                if (destination.isMouseOver(mouseX, mouseY)) {
-                    validDrop = source == destination || source.canDrop(dragEvent, mouseX, mouseY);
-                    break;
+            if (screen.isUnlocked()) {
+                for (PackList list : screen.getPackLists()) {
+                    if (list.isMouseOver(mouseX, mouseY)) {
+                        validDrop = source == list || source.canInteract(list);
+                        break;
+                    }
                 }
             }
             CursorController.getInstance().setSingleCycleCursor(validDrop ? CursorType.GRABBING : CursorType.NOT_ALLOWED);
