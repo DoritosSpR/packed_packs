@@ -712,10 +712,10 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (super.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
-        if (isRedo(keyCode, modifiers)) {
+        if (isRedo(keyCode, modifiers) && this.isUnlocked()) {
             return this.history.redo();
         }
-        if (isUndo(keyCode, modifiers)) {
+        if (isUndo(keyCode, modifiers) && this.isUnlocked()) {
             return this.history.undo();
         }
         if (isSelectAll(keyCode)) {
