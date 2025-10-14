@@ -117,7 +117,7 @@ public class CurrentPackList extends PackList {
     }
 
     @Override
-    protected boolean canInteract(PackList source) {
+    public boolean canInteract(PackList source) {
         return true;
     }
 

@@ -25,7 +25,7 @@ public class FolderPackList extends CurrentPackList {
     }
 
     @Override
-    protected boolean canInteract(PackList source) {
+    public boolean canInteract(PackList source) {
         return source == this;
     }
 
