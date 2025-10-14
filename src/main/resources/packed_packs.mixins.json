@@ -29,5 +29,5 @@
     "overrides.PackRepositoryMixin",
     "overrides.PackSelectionModelMixin"
   ],
-  "plugin": "io.github.fishstiz.packed_packs.PackedPacksMixinConfigPlugin"
+  "plugin": "io.github.fishstiz.packed_packs.transform.PackedPacksMixinConfigPlugin"
 }
