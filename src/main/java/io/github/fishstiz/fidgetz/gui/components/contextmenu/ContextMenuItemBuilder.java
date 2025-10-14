@@ -109,11 +109,12 @@ public class ContextMenuItemBuilder {
         }
     }
 
-    public static class IterableChain<E> extends AbstractChain {
+    public static class IterableChain<E> {
+        protected final ContextMenuItemBuilder builder;
         protected final Iterable<E> iterable;
 
         IterableChain(ContextMenuItemBuilder builder, Iterable<E> iterable) {
-            super(builder);
+            this.builder = builder;
             this.iterable = iterable;
         }
 
@@ -121,33 +122,62 @@ public class ContextMenuItemBuilder {
             for (E e : this.iterable) {
                 this.builder.add(itemFactory.apply(e));
             }
-            return this.self();
+            return this.builder;
         }
 
         public ContextMenuItemBuilder forEach(BiConsumer<E, ContextMenuItemBuilder> action) {
             for (E e : this.iterable) {
-                action.accept(e, this.self());
+                action.accept(e, this.builder);
             }
+            return this.builder;
+        }
+    }
+
+    public static class ElseChain extends AbstractChain {
+        protected final boolean conditionMatched;
+
+        protected ElseChain(ContextMenuItemBuilder builder, boolean conditionMatched) {
+            super(builder);
+            this.conditionMatched = conditionMatched;
+        }
+
+        public ContextMenuItemBuilder orElse(Consumer<ContextMenuItemBuilder> builderAction) {
+            if (!this.conditionMatched) builderAction.accept(this.self());
             return this.self();
         }
     }
 
-    public static class ConditionalChain extends AbstractChain {
+    public static class PredicateElseChain<T> extends ElseChain {
+        private final T t;
+
+        protected PredicateElseChain(ContextMenuItemBuilder builder, boolean conditionMatched, T t) {
+            super(builder, conditionMatched);
+            this.t = t;
+        }
+
+        public ContextMenuItemBuilder orElse(BiConsumer<T, ContextMenuItemBuilder> builderAction) {
+            if (!this.conditionMatched) builderAction.accept(this.t, this.builder);
+            return this.builder;
+        }
+    }
+
+    public static class ConditionalChain {
+        protected final ContextMenuItemBuilder builder;
         protected final boolean condition;
 
         ConditionalChain(ContextMenuItemBuilder builder, boolean condition) {
-            super(builder);
+            this.builder = builder;
             this.condition = condition;
         }
 
-        public ConditionalChain ifTrue(Consumer<ContextMenuItemBuilder> builderAction) {
-            if (this.condition) builderAction.accept(this.self());
-            return this;
+        public ElseChain ifTrue(Consumer<ContextMenuItemBuilder> builderAction) {
+            if (this.condition) builderAction.accept(this.builder);
+            return new ElseChain(this.builder, this.condition);
         }
 
-        public ConditionalChain ifFalse(Consumer<ContextMenuItemBuilder> builderAction) {
-            if (!this.condition) builderAction.accept(this.self());
-            return this;
+        public ElseChain ifFalse(Consumer<ContextMenuItemBuilder> builderAction) {
+            if (!this.condition) builderAction.accept(this.builder);
+            return new ElseChain(this.builder, !this.condition);
         }
     }
 
@@ -160,25 +190,25 @@ public class ContextMenuItemBuilder {
         }
 
         @Override
-        public PredicateChain<T> ifTrue(Consumer<ContextMenuItemBuilder> builderAction) {
+        public PredicateElseChain<T> ifTrue(Consumer<ContextMenuItemBuilder> builderAction) {
             super.ifTrue(builderAction);
-            return this;
+            return new PredicateElseChain<>(this.builder, this.condition, this.t);
         }
 
         @Override
-        public PredicateChain<T> ifFalse(Consumer<ContextMenuItemBuilder> builderAction) {
+        public PredicateElseChain<T> ifFalse(Consumer<ContextMenuItemBuilder> builderAction) {
             super.ifFalse(builderAction);
-            return this;
+            return new PredicateElseChain<>(this.builder, !this.condition, this.t);
         }
 
-        public PredicateChain<T> ifTrue(BiConsumer<T, ContextMenuItemBuilder> builderAction) {
-            if (this.condition) builderAction.accept(this.t, this.self());
-            return this;
+        public PredicateElseChain<T> ifTrue(BiConsumer<T, ContextMenuItemBuilder> builderAction) {
+            if (this.condition) builderAction.accept(this.t, this.builder);
+            return new PredicateElseChain<>(this.builder, this.condition, this.t);
         }
 
-        public PredicateChain<T> ifFalse(BiConsumer<T, ContextMenuItemBuilder> builderAction) {
-            if (!this.condition) builderAction.accept(this.t, this.self());
-            return this;
+        public PredicateElseChain<T> ifFalse(BiConsumer<T, ContextMenuItemBuilder> builderAction) {
+            if (!this.condition) builderAction.accept(this.t, this.builder);
+            return new PredicateElseChain<>(this.builder, !this.condition, this.t);
         }
     }
 
@@ -188,9 +218,9 @@ public class ContextMenuItemBuilder {
         }
 
         @Override
-        public PredicateChain<T> ifTrue(BiConsumer<@NotNull T, ContextMenuItemBuilder> builderAction) {
-            if (this.condition) builderAction.accept(Objects.requireNonNull(this.t), this.self());
-            return this;
+        public PredicateElseChain<T> ifTrue(BiConsumer<@NotNull T, ContextMenuItemBuilder> builderAction) {
+            if (this.condition) builderAction.accept(Objects.requireNonNull(this.t), this.builder);
+            return new PredicateElseChain<>(this.builder, this.condition, this.t);
         }
     }
 }
