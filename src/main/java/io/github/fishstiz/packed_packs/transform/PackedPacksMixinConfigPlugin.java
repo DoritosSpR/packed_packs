@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs;
+package io.github.fishstiz.packed_packs.transform;
 
 import io.github.fishstiz.packed_packs.compat.Mod;
 import org.objectweb.asm.tree.ClassNode;
