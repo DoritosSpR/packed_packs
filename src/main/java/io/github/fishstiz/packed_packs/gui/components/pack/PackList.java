@@ -286,9 +286,9 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         this.listener.onEvent(event);
     }
 
-    protected abstract boolean canInteract(PackList source);
+    public abstract boolean canInteract(PackList source);
 
-    public abstract boolean canDrop(DragEvent dragEvent, double mouseX, double mouseY);
+    protected abstract boolean canDrop(DragEvent dragEvent, double mouseX, double mouseY);
 
     protected abstract List<Pack> handleDrop(DragEvent dragEvent, double mouseX, double mouseY);
 

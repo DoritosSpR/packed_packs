@@ -146,7 +146,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
                 for (PackList list : this.getPackLists()) {
                     list.renderDroppableZone(guiGraphics, event, mouseX, mouseY, partialTick);
                     if (!validDrop && list.isMouseOver(mouseX, mouseY)) {
-                        validDrop = source == list || list.canDrop(event, mouseX, mouseY);
+                        validDrop = source == list || source.canInteract(list);
                     }
                 }
             }

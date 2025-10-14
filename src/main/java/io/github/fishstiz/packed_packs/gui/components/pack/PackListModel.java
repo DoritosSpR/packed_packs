@@ -145,9 +145,9 @@ public class PackListModel extends SelectableList<Pack> implements Restorable<Pa
 
         int size = this.items.size();
         if (this.isSelected(pack)) {
-            List<Pack> selection = this.getOrderedSelection().reversed();
+            List<Pack> selection = this.getOrderedSelection();
             if (selection.size() > 1) {
-                int index = this.items.indexOf(selection.getFirst());
+                int index = this.items.indexOf(selection.getLast());
                 int moveIndex = index > -1 ? this.getMoveDownIndex(pack) : -1;
                 return index > -1 && index < size - 1 && moveIndex > -1 && !this.options.isFixed(this.items.get(moveIndex));
             }
