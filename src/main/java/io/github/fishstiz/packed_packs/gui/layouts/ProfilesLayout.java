@@ -143,7 +143,7 @@ public class ProfilesLayout {
 
         boolean hasProfile = profile != null;
         this.nameField.setHint(hasProfile ? UNNAMED_TEXT : NO_PROFILE_TEXT);
-        this.nameField.setValue(hasProfile ? profile.getName() : "");
+        this.nameField.setValueSilently(hasProfile ? profile.getName() : "");
         this.nameField.visible = hasProfile;
         this.nameField.active = hasProfile;
         this.noProfileButton.active = hasProfile;

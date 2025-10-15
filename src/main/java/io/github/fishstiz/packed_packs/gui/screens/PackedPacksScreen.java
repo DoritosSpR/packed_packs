@@ -6,7 +6,6 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.util.debounce.ImmediateDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.Config;
@@ -82,7 +81,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private final PackSelectionScreenArgs original;
     private final PackRepositoryManager repository;
     private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
-    private final ImmediateDebouncer<String> searchListener = new ImmediateDebouncer<>(this::clearHistory, 250);
     private final AvailablePacksLayout availablePacks;
     private final CurrentPacksLayout currentPacks;
     private final Config.Packs packsConfig;
@@ -98,8 +96,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private CompletableFuture<Void> refreshFuture;
     private PackWatcher watcher;
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
-    private boolean initialized = false;
     private @Nullable GuiEventListener hoveredElement;
+    private boolean initialized = false;
 
     private PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original, boolean initState) {
         super(minecraft, ResourceUtil.getModName());
@@ -261,8 +259,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
         FlexLayout packLayout = FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING);
         this.availablePacks.init(contents.addFlexChild(packLayout));
         this.currentPacks.init(contents.addFlexChild(packLayout.copyLayout()));
-        this.currentPacks.getSearchField().addListener(this.searchListener);
-        this.availablePacks.getSearchField().addListener(this.searchListener);
+        this.currentPacks.getSearchField().addListener(this::recordState);
+        this.availablePacks.getSearchField().addListener(this::recordState);
         return contents;
     }
 
@@ -506,6 +504,14 @@ public class PackedPacksScreen extends PackListEventHandler implements
             previous.setPacks(this.currentPacks.list().copyPacks());
         }
 
+        boolean unlocked = current == null || !current.isLocked();
+        this.availablePacks.getTransferButton().active = unlocked;
+        this.currentPacks.getTransferButton().active = unlocked;
+        this.availablePacks.getSearchField().setValueSilently("");
+        this.currentPacks.getSearchField().setValueSilently("");
+        this.availablePacks.list().search("");
+        this.currentPacks.list().search("");
+
         if (current == null) {
             this.useSelected();
         } else if (!current.getPackIds().isEmpty()) {
@@ -513,12 +519,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
         } else {
             this.reset();
         }
-
-        boolean unlocked = current == null || !current.isLocked();
-        this.availablePacks.getSearchField().setValue("");
-        this.availablePacks.getTransferButton().active = unlocked;
-        this.currentPacks.getSearchField().setValue("");
-        this.currentPacks.getTransferButton().active = unlocked;
 
         this.repositionElements();
     }
@@ -838,6 +838,10 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.history.reset(this.captureState());
     }
 
+    public void recordState(String eventName) {
+        this.history.push(this.captureState(eventName));
+    }
+
     @Override
     public @NotNull Snapshot captureState(String eventName) {
         return new Snapshot(this, this.availablePacks.list().captureState(), this.currentPacks.list().captureState());
@@ -846,8 +850,11 @@ public class PackedPacksScreen extends PackListEventHandler implements
     @Override
     public void replaceState(@NotNull Snapshot snapshot) {
         Set<Pack> validPacks = new ObjectOpenHashSet<>(this.repository.getPacks());
-        this.availablePacks.getSortButton().setValueSilently(snapshot.availablePacks.model().query().sort());
-        this.availablePacks.getCompatButton().setValueSilently(snapshot.availablePacks.model().query().hideIncompatible());
+        Query availablePacksQuery = snapshot.availablePacks.model().query();
+        this.availablePacks.getSortButton().setValueSilently(availablePacksQuery.sort());
+        this.availablePacks.getCompatButton().setValueSilently(availablePacksQuery.hideIncompatible());
+        this.availablePacks.getSearchField().setValueSilently(availablePacksQuery.unmodifiedSearch());
+        this.currentPacks.getSearchField().setValueSilently(snapshot.currentPacks().model().query().unmodifiedSearch());
         snapshot.availablePacks.retainAll(validPacks).restore();
         snapshot.currentPacks.retainAll(validPacks).restore();
         this.availablePacks.list().scrollToLastSelected();
