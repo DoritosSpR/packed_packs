@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -63,7 +64,7 @@ public class Config implements Serializable {
         return resourcepacks;
     }
 
-    public Packs getDatapacks() {
+    public DataPacks getDatapacks() {
         return datapacks;
     }
 
@@ -97,14 +98,18 @@ public class Config implements Serializable {
         }
     }
 
-    public abstract static class Packs implements Serializable {
+    public abstract static sealed class Packs implements Serializable {
         private boolean replaceOriginal = true;
         private boolean hideIncompatibleWarnings = false;
+        @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         private final List<String> additionalFolders = new ObjectArrayList<>();
+        private boolean rememberLastViewedProfile = false;
+        private @Nullable Long lastViewedProfile = null;
         private @Nullable Long defaultProfile = null;
         private long autoIncrement = 0;
         private final List<Profile> profiles = new ObjectArrayList<>();
         private transient @Nullable Profile cachedDefaultProfile = null;
+        private transient @Nullable Profile cachedLastViewedProfile = null;
 
         public abstract PackType packType();
 
@@ -131,8 +136,27 @@ public class Config implements Serializable {
             }
         }
 
+        public boolean isLastViewedProfileRemembered() {
+            return this.rememberLastViewedProfile;
+        }
+
+        public void setRememberLastViewedProfile(boolean rememberLastViewedProfile) {
+            this.rememberLastViewedProfile = rememberLastViewedProfile;
+        }
+
+        public @Nullable Profile getLastViewedProfile() {
+            return this.rememberLastViewedProfile ? cachedLastViewedProfile : null;
+        }
+
+        public void setLastViewedProfile(@Nullable Profile lastViewedProfile) {
+            if (lastViewedProfile == null || CollectionsUtil.containsId(this.profiles, lastViewedProfile.getId(), Profile::getId)) {
+                this.lastViewedProfile = lastViewedProfile != null ? lastViewedProfile.getId() : null;
+                this.cachedLastViewedProfile = lastViewedProfile;
+            }
+        }
+
         public List<Profile> getProfiles() {
-            return List.copyOf(this.profiles);
+            return Collections.unmodifiableList(this.profiles);
         }
 
         public void addProfile(Profile profile) {
@@ -148,12 +172,18 @@ public class Config implements Serializable {
                     this.defaultProfile = null;
                     this.cachedDefaultProfile = null;
                 }
+                if (Objects.equals(this.lastViewedProfile, profile.getId())) {
+                    this.lastViewedProfile = null;
+                    this.cachedLastViewedProfile = null;
+                }
             }
 
             if (this.profiles.isEmpty()) {
                 this.autoIncrement = 0;
                 this.cachedDefaultProfile = null;
                 this.defaultProfile = null;
+                this.lastViewedProfile = null;
+                this.cachedLastViewedProfile = null;
             }
         }
 
@@ -178,14 +208,14 @@ public class Config implements Serializable {
         }
     }
 
-    public static class DataPacks extends Packs {
+    public static final class DataPacks extends Packs {
         @Override
         public PackType packType() {
             return PackType.SERVER_DATA;
         }
     }
 
-    public static class ResourcePacks extends Packs {
+    public static final class ResourcePacks extends Packs {
         private boolean applyOnClose = true;
 
         @Override
