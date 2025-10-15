@@ -1,11 +1,11 @@
 package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 
 import io.github.fishstiz.fidgetz.gui.components.*;
+import io.github.fishstiz.fidgetz.gui.layouts.Layouts;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
-import io.github.fishstiz.fidgetz.transform.interfaces.UnpaddedScrollableLayout;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.ARGBColor;
@@ -106,8 +106,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         this.childMenus.forEach(this::addWidget);
 
         content.arrangeElements();
-        ScrollableLayout layout = new ScrollableLayout(Minecraft.getInstance(), content, content.getHeight());
-        ((UnpaddedScrollableLayout) layout).fidgetz$setUnpadded(true);
+        ScrollableLayout layout = Layouts.unpaddedScrollableLayout(content);
 
         layout.setMaxHeight(MAX_HEIGHT);
         layout.visitWidgets(this::addRenderableWidget);
