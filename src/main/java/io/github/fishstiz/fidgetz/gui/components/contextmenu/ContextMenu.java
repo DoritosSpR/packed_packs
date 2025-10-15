@@ -105,8 +105,8 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         this.childMenus.forEach(this::addWidget);
 
         content.arrangeElements();
-
         ScrollableLayout layout = new ScrollableLayout(Minecraft.getInstance(), content, content.getHeight());
+
         layout.setMaxHeight(MAX_HEIGHT);
         layout.visitWidgets(this::addRenderableWidget);
 
