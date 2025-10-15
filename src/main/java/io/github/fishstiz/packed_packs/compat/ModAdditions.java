@@ -4,6 +4,7 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuil
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.compat.api.ModExtension;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
@@ -30,10 +31,10 @@ public class ModAdditions {
     private ModAdditions() {
     }
 
-    public static void onCreateHeader(PackType packType, FlexLayout header, PackSelectionScreen original) {
+    public static void onCreateHeader(PackType packType, FlexLayout header, PackedPacksScreen screen, PackSelectionScreen original) {
         for (ModExtension ext : EXTENSIONS) {
             try {
-                ext.onCreateHeader(packType, header, original);
+                ext.onCreateHeader(packType, header, screen, original);
             } catch (Exception e) {
                 LOGGER.error("[packed_packs] Error while creating header from extension {} ", ext.id(), e);
             }
