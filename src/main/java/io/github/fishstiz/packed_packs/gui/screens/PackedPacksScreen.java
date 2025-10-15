@@ -231,7 +231,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
         PackSelectionScreen originalScreen = this.previous instanceof PackSelectionScreen s ? s : this.original.createDummy();
 
-        ModAdditions.onCreateHeader(this.packsConfig.packType(), header, originalScreen);
+        ModAdditions.onCreateHeader(this.packsConfig.packType(), header, this, originalScreen);
 
         if (devMode || Preferences.INSTANCE.optionsWidget.get()) {
             header.addChild(
