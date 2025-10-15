@@ -95,6 +95,10 @@ public class InputUtil {
         return noModifiers(keyEvent.modifiers()) && keyEvent.key() == KEY_F1;
     }
 
+    public static boolean isOpenProfiles(KeyEvent keyEvent) {
+        return keyEvent.modifiers() == MOD_CONTROL && keyEvent.key() == KEY_GRAVE;
+    }
+
     public static boolean noModifiers(int modifiers) {
         return modifiers == 0;
     }
