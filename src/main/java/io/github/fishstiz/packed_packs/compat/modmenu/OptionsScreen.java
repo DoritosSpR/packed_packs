@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.compat.modmenu;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.gui.layouts.OptionsLayout;
-import io.github.fishstiz.packed_packs.util.ResourceUtil;
+import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.Layout;
 import net.minecraft.client.gui.screens.Screen;
@@ -15,14 +15,14 @@ public class OptionsScreen extends Screen {
     private Layout body;
 
     protected OptionsScreen(Screen previous) {
-        super(ResourceUtil.getText("options.title"));
+        super(GuiConstants.OPTIONS_TEXT);
         this.previous = previous;
     }
 
     @Override
     protected void init() {
         this.layout.addTitleHeader(this.title, this.font);
-        this.body = this.layout.addToContents(new OptionsLayout());
+        this.body = this.layout.addToContents(new OptionsLayout(this.minecraft, this.layout::getContentHeight));
         this.layout.addToFooter(FidgetzButton.builder().setMessage(CommonComponents.GUI_DONE).setOnPress(this::onClose).build());
         this.layout.visitWidgets(this::addRenderableWidget);
         this.repositionElements();

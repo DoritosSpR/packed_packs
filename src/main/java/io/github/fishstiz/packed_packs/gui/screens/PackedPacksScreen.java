@@ -6,7 +6,6 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.fidgetz.util.debounce.ImmediateDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
@@ -77,7 +76,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
         Restorable<PackedPacksScreen.Snapshot> {
     private static final Component ACTION_BAR_INFO = ResourceUtil.getText("toggle_actionbar.info");
     private static final Component ORIGINAL_SCREEN_INFO = ResourceUtil.getText("original_screen.info");
-    private static final Component OPTIONS_TEXT = ResourceUtil.getText("options.title");
     private static final Component OPEN_FOLDER_TEXT = Component.translatable("pack.openFolder");
     private static final Component OPEN_FOLDER_INFO_TEXT = Component.translatable("pack.folderInfo");
     private static final Component APPLY_TEXT = ResourceUtil.getText("apply");
@@ -118,9 +116,10 @@ public class PackedPacksScreen extends PackListEventHandler implements
         PackFileOperations fileOps = new PackFileOperations(options, this.repository);
         this.availablePacks = new AvailablePacksLayout(options, this.assetManager, fileOps, this);
         this.currentPacks = new CurrentPacksLayout(options, this.assetManager, fileOps, this);
-        this.optionsModal = Modal.builder(this, new OptionsLayout())
+        this.optionsModal = Modal.builder(this, new OptionsLayout(this.minecraft, this.layout::getContentHeight, this.packsConfig))
                 .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
                 .setCaptureFocus(true)
+                .padding(SPACING)
                 .build();
         this.folderDialog = new FolderDialog(this, options, this.assetManager, fileOps);
         this.fileRenameModal = new FileRenameModal(this, fileOps, this.assetManager);
@@ -134,7 +133,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.history = new HistoryManager<>();
 
         this.initAdditionalFolders();
-        if (initState) this.useSelected();
+        if (initState) this.profiles.setProfile(this.packsConfig.getLastViewedProfile());
     }
 
     public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original) {
@@ -163,7 +162,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
     @Override
     public void removed() {
         this.closeWatcher();
-        this.syncProfile(this.profiles.getProfile());
+        Profile profile = this.profiles.getProfile();
+        this.syncProfile(profile);
+        this.packsConfig.setLastViewedProfile(profile);
         this.availablePacks.saveFilters();
         PackedPacks.CONFIG.save();
         Preferences.INSTANCE.save();
@@ -222,7 +223,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                     Toggleable.applyPref(Preferences.INSTANCE.actionBarWidget, FidgetzButton.<Void>builder())
                             .makeSquare()
                             .setTooltip(Tooltip.create(ACTION_BAR_INFO))
-                            .setSprite(new Sprite(ResourceUtil.getIcon("filter"), Size.of16()))
+                            .setSprite(Sprite.of16(ResourceUtil.getIcon("filter")))
                             .setOnPress(this::toggleActionBar)
                             .build()
             );
@@ -239,8 +240,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
                     Toggleable.applyPref(Preferences.INSTANCE.optionsWidget, FidgetzButton.<Void>builder())
                             .makeSquare()
                             .setMessage(OPTIONS_TEXT)
-                            .setTooltip(Tooltip.create(OPTIONS_TEXT))
-                            .setSprite(new Sprite(ResourceUtil.getIcon("gear"), Size.of16()))
+                            .setTooltip(Tooltip.create(OPTIONS_TEXT.copy().append(CommonComponents.ELLIPSIS)))
+                            .setSprite(Sprite.of16(ResourceUtil.getIcon("gear")))
                             .setOnPress(this.optionsModal::toggle)
                             .build()
             );
@@ -249,8 +250,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
             header.addChild(
                     Toggleable.applyPref(Preferences.INSTANCE.originalScreenWidget, FidgetzButton.<Void>builder())
                             .makeSquare()
-                            .setTooltip(Tooltip.create(ORIGINAL_SCREEN_INFO))
-                            .setSprite(new Sprite(ResourceUtil.getIcon("exit"), Size.of16()))
+                            .setTooltip(Tooltip.create(ORIGINAL_SCREEN_INFO.copy().append(CommonComponents.ELLIPSIS)))
+                            .setSprite(Sprite.of16(ResourceUtil.getIcon("exit")))
                             .setOnPress(this::setOriginalScreen)
                             .build()
             );
@@ -636,7 +637,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
         switch (event) {
             case FileDeleteEvent ignore -> this.revalidatePacks();
-            case FileRenameOpenEvent e -> this.fileRenameModal.open(e.target(), e.trigger());
+            case FileRenameOpenEvent(PackList target, Pack trigger) -> this.fileRenameModal.open(target, trigger);
             case FileRenameEvent e -> this.onFileRename(e);
             case FileRenameCloseEvent e -> this.focusList(e.target());
             case FolderOpenEvent e -> this.onFolderOpen(e);
