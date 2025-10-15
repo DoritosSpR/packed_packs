@@ -8,6 +8,7 @@ import io.github.fishstiz.packed_packs.compat.api.ModExtension;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.resources.ResourceLocation;
@@ -26,7 +27,7 @@ public class VTDModExtension implements ModExtension {
     }
 
     @Override
-    public void onCreateHeader(PackType type, FlexLayout header, PackSelectionScreen screen) {
+    public void onCreateHeader(PackType type, FlexLayout header, PackedPacksScreen screen, PackSelectionScreen original) {
         if (type != PackType.CLIENT_RESOURCES) return;
 
         Mod.VTD.wrapError(header, screen, (layout, prev) -> {
