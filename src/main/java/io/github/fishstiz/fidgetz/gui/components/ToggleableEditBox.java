@@ -78,6 +78,14 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
         this.setTextColorUneditable(color);
     }
 
+    public void setValueSilently(String value) {
+        super.setResponder(null);
+        this.setValue(value != null ? value : "");
+        this.updateTextColor();
+        this.previousValue = this.getValue();
+        super.setResponder(this::onRespond);
+    }
+
     private void onRespond(String value) {
         this.updateTextColor();
 

@@ -21,34 +21,35 @@ import java.util.function.Predicate;
 public record Query(
         boolean hideIncompatible,
         SortOption sort,
-        String search
+        String search,
+        String unmodifiedSearch
 ) implements Predicate<Pack>, Comparator<Pack> {
     public Query {
         search = search != null ? search.toLowerCase(Locale.ROOT) : null;
     }
 
     public Query(Query query) {
-        this(query.hideIncompatible, query.sort, query.search);
+        this(query.hideIncompatible, query.sort, query.search, query.unmodifiedSearch);
     }
 
     Query() {
-        this(false, null, null);
+        this(false, null, null, null);
     }
 
     public Query withHideIncompatible(boolean hideIncompatible) {
         if (this.hideIncompatible == hideIncompatible) return this;
-        return new Query(hideIncompatible, this.sort, this.search);
+        return new Query(hideIncompatible, this.sort, this.search, this.unmodifiedSearch);
     }
 
     public Query withSort(SortOption sort) {
         if (Objects.equals(this.sort, sort)) return this;
-        return new Query(this.hideIncompatible, sort, this.search);
+        return new Query(this.hideIncompatible, sort, this.search, this.unmodifiedSearch);
     }
 
     public Query withSearch(String search) {
         String searchLower = search != null ? search.toLowerCase(Locale.ROOT) : null;
         if (Objects.equals(this.search, searchLower)) return this;
-        return new Query(this.hideIncompatible, this.sort, searchLower);
+        return new Query(this.hideIncompatible, this.sort, searchLower, search);
     }
 
     @Override
