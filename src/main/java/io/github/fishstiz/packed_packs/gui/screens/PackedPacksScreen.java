@@ -710,6 +710,10 @@ public class PackedPacksScreen extends PackListEventHandler implements
             this.refreshPacks();
             return true;
         }
+        if (isOpenProfiles(keyCode, modifiers)) {
+            this.profiles.getSidebar().toggle();
+            return true;
+        }
         if (super.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
