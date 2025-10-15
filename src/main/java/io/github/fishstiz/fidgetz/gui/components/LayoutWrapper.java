@@ -1,5 +1,6 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
+import io.github.fishstiz.fidgetz.gui.shapes.Padding;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.layouts.Layout;
@@ -16,6 +17,10 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
     private T layout;
     private int minWidth;
     private int minHeight;
+    private int paddingTop;
+    private int paddingRight;
+    private int paddingBottom;
+    private int paddingLeft;
 
     public LayoutWrapper(T layout, int minWidth, int minHeight) {
         super(layout.getX(), layout.getY(), layout.getWidth(), layout.getHeight(), CommonComponents.EMPTY);
@@ -40,6 +45,21 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
 
     public T layout() {
         return this.layout;
+    }
+
+    public void setPadding(int top, int right, int bottom, int left) {
+        this.paddingTop = top;
+        this.paddingRight = right;
+        this.paddingBottom = bottom;
+        this.paddingLeft = left;
+    }
+
+    public void setPadding(Padding padding) {
+        this.setPadding(padding.top(), padding.right(), padding.bottom(), padding.left());
+    }
+
+    public void setPadding(int padding) {
+        this.setPadding(padding, padding, padding, padding);
     }
 
     @Override
@@ -69,34 +89,36 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
 
     @Override
     public void setX(int x) {
-        super.setX(x);
-        this.layout.setX(x);
+        this.layout.setX(x + this.paddingLeft);
     }
 
     @Override
     public void setY(int y) {
-        super.setY(y);
-        this.layout.setY(y);
+        this.layout.setY(y + this.paddingTop);
     }
 
     @Override
     public int getX() {
-        return this.layout.getX();
+        return this.layout.getX() - this.paddingLeft;
     }
 
     @Override
     public int getY() {
-        return this.layout.getY();
+        return this.layout.getY() - this.paddingTop;
     }
 
     @Override
     public int getWidth() {
-        return this.width;
+        return this.width + this.paddingLeft + this.paddingRight;
     }
 
     @Override
     public int getHeight() {
-        return this.height;
+        return this.height + this.paddingTop + this.paddingBottom;
+    }
+
+    public Padding getPadding() {
+        return new Padding(this.paddingTop, this.paddingRight, this.paddingBottom, this.paddingLeft);
     }
 
     @Override
@@ -123,18 +145,16 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
     }
 
     @Override
-    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // unsupported operation
+    protected final void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
     }
 
     @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
-        // unsupported operation
+    protected final void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+        this.layout.visitWidgets(widget -> widget.updateNarration(narrationElementOutput));
     }
 
     @Override
-    public void playDownSound(SoundManager handler) {
-        // unsupported operation
+    public final void playDownSound(SoundManager handler) {
     }
 }
 
