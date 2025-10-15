@@ -2,10 +2,13 @@ package io.github.fishstiz.packed_packs.gui.layouts;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.components.ToggleButton;
+import io.github.fishstiz.fidgetz.gui.layouts.ScrollableLayout;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.Layout;
 import net.minecraft.client.gui.layouts.LayoutElement;
@@ -14,79 +17,67 @@ import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.network.chat.Component;
 
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 
 public class OptionsLayout implements Layout {
-    private static final int CONTENT_WIDTH = 175;
-    private static final Component REPLACE_SCREEN_TEXT = ResourceUtil.getText("options.replace_screen");
-    private static final Config.ResourcePacks RESOURCEPACKS = PackedPacks.CONFIG.getResourcepacks();
-    private static final Config.Packs DATAPACKS = PackedPacks.CONFIG.getDatapacks();
-    private final LinearLayout layout;
+    private static final int CONTENT_WIDTH = 200;
+    private final IntSupplier maxHeightSupplier;
+    private final ScrollableLayout layout;
 
-    public OptionsLayout() {
+    public OptionsLayout(Minecraft minecraft, IntSupplier maxHeightSupplier, Config.Packs... configs) {
+        this.maxHeightSupplier = maxHeightSupplier;
         final int spacing = GuiConstants.SPACING;
-        this.layout = LinearLayout.vertical();
-        LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(spacing).paddingTop(spacing);
+        final LinearLayout contentLayout = LinearLayout.vertical().spacing(spacing);
+        final LayoutSettings titleSettings = LayoutSettings.defaults()
+                .paddingTop(-(spacing / 2))
+                .paddingBottom(-spacing);
 
-        this.layout.addChild(
-                FidgetzText.<Void>builder()
-                        .setMessage(ResourceUtil.getText("resource_packs"))
-                        .alignLeft()
-                        .build(),
-                layoutSettings.copy().paddingTop((spacing * 2) - spacing / 2)
-        );
-        this.layout.addChild(
-                ToggleButton.<Void>builder()
-                        .setMessage(REPLACE_SCREEN_TEXT)
-                        .setValue(RESOURCEPACKS.isReplaceOriginal())
-                        .setOnPress(() -> RESOURCEPACKS.setReplaceOriginal(!RESOURCEPACKS.isReplaceOriginal()))
-                        .build(),
-                layoutSettings
-        );
-        this.layout.addChild(
-                ToggleButton.<Void>builder()
-                        .setMessage(ResourceUtil.getText("options.hide_incompatible_warnings"))
-                        .setTooltip(Tooltip.create(ResourceUtil.getText("options.hide_incompatible_warnings.info")))
-                        .setValue(RESOURCEPACKS.isIncompatibleWarningsHidden())
-                        .setOnPress(() -> RESOURCEPACKS.setHideIncompatibleWarnings(!RESOURCEPACKS.isIncompatibleWarningsHidden()))
-                        .build(),
-                layoutSettings
-        );
-        this.layout.addChild(
-                ToggleButton.<Void>builder()
-                        .setMessage(ResourceUtil.getText("options.apply_on_close"))
-                        .setValue(RESOURCEPACKS.isApplyOnClose())
-                        .setOnPress(() -> RESOURCEPACKS.setApplyOnClose(!RESOURCEPACKS.isApplyOnClose()))
-                        .build(),
-                layoutSettings
-        );
+        for (Config.Packs config : configs) {
+            switch (config) {
+                case Config.ResourcePacks resourcePacks -> {
+                    contentLayout.addChild(
+                            FidgetzText.<Void>builder()
+                                    .setMessage(ResourceUtil.getText("resource_packs"))
+                                    .alignLeft()
+                                    .setWidth(CONTENT_WIDTH)
+                                    .build(),
+                            titleSettings
+                    );
+                    addCommonOptions(contentLayout, resourcePacks);
+                    contentLayout.addChild(
+                            ToggleButton.<Void>builder()
+                                    .setMessage(ResourceUtil.getText("options.apply_on_close"))
+                                    .setValue(resourcePacks.isApplyOnClose())
+                                    .setOnPress(() -> resourcePacks.setApplyOnClose(!resourcePacks.isApplyOnClose()))
+                                    .setWidth(CONTENT_WIDTH)
+                                    .build()
+                    );
+                }
+                case Config.DataPacks dataPacks -> {
+                    contentLayout.addChild(
+                            FidgetzText.<Void>builder()
+                                    .setMessage(Component.translatable("selectWorld.dataPacks"))
+                                    .alignLeft()
+                                    .setWidth(CONTENT_WIDTH)
+                                    .build(),
+                            titleSettings
+                    );
+                    addCommonOptions(contentLayout, dataPacks);
+                }
+            }
+        }
 
-        this.layout.addChild(
-                FidgetzText.<Void>builder()
-                        .setMessage(Component.translatable("selectWorld.dataPacks"))
-                        .alignLeft()
-                        .build(),
-                layoutSettings.copy().paddingTop(spacing * 2)
-        );
-        this.layout.addChild(
-                ToggleButton.<Void>builder()
-                        .setValue(DATAPACKS.isReplaceOriginal())
-                        .setOnPress(() -> DATAPACKS.setReplaceOriginal(!DATAPACKS.isReplaceOriginal()))
-                        .setMessage(REPLACE_SCREEN_TEXT)
-                        .build(),
-                layoutSettings
-        );
-        this.layout.addChild(
-                ToggleButton.<Void>builder()
-                        .setMessage(ResourceUtil.getText("options.hide_incompatible_warnings"))
-                        .setTooltip(Tooltip.create(ResourceUtil.getText("options.hide_incompatible_warnings.info")))
-                        .setValue(DATAPACKS.isIncompatibleWarningsHidden())
-                        .setOnPress(() -> DATAPACKS.setHideIncompatibleWarnings(!DATAPACKS.isIncompatibleWarningsHidden()))
-                        .build(),
-                layoutSettings.copy().paddingBottom((spacing * 2) - spacing / 2)
-        );
+        this.layout = new ScrollableLayout(minecraft, contentLayout);
+    }
 
-        this.layout.visitWidgets(widget -> widget.setWidth(CONTENT_WIDTH));
-        this.layout.arrangeElements();
+    public OptionsLayout(Minecraft minecraft, IntSupplier maxHeightSupplier) {
+        this(minecraft, maxHeightSupplier, PackedPacks.CONFIG.getResourcepacks(), PackedPacks.CONFIG.getDatapacks());
+    }
+
+
+    @Override
+    public void visitWidgets(Consumer<AbstractWidget> visitor) {
+        this.layout.visitWidgets(visitor);
     }
 
     @Override
@@ -122,5 +113,39 @@ public class OptionsLayout implements Layout {
     @Override
     public int getHeight() {
         return this.layout.getHeight();
+    }
+
+    @Override
+    public void arrangeElements() {
+        this.layout.setMaxHeight(this.maxHeightSupplier.getAsInt());
+        this.layout.arrangeElements();
+    }
+
+    private static void addCommonOptions(LinearLayout linearLayout, Config.Packs config) {
+        linearLayout.addChild(
+                ToggleButton.<Void>builder()
+                        .setMessage(ResourceUtil.getText("options.replace_screen"))
+                        .setValue(config.isReplaceOriginal())
+                        .setOnPress(() -> config.setReplaceOriginal(!config.isReplaceOriginal()))
+                        .setWidth(CONTENT_WIDTH)
+                        .build()
+        );
+        linearLayout.addChild(
+                ToggleButton.<Void>builder()
+                        .setMessage(ResourceUtil.getText("options.hide_incompatible_warnings"))
+                        .setTooltip(Tooltip.create(ResourceUtil.getText("options.hide_incompatible_warnings.info")))
+                        .setValue(config.isIncompatibleWarningsHidden())
+                        .setOnPress(() -> config.setHideIncompatibleWarnings(!config.isIncompatibleWarningsHidden()))
+                        .setWidth(CONTENT_WIDTH)
+                        .build()
+        );
+        linearLayout.addChild(
+                ToggleButton.<Void>builder()
+                        .setMessage(ResourceUtil.getText("options.remember_last_viewed_profile"))
+                        .setValue(config.isLastViewedProfileRemembered())
+                        .setOnPress(() -> config.setRememberLastViewedProfile(!config.isLastViewedProfileRemembered()))
+                        .setWidth(CONTENT_WIDTH)
+                        .build()
+        );
     }
 }

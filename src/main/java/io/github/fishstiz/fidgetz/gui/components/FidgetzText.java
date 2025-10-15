@@ -87,7 +87,7 @@ public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E>
         private int x;
         private int y;
         private Integer width;
-        private int height;
+        private int height = DEFAULT_HEIGHT;
         private int offsetY;
         private Alignment alignment = Alignment.CENTER;
         private Component message = CommonComponents.EMPTY;
