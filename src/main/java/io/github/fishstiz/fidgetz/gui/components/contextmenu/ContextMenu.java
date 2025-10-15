@@ -463,12 +463,12 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
                 return;
             }
 
-            boolean hovered = this.isWithinParentXBounds(mouseX, mouseY) && guiGraphics.containsPointInScissor(mouseX, mouseY);
+            boolean looselyHovered = this.isWithinParentXBounds(mouseX, mouseY) && guiGraphics.containsPointInScissor(mouseX, mouseY);
             ContextMenu sibling = this.parent.getOpenedChildMenu();
 
-            if (!hovered && this.child.isOpen() && !this.child.forceOpen && (sibling == null || !sibling.isHoveredAtDirection(mouseX, mouseY))) {
+            if (!looselyHovered && this.child.isOpen() && !this.child.forceOpen && (sibling == null || !sibling.isHoveredAtDirection(mouseX, mouseY))) {
                 this.closeChildren();
-            } else if (hovered && !this.child.isOpen() && (sibling == null || !sibling.forceOpen && !sibling.isHoveredAtDirection(mouseX, mouseY))) {
+            } else if (looselyHovered && this.isHovered() && !this.child.isOpen() && (sibling == null || !sibling.forceOpen && !sibling.isHoveredAtDirection(mouseX, mouseY))) {
                 this.openChild();
             }
         }
