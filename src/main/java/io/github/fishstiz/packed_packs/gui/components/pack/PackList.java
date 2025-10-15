@@ -627,7 +627,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
             if (!this.pack().getCompatibility().isCompatible() && !PackList.this.options.getConfig().isIncompatibleWarningsHidden()) {
                 int backgroundLeft = left + BACKGROUND_MARGIN;
                 int backgroundTop = top + BACKGROUND_MARGIN;
-                int backgroundRight = backgroundLeft + width - BACKGROUND_MARGIN;
+                int backgroundRight = backgroundLeft + width - BACKGROUND_MARGIN * 2;
                 int backgroundBottom = backgroundTop + height - BACKGROUND_MARGIN;
 
                 guiGraphics.fill(backgroundLeft, backgroundTop, backgroundRight, backgroundBottom, Theme.RED_900.getARGB());
