@@ -94,6 +94,10 @@ public class InputUtil {
         return noModifiers(modifiers) && keyCode == KEY_F1;
     }
 
+    public static boolean isOpenProfiles(int keyCode, int modifiers) {
+        return modifiers == MOD_CONTROL && keyCode == KEY_GRAVE;
+    }
+
     public static boolean noModifiers(int modifiers) {
         return modifiers == 0;
     }
