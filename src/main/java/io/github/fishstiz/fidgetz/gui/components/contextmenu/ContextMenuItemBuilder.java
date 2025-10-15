@@ -95,7 +95,7 @@ public class ContextMenuItemBuilder {
         return new ArrayList<>(this.items);
     }
 
-    protected static abstract class AbstractChain extends ContextMenuItemBuilder {
+    protected abstract static class AbstractChain extends ContextMenuItemBuilder {
         protected final ContextMenuItemBuilder builder;
 
         AbstractChain(ContextMenuItemBuilder builder) {
