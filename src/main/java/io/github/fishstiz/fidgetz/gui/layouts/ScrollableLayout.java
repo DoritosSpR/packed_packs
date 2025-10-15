@@ -31,6 +31,10 @@ public class ScrollableLayout implements Layout {
         this.container = new Container(minecraft, 0, height);
     }
 
+    public ScrollableLayout(Minecraft minecraft, Layout content) {
+        this(minecraft, content, content.getHeight());
+    }
+
     public void setMinWidth(int minWidth) {
         this.minWidth = minWidth;
         this.container.setWidth(Math.max(this.content.getWidth(), minWidth));
