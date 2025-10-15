@@ -145,7 +145,14 @@ public class Config implements Serializable {
         }
 
         public @Nullable Profile getLastViewedProfile() {
-            return this.rememberLastViewedProfile ? cachedLastViewedProfile : null;
+            if (this.lastViewedProfile == null) {
+                return null;
+            }
+            if (this.cachedLastViewedProfile != null) {
+                return this.cachedLastViewedProfile;
+            }
+            this.cachedLastViewedProfile = CollectionsUtil.firstMatch(this.profiles, this.lastViewedProfile, Profile::getId);
+            return this.cachedLastViewedProfile;
         }
 
         public void setLastViewedProfile(@Nullable Profile lastViewedProfile) {
