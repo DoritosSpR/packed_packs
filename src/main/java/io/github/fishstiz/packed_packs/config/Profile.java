@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.mapOrDefault;
+import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.mapOrDefault;
 
 public class Profile implements PackOptions, Serializable {
     public static final int NAME_MAX_LENGTH = 32;

@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.config;
 
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
-import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.server.packs.PackType;
 import org.jetbrains.annotations.Nullable;

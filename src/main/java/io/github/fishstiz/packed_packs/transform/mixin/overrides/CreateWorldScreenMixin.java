@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.transform.mixin.overrides;
 
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Profile;
-import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.world.level.DataPackConfig;
 import net.minecraft.world.level.WorldDataConfiguration;

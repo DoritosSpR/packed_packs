@@ -6,7 +6,7 @@ import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.pack.folder.FolderResources;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.transform.mixin.UtilAccess;
-import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;

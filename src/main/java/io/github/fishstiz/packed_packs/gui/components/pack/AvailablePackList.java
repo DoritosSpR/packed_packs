@@ -26,8 +26,8 @@ import java.util.List;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
 import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
-import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.ifPresent;
-import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
+import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.ifPresent;
+import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.pick;
 
 public class AvailablePackList extends PackList {
     private static final Sprite SELECT_HIGHLIGHTED_SPRITE = Sprite.of32(getVanillaSprite("transferable_list/select_highlighted"));

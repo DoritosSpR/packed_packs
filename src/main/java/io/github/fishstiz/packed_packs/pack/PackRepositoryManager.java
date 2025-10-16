@@ -9,8 +9,8 @@ import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccesso
 import io.github.fishstiz.packed_packs.transform.mixin.folders.additional.FolderRepositorySourceAccessor;
 import io.github.fishstiz.packed_packs.transform.mixin.folders.additional.PackRepositoryAccessor;
 import io.github.fishstiz.packed_packs.util.PackUtil;
-import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
-import io.github.fishstiz.packed_packs.util.lang.ObjectsUtil;
+import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
+import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
