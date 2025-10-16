@@ -647,7 +647,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
 
         if (this.isUnlocked() && event.pushToHistory() && notFolderDialogEvent) {
-            this.history.push(this.captureState(event.name()));
+            this.history.push(this.captureState());
         }
     }
 
