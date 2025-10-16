@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.util.lang;
+package io.github.fishstiz.fidgetz.util.lang;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

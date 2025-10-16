@@ -25,7 +25,7 @@ import java.util.function.*;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
-import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
+import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.*;
 import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
 
 public class CurrentPackList extends PackList {

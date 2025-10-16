@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.util.lang;
+package io.github.fishstiz.fidgetz.util.lang;
 
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;

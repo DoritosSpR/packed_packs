@@ -1,7 +1,7 @@
 package io.github.fishstiz.packed_packs.config;
 
 import io.github.fishstiz.packed_packs.util.PackUtil;
-import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import net.minecraft.server.packs.repository.Pack;
 
 import java.io.Serializable;

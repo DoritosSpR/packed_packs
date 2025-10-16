@@ -5,7 +5,7 @@ import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.compat.api.ModExtension;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
-import io.github.fishstiz.packed_packs.util.lang.CollectionsUtil;
+import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
