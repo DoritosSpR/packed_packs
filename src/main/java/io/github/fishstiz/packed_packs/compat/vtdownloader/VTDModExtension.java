@@ -4,7 +4,7 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuil
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.Mod;
-import io.github.fishstiz.packed_packs.compat.api.ModExtension;
+import io.github.fishstiz.packed_packs.compat.ModExtensionInternal;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
@@ -15,10 +15,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import org.jetbrains.annotations.Nullable;
 
-public class VTDModExtension implements ModExtension {
+public class VTDModExtension implements ModExtensionInternal {
     @Override
-    public ResourceLocation id() {
-        return Mod.VTD.getInternalId();
+    public Mod mod() {
+        return Mod.VTD;
     }
 
     @Override
@@ -30,7 +30,7 @@ public class VTDModExtension implements ModExtension {
     public void onCreateHeader(PackType type, FlexLayout header, PackedPacksScreen screen, PackSelectionScreen original) {
         if (type != PackType.CLIENT_RESOURCES) return;
 
-        Mod.VTD.wrapError(header, screen, (layout, prev) -> {
+        this.mod().wrapError(header, screen, (layout, prev) -> {
             if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.vtdButton.get()) {
                 layout.addChild(VTDButtonFactory.create(prev));
             }
@@ -41,7 +41,7 @@ public class VTDModExtension implements ModExtension {
     public void onCreateEntry(PackType type, PackList.Entry entry) {
         if (type != PackType.CLIENT_RESOURCES) return;
 
-        Mod.VTD.wrapError(entry, e -> {
+        this.mod().wrapError(entry, e -> {
             if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.vtdEditButton.get()) {
                 VTDEditButtonWidget widget = VTDEditButtonWidget.create(Minecraft.getInstance().screen, e);
                 if (widget != null) e.addTopRenderableOnly(e.prependWidget(widget));
@@ -53,7 +53,7 @@ public class VTDModExtension implements ModExtension {
     public void onCreatePreferencesMenu(PackType type, ContextMenuItemBuilder builder) {
         if (type != PackType.CLIENT_RESOURCES) return;
 
-        Mod.VTD.wrapError(builder, b -> {
+        this.mod().wrapError(builder, b -> {
             b.add(Toggleable.fromPref(Preferences.INSTANCE.vtdButton));
             b.add(Toggleable.fromPref(Preferences.INSTANCE.vtdEditButton));
         });
