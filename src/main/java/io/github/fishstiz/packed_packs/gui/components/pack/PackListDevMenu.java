@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import static io.github.fishstiz.packed_packs.gui.metadata.Toggleable.getDefaultIcon;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.devItem;
-import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.pick;
+import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.pick;
 
 public record PackListDevMenu(
         PackOptionsContext options,
