@@ -42,7 +42,7 @@ import java.util.*;
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
-import static io.github.fishstiz.packed_packs.util.lang.ObjectsUtil.*;
+import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.*;
 
 public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> implements
         Restorable<PackList.Snapshot>,
