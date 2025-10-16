@@ -471,7 +471,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         }
 
         protected @Nullable PackListDevMenu createDevMenu(PackOptionsContext options, SelectionContext<Pack> context) {
-            return new PackListDevMenu(options, context);
+            return new PackListDevMenu(PackList.this.minecraft, options, context);
         }
 
         public Pack pack() {

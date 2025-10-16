@@ -106,7 +106,7 @@ public class AvailablePackList extends PackList {
 
         @Override
         protected @Nullable PackListDevMenu createDevMenu(PackOptionsContext options, SelectionContext<Pack> context) {
-            return new PackListDevMenu(options, context, event -> {
+            return new PackListDevMenu(AvailablePackList.this.minecraft, options, context, event -> {
                 if (event instanceof PackListDevMenu.Event.Require(Pack trigger, Boolean value, List<Pack> required) &&
                     Boolean.TRUE.equals(value)) {
                     this.sendPacks(trigger, required);

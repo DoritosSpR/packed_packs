@@ -12,6 +12,7 @@ import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.CommonComponents;
@@ -29,6 +30,7 @@ import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.devIte
 import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.pick;
 
 public record PackListDevMenu(
+        Minecraft minecraft,
         PackOptionsContext options,
         SelectionContext<Pack> context,
         @Nullable Consumer<Event<?>> listener
@@ -49,8 +51,8 @@ public record PackListDevMenu(
     private static final Component REMOVE_OVERRIDES = overrideText("remove");
     private static final Tooltip REQUIRED_NO_DISABLED_INFO = Tooltip.create(overrideText("required.no.disabled.info"));
 
-    public PackListDevMenu(PackOptionsContext options, SelectionContext<Pack> context) {
-        this(options, context, null);
+    public PackListDevMenu(Minecraft minecraft, PackOptionsContext options, SelectionContext<Pack> context) {
+        this(minecraft, options, context, null);
     }
 
     public sealed interface Event<T> {
@@ -172,6 +174,11 @@ public record PackListDevMenu(
     }
 
     public void onBuildHeader(ContextMenuItemBuilder builder) {
+        builder.add(devItem(CommonComponents.GUI_COPY_TO_CLIPBOARD)
+                .action(() -> this.minecraft.keyboardHandler.setClipboard(this.pack().getId()))
+                .build()
+        ).separator();
+
         Profile profile = this.options.getProfile().orElse(null);
         if (profile == null) return;
 
