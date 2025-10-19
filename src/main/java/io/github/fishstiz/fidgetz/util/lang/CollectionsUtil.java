@@ -10,14 +10,6 @@ public class CollectionsUtil {
     private CollectionsUtil() {
     }
 
-    @SafeVarargs
-    @SuppressWarnings("varargs")
-    public static <E> List<E> mutableListOf(E... elements) {
-        List<E> list = new ObjectArrayList<>(elements.length);
-        Collections.addAll(list, elements);
-        return list;
-    }
-
     public static <K, V> List<V> lookup(Collection<K> keys, Map<K, V> source) {
         List<V> result = new ObjectArrayList<>();
         for (K key : keys) {

@@ -14,8 +14,6 @@ public class GuiConstants {
     public static final Sprite CROSS_SPRITE = Sprite.of16(ResourceUtil.getIcon("cross"));
     public static final Sprite HAMBURGER_SPRITE = Sprite.of16(ResourceUtil.getIcon("hamburger"));
     public static final Sprite LOCK_SPRITE = new Sprite(ResourceUtil.getVanillaSprite("widget/locked_button_disabled"), 20, 20);
-    public static final Sprite RADIO_OFF_SPRITE = Sprite.of16(ResourceUtil.getIcon("radio_off"));
-    public static final Sprite RADIO_ON_SPRITE = Sprite.of16(ResourceUtil.getIcon("radio_on"));
     public static final Sprite UNLOCK_SPRITE_SMALL = Sprite.of16(ResourceUtil.getIcon("unlock"));
     public static final Sprite LOCK_SPRITE_SMALL = Sprite.of16(ResourceUtil.getIcon("lock"));
     public static final Sprite STAR_SPRITE = Sprite.of16(ResourceUtil.getIcon("star"));

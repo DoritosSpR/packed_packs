@@ -43,9 +43,10 @@ public abstract class PackLayout {
         this.layout = layout;
 
         this.initHeader(this.header.layout());
+        this.header.layout().arrangeElements();
+
         this.layout.addChild(this.header.layout());
         this.layout.addFlexChild(this.list, true);
-        this.layout.arrangeElements();
     }
 
     public PackList list() {

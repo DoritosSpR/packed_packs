@@ -11,7 +11,7 @@ import io.github.fishstiz.packed_packs.gui.components.events.BasicEvent;
 import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
-import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
@@ -55,7 +55,7 @@ public final class AvailablePacksLayout extends PackLayout {
                 .addListener(PackedPacks.CONFIG::setSort)
                 .setValue(PackedPacks.CONFIG.getSort())
                 .build();
-        this.compatButton = Toggleable.applyPref(Preferences.INSTANCE.toggleIncompatibleWidget, ToggleButton.<Void>builder())
+        this.compatButton = ToggleableHelper.applyPref(Preferences.INSTANCE.toggleIncompatibleWidget, ToggleButton.<Void>builder())
                 .setMessage(COMPAT_TEXT)
                 .setTooltip(Tooltip.create(COMPAT_INFO))
                 .setSprite(ToggleButton.Sprites.of(
