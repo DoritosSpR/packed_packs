@@ -48,6 +48,7 @@
   "packed_packs.transfer_all.info": "Transfer All Packs",
   "packed_packs.original_screen.info": "Original Pack Screen",
   "packed_packs.resource_packs": "Resource Packs",
+  "packed_packs.aliases.edit": "Edit Aliases",
   "packed_packs.options.title": "Packed Packs Options",
   "packed_packs.options.replace_screen": "Replace Pack Screen",
   "packed_packs.options.apply_on_close": "Apply Packs on Close",
