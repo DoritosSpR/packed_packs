@@ -2,9 +2,11 @@ package io.github.fishstiz.packed_packs.config;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.PackSelectionConfig;
@@ -49,6 +51,23 @@ public class Profile implements PackOptions, Serializable {
 
     public long getId() {
         return this.id;
+    }
+
+    public void updatePackId(String packId, String newId) {
+        if (this.packIds.contains(packId)) {
+            List<String> packIdsList = new ObjectArrayList<>(this.packIds);
+            int index = packIdsList.indexOf(packId);
+            if (index != -1) {
+                PackedPacks.LOGGER.info("[packed_packs] Updating pack id '{}' to '{}' in profile '{}'", packId, newId, this.name);
+                packIdsList.add(index, newId);
+                this.packIds = new ObjectLinkedOpenHashSet<>(packIdsList);
+            }
+        }
+        PackOverride packOverride = this.overrides.get(packId);
+        if (packOverride != null) {
+            PackedPacks.LOGGER.info("[packed_packs] Copying overrides from pack id '{}' to '{}' in profile '{}'", packId, newId, this.name);
+            this.overrides.put(newId, packOverride);
+        }
     }
 
     public String getName() {
@@ -114,7 +133,7 @@ public class Profile implements PackOptions, Serializable {
         for (Pack pack : PackUtil.flattenPacks(packs)) {
             this.setRequired(required, pack);
         }
-     }
+    }
 
     public void setRequired(@Nullable Boolean required, Pack pack) {
         if (!Boolean.FALSE.equals(required) || !PackUtil.isEssential(pack)) {

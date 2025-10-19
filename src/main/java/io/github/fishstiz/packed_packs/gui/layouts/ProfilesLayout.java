@@ -4,10 +4,8 @@ import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.profile.ProfileList;
@@ -38,6 +36,7 @@ public class ProfilesLayout {
     private final ToggleableEditBox<Void> nameField;
     private final FidgetzButton<Void> toggleNameButton;
     private final FidgetzButton<Void> noProfileButton;
+    private final ButtonSprites toggleSprites;
     private final ProfileList profileList;
 
     public <S extends Screen & ToggleableDialogContainer> ProfilesLayout(
@@ -48,6 +47,10 @@ public class ProfilesLayout {
     ) {
         this.config = config;
         this.copyListener = copyListener;
+        this.toggleSprites = new ButtonSprites(
+                Sprite.of16(ResourceUtil.getIcon("edit")),
+                Sprite.of16(ResourceUtil.getIcon("edit_inactive"))
+        );
         this.sidebar = Sidebar.builder(screen)
                 .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
                 .setMaxWidth(MAX_WIDTH)
@@ -62,11 +65,7 @@ public class ProfilesLayout {
         this.toggleNameButton = FidgetzButton.<Void>builder()
                 .makeSquare()
                 .setTooltip(Tooltip.create(EDIT_NAME_TEXT))
-                .setSprite(new ButtonSprites(
-                        new Sprite(ResourceUtil.getIcon("edit"), Size.of16()),
-                        new Sprite(ResourceUtil.getIcon("edit_inactive"), Size.of16()),
-                        this::getToggleSpriteRenderer
-                ))
+                .setSprite(this.toggleSprites)
                 .setOnPress(this.nameField::toggle)
                 .build();
         this.noProfileButton = FidgetzButton.<Void>builder()
@@ -97,15 +96,6 @@ public class ProfilesLayout {
         this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
 
         this.updateGuiState(this.profileList.getSelectedProfile());
-    }
-
-    private RenderableRect getToggleSpriteRenderer(Sprite sprite) {
-        Profile profile = this.profileList.getSelectedProfile();
-        if (profile != null && profile.isLocked()) {
-            Profile defaultProfile = this.config.getDefaultProfile();
-            return profile == defaultProfile ? STAR_SPRITE::renderClamped : LOCK_SPRITE;
-        }
-        return sprite::renderClamped;
     }
 
     public int getMaxWidth() {
@@ -149,6 +139,14 @@ public class ProfilesLayout {
         this.noProfileButton.active = hasProfile;
         this.toggleNameButton.visible = hasProfile;
         this.toggleNameButton.active = hasProfile && !profile.isLocked();
+
+        if (hasProfile && profile.isLocked()) {
+            Profile defaultProfile = this.config.getDefaultProfile();
+            ButtonSprites sprites = profile == defaultProfile ? ButtonSprites.of(STAR_SPRITE) : ButtonSprites.unclamp(LOCK_SPRITE);
+            this.toggleNameButton.setSprites(sprites);
+        } else {
+            this.toggleNameButton.setSprites(this.toggleSprites);
+        }
     }
 
     public void setProfile(@Nullable Profile profile) {

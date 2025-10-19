@@ -2,6 +2,7 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import io.github.fishstiz.fidgetz.gui.components.*;
+import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.FileRenameCloseEvent;
@@ -13,7 +14,6 @@ import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ToastUtil;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.navigation.FocusNavigationEvent;
 import net.minecraft.client.gui.navigation.ScreenAxis;
@@ -30,34 +30,21 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 import static io.github.fishstiz.packed_packs.util.PackUtil.ZIP_PACK_EXTENSION;
+import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.CROSS_SPRITE;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.SPACING;
 
 public class FileRenameModal extends Modal<LinearLayout> {
     private static final int MAX_LENGTH = 255;
-    private static final int CONTENT_WIDTH = 200;
+    private static final int CONTENT_WIDTH = 256;
     private static final int SHADOW_SIZE = 24;
-    private static final int TITLE_HEIGHT = 16;
     private static final Pattern ILLEGAL_CHAR_PATTERN = Pattern.compile(".*[<>:\"/\\\\|?*].*");
     private static final Sprite DEFAULT_SPRITE = Sprite.of16(PackAssetManager.DEFAULT_ICON);
-    private final ToggleableEditBox<Void> nameEditor = ToggleableEditBox.<Void>builder()
-            .setEditable(true)
-            .addListener(this::handleChange)
-            .setMaxLength(MAX_LENGTH)
-            .setFilter(this::testInput)
-            .build();
-    private final FidgetzText<Void> title = FidgetzText.<Void>builder()
-            .alignLeft()
-            .setHeight(TITLE_HEIGHT)
-            .setOffsetY(1)
-            .setShadow(true)
-            .build();
-    private final FidgetzButton<Void> saveButton = FidgetzButton.<Void>builder()
-            .setOnPress(this::saveName)
-            .setMessage(CommonComponents.GUI_DONE)
-            .build();
+    private final RenderableRectWidget<Void> sprite;
+    private final FidgetzText<Void> title;
+    private final ToggleableEditBox<Void> nameEditor;
+    private final FidgetzButton<Void> saveButton;
     private final PackFileOperations fileOps;
     private final PackAssetManager assets;
-    private Sprite sprite = DEFAULT_SPRITE;
     private PackList packList;
     private Pack pack;
     private String oldName;
@@ -67,45 +54,68 @@ public class FileRenameModal extends Modal<LinearLayout> {
             PackFileOperations fileOps,
             PackAssetManager assets
     ) {
-        super(Modal.builder(screen, LinearLayout.vertical()));
-
+        super(Modal.builder(screen, LinearLayout.vertical().spacing(SPACING)).padding(SPACING));
         this.fileOps = fileOps;
         this.assets = assets;
 
-        LayoutSettings rootLayoutSettings = LayoutSettings.defaults().paddingHorizontal(SPACING).paddingTop(SPACING);
-        this.root().layout().addChild(this.title, rootLayoutSettings);
-        this.root().layout().addChild(this.nameEditor, rootLayoutSettings);
+        this.sprite = RenderableRectWidget.<Void>builder(DEFAULT_SPRITE)
+                .makeSquare()
+                .build();
+        this.title = FidgetzText.<Void>builder()
+                .makeSquare()
+                .setOffsetY(1)
+                .setShadow(true)
+                .build();
+        FidgetzButton<Void> closeButton = FidgetzButton.<Void>builder()
+                .makeSquare()
+                .setOnPress(this::closeModal)
+                .setSprite(CROSS_SPRITE)
+                .build();
+
+        this.nameEditor = ToggleableEditBox.<Void>builder()
+                .setWidth(CONTENT_WIDTH)
+                .setEditable(true)
+                .addListener(this::handleChange)
+                .setMaxLength(MAX_LENGTH)
+                .setFilter(this::testInput)
+                .build();
 
         FidgetzButton<Void> cancelButton = FidgetzButton.<Void>builder()
-                .setOnPress(() -> this.setOpen(false))
+                .setOnPress(this::closeModal)
                 .setMessage(CommonComponents.GUI_CANCEL)
                 .build();
-        LinearLayout buttonLayout = LinearLayout.horizontal();
-        buttonLayout.addChild(cancelButton, LayoutSettings.defaults().paddingHorizontal(SPACING));
-        buttonLayout.addChild(this.saveButton);
+        this.saveButton = FidgetzButton.<Void>builder()
+                .setOnPress(this::saveName)
+                .setMessage(CommonComponents.GUI_DONE)
+                .build();
 
-        this.root().layout().addChild(buttonLayout, LayoutSettings.defaults().paddingTop(SPACING).paddingBottom((int) (SPACING * 1.5)));
-        this.root().layout().visitWidgets(widget -> widget.setWidth(CONTENT_WIDTH));
-        buttonLayout.visitWidgets(widget -> widget.setWidth((CONTENT_WIDTH - SPACING) / 2));
+        FlexLayout titleLayout = FlexLayout.horizontal(this::getContentWidth).spacing(SPACING);
+        titleLayout.addChild(this.sprite);
+        titleLayout.addFlexChild(this.title);
+        titleLayout.addChild(closeButton);
 
-        this.root().arrangeElements();
+        FlexLayout buttonLayout = FlexLayout.horizontal(this::getContentWidth).spacing(SPACING);
+        buttonLayout.addFlexChild(cancelButton);
+        buttonLayout.addFlexChild(this.saveButton);
+
+        this.root().layout().addChild(titleLayout);
+        this.root().layout().addChild(this.nameEditor);
+        this.root().layout().addChild(buttonLayout);
+
         this.root().visitWidgets(this::addRenderableWidget);
 
         this.addListener(this::onClose);
     }
 
-    @Override
-    public void repositionElements() {
-        this.title.setWidth(this.title.getWidth() - this.sprite.width - SPACING);
-        super.repositionElements();
-        this.title.setX(this.title.getX() + this.sprite.width + SPACING);
+    private int getContentWidth() {
+        return CONTENT_WIDTH;
     }
 
     private void clearReferences() {
         this.packList = null;
         this.pack = null;
         this.oldName = null;
-        this.sprite = DEFAULT_SPRITE;
+        this.sprite.setRenderableRect(DEFAULT_SPRITE);
         this.title.setMessage(CommonComponents.EMPTY);
         this.nameEditor.setValue("");
     }
@@ -113,8 +123,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
     public void open(PackList packList, Pack pack) {
         this.packList = packList;
         this.pack = pack;
-        this.sprite = Sprite.of16(PackAssetManager.getDefaultIcon(pack));
-        this.assets.getOrLoadIcon(pack, icon -> this.sprite = Sprite.of16(icon));
+        this.sprite.setRenderableRect(Sprite.of16(this.assets.getIcon(pack)));
         this.title.setMessage(pack.getTitle());
 
         this.oldName = sanitizeNameForEdit(pack);
@@ -122,6 +131,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         this.nameEditor.setSuggestion(PackUtil.isZipPack(pack) ? ZIP_PACK_EXTENSION : null);
         this.saveButton.active = false;
 
+        this.repositionElements();
         this.setOpen(true);
     }
 
@@ -209,13 +219,6 @@ public class FileRenameModal extends Modal<LinearLayout> {
     protected void renderBackground(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
         DrawUtil.renderDropShadow(guiGraphics, x, y, width, height, SHADOW_SIZE);
         super.renderBackground(guiGraphics, x, y, width, height, mouseX, mouseY, partialTick);
-    }
-
-    @Override
-    protected void renderForeground(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
-        int spriteX = x + SPACING;
-        int spriteY = this.title.getY() + (this.title.getHeight() - this.sprite.height) / 2;
-        this.sprite.render(guiGraphics, spriteX, spriteY);
     }
 
     @Override

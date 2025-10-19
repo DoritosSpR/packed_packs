@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.transform.mixin.overrides;
 
-import io.github.fishstiz.packed_packs.PackedPacks;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import io.github.fishstiz.packed_packs.pack.PackAliasMap;
 import io.github.fishstiz.packed_packs.pack.PackOptionsResolver;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
 import net.minecraft.client.resources.ClientPackSource;
@@ -15,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 @Mixin(value = PackRepository.class, priority = 5000)
@@ -26,9 +28,9 @@ public abstract class PackRepositoryMixin {
     private void setConfigOnInit(RepositorySource[] sources, CallbackInfo ci) {
         if (sources.length > 0) {
             if (sources[0] instanceof ServerPacksSource) {
-                this.packed_packs$resolver = new PackOptionsResolver(PackedPacks.CONFIG.getDatapacks());
+                this.packed_packs$resolver = PackOptionsResolver.DATA_PACKS;
             } else if (sources[0] instanceof ClientPackSource) {
-                this.packed_packs$resolver = new PackOptionsResolver(PackedPacks.CONFIG.getResourcepacks());
+                this.packed_packs$resolver = PackOptionsResolver.RESOURCE_PACKS;
             }
         }
     }
@@ -46,5 +48,17 @@ public abstract class PackRepositoryMixin {
             ((ConfiguredPack) pack).packed_packs$setConfigurationResolver(this.packed_packs$resolver);
             onLoad.accept(pack);
         };
+    }
+
+    @ModifyExpressionValue(method = "reload", at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/server/packs/repository/PackRepository;discoverAvailable()Ljava/util/Map;"
+    ))
+    private Map<String, Pack> buildAliasMapOnReload(Map<String, Pack> original) {
+        if (this.packed_packs$resolver == null || this.packed_packs$resolver.config().getAliases().isEmpty()) {
+            return original;
+        }
+
+        return new PackAliasMap(this.packed_packs$resolver.config(), original);
     }
 }

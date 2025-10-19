@@ -22,7 +22,7 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
     private int paddingLeft;
 
     public LayoutWrapper(T layout, int minWidth, int minHeight) {
-        super(layout.getX(), layout.getY(), layout.getWidth(), layout.getHeight(), CommonComponents.EMPTY);
+        super(0, 0, 0, 0, CommonComponents.EMPTY);
 
         this.layout = layout;
         this.minWidth = minWidth;
@@ -156,4 +156,3 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
     public final void playDownSound(SoundManager handler) {
     }
 }
-

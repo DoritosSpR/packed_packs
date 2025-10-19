@@ -1,17 +1,14 @@
 package io.github.fishstiz.fidgetz.gui.renderables.sprites;
 
-import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import net.minecraft.client.gui.GuiGraphics;
 
-import java.util.function.Function;
-
-public record ButtonSprites(Sprite active, Sprite inactive, Function<Sprite, RenderableRect> spriteRenderer) {
+public record ButtonSprites(Sprite active, Sprite inactive, boolean clamped) {
     public ButtonSprites(Sprite active, Sprite inactive) {
-        this(active, inactive, sprite -> sprite::renderClamped);
+        this(active, inactive, true);
     }
 
     public static ButtonSprites unclamp(Sprite active, Sprite inactive) {
-        return new ButtonSprites(active, inactive, sprite -> sprite);
+        return new ButtonSprites(active, inactive, false);
     }
 
     public static ButtonSprites unclamp(Sprite sprite) {
@@ -27,6 +24,11 @@ public record ButtonSprites(Sprite active, Sprite inactive, Function<Sprite, Ren
     }
 
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height, boolean active, float partialTick) {
-        this.spriteRenderer.apply(this.get(active)).render(guiGraphics, x, y, width, height, partialTick);
+        Sprite sprite = this.get(active);
+        if (this.clamped) {
+            sprite.renderClamped(guiGraphics, x, y, width, height, partialTick);
+        } else {
+            sprite.render(guiGraphics, x, y, width, height, partialTick);
+        }
     }
 }

@@ -433,6 +433,9 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         return null;
     }
 
+    public void repositionElements() {
+    }
+
     @Override
     public boolean isFocused() {
         return this.isOpen() && super.isFocused();

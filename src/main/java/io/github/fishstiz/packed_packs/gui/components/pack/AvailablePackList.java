@@ -14,7 +14,6 @@ import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -104,16 +103,6 @@ public class AvailablePackList extends PackList {
             super(context, index);
         }
 
-        @Override
-        protected @Nullable PackListDevMenu createDevMenu(PackOptionsContext options, SelectionContext<Pack> context) {
-            return new PackListDevMenu(AvailablePackList.this.minecraft, options, context, event -> {
-                if (event instanceof PackListDevMenu.Event.Require(Pack trigger, Boolean value, List<Pack> required) &&
-                    Boolean.TRUE.equals(value)) {
-                    this.sendPacks(trigger, required);
-                }
-            });
-        }
-
         public boolean isMouseOverSelect(double mouseX, double mouseY) {
             return AvailablePackList.this.isHovered() && GuiUtil.containsPoint(this.getX() + SPACING, this.getY(), SELECT_SPRITE.width, SELECT_SPRITE.height, mouseX, mouseY);
         }
@@ -137,6 +126,15 @@ public class AvailablePackList extends PackList {
             GuiConstants.WHITE_OVERLAY.render(guiGraphics, x, top, SELECT_SPRITE.width, SELECT_SPRITE.height);
             if (this.isTransferable()) {
                 pick(!this.isMouseOverSelect(mouseX, mouseY), SELECT_SPRITE, SELECT_HIGHLIGHTED_SPRITE).render(guiGraphics, x, top);
+            }
+        }
+
+        @Override
+        protected void handleDevMenuEvent(PackListDevMenu.Event<?> event) {
+            super.handleDevMenuEvent(event);
+            if (event instanceof PackListDevMenu.Event.Require(Pack trigger, Boolean value, List<Pack> required) &&
+                Boolean.TRUE.equals(value)) {
+                this.sendPacks(trigger, required);
             }
         }
     }

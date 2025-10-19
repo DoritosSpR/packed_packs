@@ -16,6 +16,7 @@ import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader
 import io.github.fishstiz.packed_packs.gui.components.pack.*;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
+import io.github.fishstiz.packed_packs.gui.layouts.pack.PackAliasLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
 import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
 import io.github.fishstiz.packed_packs.pack.*;
@@ -92,6 +93,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private final List<ToggleableDialog<?>> dialogs;
     private final List<PackList> packLists;
     private final HistoryManager<Snapshot> history;
+    private Modal<PackAliasLayout> aliasModal;
     private List<Path> additionalFolders;
     private CompletableFuture<Void> refreshFuture;
     private PackWatcher watcher;
@@ -123,7 +125,17 @@ public class PackedPacksScreen extends PackListEventHandler implements
                 .setBackground(Theme.GRAY_800.getARGB())
                 .setBorderColor(Theme.GRAY_500.getARGB())
                 .build();
-        this.dialogs = List.of(this.optionsModal, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
+
+        if (PackedPacks.CONFIG.isDevMode()) {
+            this.aliasModal = Modal.builder(this, new PackAliasLayout(this.packsConfig, this.assetManager)).padding(SPACING).build();
+            this.aliasModal.addListener(open -> {
+                if (!open) this.aliasModal.root().layout().saveAliases();
+            });
+            this.dialogs = List.of(this.optionsModal, this.contextMenu, this.aliasModal, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
+        } else {
+            this.dialogs = List.of(this.optionsModal, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
+        }
+
         this.packLists = List.of(this.folderDialog.root(), this.availablePacks.list(), this.currentPacks.list());
 
         for (int i = 0; i < this.dialogs.size(); i++) {
@@ -178,22 +190,12 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.layout.addToContents(this.createContents());
         this.layout.addToFooter(this.createFooter());
 
-        this.folderDialog.root().visitWidgets(this.folderDialog::addRenderableWidget);
         this.profiles.initContents();
         this.profiles.getSidebar().getCloseButton().addListener(this::setInitialFocus);
-        this.optionsModal.root().visitWidgets(this.optionsModal::addRenderableWidget);
 
-        this.addWidget(this.optionsModal);
-        this.addWidget(this.contextMenu);
-        this.addWidget(this.fileRenameModal);
-        this.addWidget(this.profiles.getSidebar());
-        this.addWidget(this.folderDialog);
+        this.dialogs.forEach(this::addWidget);
         this.layout.visitWidgets(this::addRenderableWidget);
-        this.addRenderableOnly(this.folderDialog);
-        this.addRenderableOnly(this.profiles.getSidebar());
-        this.addRenderableOnly(this.fileRenameModal);
-        this.addRenderableOnly(this.contextMenu);
-        this.addRenderableOnly(this.optionsModal);
+        CollectionsUtil.forEachReverse(this.dialogs, this::addRenderableOnly);
 
         this.clearHistory();
         this.repositionElements();
@@ -362,9 +364,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (this.previous instanceof PackSelectionScreen) {
             this.onClose();
         } else if (this.minecraft != null) {
-            PackSelectionScreen originalScreen = this.original.createScreen();
-            ((PackSelectionScreenAccessor) originalScreen).packed_packs$setPrevious(this.previous);
-            this.minecraft.setScreen(originalScreen);
+            this.minecraft.setScreen(this.original.createScreen(this.previous));
         }
     }
 
@@ -436,9 +436,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     protected void repositionElements() {
         this.layout.arrangeElements();
         ((HeaderAndFooterLayoutAccess) this.layout).getContentsFrame().setY(this.layout.getHeaderHeight());
-        this.profiles.getSidebar().repositionElements();
-        this.optionsModal.repositionElements();
-        this.fileRenameModal.repositionElements();
+        this.dialogs.forEach(ToggleableDialog::repositionElements);
         this.contextMenu.setOpen(false);
         this.repositionLists();
     }
@@ -624,6 +622,15 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
     }
 
+    private void onOpenAliases(PackAliasOpenEvent event) {
+        Objects.requireNonNull(this.aliasModal, "aliasModal");
+        this.aliasModal.clear();
+        this.aliasModal.root().layout().editAliases(event.trigger(), this.aliasModal::closeModal);
+        this.aliasModal.root().visitWidgets(this.aliasModal::addRenderableWidget);
+        this.aliasModal.repositionElements();
+        this.aliasModal.setOpen(true);
+    }
+
     @Override
     public void onEvent(PackListEvent event) {
         super.onEvent(event);
@@ -631,11 +638,10 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.profiles.getSidebar().setOpen(false);
         this.contextMenu.setOpen(false);
         this.fileRenameModal.setOpen(false);
+        ObjectsUtil.ifPresent(this.aliasModal, Modal::closeModal);
 
         boolean notFolderDialogEvent = event.target() != this.folderDialog.root();
-        if (notFolderDialogEvent) {
-            this.folderDialog.setOpen(false);
-        }
+        if (notFolderDialogEvent) this.folderDialog.setOpen(false);
 
         switch (event) {
             case FileDeleteEvent ignore -> this.revalidatePacks();
@@ -644,6 +650,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
             case FileRenameCloseEvent e -> this.focusList(e.target());
             case FolderOpenEvent e -> this.onFolderOpen(e);
             case FolderCloseEvent e -> this.onFolderClose(e);
+            case PackAliasOpenEvent e -> this.onOpenAliases(e);
             default -> {
             }
         }
@@ -672,6 +679,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
     public boolean charTyped(char codePoint, int modifiers) {
         if (super.charTyped(codePoint, modifiers)) {
             return true;
+        }
+        if (CollectionsUtil.anyMatch(this.dialogs, ToggleableDialog::isOpen)) {
+            return false;
         }
         if (codePoint != KEY_SPACE && noModifiers(modifiers)) {
             PackLayout packLayout = this.getLayoutFromSelectedList();
