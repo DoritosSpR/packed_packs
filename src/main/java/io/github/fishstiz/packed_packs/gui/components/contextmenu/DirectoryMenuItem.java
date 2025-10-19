@@ -12,7 +12,7 @@ public record DirectoryMenuItem(Path directory, Component text) implements MenuI
     }
 
     @Override
-    public Runnable action() {
-        return () -> Util.getPlatform().openPath(this.directory);
+    public void run() {
+        Util.getPlatform().openPath(this.directory);
     }
 }

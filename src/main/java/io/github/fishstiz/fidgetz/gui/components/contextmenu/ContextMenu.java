@@ -292,7 +292,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         @Override
         public void onClick(double mouseX, double mouseY) {
             if (this.item.active()) {
-                this.item.action().run();
+                this.item.run();
             }
             if (this.item.shouldCloseOnInteract()) {
                 this.parent.closeCascade();
@@ -410,7 +410,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         @Override
         public void onClick(double mouseX, double mouseY) {
             if (this.item.active()) {
-                this.item.action().run();
+                this.item.run();
                 this.child.forceOpen = !this.child.forceOpen || !this.child.isOpen();
                 if (!this.child.isOpen()) {
                     this.openChild();

@@ -7,7 +7,7 @@ import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.ModScreenFactory;
 import io.github.fishstiz.packed_packs.config.Preferences;
-import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
 
@@ -22,7 +22,7 @@ public class ETFButtonFactory {
     }
 
     public static SpriteButton<Void> create(Screen previous) {
-        return Toggleable.applyPref(
+        return ToggleableHelper.applyPref(
                         Preferences.INSTANCE.etfButton,
                         SpriteButton.<Void>builder(SpriteButton.Sprites.of(new ButtonSprites(FOCUSED, UNFOCUSED)))
                 )

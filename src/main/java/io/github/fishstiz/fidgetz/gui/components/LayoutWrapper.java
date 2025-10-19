@@ -29,8 +29,6 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
         this.minHeight = minHeight;
 
         this.active = false;
-
-        this.arrangeElements();
     }
 
     public LayoutWrapper(T layout) {

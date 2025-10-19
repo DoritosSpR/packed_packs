@@ -1,6 +1,5 @@
 package io.github.fishstiz.packed_packs.gui.components.contextmenu;
 
-import com.google.common.util.concurrent.Runnables;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItem;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
@@ -33,8 +32,7 @@ public record PackMenuHeader(Pack pack, Sprite icon) implements MenuItem {
     }
 
     @Override
-    public Runnable action() {
-        return Runnables.doNothing();
+    public void run() {
     }
 
     @Override
