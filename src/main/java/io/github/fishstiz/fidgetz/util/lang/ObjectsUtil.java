@@ -68,21 +68,9 @@ public class ObjectsUtil {
         return value;
     }
 
-    public static boolean anyMatch(Object obj, Object... objects) {
-        for (Object o : objects) {
-            if (Objects.equals(obj, o)) {
-                return true;
-            }
-        }
-        return false;
+    public static <T> void nop(T ignored) {
     }
 
-    public static boolean anyIdentity(Object obj, Object... objects) {
-        for (Object o : objects) {
-            if (o == obj) {
-                return true;
-            }
-        }
-        return false;
+    public static void nop() {
     }
 }

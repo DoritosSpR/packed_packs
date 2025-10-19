@@ -10,7 +10,7 @@ import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
 import io.github.fishstiz.packed_packs.config.Preferences;
-import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
 import io.gitlab.jfronny.respackopts.RespackoptsClient;
 import net.minecraft.client.gui.GuiGraphics;
@@ -26,12 +26,12 @@ public class RespackoptsWidget extends AbstractButton implements ContextMenuProv
     private final ResourcePackEntryWidget wrapped;
     private final PackSelectionModel.Entry model;
     private final LayoutElement container;
-    private final @Nullable Toggleable toggleable;
+    private final @Nullable ToggleableHelper toggleable;
 
     private RespackoptsWidget(LayoutElement container, ResourcePackEntryWidget wrapped, PackSelectionModel.Entry model) {
         super(0, 0, 0, 0, Component.literal(Mod.RESPACKOPTS.getId()));
 
-        this.toggleable = PackedPacks.CONFIG.isDevMode() ? new Toggleable(Preferences.INSTANCE.respackoptsButton) : null;
+        this.toggleable = PackedPacks.CONFIG.isDevMode() ? new ToggleableHelper(Preferences.INSTANCE.respackoptsButton) : null;
         this.container = container;
         this.wrapped = wrapped;
         this.model = model;

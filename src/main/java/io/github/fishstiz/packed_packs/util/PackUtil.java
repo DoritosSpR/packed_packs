@@ -149,22 +149,26 @@ public class PackUtil {
         }
     }
 
-    public static List<Path> mapValidDirectories(List<String> paths) {
+    public static List<Path> mapValidDirectories(Collection<String> paths) {
         if (paths == null || paths.isEmpty()) return Collections.emptyList();
 
-        return CollectionsUtil.extractNonNull(paths, path -> {
+        List<Path> validPaths = new ObjectArrayList<>(paths.size());
+        for (String path : paths) {
+            if (path == null || path.isBlank()) continue;
+
             try {
                 Path resolved = Paths.get(path);
-                if (Files.exists(resolved, LinkOption.NOFOLLOW_LINKS) && Files.isDirectory(resolved, LinkOption.NOFOLLOW_LINKS)) {
-                    return resolved.toAbsolutePath().normalize();
+                if (Files.isDirectory(resolved, LinkOption.NOFOLLOW_LINKS)) {
+                    validPaths.add(resolved.toAbsolutePath().normalize());
                 } else {
                     PackedPacks.LOGGER.error("[packed_packs] Path is not a valid directory: '{}', ignoring.", path);
                 }
             } catch (Exception e) {
                 PackedPacks.LOGGER.error("[packed_packs] Failed to resolve path: '{}', ignoring.", path, e);
             }
-            return null;
-        });
+        }
+
+        return validPaths;
     }
 
     public static void openPack(Pack pack) {

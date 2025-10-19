@@ -35,15 +35,6 @@ public class ContextMenuItemBuilder {
         return this.self();
     }
 
-    public ContextMenuItemBuilder append(ContextMenuItemBuilder builder) {
-        return this.addAll(builder.items);
-    }
-
-    public ContextMenuItemBuilder then(Consumer<ContextMenuItemBuilder> builderAction) {
-        builderAction.accept(this.self());
-        return this.self();
-    }
-
     public ContextMenuItemBuilder separator() {
         return this.isEmpty() || this.items.getLast() != MenuItem.SEPARATOR ? this.add(MenuItem.SEPARATOR) : this.self();
     }
@@ -95,20 +86,6 @@ public class ContextMenuItemBuilder {
         return new ArrayList<>(this.items);
     }
 
-    protected abstract static class AbstractChain extends ContextMenuItemBuilder {
-        protected final ContextMenuItemBuilder builder;
-
-        AbstractChain(ContextMenuItemBuilder builder) {
-            super(builder.items);
-            this.builder = builder;
-        }
-
-        @Override
-        protected ContextMenuItemBuilder self() {
-            return this.builder;
-        }
-    }
-
     public static class IterableChain<E> {
         protected final ContextMenuItemBuilder builder;
         protected final Iterable<E> iterable;
@@ -133,12 +110,19 @@ public class ContextMenuItemBuilder {
         }
     }
 
-    public static class ElseChain extends AbstractChain {
+    public static class ElseChain extends ContextMenuItemBuilder {
+        protected final ContextMenuItemBuilder builder;
         protected final boolean conditionMatched;
 
         protected ElseChain(ContextMenuItemBuilder builder, boolean conditionMatched) {
-            super(builder);
+            super(builder.items);
+            this.builder = builder;
             this.conditionMatched = conditionMatched;
+        }
+
+        @Override
+        protected ContextMenuItemBuilder self() {
+            return this.builder;
         }
 
         public ContextMenuItemBuilder orElse(Consumer<ContextMenuItemBuilder> builderAction) {
