@@ -2,7 +2,6 @@ package io.github.fishstiz.fidgetz.gui.components;
 
 import io.github.fishstiz.fidgetz.gui.Metadata;
 import io.github.fishstiz.fidgetz.transform.interfaces.IStringWidget;
-import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,7 +17,7 @@ public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E>
         super(
                 builder.x,
                 builder.y,
-                builder.width != null ? builder.width : builder.font.width(builder.message),
+                builder.hasWidth ? builder.width : builder.font.width(builder.message),
                 builder.height,
                 builder.message,
                 builder.font
@@ -82,14 +81,11 @@ public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E>
         return builder(Minecraft.getInstance().font);
     }
 
-    public static class Builder<E> implements WidgetBuilder<Builder<E>> {
+    public static class Builder<E> extends AbstractWidgetBuilder<Builder<E>> {
         private final Font font;
-        private int x;
-        private int y;
-        private Integer width;
-        private int height = DEFAULT_HEIGHT;
+        private boolean hasWidth;
         private int offsetY;
-        private Alignment alignment = Alignment.CENTER;
+        private Alignment alignment = Alignment.LEFT;
         private Component message = CommonComponents.EMPTY;
         private Integer color;
         private boolean shadow = true;
@@ -100,41 +96,9 @@ public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E>
         }
 
         @Override
-        public @NotNull Builder<E> setX(int x) {
-            this.x = x;
-            return this;
-        }
-
-        @Override
-        public @NotNull Builder<E> setY(int y) {
-            this.y = y;
-            return this;
-        }
-
-        @Override
-        public @NotNull Builder<E> setPosition(int x, int y) {
-            this.x = x;
-            this.y = y;
-            return this;
-        }
-
-        @Override
         public @NotNull Builder<E> setWidth(int width) {
-            this.width = width;
-            return this;
-        }
-
-        @Override
-        public @NotNull Builder<E> setHeight(int height) {
-            this.height = height;
-            return this;
-        }
-
-        @Override
-        public @NotNull Builder<E> setDimensions(int width, int height) {
-            this.width = width;
-            this.height = height;
-            return this;
+            this.hasWidth = true;
+            return super.setWidth(width);
         }
 
         public Builder<E> setOffsetY(int offsetY) {

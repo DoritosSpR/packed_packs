@@ -1,8 +1,11 @@
 package io.github.fishstiz.fidgetz.transform.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Share;
+import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -14,11 +17,18 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 import static io.github.fishstiz.fidgetz.util.DrawUtil.renderScrollingStringLeftAlign;
 
 @Mixin(EditBox.class)
 public abstract class EditBoxMixin extends AbstractWidget implements EditBoxAccess {
+    @Unique
+    private static final String fidgetz$SECTION_PLACEHOLDER = "fidgetz¶¶¶section¶¶¶placeholder";
+
+    @Unique
+    private boolean fidgetz$allowPastingSectionSign = false;
+
     protected EditBoxMixin(int x, int y, int width, int height, Component message) {
         super(x, y, width, height, message);
     }
@@ -40,6 +50,11 @@ public abstract class EditBoxMixin extends AbstractWidget implements EditBoxAcce
     @Override
     public void fidgetz$setShadow(boolean shadow) {
         this.fidgetz$shadow = shadow;
+    }
+
+    @Override
+    public void fidgetz$allowPastingSectionSign(boolean allow) {
+        this.fidgetz$allowPastingSectionSign = allow;
     }
 
     @WrapOperation(method = "renderWidget", at = @At(
@@ -83,5 +98,30 @@ public abstract class EditBoxMixin extends AbstractWidget implements EditBoxAcce
             return original.call(instance, font, text, x, y, color);
         }
         return instance.drawString(font, text, x, y, color, this.fidgetz$hasShadow());
+    }
+
+    @ModifyArg(method = "insertText", at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/util/StringUtil;filterText(Ljava/lang/String;)Ljava/lang/String;"
+    ))
+    private String placeholderSectionSigns(String text, @Share("isReplacedRef") LocalBooleanRef isReplacedRef) {
+        if (!this.fidgetz$allowPastingSectionSign || !text.contains("§")) {
+            return text;
+        }
+
+        isReplacedRef.set(true);
+        return text.replaceAll("§", fidgetz$SECTION_PLACEHOLDER);
+    }
+
+    @ModifyExpressionValue(method = "insertText", at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/util/StringUtil;filterText(Ljava/lang/String;)Ljava/lang/String;"
+    ))
+    private String replacePlaceholders(String original, @Share("isReplacedRef") LocalBooleanRef isReplacedRef) {
+        if (!isReplacedRef.get()) {
+            return original;
+        }
+
+        return original.replaceAll(fidgetz$SECTION_PLACEHOLDER, "§");
     }
 }

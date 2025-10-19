@@ -1,18 +1,19 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
-import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
+import io.github.fishstiz.fidgetz.util.text.AsyncStylizerFormatter;
 import io.github.fishstiz.fidgetz.transform.mixin.EditBoxAccess;
 import io.github.fishstiz.fidgetz.gui.Metadata;
 import io.github.fishstiz.fidgetz.util.LogUtil;
+import io.github.fishstiz.fidgetz.util.text.TextStylizer;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -23,7 +24,7 @@ import static com.mojang.blaze3d.platform.InputConstants.KEY_RIGHT;
 
 public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E> {
     private static final int DEFAULT_MAX_LENGTH = 32;
-    private final List<Consumer<String>> listeners = new ArrayList<>();
+    private final List<Consumer<String>> listeners;
     private final int hintColor;
     private E metadata;
     private int focusedTextColor;
@@ -40,6 +41,7 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
 
         if (builder.filter != null) this.setFilter(builder.filter);
 
+        this.setMaxLength(builder.maxLength);
         this.setValue(builder.value);
         this.setEditable(builder.editable);
         this.setHint(builder.hint);
@@ -47,7 +49,12 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
         ((EditBoxAccess) this).fidgetz$setShadow(builder.textShadow);
         this.updateTextColor();
 
-        this.listeners.addAll(builder.listeners);
+        if (!builder.textStylizers.isEmpty()) {
+            this.setFormatter(new AsyncStylizerFormatter(builder.textStylizers, this::getValue)::format);
+        }
+
+        this.listeners = builder.listeners;
+
         super.setResponder(this::onRespond);
     }
 
@@ -143,13 +150,16 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
         if (this.isEditing()) super.onClick(mouseX, mouseY);
     }
 
+    public void allowPastingSectionSign(boolean allow) {
+        ((EditBoxAccess) this).fidgetz$allowPastingSectionSign(allow);
+    }
+
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == KEY_LEFT && (this.getValue().isEmpty() || this.getCursorPosition() == 0)) {
-            return false;
-        }
-        if (keyCode == KEY_RIGHT && (this.getValue().isEmpty() || this.getCursorPosition() == this.getValue().length())) {
-            return false;
+        if (this.getValue().isEmpty()) {
+            if (keyCode == KEY_LEFT || keyCode == KEY_RIGHT) {
+                return false;
+            }
         }
 
         return super.keyPressed(keyCode, scanCode, modifiers);
@@ -179,13 +189,10 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
         return builder(Minecraft.getInstance().font);
     }
 
-    public static class Builder<E> implements WidgetBuilder<Builder<E>> {
+    public static class Builder<E> extends AbstractWidgetBuilder<Builder<E>> {
         private final Font font;
-        private final List<Consumer<String>> listeners = new ArrayList<>();
-        private int x = 0;
-        private int y = 0;
-        private int width = WidgetBuilder.DEFAULT_WIDTH;
-        private int height = WidgetBuilder.DEFAULT_HEIGHT;
+        private final List<Consumer<String>> listeners = new ObjectArrayList<>();
+        private final List<TextStylizer> textStylizers = new ObjectArrayList<>();
         private String value = "";
         private Component hint = CommonComponents.EMPTY;
         private boolean textShadow = true;
@@ -198,41 +205,6 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
 
         private Builder(Font font) {
             this.font = font;
-        }
-
-        @Override
-        public @NotNull Builder<E> setX(int x) {
-            this.x = x;
-            return this;
-        }
-
-        @Override
-        public @NotNull Builder<E> setY(int y) {
-            this.y = y;
-            return this;
-        }
-
-        @Override
-        public @NotNull Builder<E> setPosition(int x, int y) {
-            this.x = x;
-            this.y = y;
-            return this;
-        }
-
-        public @NotNull Builder<E> setWidth(int width) {
-            this.width = width;
-            return this;
-        }
-
-        public @NotNull Builder<E> setHeight(int height) {
-            this.height = height;
-            return this;
-        }
-
-        public @NotNull Builder<E> setDimensions(int width, int height) {
-            this.width = width;
-            this.height = height;
-            return this;
         }
 
         public Builder<E> setValue(String value) {
@@ -277,6 +249,16 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
 
         public Builder<E> addListener(Consumer<String> listener) {
             this.listeners.add(listener);
+            return this;
+        }
+
+        public Builder<E> addTextStylizer(TextStylizer textStylizer) {
+            this.textStylizers.add(textStylizer);
+            return this;
+        }
+
+        public Builder<E> addTextStylizer(Collection<TextStylizer> textStylizer) {
+            this.textStylizers.addAll(textStylizer);
             return this;
         }
 

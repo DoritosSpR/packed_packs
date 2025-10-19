@@ -26,6 +26,10 @@ public abstract class AbstractFixedListWidget<T extends AbstractFixedListWidget<
         this.rowGap = rowGap;
     }
 
+    protected AbstractFixedListWidget(int itemHeight) {
+        this(itemHeight, DEFAULT_SCROLLBAR_OFFSET, 0, 0);
+    }
+
     @Override
     protected int scrollBarX() {
         return this.getRight() - this.scrollbarOffset;
@@ -107,6 +111,10 @@ public abstract class AbstractFixedListWidget<T extends AbstractFixedListWidget<
 
         protected Entry(int index) {
             this.index = index;
+        }
+
+        protected Entry() {
+            this(AbstractFixedListWidget.this.children().size());
         }
 
         public int getIndex() {
