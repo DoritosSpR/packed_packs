@@ -187,7 +187,7 @@ public record PackListDevMenu(
                 .build()
         ).separator();
 
-        builder.add(devItem(Component.literal("Edit Aliases"))
+        builder.add(devItem(ResourceUtil.getText("aliases.edit"))
                 .action(() -> this.listener.accept(new Event.EditAliases(this.pack(), this.options.getConfig().hasAlias(this.pack().getId()))))
                 .build()
         ).separator();
