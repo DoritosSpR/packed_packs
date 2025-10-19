@@ -1,10 +1,10 @@
 package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 
-import com.google.common.util.concurrent.Runnables;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.ARGBColor;
+import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
@@ -19,7 +19,7 @@ import java.util.function.Supplier;
 public class MenuItemBuilder {
     private final List<MenuItem> children = new ObjectArrayList<>();
     private final Component text;
-    private Runnable action = Runnables.doNothing();
+    private Runnable action = ObjectsUtil::nop;
     private RenderableRect background;
     private Supplier<@Nullable Sprite> iconSupplier;
     private Supplier<Tooltip> tooltipSupplier;
@@ -149,6 +149,11 @@ public class MenuItemBuilder {
             IntSupplier textColorSupplier,
             List<MenuItem> children
     ) implements MenuItem {
+        @Override
+        public void run() {
+            this.action.run();
+        }
+
         @Override
         public boolean active() {
             return this.activeSupplier.getAsBoolean();

@@ -7,7 +7,7 @@ import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.ModExtensionInternal;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
-import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
@@ -54,8 +54,8 @@ public class VTDModExtension implements ModExtensionInternal {
         if (type != PackType.CLIENT_RESOURCES) return;
 
         this.mod().wrapError(builder, b -> {
-            b.add(Toggleable.fromPref(Preferences.INSTANCE.vtdButton));
-            b.add(Toggleable.fromPref(Preferences.INSTANCE.vtdEditButton));
+            b.add(ToggleableHelper.fromPref(Preferences.INSTANCE.vtdButton));
+            b.add(ToggleableHelper.fromPref(Preferences.INSTANCE.vtdEditButton));
         });
     }
 }

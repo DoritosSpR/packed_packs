@@ -9,7 +9,7 @@ import io.github.fishstiz.packed_packs.compat.ModScreenFactory;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
-import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.layouts.LayoutElement;
@@ -45,12 +45,12 @@ public class VTDEditButtonWidget extends AbstractButton implements ContextMenuPr
     private final Screen previous;
     private final PackSelectionModel.Entry pack;
     private final boolean editable;
-    private final @Nullable Toggleable toggleable;
+    private final @Nullable ToggleableHelper toggleable;
 
     private VTDEditButtonWidget(LayoutElement container, Screen previous, PackSelectionModel.Entry pack, boolean editable) {
         super(0, 0, PENCIL_SIZE, PENCIL_SIZE, CommonComponents.EMPTY);
 
-        this.toggleable = PackedPacks.CONFIG.isDevMode() ? new Toggleable(Preferences.INSTANCE.vtdEditButton) : null;
+        this.toggleable = PackedPacks.CONFIG.isDevMode() ? new ToggleableHelper(Preferences.INSTANCE.vtdEditButton) : null;
         this.container = container;
         this.previous = previous;
         this.pack = pack;

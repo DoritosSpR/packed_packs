@@ -21,7 +21,6 @@ import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
-import org.apache.commons.lang3.function.Consumers;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -60,27 +59,12 @@ public class PackRepositoryManager {
     }
 
     private void refreshModel() {
-        this.model = new PackSelectionModel(Consumers.nop(), PackAssetManager::getDefaultIcon, this.repository, Consumers.nop());
+        this.model = new PackSelectionModel(ObjectsUtil::nop, PackAssetManager::getDefaultIcon, this.repository, ObjectsUtil::nop);
         ((PackSelectionModelAccessor) this.model).packed_packs$filterHidden(false);
     }
 
     public List<Pack> getPacks() {
         return List.copyOf(this.availablePacks.values());
-    }
-
-    public PackGroup getPacksByRequirement() {
-        List<Pack> required = new ObjectArrayList<>();
-        List<Pack> optional = new ObjectArrayList<>();
-
-        for (Pack pack : this.availablePacks.values()) {
-            if (this.options.isRequired(pack)) {
-                this.options.getPosition(pack).insert(required, pack, this.options::getSelectionConfig, true);
-            } else {
-                optional.add(pack);
-            }
-        }
-
-        return PackGroup.of(required, optional);
     }
 
     public PackGroup getPacksBySelected() {
@@ -358,8 +342,7 @@ public class PackRepositoryManager {
 
         return ((PackRepositoryAccessor) this.repository).packed_packs$getSources().stream()
                 .filter(FolderRepositorySourceAccessor.class::isInstance)
-                .map(source -> ((FolderRepositorySourceAccessor) source).packed_packs$getFolder())
-                .map(path -> path.toAbsolutePath().normalize())
+                .map(source -> ((FolderRepositorySourceAccessor) source).packed_packs$getFolder().getParent().normalize())
                 .filter(path -> !path.equals(normalizedBaseDir))
                 .distinct()
                 .toList();

@@ -13,11 +13,11 @@ import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.BiConsumer;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
@@ -32,7 +32,7 @@ public class ProfilesLayout {
     private static final int MAX_WIDTH = SPACING * 20;
     private final Config.Packs config;
     private final Sidebar sidebar;
-    private final CopyListener copyListener;
+    private final BiConsumer<Profile, Profile> copyListener;
     private final ToggleableEditBox<Void> nameField;
     private final FidgetzButton<Void> toggleNameButton;
     private final FidgetzButton<Void> noProfileButton;
@@ -42,8 +42,8 @@ public class ProfilesLayout {
     public <S extends Screen & ToggleableDialogContainer> ProfilesLayout(
             S screen,
             Config.Packs config,
-            ProfileList.SelectListener selectListener,
-            CopyListener copyListener
+            BiConsumer<Profile, Profile> selectListener,
+            BiConsumer<Profile, Profile> copyListener
     ) {
         this.config = config;
         this.copyListener = copyListener;
@@ -52,7 +52,6 @@ public class ProfilesLayout {
                 Sprite.of16(ResourceUtil.getIcon("edit_inactive"))
         );
         this.sidebar = Sidebar.builder(screen)
-                .setHeaderSettings(LayoutSettings.defaults().paddingLeft(SPACING).paddingTop(SPACING - 1))
                 .setMaxWidth(MAX_WIDTH)
                 .setTitle(TITLE_TEXT, true)
                 .build();
@@ -76,22 +75,21 @@ public class ProfilesLayout {
     }
 
     public void initContents() {
-        LayoutSettings layoutSettings = LayoutSettings.defaults().paddingHorizontal(GuiConstants.SPACING);
-        FlexLayout actions = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
-        FlexLayout list = FlexLayout.horizontal(this::getMaxWidth);
+        final FidgetzButton<Void> copyButton = FidgetzButton.<Void>builder()
+                .setMessage(NEW_TEXT)
+                .setTooltip(Tooltip.create(NEW_INFO))
+                .setOnPress(this::copyProfile)
+                .build();
 
+        final FlexLayout actions = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
         actions.addFlexChild(this.noProfileButton);
-        actions.addFlexChild(
-                FidgetzButton.<Void>builder()
-                        .setMessage(NEW_TEXT)
-                        .setTooltip(Tooltip.create(NEW_INFO))
-                        .setOnPress(this::copyProfile)
-                        .build()
-        );
+        actions.addFlexChild(copyButton);
+
+        final FlexLayout list = FlexLayout.horizontal(this::getMaxWidth);
         list.addFlexChild(this.profileList, true);
 
-        this.sidebar.root().layout().addChild(actions, layoutSettings);
-        this.sidebar.root().layout().addFlexChild(list, true, layoutSettings.copy().paddingBottom(GuiConstants.SPACING + 1));
+        this.sidebar.root().layout().addChild(actions);
+        this.sidebar.root().layout().addFlexChild(list, true);
         this.sidebar.root().layout().arrangeElements();
         this.sidebar.root().layout().visitWidgets(this.sidebar::addRenderableWidget);
 
@@ -163,14 +161,10 @@ public class ProfilesLayout {
                 ? selectedProfile.copy()
                 : new Profile(NO_PROFILE_TEXT.getString() + " - " + COPY_TEXT.getString());
 
-        this.copyListener.onCopy(selectedProfile, copiedProfile);
+        this.copyListener.accept(selectedProfile, copiedProfile);
         this.config.addProfile(copiedProfile);
         this.setProfile(copiedProfile);
         this.sidebar.setOpen(false);
         this.profileList.refresh();
-    }
-
-    public interface CopyListener {
-        void onCopy(@Nullable Profile original, @NotNull Profile copy);
     }
 }

@@ -8,6 +8,7 @@ import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -37,10 +38,10 @@ import static net.minecraft.client.gui.screens.Screen.findNarratableWidget;
 public class ToggleableDialog<T extends LayoutElement> extends AbstractContainerEventHandler implements Renderable, NarratableEntry {
     protected final Screen screen;
     private final PollingDebouncer<Void> focusOnOpenTask = new SimplePollingDebouncer<>(this::focus, 0);
-    private final List<GuiEventListener> children = new ArrayList<>();
-    private final List<Renderable> renderables = new ArrayList<>();
-    private final List<NarratableEntry> narratables = new ArrayList<>();
-    private final List<Consumer<Boolean>> listeners = new ArrayList<>();
+    private final List<GuiEventListener> children = new ObjectArrayList<>();
+    private final List<Renderable> renderables = new ObjectArrayList<>();
+    private final List<NarratableEntry> narratables = new ObjectArrayList<>();
+    private final List<Consumer<Boolean>> listeners;
     private final T root;
     private final RenderableRect backdrop;
     private final RenderableRect background;
@@ -69,9 +70,9 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         this.closeOnEscape = builder.closeOnEscape;
         this.captureClick = builder.captureClick;
         this.captureFocus = builder.captureFocus;
+        this.listeners = builder.listeners;
 
         this.setOpen(builder.open);
-        this.listeners.addAll(builder.listeners);
     }
 
     public T root() {
@@ -487,7 +488,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     }
 
     public static class Builder<T extends LayoutElement, B extends Builder<T, B>> {
-        protected final List<Consumer<Boolean>> listeners = new ArrayList<>();
+        protected final List<Consumer<Boolean>> listeners = new ObjectArrayList<>();
         protected final Screen screen;
         protected final T root;
         protected GuiRectangle boundingBox;

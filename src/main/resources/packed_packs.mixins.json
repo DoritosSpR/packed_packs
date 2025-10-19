@@ -20,7 +20,6 @@
     "folders.additional.MinecraftMixin",
     "folders.additional.PackRepositoryAccessor",
     "folders.additional.ServerPacksSourceMixin",
-    "gui.HeaderAndFooterLayoutAccess",
     "gui.MinecraftMixin",
     "gui.OptionsScreenMixin",
     "gui.PackSelectionScreenMixin",

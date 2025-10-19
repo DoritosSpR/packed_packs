@@ -18,7 +18,7 @@ import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackAliasLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
-import io.github.fishstiz.packed_packs.gui.metadata.Toggleable;
+import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import io.github.fishstiz.packed_packs.pack.*;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.util.ToastUtil;
@@ -30,12 +30,12 @@ import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.gui.history.HistoryManager;
 import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
-import io.github.fishstiz.packed_packs.transform.mixin.gui.HeaderAndFooterLayoutAccess;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -43,7 +43,6 @@ import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.screens.AlertScreen;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.NoticeWithLinkScreen;
@@ -74,28 +73,23 @@ public class PackedPacksScreen extends PackListEventHandler implements
         ToggleableDialogContainer,
         ContextMenuContainer,
         Restorable<PackedPacksScreen.Snapshot> {
-    private static final Component ACTION_BAR_INFO = ResourceUtil.getText("toggle_actionbar.info");
-    private static final Component ORIGINAL_SCREEN_INFO = ResourceUtil.getText("original_screen.info");
+    private static final int HEADER_AND_FOOTER_HEIGHT = 20;
     private static final Component OPEN_FOLDER_TEXT = Component.translatable("pack.openFolder");
-    private static final Component OPEN_FOLDER_INFO_TEXT = Component.translatable("pack.folderInfo");
-    private static final Component APPLY_TEXT = ResourceUtil.getText("apply");
-    private static final Component REFRESH_PACKS_TEXT = ResourceUtil.getText("refresh");
-    private static final Component RESET_ENABLED_TEXT = ResourceUtil.getText("reset_enabled");
     private final Screen previous;
     private final PackSelectionScreenArgs original;
+    private final Config.Packs packsConfig;
+    private final HistoryManager<Snapshot> history;
+    private final LayoutWrapper<FlexLayout> layout;
+    private final ProfilesLayout profiles;
     private final PackRepositoryManager repository;
-    private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(this);
     private final AvailablePacksLayout availablePacks;
     private final CurrentPacksLayout currentPacks;
-    private final Config.Packs packsConfig;
-    private final ProfilesLayout profiles;
     private final FolderDialog folderDialog;
-    private final Modal<OptionsLayout> optionsModal;
+    private final List<PackList> packLists;
     private final FileRenameModal fileRenameModal;
     private final ContextMenu contextMenu;
+    private final Modal<OptionsLayout> optionsModal;
     private final List<ToggleableDialog<?>> dialogs;
-    private final List<PackList> packLists;
-    private final HistoryManager<Snapshot> history;
     private Modal<PackAliasLayout> aliasModal;
     private List<Path> additionalFolders;
     private CompletableFuture<Void> refreshFuture;
@@ -110,37 +104,41 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.previous = previous;
         this.original = original;
         this.packsConfig = PackedPacks.CONFIG.get(original.packType());
+
+        this.history = new HistoryManager<>();
+        this.layout = new LayoutWrapper<>(FlexLayout.vertical(this::getMaxHeight).spacing(SPACING));
+        this.layout.setPadding(SPACING);
+
         this.profiles = new ProfilesLayout(this, this.packsConfig, this::onProfileChange, this::onProfileCopy);
         PackOptionsContext options = new PackOptionsContext(this.profiles::getProfile, this.packsConfig);
         this.repository = new PackRepositoryManager(this.original.repository(), options, this.original.packDir());
         PackFileOperations fileOps = new PackFileOperations(options, this.repository);
         this.availablePacks = new AvailablePacksLayout(options, this.assetManager, fileOps, this);
         this.currentPacks = new CurrentPacksLayout(options, this.assetManager, fileOps, this);
-        this.optionsModal = Modal.builder(this, new OptionsLayout(this.minecraft, this.layout::getContentHeight, this.packsConfig))
-                .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
-                .setCaptureFocus(true)
-                .padding(SPACING)
-                .build();
         this.folderDialog = new FolderDialog(this, options, this.assetManager, fileOps);
+        this.packLists = List.of(this.folderDialog.root(), this.availablePacks.list(), this.currentPacks.list());
         this.fileRenameModal = new FileRenameModal(this, fileOps, this.assetManager);
         this.contextMenu = ContextMenu.builder(this)
                 .setSpacing(SPACING)
                 .setBackground(Theme.GRAY_800.getARGB())
                 .setBorderColor(Theme.GRAY_500.getARGB())
                 .build();
+        this.optionsModal = Modal.builder(this, new OptionsLayout(this.minecraft, this.layout::getHeight, this.packsConfig))
+                .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
+                .setCaptureFocus(true)
+                .padding(SPACING)
+                .build();
 
         if (PackedPacks.CONFIG.isDevMode()) {
-            this.aliasModal = Modal.builder(this, new PackAliasLayout(this.packsConfig, this.assetManager)).padding(SPACING).build();
-            this.aliasModal.addListener(open -> {
-                if (!open) this.aliasModal.root().layout().saveAliases();
-            });
+            PackAliasLayout packAliasLayout = new PackAliasLayout(this.packsConfig, this.assetManager);
+            this.aliasModal = Modal.builder(this, packAliasLayout)
+                    .addListener(open -> this.aliasModal.root().layout().saveAliases())
+                    .padding(SPACING)
+                    .build();
             this.dialogs = List.of(this.optionsModal, this.contextMenu, this.aliasModal, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
         } else {
             this.dialogs = List.of(this.optionsModal, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
         }
-
-        this.packLists = List.of(this.folderDialog.root(), this.availablePacks.list(), this.currentPacks.list());
-        this.history = new HistoryManager<>();
 
         this.initAdditionalFolders();
         if (initState) this.profiles.setProfile(this.packsConfig.getLastViewedProfile());
@@ -184,9 +182,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
     protected void init() {
         if (this.initialized) return;
 
-        this.layout.addToHeader(this.createHeader());
-        this.layout.addToContents(this.createContents());
-        this.layout.addToFooter(this.createFooter());
+        this.layout.layout().addChild(this.createHeader());
+        this.layout.layout().addFlexChild(this.createContents());
+        this.layout.layout().addChild(this.createFooter());
 
         this.profiles.initContents();
         this.profiles.getSidebar().getCloseButton().addListener(this::setInitialFocus);
@@ -220,9 +218,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
         if (devMode || Preferences.INSTANCE.actionBarWidget.get()) {
             header.addChild(
-                    Toggleable.applyPref(Preferences.INSTANCE.actionBarWidget, FidgetzButton.<Void>builder())
+                    ToggleableHelper.applyPref(Preferences.INSTANCE.actionBarWidget, FidgetzButton.<Void>builder())
                             .makeSquare()
-                            .setTooltip(Tooltip.create(ACTION_BAR_INFO))
+                            .setTooltip(Tooltip.create(ResourceUtil.getText("toggle_actionbar.info")))
                             .setSprite(Sprite.of16(ResourceUtil.getIcon("filter")))
                             .setOnPress(this::toggleActionBar)
                             .build()
@@ -232,12 +230,11 @@ public class PackedPacksScreen extends PackListEventHandler implements
         header.addFlexChild(this.profiles.getNameField());
 
         PackSelectionScreen originalScreen = this.previous instanceof PackSelectionScreen s ? s : this.original.createDummy();
-
         ModAdditions.onCreateHeader(this.packsConfig.packType(), header, this, originalScreen);
 
         if (devMode || Preferences.INSTANCE.optionsWidget.get()) {
             header.addChild(
-                    Toggleable.applyPref(Preferences.INSTANCE.optionsWidget, FidgetzButton.<Void>builder())
+                    ToggleableHelper.applyPref(Preferences.INSTANCE.optionsWidget, FidgetzButton.<Void>builder())
                             .makeSquare()
                             .setMessage(OPTIONS_TEXT)
                             .setTooltip(Tooltip.create(OPTIONS_TEXT.copy().append(CommonComponents.ELLIPSIS)))
@@ -248,9 +245,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
         if (devMode || Preferences.INSTANCE.originalScreenWidget.get()) {
             header.addChild(
-                    Toggleable.applyPref(Preferences.INSTANCE.originalScreenWidget, FidgetzButton.<Void>builder())
+                    ToggleableHelper.applyPref(Preferences.INSTANCE.originalScreenWidget, FidgetzButton.<Void>builder())
                             .makeSquare()
-                            .setTooltip(Tooltip.create(ORIGINAL_SCREEN_INFO.copy().append(CommonComponents.ELLIPSIS)))
+                            .setTooltip(Tooltip.create(ResourceUtil.getText("original_screen.info").append(CommonComponents.ELLIPSIS)))
                             .setSprite(Sprite.of16(ResourceUtil.getIcon("exit")))
                             .setOnPress(this::setOriginalScreen)
                             .build()
@@ -261,7 +258,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     private FlexLayout createContents() {
         FlexLayout contents = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        FlexLayout packLayout = FlexLayout.vertical(this.layout::getContentHeight).spacing(SPACING);
+        FlexLayout packLayout = FlexLayout.vertical(this::getContentHeight).spacing(SPACING);
         this.availablePacks.init(contents.addFlexChild(packLayout));
         this.currentPacks.init(contents.addFlexChild(packLayout.copyLayout()));
         this.currentPacks.getSearchField().addListener(this::recordState);
@@ -270,20 +267,20 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     private FlexLayout createFooter() {
-        FlexLayout footer = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
+        final FlexLayout footer = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
         FlexLayout firstColumn = FlexLayout.horizontal().spacing(SPACING);
         FlexLayout secondColumn = firstColumn.copyLayout();
 
         firstColumn.addFlexChild(
                 FidgetzButton.builder()
                         .setMessage(OPEN_FOLDER_TEXT)
-                        .setTooltip(Tooltip.create(OPEN_FOLDER_INFO_TEXT))
+                        .setTooltip(Tooltip.create(Component.translatable("pack.folderInfo")))
                         .setOnPress(this.repository::openDir)
                         .build()
         );
 
         if (this.packsConfig.packType() == PackType.CLIENT_RESOURCES) {
-            secondColumn.addFlexChild(FidgetzButton.builder().setMessage(APPLY_TEXT).setOnPress(this::commit).build());
+            secondColumn.addFlexChild(FidgetzButton.builder().setMessage(ResourceUtil.getText("apply")).setOnPress(this::commit).build());
         }
 
         secondColumn.addFlexChild(FidgetzButton.builder().setMessage(CommonComponents.GUI_DONE).setOnPress(this::onClose).build());
@@ -291,6 +288,14 @@ public class PackedPacksScreen extends PackListEventHandler implements
         footer.addFlexChild(firstColumn);
         footer.addFlexChild(secondColumn);
         return footer;
+    }
+
+    public int getContentHeight() {
+        return this.height - ((HEADER_AND_FOOTER_HEIGHT * 2 + SPACING * 2) + SPACING * 2);
+    }
+
+    public int getMaxHeight() {
+        return this.height - SPACING * 2;
     }
 
     public int getMaxWidth() {
@@ -401,7 +406,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private void createWatcher() {
         if (this.watcher == null) {
             try {
-                List<Path> paths = CollectionsUtil.mutableListOf(this.repository.getBaseDir());
+                List<Path> paths = new ObjectArrayList<>(this.additionalFolders.size() + 1);
+                paths.add(this.repository.getBaseDir());
                 paths.addAll(this.additionalFolders);
                 this.watcher = new PackWatcher(this.packsConfig.packType(), paths, this::refreshPacks);
             } catch (Exception e) {
@@ -433,7 +439,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     @Override
     protected void repositionElements() {
         this.layout.arrangeElements();
-        ((HeaderAndFooterLayoutAccess) this.layout).getContentsFrame().setY(this.layout.getHeaderHeight());
+        this.layout.setPosition(0, 0);
         this.dialogs.forEach(ToggleableDialog::repositionElements);
         this.contextMenu.setOpen(false);
         this.repositionLists();
@@ -486,13 +492,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
                 .thenRunAsync(this::revalidatePacks, this.minecraft);
     }
 
-    public void reset() {
-        PackGroup packs = this.repository.getPacksByRequirement();
-        this.availablePacks.list().reload(packs.unselected());
-        this.currentPacks.list().reload(packs.selected());
-        this.clearHistory();
-    }
-
     public void useSelected() {
         PackGroup packs = this.repository.getPacksBySelected();
         this.availablePacks.list().reload(packs.unselected());
@@ -513,15 +512,11 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.availablePacks.list().search("");
         this.currentPacks.list().search("");
 
-        if (current == null) {
-            this.useSelected();
-        } else if (!current.getPackIds().isEmpty()) {
+        if (current != null && !current.getPackIds().isEmpty()) {
             this.applyProfile(current);
         } else {
-            this.reset();
+            this.useSelected();
         }
-
-        this.repositionElements();
     }
 
     public void onProfileCopy(@Nullable Profile original, @NotNull Profile copy) {
@@ -773,15 +768,15 @@ public class PackedPacksScreen extends PackListEventHandler implements
                                         .build())
                                 .separator())
                         .add(devItem(ResourceUtil.getText("preferences"))
-                                .addChildren(Toggleable.preferences(this.packsConfig.packType()))
+                                .addChildren(ToggleableHelper.preferences(this.packsConfig.packType()))
                                 .addChild(devItem(ResourceUtil.getText("preferences.reset"))
                                         .action(Preferences.INSTANCE::reset)
                                         .build())
                                 .build())
                 )
                 .separatorIfNonEmpty()
-                .simpleItem(RESET_ENABLED_TEXT, this::isUnlocked, this::useSelected)
-                .simpleItem(REFRESH_PACKS_TEXT, this::canRefresh, this::refreshPacks)
+                .simpleItem(ResourceUtil.getText("reset_enabled"), this::isUnlocked, this::useSelected)
+                .simpleItem(ResourceUtil.getText("refresh"), this::canRefresh, this::refreshPacks)
                 .when(this.additionalFolders, List::isEmpty)
                 .ifTrue(b -> b.simpleItem(OPEN_FOLDER_TEXT, this.repository::openDir))
                 .orElse((dirs, b) -> b

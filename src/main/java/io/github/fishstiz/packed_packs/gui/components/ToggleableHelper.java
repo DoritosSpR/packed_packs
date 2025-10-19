@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.gui.metadata;
+package io.github.fishstiz.packed_packs.gui.components;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
@@ -13,59 +13,47 @@ import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
+import it.unimi.dsi.fastutil.booleans.Boolean2ObjectFunction;
+import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackType;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
+import java.util.function.BooleanSupplier;
 
-public record Toggleable(
-        Consumer<Boolean> toggler,
-        Supplier<Boolean> toggled,
-        Function<Boolean, Component> text,
-        @Nullable ToIntFunction<Boolean> foreground,
-        @Nullable ToIntFunction<Boolean> border,
-        @Nullable Function<Boolean, Sprite> icon
+public record ToggleableHelper(
+        BooleanConsumer toggler,
+        BooleanSupplier toggled,
+        Boolean2ObjectFunction<Component> text
 ) implements RenderableRect {
-    public Toggleable(Consumer<Boolean> toggler, Supplier<Boolean> toggled, Function<Boolean, Component> text) {
-        this(toggler, toggled, text, Toggleable::getDefaultForeground, Toggleable::getDefaultBorder, Toggleable::getDefaultIcon);
-    }
+    public static final Sprite RADIO_OFF_SPRITE = Sprite.of16(ResourceUtil.getIcon("radio_off"));
+    public static final Sprite RADIO_ON_SPRITE = Sprite.of16(ResourceUtil.getIcon("radio_on"));
 
-    public Toggleable(Preferences.Preference<Boolean> pref) {
+    public ToggleableHelper(Preferences.Preference<Boolean> pref) {
         this(pref::set, pref::get, enabled -> ResourceUtil.getText("preferences.widgets." + pref.getKey()));
     }
 
     public void toggle() {
-        this.toggler.accept(!this.toggled.get());
+        this.toggler.accept(!this.toggled.getAsBoolean());
     }
 
     public void buildContext(ContextMenuItemBuilder builder) {
-        builder.add(itemBuilder().build());
+        builder.add(this.itemBuilder().build());
     }
 
     public MenuItemBuilder itemBuilder() {
-        return MenuItem.builder(this.text.apply(this.toggled.get()))
+        return MenuItem.builder(this.text.apply(this.toggled.getAsBoolean()))
                 .background(GuiConstants.DEVELOPER_MODE_ITEM_BACKGROUND)
-                .icon(() -> this.icon != null ? this.icon.apply(this.toggled.get()) : null)
+                .icon(() -> getDefaultIcon(this.toggled.getAsBoolean()))
                 .action(this::toggle);
     }
 
     @Override
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height, float partialTick) {
-        final boolean toggled = this.toggled.get();
-
-        if (this.foreground != null) {
-            guiGraphics.fill(x, y, x + width, y + height, this.foreground.applyAsInt(toggled));
-        }
-
-        if (this.border != null) {
-            DrawUtil.renderOutline(guiGraphics, x, y, width, height, this.border.applyAsInt(toggled));
-        }
+        final boolean toggled = this.toggled.getAsBoolean();
+        guiGraphics.fill(x, y, x + width, y + height, getDefaultForeground(toggled));
+        DrawUtil.renderOutline(guiGraphics, x, y, width, height, getDefaultBorder(toggled));
     }
 
     public static int getDefaultForeground(boolean enabled) {
@@ -77,11 +65,11 @@ public record Toggleable(
     }
 
     public static Sprite getDefaultIcon(boolean enabled) {
-        return enabled ? GuiConstants.RADIO_ON_SPRITE : GuiConstants.RADIO_OFF_SPRITE;
+        return enabled ? RADIO_ON_SPRITE : RADIO_OFF_SPRITE;
     }
 
     public static MenuItem fromPref(Preferences.Preference<Boolean> pref) {
-        return new Toggleable(pref)
+        return new ToggleableHelper(pref)
                 .itemBuilder()
                 .closeOnInteract(false)
                 .build();
@@ -89,7 +77,7 @@ public record Toggleable(
 
     public static <T extends FidgetzButton.Builder<?, ?>> T applyPref(Preferences.Preference<Boolean> pref, T builder) {
         if (PackedPacks.CONFIG.isDevMode()) {
-            Toggleable toggleablePref = new Toggleable(pref);
+            ToggleableHelper toggleablePref = new ToggleableHelper(pref);
             builder.setForeground(toggleablePref).setContextMenuBuilder((btn, b) -> toggleablePref.buildContext(b.separatorIfNonEmpty()));
         }
         return builder;

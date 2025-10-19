@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
@@ -41,13 +42,13 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     private static final Sprite TRASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("trash"));
     private static final Sprite STAR_OUTLINE_SPRITE = Sprite.of16(ResourceUtil.getIcon("star_outline"));
     private final PollingDebouncer<Void> debouncedRefresh = new SimplePollingDebouncer<>(this::refresh, 200);
-    private final SelectListener selectListener;
-    private final UpdateListener updateListener;
+    private final BiConsumer<Profile, Profile> selectListener;
+    private final Consumer<Profile> updateListener;
     private final Config.Packs config;
     private List<Profile> profiles;
     private @Nullable Profile selectedProfile;
 
-    public ProfileList(Config.Packs config, SelectListener selectListener, UpdateListener updateListener) {
+    public ProfileList(Config.Packs config, BiConsumer<Profile, Profile> selectListener, Consumer<Profile> updateListener) {
         super(ITEM_HEIGHT);
 
         this.config = config;
@@ -76,8 +77,8 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     public void selectProfile(@Nullable Profile profile) {
         Profile previous = this.selectedProfile;
         this.selectedProfile = profile;
-        this.selectListener.onSelect(previous, profile);
-        this.updateListener.onUpdate(profile);
+        this.selectListener.accept(previous, profile);
+        this.updateListener.accept(profile);
     }
 
     public void removeProfile(Profile profile) {
@@ -96,8 +97,8 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     }
 
     private void resync() {
-        this.selectListener.onSelect(this.selectedProfile, this.selectedProfile);
-        this.updateListener.onUpdate(this.selectedProfile);
+        this.selectListener.accept(this.selectedProfile, this.selectedProfile);
+        this.updateListener.accept(this.selectedProfile);
     }
 
     @Override
@@ -200,7 +201,7 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
 
             this.profile.setLocked(!this.profile.isLocked());
             ProfileList.this.refresh();
-            if (selected) ProfileList.this.updateListener.onUpdate(this.profile);
+            if (selected) ProfileList.this.updateListener.accept(this.profile);
         }
 
         private void toggleDefault() {
@@ -259,15 +260,5 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
                     .action(this::toggleLock)
                     .build());
         }
-    }
-
-    @FunctionalInterface
-    public interface SelectListener {
-        void onSelect(Profile previous, Profile selected);
-    }
-
-    @FunctionalInterface
-    public interface UpdateListener {
-        void onUpdate(Profile profile);
     }
 }

@@ -11,15 +11,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-public interface MenuItem {
+public interface MenuItem extends Runnable {
     MenuItem SEPARATOR = builder(CommonComponents.EMPTY)
             .closeOnInteract(false)
             .autoSeparate(false)
             .build();
 
     Component text();
-
-    Runnable action();
 
     default @Nullable RenderableRect background() {
         return null;
