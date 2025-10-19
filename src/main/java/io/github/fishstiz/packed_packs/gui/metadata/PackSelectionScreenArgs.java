@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.gui.metadata;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackType;
@@ -36,6 +37,12 @@ public record PackSelectionScreenArgs(
 
     public PackSelectionScreen createScreen() {
         return new PackSelectionScreen(this.repository, this.output, this.packDir, this.title);
+    }
+
+    public PackSelectionScreen createScreen(Screen previous) {
+        PackSelectionScreen packScreen = this.createScreen();
+        ((PackSelectionScreenAccessor) packScreen).packed_packs$setPrevious(previous);
+        return packScreen;
     }
 
     public PackSelectionScreen createDummy() {

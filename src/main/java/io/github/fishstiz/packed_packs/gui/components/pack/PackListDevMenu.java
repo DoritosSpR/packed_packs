@@ -33,7 +33,7 @@ public record PackListDevMenu(
         Minecraft minecraft,
         PackOptionsContext options,
         SelectionContext<Pack> context,
-        @Nullable Consumer<Event<?>> listener
+        Consumer<Event<?>> listener
 ) {
     private static final int DEV_SPRITE_SIZE = 16;
     private static final int DEV_SPRITE_MARGIN_RIGHT = 8;
@@ -43,6 +43,7 @@ public record PackListDevMenu(
     private static final Sprite ARROW_DOWN_SPRITE = Sprite.of16(ResourceUtil.getIcon("arrow_down"));
     private static final Sprite ARROWS_SPRITE = Sprite.of16(ResourceUtil.getIcon("arrows_vertical"));
     private static final Sprite RADIO_GLOBAL = Sprite.of16(ResourceUtil.getIcon("radio_globe"));
+    private static final Sprite ALIAS_SPRITE = Sprite.of16(ResourceUtil.getIcon("alias"));
     private static final Component HIDDEN = overrideText("hidden");
     private static final Component REQUIRED = overrideText("required");
     private static final Component FIXED_POSITION = overrideText("fixed");
@@ -51,16 +52,18 @@ public record PackListDevMenu(
     private static final Component REMOVE_OVERRIDES = overrideText("remove");
     private static final Tooltip REQUIRED_NO_DISABLED_INFO = Tooltip.create(overrideText("required.no.disabled.info"));
 
-    public PackListDevMenu(Minecraft minecraft, PackOptionsContext options, SelectionContext<Pack> context) {
-        this(minecraft, options, context, null);
-    }
-
     public sealed interface Event<T> {
         Pack trigger();
 
         List<Pack> packs();
 
         T value();
+
+        record EditAliases(Pack trigger, Boolean value) implements Event<Boolean> {
+            public List<Pack> packs() {
+                return List.of(this.trigger);
+            }
+        }
 
         record Hide(Pack trigger, Boolean value, List<Pack> packs) implements Event<Boolean> {
         }
@@ -132,6 +135,11 @@ public record PackListDevMenu(
         if (included.global() && !((ConfiguredPack) this.pack()).packed_packs$getMetadata().compatibility().isCompatible()) {
             guiGraphics.fill(iconX, top, iconX + size, top + size, Theme.RED_700.withAlpha(0.75f));
             X_SQUARE.render(guiGraphics, iconX, top, size, size);
+            iconX -= size;
+        }
+        if (this.options.getConfig().hasAlias(this.pack().getId())) {
+            guiGraphics.fill(iconX, top, iconX + size, top + size, Theme.GREEN_500.withAlpha(0.75f));
+            ALIAS_SPRITE.render(guiGraphics, iconX, top, size, size);
         }
     }
 
@@ -173,14 +181,24 @@ public record PackListDevMenu(
         return this.options.isDefaultProfile() && !PackUtil.isEssential(this.pack());
     }
 
-    public void onBuildHeader(ContextMenuItemBuilder builder) {
-        builder.add(devItem(CommonComponents.GUI_COPY_TO_CLIPBOARD)
+    private void buildNonOverrideOptions(ContextMenuItemBuilder builder) {
+        builder.add(devItem(Component.translatable("chat.copy"))
                 .action(() -> this.minecraft.keyboardHandler.setClipboard(this.pack().getId()))
                 .build()
         ).separator();
 
+        builder.add(devItem(Component.literal("Edit Aliases"))
+                .action(() -> this.listener.accept(new Event.EditAliases(this.pack(), this.options.getConfig().hasAlias(this.pack().getId()))))
+                .build()
+        ).separator();
+    }
+
+    public void onBuildHeader(ContextMenuItemBuilder builder) {
         Profile profile = this.options.getProfile().orElse(null);
-        if (profile == null) return;
+        if (profile == null) {
+            this.buildNonOverrideOptions(builder);
+            return;
+        }
 
         builder.add(devItem(HIDDEN)
                 .icon(() -> this.getIcon(profile.isHidden(this.pack()), Profile::isHidden))
@@ -243,6 +261,8 @@ public record PackListDevMenu(
                 .build());
 
         builder.add(devItem(REMOVE_OVERRIDES).action(this::resetOverrides).build()).separator();
+
+        this.buildNonOverrideOptions(builder);
     }
 
     private static int getBackgroundColor(ProfileScope overrideScope) {

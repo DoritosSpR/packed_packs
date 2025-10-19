@@ -9,7 +9,8 @@ public sealed interface PackListEvent permits
         FileEvent,
         MoveEvent,
         RequestTransferEvent,
-        SelectionEvent {
+        SelectionEvent,
+        PackAliasOpenEvent {
     PackList target();
 
     boolean pushToHistory();
