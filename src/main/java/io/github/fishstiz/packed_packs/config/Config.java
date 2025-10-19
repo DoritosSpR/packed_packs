@@ -3,6 +3,8 @@ package io.github.fishstiz.packed_packs.config;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
+import io.github.fishstiz.packed_packs.util.AliasRegex;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.server.packs.PackType;
 import org.jetbrains.annotations.Nullable;
@@ -10,9 +12,8 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.regex.Pattern;
 
 import static io.github.fishstiz.packed_packs.PackedPacks.MOD_ID;
 
@@ -103,6 +104,7 @@ public class Config implements Serializable {
         private boolean hideIncompatibleWarnings = false;
         @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         private final List<String> additionalFolders = new ObjectArrayList<>();
+        private final Map<String, String> packIdAliases = new Object2ObjectLinkedOpenHashMap<>();
         private boolean rememberLastViewedProfile = false;
         private @Nullable Long lastViewedProfile = null;
         private @Nullable Long defaultProfile = null;
@@ -110,8 +112,65 @@ public class Config implements Serializable {
         private final List<Profile> profiles = new ObjectArrayList<>();
         private transient @Nullable Profile cachedDefaultProfile = null;
         private transient @Nullable Profile cachedLastViewedProfile = null;
+        private transient @Nullable Map<Pattern, String> aliasPatterns;
 
         public abstract PackType packType();
+
+        public Set<String> getAliases() {
+            return this.packIdAliases.keySet();
+        }
+
+        public List<String> getAliases(String packId) {
+            return CollectionsUtil.reverseLookup(packId, this.packIdAliases);
+        }
+
+        public boolean hasAlias(String packId) {
+            return this.packIdAliases.containsValue(packId);
+        }
+
+        public @Nullable String getAndSaveCanonicalId(Config config, String packId) {
+            String canonicalId = this.packIdAliases.get(packId);
+            if (canonicalId != null) {
+                this.savePackIdsOnResolve(config, packId, canonicalId);
+                return canonicalId;
+            }
+
+            Map<Pattern, String> patternMap = this.getAliasPatterns();
+            if (patternMap != null) {
+                canonicalId = AliasRegex.resolveCanonicalId(packId, patternMap);
+                if (canonicalId != null) {
+                    PackedPacks.LOGGER.info("[packed_packs] Resolved unknown pack '{}' to '{}' with regex, caching result.", packId, canonicalId);
+                    this.savePackIdsOnResolve(config, packId, canonicalId);
+                }
+            }
+
+            return canonicalId;
+        }
+
+        private @Nullable Map<Pattern, String> getAliasPatterns() {
+            if (this.packIdAliases.isEmpty()) {
+                return null;
+            }
+            if (this.aliasPatterns == null) {
+                this.aliasPatterns = AliasRegex.findPatternsFromKeys(this.packIdAliases);
+            }
+            return this.aliasPatterns;
+        }
+
+        private void savePackIdsOnResolve(Config config, String packId, String canonicalId) {
+            if (!this.packIdAliases.containsKey(packId)) {
+                this.packIdAliases.put(packId, canonicalId);
+                this.packIdAliases.remove(canonicalId);
+                for (Profile profile : this.profiles) {
+                    profile.updatePackId(packId, canonicalId);
+                }
+                config.save();
+            }
+        }
+
+        public void setAliases(String packId, List<String> aliases) {
+            CollectionsUtil.updateReverseMapping(this.packIdAliases, packId, aliases);
+        }
 
         public @Nullable Profile getDefaultProfile() {
             if (this.defaultProfile == null) {

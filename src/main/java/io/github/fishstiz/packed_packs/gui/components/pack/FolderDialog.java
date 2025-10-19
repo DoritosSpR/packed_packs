@@ -65,6 +65,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
             this.root().visible = open;
             if (!open) this.sendEvent(new FolderCloseEvent(this.root(), this.folderPack));
         });
+        this.root().visitWidgets(this::addRenderableWidget);
     }
 
     private void updateBounds() {

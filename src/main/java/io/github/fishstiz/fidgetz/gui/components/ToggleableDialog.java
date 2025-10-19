@@ -1,6 +1,7 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.platform.cursor.CursorType;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
@@ -195,6 +196,10 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
             int y = this.boundingBox.getY();
             int width = this.boundingBox.getWidth();
             int height = this.boundingBox.getHeight();
+
+            if (this.isHovered() || this.isCaptureClick() || this.isCaptureFocus()) {
+                guiGraphics.requestCursor(CursorType.DEFAULT);
+            }
 
             this.renderBackdrop(guiGraphics, 0, 0, this.screen.width, this.screen.height, mouseX, mouseY, partialTick);
             this.renderBackground(guiGraphics, x, y, width, height, mouseX, mouseY, partialTick);
@@ -417,6 +422,9 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
             }
         }
         return null;
+    }
+
+    public void repositionElements() {
     }
 
     @Override

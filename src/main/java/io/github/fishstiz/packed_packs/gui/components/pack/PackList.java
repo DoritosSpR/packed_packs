@@ -478,12 +478,11 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
                                 .build()
                 ));
             }
-            this.devMenu = devMode ? createDevMenu(PackList.this.options, this.context) : null;
-            ModAdditions.onCreateEntry(PackList.this.options.getConfig().packType(), this);
-        }
+            this.devMenu = devMode
+                    ? new PackListDevMenu(PackList.this.minecraft, PackList.this.options, this.context, this::handleDevMenuEvent)
+                    : null;
 
-        protected @Nullable PackListDevMenu createDevMenu(PackOptionsContext options, SelectionContext<Pack> context) {
-            return new PackListDevMenu(PackList.this.minecraft, options, context);
+            ModAdditions.onCreateEntry(PackList.this.options.getConfig().packType(), this);
         }
 
         public Pack pack() {
@@ -680,6 +679,12 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
             if (this.devMenu != null) {
                 this.devMenu.renderDevSprites(guiGraphics, innerTop, left, width);
+            }
+        }
+
+        protected void handleDevMenuEvent(PackListDevMenu.Event<?> event) {
+            if (event instanceof PackListDevMenu.Event.EditAliases editAliases) {
+                PackList.this.sendEvent(new PackAliasOpenEvent(PackList.this, editAliases.trigger()));
             }
         }
 

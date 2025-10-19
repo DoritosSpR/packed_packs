@@ -2,7 +2,6 @@ package io.github.fishstiz.fidgetz.gui.components;
 
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import io.github.fishstiz.fidgetz.gui.Metadata;
-import io.github.fishstiz.fidgetz.gui.WidgetBuilder;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
@@ -16,7 +15,6 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,12 +22,12 @@ import java.util.function.BiConsumer;
 
 public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProvider, Metadata<E> {
     private final List<Runnable> listeners = new ArrayList<>();
-    private final ButtonSprites sprites;
     private final Integer focusedBorder;
     private final boolean spriteOnly;
     private final boolean focusOnInteract;
     private final BiConsumer<FidgetzButton<E>, ContextMenuItemBuilder> contextMenuBuilder;
     private final RenderableRect foreground;
+    private ButtonSprites sprites;
     private E metadata;
 
     protected FidgetzButton(Builder<E, ?> builder) {
@@ -59,6 +57,10 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
 
     public void addListener(Runnable listener) {
         this.listeners.add(listener);
+    }
+
+    public void setSprites(ButtonSprites sprites) {
+        this.sprites = sprites;
     }
 
     @Override
@@ -149,11 +151,7 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
         return new Builder<>();
     }
 
-    public static class Builder<E, B extends Builder<E, B>> implements WidgetBuilder<Builder<E, B>> {
-        private int x = 0;
-        private int y = 0;
-        private int width = DEFAULT_WIDTH;
-        private int height = DEFAULT_HEIGHT;
+    public static class Builder<E, B extends Builder<E, B>> extends AbstractWidgetBuilder<B> {
         private Component message = CommonComponents.EMPTY;
         private Tooltip tooltip;
         private ButtonSprites sprites;
@@ -161,65 +159,11 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
         private RenderableRect foreground;
         private Integer focusedBorder;
         private boolean focusOnInteract = true;
-        private OnPress onPress = btn -> {
-        };
+        private OnPress onPress = btn -> {};
         private BiConsumer<FidgetzButton<E>, ContextMenuItemBuilder> contextMenuBuilder;
         private E metadata;
 
         protected Builder() {
-        }
-
-        @SuppressWarnings("unchecked")
-        protected B self() {
-            return (B) this;
-        }
-
-        @Override
-        public @NotNull B setX(int x) {
-            this.x = x;
-            return self();
-        }
-
-        @Override
-        public @NotNull B setY(int y) {
-            this.y = y;
-            return self();
-        }
-
-        @Override
-        public @NotNull B setPosition(int x, int y) {
-            this.x = x;
-            this.y = y;
-            return self();
-        }
-
-        @Override
-        public @NotNull B setWidth(int width) {
-            this.width = width;
-            return self();
-        }
-
-        @Override
-        public @NotNull B setHeight(int height) {
-            this.height = height;
-            return self();
-        }
-
-        @Override
-        public @NotNull B setDimensions(int width, int height) {
-            this.width = width;
-            this.height = height;
-            return self();
-        }
-
-        public B makeSquare(int size) {
-            this.height = size;
-            this.width = size;
-            return self();
-        }
-
-        public B makeSquare() {
-            return makeSquare(this.height);
         }
 
         public B setMessage(Component message) {
