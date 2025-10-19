@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.pack;
 
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.PackOptions;
 import io.github.fishstiz.packed_packs.config.Profile;
@@ -18,6 +19,9 @@ public record PackOptionsResolver(
         Supplier<@Nullable Profile> profileSupplier,
         Config.Packs config
 ) implements PackOptions {
+    public static final PackOptionsResolver DATA_PACKS = new PackOptionsResolver(PackedPacks.CONFIG.getDatapacks());
+    public static final PackOptionsResolver RESOURCE_PACKS = new PackOptionsResolver(PackedPacks.CONFIG.getResourcepacks());
+
     public PackOptionsResolver(Config.Packs config) {
         this(() -> null, config);
     }

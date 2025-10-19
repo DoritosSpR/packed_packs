@@ -1,16 +1,10 @@
 package io.github.fishstiz.fidgetz.util.lang;
 
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 public class CollectionsUtil {
     private CollectionsUtil() {
@@ -33,6 +27,23 @@ public class CollectionsUtil {
         return result;
     }
 
+    public static <K, V> List<K> reverseLookup(V value, Map<K, V> map) {
+        List<K> keys = new ObjectArrayList<>();
+        for (var entry : map.entrySet()) {
+            if (Objects.equals(entry.getValue(), value)) {
+                keys.add(entry.getKey());
+            }
+        }
+        return keys;
+    }
+
+    public static <K, V> void updateReverseMapping(Map<K, V> map, V value, Collection<K> newKeys) {
+        map.values().removeIf(v -> Objects.equals(v, value));
+        for (K key : newKeys) {
+            map.put(key, value);
+        }
+    }
+
     public static <T, K> Map<K, T> toMap(Collection<T> collection, Function<T, K> keyFn) {
         Map<K, T> map = new Object2ObjectOpenHashMap<>(collection.size());
         for (T item : collection) {
@@ -52,6 +63,12 @@ public class CollectionsUtil {
             }
         }
         return result;
+    }
+
+    public static <T> void forEachReverse(List<T> list, Consumer<T> action) {
+        for (int i = list.size() - 1; i >= 0; i--) {
+            action.accept(list.get(i));
+        }
     }
 
     public static <T> void forEachDistinct(Collection<T> collection, Consumer<T> action) {
@@ -106,10 +123,28 @@ public class CollectionsUtil {
         return false;
     }
 
-    public static <E, R, T extends Collection<R>> T map(Collection<E> collection, Function<E, R> mapper, Supplier<T> collectionFactory) {
+    public static <E, R, T extends Collection<R>> T map(Collection<E> collection, Function<E, R> mapper, IntFunction<T> collectionFactory) {
+        T mapped = collectionFactory.apply(collection.size());
+        for (E e : collection) {
+            mapped.add(mapper.apply(e));
+        }
+        return mapped;
+    }
+
+    public static <E, R> R[] mapToArray(List<E> list, Function<E, R> mapper, IntFunction<R[]> arrayFactory) {
+        R[] array = arrayFactory.apply(list.size());
+        for (int i = 0; i < list.size(); i++) {
+            array[i] = mapper.apply(list.get(i));
+        }
+        return array;
+    }
+
+    public static <E, R, T extends Collection<R>> T mapIf(Collection<E> collection, Predicate<E> filter, Function<E, R> mapper, Supplier<T> collectionFactory) {
         T result = collectionFactory.get();
         for (E element : collection) {
-            result.add(mapper.apply(element));
+            if (filter.test(element)) {
+                result.add(mapper.apply(element));
+            }
         }
         return result;
     }
@@ -120,6 +155,13 @@ public class CollectionsUtil {
             if (filter.test(e)) result.add(e);
         }
         return result;
+    }
+
+    public static <E> boolean anyMatch(Collection<E> collection, Predicate<E> predicate) {
+        for (E e : collection) {
+            if (predicate.test(e)) return true;
+        }
+        return false;
     }
 
     public static <E, T> @Nullable E firstMatch(Collection<E> collection, T value, Function<E, T> mapper) {
