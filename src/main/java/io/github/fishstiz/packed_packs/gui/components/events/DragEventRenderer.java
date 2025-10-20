@@ -1,14 +1,12 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
 
 public class DragEventRenderer {
     private static final int OFFSET_Y = 4;
@@ -27,7 +25,7 @@ public class DragEventRenderer {
     }
 
     public void renderDragEvent(DragEvent dragEvent, GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        ResourceLocation icon = this.assetManager.getIcon(dragEvent.trigger());
+        Sprite icon = this.assetManager.getIcon(dragEvent.trigger());
         String sizeString = String.valueOf(dragEvent.payload().size());
         Font font = Minecraft.getInstance().font;
         int sizeStringWidth = font.width(sizeString);
@@ -38,7 +36,7 @@ public class DragEventRenderer {
         int numY = mouseY - NUM_OFFSET_Y;
 
         this.background.render(guiGraphics, iconX, iconY, ICON_SIZE, ICON_SIZE);
-        guiGraphics.blit(RenderType::guiTextured, icon, iconX, iconY, 0, 0, ICON_SIZE, ICON_SIZE, ICON_SIZE, ICON_SIZE);
+        icon.render(guiGraphics, iconX, iconY, ICON_SIZE, ICON_SIZE, partialTick);
         this.overlay.render(guiGraphics, iconX, iconY, ICON_SIZE, ICON_SIZE);
         this.numberBackground.render(guiGraphics, numX, numY, numWidth, NUM_SIZE);
         guiGraphics.drawString(font, sizeString, numX + numWidth / 2 - sizeStringWidth / 2, numY + NUM_SIZE / 2 - font.lineHeight / 2, Theme.WHITE.getARGB());

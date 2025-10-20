@@ -5,7 +5,6 @@ import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.components.RenderableRectWidget;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.util.AliasRegex;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
@@ -82,7 +81,7 @@ public class PackAliasLayout implements Layout {
                 .setMessage(pack.getTitle())
                 .setOffsetY(1)
                 .build();
-        RenderableRectWidget<Void> icon = RenderableRectWidget.<Void>builder(Sprite.of16(this.assetManager.getIcon(pack)))
+        RenderableRectWidget<Void> icon = RenderableRectWidget.<Void>builder(this.assetManager.getIcon(pack))
                 .makeSquare()
                 .build();
         FidgetzButton<Void> closeButton = FidgetzButton.<Void>builder()

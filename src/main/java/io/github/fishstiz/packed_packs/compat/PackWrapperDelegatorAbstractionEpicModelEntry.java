@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 public record PackWrapperDelegatorAbstractionEpicModelEntry(Pack pack) implements PackSelectionModel.Entry {
     @Override
     public @NotNull ResourceLocation getIconTexture() {
-        return PackAssetManager.DEFAULT_ICON;
+        return PackAssetManager.getDefaultLocation(pack);
     }
 
     @Override
