@@ -8,6 +8,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -16,12 +17,12 @@ import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
 public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProvider, Metadata<E> {
-    private final List<Runnable> listeners = new ArrayList<>();
+    private final List<Runnable> listeners;
     private final Integer focusedBorder;
     private final boolean spriteOnly;
     private final boolean focusOnInteract;
@@ -40,6 +41,7 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
         this.focusedBorder = builder.focusedBorder;
         this.focusOnInteract = builder.focusOnInteract;
         this.contextMenuBuilder = builder.contextMenuBuilder;
+        this.listeners = !builder.listeners.isEmpty() ? builder.listeners : Collections.emptyList();
 
         if (builder.tooltip != null) {
             this.setTooltip(builder.tooltip);
@@ -53,10 +55,6 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
         for (var listener : this.listeners) {
             listener.run();
         }
-    }
-
-    public void addListener(Runnable listener) {
-        this.listeners.add(listener);
     }
 
     public void setSprites(ButtonSprites sprites) {
@@ -152,6 +150,7 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
     }
 
     public static class Builder<E, B extends Builder<E, B>> extends AbstractWidgetBuilder<B> {
+        private final List<Runnable> listeners = new ObjectArrayList<>();
         private Component message = CommonComponents.EMPTY;
         private Tooltip tooltip;
         private ButtonSprites sprites;
@@ -217,6 +216,11 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
 
         public B setOnPress(Runnable onPress) {
             this.onPress = btn -> onPress.run();
+            return self();
+        }
+
+        public B addListener(Runnable listener) {
+            this.listeners.add(listener);
             return self();
         }
 
