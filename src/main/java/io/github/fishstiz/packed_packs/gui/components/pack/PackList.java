@@ -64,7 +64,6 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         this.fileOps = fileOps;
         this.listener = listener;
         this.list = new PackListModel(this.options);
-        this.refreshList();
     }
 
     protected abstract @NotNull Entry createEntry(SelectionContext<Pack> context, int index);
@@ -426,10 +425,10 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         protected static final int BACKGROUND_OFFSET = 1;
         protected static final ColoredRect SELECTED_OVERLAY = new ColoredRect(Theme.BLUE_500.withAlpha(0.25F));
         protected final SelectionContext<Pack> context;
-        private final List<GuiEventListener> children = new ArrayList<>();
-        private final List<Renderable> renderables = new ArrayList<>();
-        private final List<Renderable> topRenderables = new ArrayList<>();
-        private final List<NarratableEntry> narratables = new ArrayList<>();
+        private final List<GuiEventListener> children = new ObjectArrayList<>();
+        private final List<Renderable> renderables = new ObjectArrayList<>();
+        private final List<Renderable> topRenderables = new ObjectArrayList<>();
+        private final List<NarratableEntry> narratables = new ObjectArrayList<>();
         private final MouseSelectionHandler<Pack> selectionHandler;
         private final PackWidget packWidget;
         private final @Nullable PackListDevMenu devMenu;
