@@ -66,7 +66,7 @@ public class SelectableList<T> {
 
     public void replaceAll(Collection<T> items) {
         this.items.clear();
-        Set<T> seen = new ObjectOpenHashSet<>();
+        Set<T> seen = new ObjectOpenHashSet<>(items.size());
         for (T item : items) {
             if (item != null && seen.add(item)) {
                 this.items.add(item);

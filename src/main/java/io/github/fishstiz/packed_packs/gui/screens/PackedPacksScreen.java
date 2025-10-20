@@ -101,7 +101,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.previous = previous;
         this.original = original;
         this.packsConfig = PackedPacks.CONFIG.get(original.packType());
-
         this.history = new HistoryManager<>();
         this.layout = new LayoutWrapper<>(FlexLayout.vertical(this::getMaxHeight).spacing(SPACING));
         this.layout.setPadding(SPACING);
@@ -109,17 +108,14 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.profiles = new ProfilesLayout(this, this.packsConfig, this::onProfileChange, this::onProfileCopy);
         PackOptionsContext options = new PackOptionsContext(this.profiles::getProfile, this.packsConfig);
         this.repository = new PackRepositoryManager(this.original.repository(), options, this.original.packDir());
-        PackFileOperations fileOps = new PackFileOperations(options, this.repository);
-        this.availablePacks = new AvailablePacksLayout(options, this.assetManager, fileOps, this);
-        this.currentPacks = new CurrentPacksLayout(options, this.assetManager, fileOps, this);
-        this.folderDialog = new FolderDialog(this, options, this.assetManager, fileOps);
-        this.packLists = List.of(this.folderDialog.root(), this.availablePacks.list(), this.currentPacks.list());
-        this.fileRenameModal = new FileRenameModal(this, fileOps, this.assetManager);
-        this.contextMenu = ContextMenu.builder(this)
-                .setSpacing(SPACING)
-                .setBackground(Theme.GRAY_800.getARGB())
-                .setBorderColor(Theme.GRAY_500.getARGB())
-                .build();
+
+        WidgetFactory.PackedPacksWidgets widgets = WidgetFactory.createWidgets(this, options, this.repository, this.assetManager);
+        this.availablePacks = widgets.availablePacksLayout();
+        this.currentPacks = widgets.currentPacksLayout();
+        this.folderDialog = widgets.folderDialog();
+        this.packLists = widgets.packLists();
+        this.fileRenameModal = widgets.fileRenameModal();
+        this.contextMenu = widgets.contextMenu();
         this.optionsModal = Modal.builder(this, new OptionsLayout(this.minecraft, this.layout::getHeight, this.packsConfig))
                 .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
                 .setCaptureFocus(true)
@@ -139,6 +135,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
         this.initAdditionalFolders();
         if (initState) this.profiles.setProfile(this.packsConfig.getLastViewedProfile());
+        PackedPacks.CONFIG.screenInitialized = true;
     }
 
     public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original) {
@@ -179,12 +176,11 @@ public class PackedPacksScreen extends PackListEventHandler implements
     protected void init() {
         if (this.initialized) return;
 
+        this.profiles.init(this::setInitialFocus);
+
         this.layout.layout().addChild(this.createHeader());
         this.layout.layout().addFlexChild(this.createContents());
         this.layout.layout().addChild(this.createFooter());
-
-        this.profiles.initContents();
-        this.profiles.getSidebar().getCloseButton().addListener(this::setInitialFocus);
 
         this.dialogs.forEach(this::addWidget);
         this.layout.visitWidgets(this::addRenderableWidget);
@@ -402,15 +398,23 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     private void createWatcher() {
         if (this.watcher == null) {
-            try {
-                List<Path> paths = new ObjectArrayList<>(this.additionalFolders.size() + 1);
-                paths.add(this.repository.getBaseDir());
-                paths.addAll(this.additionalFolders);
-                this.watcher = new PackWatcher(this.packsConfig.packType(), paths, this::refreshPacks);
-            } catch (Exception e) {
-                PackedPacks.LOGGER.error("[packed_packs] Failed to initialize pack directory watcher.", e);
-                this.closeWatcher();
-            }
+            CompletableFuture.supplyAsync(() -> {
+                try {
+                    List<Path> paths = new ObjectArrayList<>(this.additionalFolders.size() + 1);
+                    paths.add(this.repository.getBaseDir());
+                    paths.addAll(this.additionalFolders);
+                    return new PackWatcher(this.packsConfig.packType(), paths, this::refreshPacks);
+                } catch (Exception e) {
+                    PackedPacks.LOGGER.error("[packed_packs] Failed to initialize pack directory watcher.", e);
+                    return null;
+                }
+            }, Util.backgroundExecutor()).thenAcceptAsync(watcher -> {
+                if (watcher != null) {
+                    this.watcher = watcher;
+                } else {
+                    this.closeWatcher();
+                }
+            }, this.minecraft);
         }
     }
 

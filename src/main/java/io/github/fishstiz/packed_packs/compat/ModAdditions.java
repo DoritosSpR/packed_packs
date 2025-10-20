@@ -24,21 +24,19 @@ public class ModAdditions {
     static {
         List<ModExtension> extensions = CollectionsUtil.filter(
                 FabricLoader.getInstance().getEntrypoints(MOD_ID, ModExtension.class),
-                ext -> !(ext instanceof ModExtensionInternal extInternal) || extInternal.shouldLoad(),
+                ext -> !(ext instanceof ModExtensionInternal extInternal) || extInternal.mod().isLoaded(),
                 ObjectArrayList::new
         );
 
         EXTENSIONS = !extensions.isEmpty()
                 ? CollectionsUtil.topoSort(extensions, ModExtension::id, ModExtension::loadAfter).toArray(ModExtension[]::new)
-                : null;
+                : new ModExtension[0];
     }
 
     private ModAdditions() {
     }
 
     public static void onCreateHeader(PackType packType, FlexLayout header, PackedPacksScreen screen, PackSelectionScreen original) {
-        if (EXTENSIONS == null) return;
-
         for (ModExtension ext : EXTENSIONS) {
             try {
                 ext.onCreateHeader(packType, header, screen, original);
@@ -49,8 +47,6 @@ public class ModAdditions {
     }
 
     public static void onCreateEntry(PackType packType, PackList.Entry entry) {
-        if (EXTENSIONS == null) return;
-
         for (ModExtension ext : EXTENSIONS) {
             try {
                 ext.onCreateEntry(packType, entry);
@@ -61,8 +57,6 @@ public class ModAdditions {
     }
 
     public static void onCreatePreferencesMenu(PackType packType, ContextMenuItemBuilder contextMenuItemBuilder) {
-        if (EXTENSIONS == null) return;
-
         for (ModExtension ext : EXTENSIONS) {
             try {
                 ext.onCreatePreferencesMenu(packType, contextMenuItemBuilder);
@@ -76,8 +70,6 @@ public class ModAdditions {
      * @return mod id requesting reload
      */
     public static @Nullable String forceCommitOnClose(PackType packType) {
-        if (EXTENSIONS == null) return null;
-
         for (ModExtension ext : EXTENSIONS) {
             try {
                 if (ext.forceCommitOnClose(packType)) {
@@ -92,8 +84,6 @@ public class ModAdditions {
     }
 
     public static boolean shouldIgnoreChange(PackType packType, Path path) {
-        if (EXTENSIONS == null) return false;
-
         for (ModExtension ext : EXTENSIONS) {
             try {
                 if (ext.shouldIgnoreChange(packType, path)) {
