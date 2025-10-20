@@ -1,6 +1,5 @@
 package io.github.fishstiz.fidgetz.gui.renderables.sprites;
 
-import io.github.fishstiz.fidgetz.gui.shapes.Line;
 import net.minecraft.client.gui.GuiGraphics;
 
 public class NineSliceSprite extends Sprite {
@@ -9,12 +8,12 @@ public class NineSliceSprite extends Sprite {
     private final int[] heights = new int[3];
 
     public NineSliceSprite(Sprite base) {
-        super(base.location, base.width, base.height, base.u, base.v);
+        super(base.location, base.width, base.height, base.uOffset, base.vOffset, base.uWidth, base.vHeight);
 
-        int textureU = base.u.start();
-        int textureV = base.v.start();
-        int textureWidth = base.u.length();
-        int textureHeight = base.v.length();
+        int textureU = base.vOffset;
+        int textureV = base.vOffset;
+        int textureWidth = base.uWidth;
+        int textureHeight = base.vHeight;
 
         int borderWidth = textureWidth / 3;
         int borderHeight = textureHeight / 3;
@@ -25,7 +24,7 @@ public class NineSliceSprite extends Sprite {
                 case 1 -> borderHeight;
                 default -> textureHeight - borderHeight;
             };
-            int vSize = (row == 1) ? textureHeight - 2 * borderHeight : borderHeight;
+            int vHeight = (row == 1) ? textureHeight - 2 * borderHeight : borderHeight;
 
             for (int col = 0; col < 3; col++) {
                 int uOffset = textureU + switch (col) {
@@ -33,21 +32,21 @@ public class NineSliceSprite extends Sprite {
                     case 1 -> borderWidth;
                     default -> textureWidth - borderWidth;
                 };
-                int uSize = (col == 1) ? textureWidth - 2 * borderWidth : borderWidth;
+                int uWidth = (col == 1) ? textureWidth - 2 * borderWidth : borderWidth;
 
                 this.slices[row][col] = new Sprite(
                         base.location,
                         base.width, base.height,
-                        new Line(uOffset, uSize),
-                        new Line(vOffset, vSize)
+                        uOffset, vOffset,
+                        uWidth, vHeight
                 );
             }
         }
 
-        this.widths[0] = this.slices[0][0].u.length();  // left border width
-        this.widths[2] = this.slices[0][2].u.length();  // right border width
-        this.heights[0] = this.slices[0][0].v.length(); // top border height
-        this.heights[2] = this.slices[2][0].v.length(); // bottom border height
+        this.widths[0] = this.slices[0][0].uWidth;  // left border width
+        this.widths[2] = this.slices[0][2].uWidth;  // right border width
+        this.heights[0] = this.slices[0][0].vHeight; // top border height
+        this.heights[2] = this.slices[2][0].vHeight; // bottom border height
     }
 
     @Override

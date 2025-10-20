@@ -31,7 +31,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     private final FidgetzText<Void> folderTitle;
     private final PackFileOperations fileOps;
     private final PackListEventListener listener;
-    private Sprite folderSprite = Sprite.of16(PackAssetManager.DEFAULT_FOLDER_ICON);
+    private Sprite folderSprite = PackAssetManager.DEFAULT_FOLDER_ICON;
     private PackList parent;
     private FolderPack folderPack;
 
@@ -92,7 +92,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         this.parent = parent;
         this.folderPack = folderPack;
         this.folderTitle.setMessage(folderPack.getTitle());
-        assets.getOrLoadIcon(folderPack, icon -> this.folderSprite = Sprite.of16(icon));
+        assets.getOrLoadIcon(folderPack, icon -> this.folderSprite = icon);
 
         this.setBoundingBox(parent);
         this.updateBounds();
