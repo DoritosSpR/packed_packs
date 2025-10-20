@@ -24,6 +24,7 @@ public class Config implements Serializable {
     private Query.SortOption sort = Query.SortOption.VANILLA;
     private final ResourcePacks resourcepacks = new ResourcePacks();
     private final DataPacks datapacks = new DataPacks();
+    public transient boolean screenInitialized;
     transient File file;
 
     Config() {

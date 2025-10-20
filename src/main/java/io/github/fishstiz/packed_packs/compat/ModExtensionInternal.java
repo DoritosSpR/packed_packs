@@ -10,8 +10,4 @@ public interface ModExtensionInternal extends ModExtension {
     default ResourceLocation id() {
         return this.mod().getInternalId();
     }
-
-    default boolean shouldLoad() {
-        return this.mod().isLoaded();
-    }
 }

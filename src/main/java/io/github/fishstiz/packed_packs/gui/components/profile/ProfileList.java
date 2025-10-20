@@ -53,7 +53,6 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
         this.config = config;
         this.selectListener = selectListener;
         this.updateListener = updateListener;
-        this.refresh();
     }
 
     public void scheduleRefresh() {
