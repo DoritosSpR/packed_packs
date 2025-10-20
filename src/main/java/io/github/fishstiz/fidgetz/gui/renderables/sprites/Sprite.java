@@ -10,23 +10,27 @@ public class Sprite implements RenderableRect {
     public final ResourceLocation location;
     public final int width;
     public final int height;
-    public final Line u;
-    public final Line v;
+    public final int uOffset;
+    public final int vOffset;
+    public final int uWidth;
+    public final int vHeight;
 
-    public Sprite(ResourceLocation location, int width, int height, Line u, Line v) {
+    public Sprite(ResourceLocation location, int width, int height, int uOffset, int vOffset, int uWidth, int vHeight) {
         this.location = location;
         this.width = width;
         this.height = height;
-        this.u = u;
-        this.v = v;
+        this.uOffset = uOffset;
+        this.vOffset = vOffset;
+        this.uWidth = uWidth;
+        this.vHeight = vHeight;
     }
 
     public Sprite(ResourceLocation location, int width, int height) {
-        this(location, width, height, new Line(0, width), new Line(0, height));
+        this(location, width, height, 0, 0, width, height);
     }
 
     public Sprite(ResourceLocation location, Size size, Line u, Line v) {
-        this(location, size.width(), size.height(), u, v);
+        this(location, size.width(), size.height(), u.start(), v.start(), u.length(), v.length());
     }
 
     public Sprite(ResourceLocation location, Size size) {
@@ -47,8 +51,8 @@ public class Sprite implements RenderableRect {
                 this.location,
                 x, y,
                 width, height,
-                this.u.start(), this.v.start(),
-                this.u.length(), this.v.length(),
+                this.uOffset, this.vOffset,
+                this.uWidth, this.vHeight,
                 this.width, this.height
         );
     }

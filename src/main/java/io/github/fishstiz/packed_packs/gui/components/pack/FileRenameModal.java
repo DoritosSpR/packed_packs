@@ -3,7 +3,6 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 import com.mojang.blaze3d.platform.InputConstants;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.FileRenameCloseEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.FileRenameEvent;
@@ -38,7 +37,6 @@ public class FileRenameModal extends Modal<LinearLayout> {
     private static final int CONTENT_WIDTH = 256;
     private static final int SHADOW_SIZE = 24;
     private static final Pattern ILLEGAL_CHAR_PATTERN = Pattern.compile(".*[<>:\"/\\\\|?*].*");
-    private static final Sprite DEFAULT_SPRITE = Sprite.of16(PackAssetManager.DEFAULT_ICON);
     private final RenderableRectWidget<Void> sprite;
     private final FidgetzText<Void> title;
     private final ToggleableEditBox<Void> nameEditor;
@@ -58,7 +56,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         this.fileOps = fileOps;
         this.assets = assets;
 
-        this.sprite = RenderableRectWidget.<Void>builder(DEFAULT_SPRITE)
+        this.sprite = RenderableRectWidget.<Void>builder(PackAssetManager.DEFAULT_ICON)
                 .makeSquare()
                 .build();
         this.title = FidgetzText.<Void>builder()
@@ -115,7 +113,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         this.packList = null;
         this.pack = null;
         this.oldName = null;
-        this.sprite.setRenderableRect(DEFAULT_SPRITE);
+        this.sprite.setRenderableRect(PackAssetManager.DEFAULT_ICON);
         this.title.setMessage(CommonComponents.EMPTY);
         this.nameEditor.setValue("");
     }
@@ -123,7 +121,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
     public void open(PackList packList, Pack pack) {
         this.packList = packList;
         this.pack = pack;
-        this.sprite.setRenderableRect(Sprite.of16(this.assets.getIcon(pack)));
+        this.sprite.setRenderableRect(this.assets.getIcon(pack));
         this.title.setMessage(pack.getTitle());
 
         this.oldName = sanitizeNameForEdit(pack);
