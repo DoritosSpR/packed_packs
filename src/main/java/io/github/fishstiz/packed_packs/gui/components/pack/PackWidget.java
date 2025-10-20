@@ -35,7 +35,7 @@ class PackWidget extends AbstractWidget {
         this.assetManager = assetManager;
         this.title.setMessage(pack.getTitle());
         this.spacing = spacing;
-        this.sprite = Sprite.of32(PackAssetManager.getDefaultIcon(pack));
+        this.sprite = PackAssetManager.getDefaultIcon(pack);
 
         this.cacheDescription();
     }
@@ -82,7 +82,7 @@ class PackWidget extends AbstractWidget {
     protected void renderSprite(GuiGraphics guiGraphics, float partialTick) {
         if (!this.lazyLoaded) { // lazy loads icon as this is not called if not in view
             this.lazyLoaded = true;
-            this.assetManager.getOrLoadIcon(this.pack, icon -> this.sprite = Sprite.of32(icon));
+            this.assetManager.getOrLoadIcon(this.pack, icon -> this.sprite = icon);
         }
 
         int x = this.getX() + this.spacing;
