@@ -56,7 +56,7 @@ public class PackRepositoryManager {
     }
 
     private void refreshModel() {
-        this.model = new PackSelectionModel(ObjectsUtil::nop, PackAssetManager::getDefaultIcon, this.repository, ObjectsUtil::nop);
+        this.model = new PackSelectionModel(ObjectsUtil::nop, PackAssetManager::getDefaultLocation, this.repository, ObjectsUtil::nop);
         ((PackSelectionModelAccessor) this.model).packed_packs$filterHidden(false);
     }
 

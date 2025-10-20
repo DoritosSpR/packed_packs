@@ -2,6 +2,7 @@ package io.github.fishstiz.packed_packs.pack;
 
 import com.google.common.hash.Hashing;
 import com.mojang.blaze3d.platform.NativeImage;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
@@ -16,6 +17,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.resources.IoSupplier;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
 import java.nio.file.NoSuchFileException;
@@ -24,38 +26,39 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class PackAssetManager {
-    public static final ResourceLocation DEFAULT_FOLDER_ICON = ResourceUtil.getResource("textures/misc/unknown_folder.png");
-    public static final ResourceLocation DEFAULT_ICON = ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png");
-    private final Map<String, ResourceLocation> cachedIcons = new Object2ObjectOpenHashMap<>();
+    public static final Sprite DEFAULT_FOLDER_ICON = Sprite.of16(ResourceUtil.getResource("textures/misc/unknown_folder.png"));
+    public static final Sprite DEFAULT_ICON = Sprite.of16(ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png"));
+    private final Map<String, Sprite> cachedIcons = new Object2ObjectOpenHashMap<>();
     private final Minecraft minecraft;
-    private Map<String, ResourceLocation> staleIcons;
+    private Map<String, Sprite> staleIcons;
 
     public PackAssetManager(Minecraft minecraft) {
         this.minecraft = minecraft;
     }
 
-    public ResourceLocation getIcon(Pack pack) {
+    public Sprite getIcon(Pack pack) {
         return this.cachedIcons.getOrDefault(pack.getId(), this.staleIcons != null
                 ? this.staleIcons.getOrDefault(pack.getId(), getDefaultIcon(pack))
                 : getDefaultIcon(pack)
         );
     }
 
-    public void getOrLoadIcon(Pack pack, Consumer<ResourceLocation> iconCallback) {
+    public void getOrLoadIcon(Pack pack, Consumer<Sprite> iconCallback) {
         if (this.staleIcons != null) {
-            ResourceLocation staleIcon = this.staleIcons.get(pack.getId());
+            Sprite staleIcon = this.staleIcons.get(pack.getId());
             if (staleIcon != null) {
                 iconCallback.accept(staleIcon);
             }
         }
 
-        ResourceLocation cachedIcon = this.cachedIcons.get(pack.getId());
+        Sprite cachedIcon = this.cachedIcons.get(pack.getId());
         if (cachedIcon != null) {
             iconCallback.accept(cachedIcon);
         } else {
             this.loadPackIcon(pack).thenAcceptAsync(location -> {
-                this.cachedIcons.put(pack.getId(), location);
-                iconCallback.accept(location);
+                Sprite sprite = location != null ? Sprite.of16(location) : getDefaultIcon(pack);
+                this.cachedIcons.put(pack.getId(), sprite);
+                iconCallback.accept(sprite);
             }, this.minecraft);
         }
     }
@@ -65,21 +68,24 @@ public class PackAssetManager {
         this.cachedIcons.clear();
     }
 
-    public static ResourceLocation getDefaultIcon(Pack pack) {
+    public static Sprite getDefaultIcon(Pack pack) {
         return pack instanceof FolderPack ? DEFAULT_FOLDER_ICON : DEFAULT_ICON;
+    }
+
+    public static ResourceLocation getDefaultLocation(Pack pack) {
+        return getDefaultIcon(pack).location;
     }
 
     /**
      * Copied from {@link PackSelectionScreen#loadPackIcon(TextureManager, Pack)}
      */
-    private CompletableFuture<ResourceLocation> loadPackIcon(Pack pack) {
+    private CompletableFuture<@Nullable ResourceLocation> loadPackIcon(Pack pack) {
         return CompletableFuture.supplyAsync(() -> {
             try (PackResources packResources = pack.open()) {
                 IoSupplier<InputStream> iconIoSupplier = packResources.getRootResource(PackUtil.ICON_FILENAME);
-                if (iconIoSupplier == null) return getDefaultIcon(pack);
+                if (iconIoSupplier == null) return null;
 
                 ResourceLocation icon = ResourceLocation.withDefaultNamespace(hashIconName(pack.getId()));
-
                 try (InputStream iconStream = iconIoSupplier.get()) {
                     NativeImage nativeImage = NativeImage.read(iconStream);
                     TextureManager manager = this.minecraft.getTextureManager();
@@ -90,11 +96,12 @@ public class PackAssetManager {
                 if (!(e instanceof NoSuchFileException)) {
                     PackedPacks.LOGGER.warn("Failed to load icon from pack '{}'", pack.getId(), e);
                 }
-                return getDefaultIcon(pack);
+                return null;
             }
         }, Util.backgroundExecutor());
     }
 
+    @SuppressWarnings("deprecation")
     private static String hashIconName(String id) {
         return "pack/" + Util.sanitizeName(id, ResourceLocation::validPathChar) + "/" + Hashing.sha1().hashUnencodedChars(id) + "/icon";
     }
