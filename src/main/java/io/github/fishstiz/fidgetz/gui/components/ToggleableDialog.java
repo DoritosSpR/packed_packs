@@ -311,44 +311,6 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         return false;
     }
 
-    public boolean intersects(ScreenRectangle rectangle) {
-        return rectangle != null && (this.boundingBox.intersects(rectangle) || this.childIntersects(rectangle));
-    }
-
-    public boolean intersects(LayoutElement element) {
-        return element != null && (this.boundingBox.intersects(element) || this.childIntersects(element.getRectangle()));
-    }
-
-    public boolean intersects(GuiEventListener guiEventListener) {
-        if (guiEventListener == null) return false;
-
-        if (guiEventListener instanceof LayoutElement element) {
-            return this.intersects(element);
-        }
-
-        ScreenRectangle rectangle = guiEventListener.getRectangle();
-        return this.boundingBox.intersects(rectangle) || this.childIntersects(rectangle);
-    }
-
-    private boolean childIntersects(ScreenRectangle rectangle) {
-        for (GuiEventListener child : this.children) {
-            switch (child) {
-                case ToggleableDialog<?> dialog when dialog.intersects(rectangle) -> {
-                    return true;
-                }
-                case LayoutElement childElement when GuiUtil.intersects(childElement, rectangle) -> {
-                    return true;
-                }
-                default -> {
-                    if (GuiUtil.intersects(child.getRectangle(), rectangle)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
     @Override
     public @NotNull ScreenRectangle getRectangle() {
         return this.boundingBox.getScreenRectangle();
@@ -476,7 +438,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         }
     }
 
-    public static <S extends Screen & ToggleableDialogContainer, T extends LayoutElement> Builder<T, ?> builder(S screen, T root) {
+    public static <T extends LayoutElement> Builder<T, ?> builder(Screen screen, T root) {
         return new Builder<>(screen, root);
     }
 
@@ -496,7 +458,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
         protected boolean captureClick = false;
         protected boolean captureFocus = false;
 
-        protected <S extends Screen & ToggleableDialogContainer> Builder(S screen, T root) {
+        protected Builder(Screen screen, T root) {
             this.screen = screen;
             this.root = root;
             this.boundingBox = GuiRectangle.viewOf(this.root);

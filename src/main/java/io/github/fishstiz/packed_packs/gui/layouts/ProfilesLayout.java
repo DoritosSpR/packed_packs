@@ -83,7 +83,6 @@ public class ProfilesLayout {
         final FlexLayout actions = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
         actions.addFlexChild(this.noProfileButton);
         actions.addFlexChild(copyButton);
-        actions.arrangeElements();
 
         final FlexLayout list = FlexLayout.horizontal(this::getMaxWidth);
         list.addFlexChild(this.profileList, true);
