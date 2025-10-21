@@ -42,7 +42,6 @@ public class Sidebar extends ToggleableDialog<LayoutWrapper<FlexLayout>> impleme
         final FlexLayout header = FlexLayout.horizontal(() -> maxWidth).spacing(SPACING);
         header.addChild(closeButton);
         header.addFlexChild(titleWidget);
-        header.arrangeElements();
 
         this.root().layout().addChild(header);
     }

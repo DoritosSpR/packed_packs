@@ -38,7 +38,6 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
 
     public void setLayout(@NotNull T layout) {
         this.layout = layout;
-        this.arrangeElements();
     }
 
     public T layout() {
