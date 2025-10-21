@@ -76,7 +76,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
             return new ItemWidget(MIN_WIDTH, this.spacing, item, this);
         }
 
-        ContextMenu childMenu = Builder.ofChild(this.builder, this).setDirection(this.direction).build();
+        ContextMenu childMenu = Builder.buildChild(this);
         this.childMenus.add(childMenu);
         return new ParentItemWidget(MIN_WIDTH, this.spacing, item, this, childMenu);
     }
@@ -217,17 +217,19 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         }
 
         @SuppressWarnings("unchecked")
-        protected static <S extends Screen & ToggleableDialogContainer> Builder ofChild(Builder builder, ContextMenu parentMenu) {
-            Builder copy = builder((S) builder.screen);
-            copy.spacing = builder.spacing;
-            copy.backgroundColor = builder.backgroundColor;
-            copy.borderColor = builder.borderColor;
-            copy.background = builder.background;
-            copy.autoClose = builder.autoClose;
-            copy.focusOnOpen = builder.focusOnOpen;
-            copy.autoLoseFocus = builder.autoLoseFocus;
-            copy.parentMenu = parentMenu;
-            return copy;
+        protected static <S extends Screen & ToggleableDialogContainer> ContextMenu buildChild(ContextMenu parentMenu) {
+            Builder child = builder((S) parentMenu.builder.screen);
+            child.spacing = parentMenu.builder.spacing;
+            child.backgroundColor = parentMenu.builder.backgroundColor;
+            child.borderColor = parentMenu.builder.borderColor;
+            child.background = parentMenu.builder.background;
+            child.autoClose = parentMenu.builder.autoClose;
+            child.focusOnOpen = parentMenu.builder.focusOnOpen;
+            child.autoLoseFocus = parentMenu.builder.autoLoseFocus;
+            child.parentMenu = parentMenu;
+            child.direction = parentMenu.direction;
+            child.root.arrangeElements();
+            return child.build();
         }
 
         public Builder setSpacing(int spacing) {
