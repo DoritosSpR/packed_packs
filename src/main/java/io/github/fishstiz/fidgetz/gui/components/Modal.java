@@ -17,11 +17,9 @@ public class Modal<T extends Layout> extends ToggleableDialog<LayoutWrapper<T>> 
     }
 
     public void repositionElements() {
-        if (this.root() != null) {
-            this.root().arrangeElements();
-            this.root().setX(this.screen.width / 2 - this.root().getWidth() / 2);
-            this.root().setY(this.screen.height / 2 - this.root().getHeight() / 2);
-        }
+        this.root().arrangeElements();
+        this.root().setX(this.screen.width / 2 - this.root().getWidth() / 2);
+        this.root().setY(this.screen.height / 2 - this.root().getHeight() / 2);
     }
 
     public void closeModal() {

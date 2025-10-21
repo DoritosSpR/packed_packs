@@ -1,5 +1,6 @@
 package io.github.fishstiz.fidgetz.gui.layouts;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.layouts.Layout;
 import net.minecraft.client.gui.layouts.LayoutElement;
@@ -7,31 +8,42 @@ import net.minecraft.client.gui.layouts.LayoutSettings;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 
 public class FlexLayout implements Layout {
-    private final List<Child<? extends LayoutElement>> children = new ArrayList<>();
+    private final List<Child<? extends LayoutElement>> children = new ObjectArrayList<>();
     private final LinearLayout wrappedLayout;
     private final LinearLayout.Orientation orientation;
-    private final @Nullable IntSupplier maxSize;
-    private int maxWidth;
-    private int maxHeight;
+    private final @Nullable IntSupplier maxSizeAtOrientation;
+    private int minWidth;
+    private int minHeight;
     private int spacing;
 
-    protected FlexLayout(LinearLayout.Orientation orientation, IntSupplier maxSize, int maxWidth, int maxHeight, int spacing) {
+    private FlexLayout(LinearLayout.Orientation orientation, @Nullable IntSupplier maxSizeAtOrientation, int minWidth, int minHeight, int spacing) {
         this.wrappedLayout = new LinearLayout(0, 0, orientation).spacing(spacing);
         this.orientation = orientation;
-        this.maxSize = maxSize;
-        this.maxWidth = maxWidth;
-        this.maxHeight = maxHeight;
+        this.maxSizeAtOrientation = maxSizeAtOrientation;
+        this.minWidth = minWidth;
+        this.minHeight = minHeight;
         this.spacing = spacing;
     }
 
+    private FlexLayout(LinearLayout.Orientation orientation, @Nullable IntSupplier maxSizeAtOrientation) {
+        this(orientation, maxSizeAtOrientation, 0, 0, 0);
+    }
+
+    private void addChild(Child<? extends LayoutElement> child) {
+        this.children.add(child);
+        switch (this.orientation) {
+            case VERTICAL -> this.minWidth = Math.max(this.minWidth, child.getWidth());
+            case HORIZONTAL -> this.minHeight = Math.max(this.minHeight, child.getHeight());
+        }
+    }
+
     public <T extends LayoutElement> T addChild(T child, LayoutSettings layoutSettings) {
-        this.children.add(new Child<>(child, layoutSettings));
+        this.addChild(new Child<>(child, layoutSettings));
         return this.wrappedLayout.addChild(child, layoutSettings);
     }
 
@@ -40,7 +52,7 @@ public class FlexLayout implements Layout {
     }
 
     public <T extends AbstractWidget> T addFlexChild(T child, boolean crossAxis, LayoutSettings layoutSettings) {
-        this.children.add(new FlexWidget(child, crossAxis, layoutSettings));
+        this.addChild(new FlexWidget(child, crossAxis, layoutSettings));
         return this.wrappedLayout.addChild(child, layoutSettings);
     }
 
@@ -53,7 +65,7 @@ public class FlexLayout implements Layout {
     }
 
     public <T extends FlexLayout> T addFlexChild(T child, boolean crossAxis, LayoutSettings layoutSettings) {
-        this.children.add(new NestedFlexLayout(child, crossAxis, layoutSettings));
+        this.addChild(new NestedFlexLayout(child, crossAxis, layoutSettings));
         return this.wrappedLayout.addChild(child, layoutSettings);
     }
 
@@ -65,8 +77,19 @@ public class FlexLayout implements Layout {
         return this.addFlexChild(child, false, this.wrappedLayout.newCellSettings());
     }
 
-    private int getCurrentMax() {
-        return this.orientation == LinearLayout.Orientation.HORIZONTAL ? this.maxWidth : this.maxHeight;
+    private int getMinSizeAtOrientation() {
+        return switch (this.orientation) {
+            case HORIZONTAL -> this.minWidth;
+            case VERTICAL -> this.minHeight;
+        };
+    }
+
+    private int getPaddingAtOrientation(Child<?> child) {
+        LayoutSettings.LayoutSettingsImpl layoutSettings = child.layoutSettings.getExposed();
+        return switch (this.orientation) {
+            case HORIZONTAL -> layoutSettings.paddingLeft + layoutSettings.paddingRight;
+            case VERTICAL -> layoutSettings.paddingTop + layoutSettings.paddingBottom;
+        };
     }
 
     private int getFlexDistribution() {
@@ -80,20 +103,17 @@ public class FlexLayout implements Layout {
             if (child instanceof FlexChild<?>) {
                 flexCount++;
             } else {
-                totalSize += child.getAxisSize(this.orientation);
+                totalSize += child.getSizeAtOrientation(this.orientation);
             }
 
             if (i < this.children.size() - 1) {
                 totalSize += spacing;
             }
 
-            var layoutSettings = child.layoutSettings.getExposed();
-            padding += this.orientation == LinearLayout.Orientation.HORIZONTAL
-                    ? layoutSettings.paddingLeft + layoutSettings.paddingTop
-                    : layoutSettings.paddingTop + layoutSettings.paddingBottom;
+            padding += this.getPaddingAtOrientation(child);
         }
 
-        int max = this.maxSize != null ? this.maxSize.getAsInt() : this.getCurrentMax();
+        int max = this.maxSizeAtOrientation != null ? this.maxSizeAtOrientation.getAsInt() : this.getMinSizeAtOrientation();
         return flexCount > 0 ? (max - padding - totalSize) / flexCount : 0;
     }
 
@@ -103,7 +123,7 @@ public class FlexLayout implements Layout {
 
         for (Child<?> child : this.children) {
             if (child instanceof FlexChild<?> flexChild) {
-                flexChild.setAxisSizes(this.orientation, distribution, this.maxWidth, this.maxHeight);
+                flexChild.setDistribution(this.orientation, distribution, this.minWidth, this.minHeight);
             }
         }
 
@@ -137,12 +157,12 @@ public class FlexLayout implements Layout {
 
     @Override
     public int getWidth() {
-        return this.wrappedLayout.getWidth();
+        return Math.max(this.minWidth, this.wrappedLayout.getWidth());
     }
 
     @Override
     public int getHeight() {
-        return this.wrappedLayout.getHeight();
+        return Math.max(this.minHeight, this.wrappedLayout.getHeight());
     }
 
     public FlexLayout spacing(int spacing) {
@@ -152,23 +172,23 @@ public class FlexLayout implements Layout {
     }
 
     public FlexLayout copyLayout() {
-        return new FlexLayout(this.orientation, this.maxSize, this.maxWidth, this.maxHeight, this.spacing);
+        return new FlexLayout(this.orientation, this.maxSizeAtOrientation, this.minWidth, this.minHeight, this.spacing);
     }
 
     public static FlexLayout horizontal(IntSupplier maxWidth) {
-        return new FlexLayout(LinearLayout.Orientation.HORIZONTAL, maxWidth, maxWidth.getAsInt(), 0, 0);
+        return new FlexLayout(LinearLayout.Orientation.HORIZONTAL, maxWidth);
     }
 
     public static FlexLayout horizontal() {
-        return new FlexLayout(LinearLayout.Orientation.HORIZONTAL, null, 0, 0, 0);
+        return new FlexLayout(LinearLayout.Orientation.HORIZONTAL, null);
     }
 
     public static FlexLayout vertical(IntSupplier maxHeight) {
-        return new FlexLayout(LinearLayout.Orientation.VERTICAL, maxHeight, 0, maxHeight.getAsInt(), 0);
+        return new FlexLayout(LinearLayout.Orientation.VERTICAL, maxHeight);
     }
 
     public static FlexLayout vertical() {
-        return new FlexLayout(LinearLayout.Orientation.VERTICAL, null, 0, 0, 0);
+        return new FlexLayout(LinearLayout.Orientation.VERTICAL, null);
     }
 
     private static class Child<T extends LayoutElement> {
@@ -180,7 +200,7 @@ public class FlexLayout implements Layout {
             this.layoutSettings = layoutSettings;
         }
 
-        protected int getAxisSize(LinearLayout.Orientation orientation) {
+        protected int getSizeAtOrientation(LinearLayout.Orientation orientation) {
             return orientation == LinearLayout.Orientation.HORIZONTAL ? this.getWidth() : this.getHeight();
         }
 
@@ -206,16 +226,16 @@ public class FlexLayout implements Layout {
 
         protected abstract void setHeight(int height);
 
-        protected void setAxisSizes(LinearLayout.Orientation orientation, int size, int maxWidth, int maxHeight) {
+        protected void setDistribution(LinearLayout.Orientation orientation, int distribution, int width, int height) {
             if (orientation == LinearLayout.Orientation.HORIZONTAL) {
-                this.setWidth(size);
-                if (this.crossAxis && maxHeight > 0) {
-                    this.setHeight(maxHeight);
+                this.setWidth(distribution);
+                if (this.crossAxis && height > 0) {
+                    this.setHeight(height);
                 }
             } else {
-                this.setHeight(size);
-                if (this.crossAxis && maxWidth > 0) {
-                    this.setWidth(maxWidth);
+                this.setHeight(distribution);
+                if (this.crossAxis && width > 0) {
+                    this.setWidth(width);
                 }
             }
         }
@@ -238,28 +258,18 @@ public class FlexLayout implements Layout {
     }
 
     private static class NestedFlexLayout extends FlexChild<FlexLayout> {
-        protected NestedFlexLayout(FlexLayout element, boolean crossAxis, LayoutSettings layoutSettings) {
+        private NestedFlexLayout(FlexLayout element, boolean crossAxis, LayoutSettings layoutSettings) {
             super(element, crossAxis, layoutSettings);
         }
 
         @Override
-        protected int getWidth() {
-            return this.element.maxWidth;
-        }
-
-        @Override
-        protected int getHeight() {
-            return this.element.maxHeight;
-        }
-
-        @Override
         protected void setWidth(int width) {
-            this.element.maxWidth = width;
+            this.element.minWidth = width;
         }
 
         @Override
         protected void setHeight(int height) {
-            this.element.maxHeight = height;
+            this.element.minHeight = height;
         }
     }
 }

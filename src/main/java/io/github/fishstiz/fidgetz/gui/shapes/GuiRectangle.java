@@ -7,26 +7,24 @@ import net.minecraft.client.gui.navigation.ScreenRectangle;
 public interface GuiRectangle {
     static GuiRectangle viewOf(LayoutElement element) {
         return new GuiRectangle() {
-            private final LayoutElement layoutElement = element;
-
             @Override
             public int getX() {
-                return this.layoutElement.getX();
+                return element.getX();
             }
 
             @Override
             public int getY() {
-                return this.layoutElement.getY();
+                return element.getY();
             }
 
             @Override
             public int getWidth() {
-                return this.layoutElement.getWidth();
+                return element.getWidth();
             }
 
             @Override
             public int getHeight() {
-                return this.layoutElement.getHeight();
+                return element.getHeight();
             }
         };
     }
