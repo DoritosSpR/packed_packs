@@ -128,7 +128,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (PackedPacks.CONFIG.isDevMode()) {
             PackAliasLayout packAliasLayout = new PackAliasLayout(this.packsConfig, this.assetManager);
             this.aliasModal = Modal.builder(this, packAliasLayout)
-                    .addListener(open -> this.aliasModal.root().layout().saveAliases())
+                    .addListener(open -> {
+                        if (!open) this.aliasModal.root().layout().saveAliases();
+                    })
                     .padding(SPACING)
                     .build();
             this.dialogs = List.of(this.optionsModal, this.contextMenu, this.aliasModal, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
