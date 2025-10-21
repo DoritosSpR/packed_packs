@@ -70,7 +70,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
     @Override
     protected void clearWidgets() {
         super.clearWidgets();
-        this.visitChildren(ContextMenu::clearWidgets);
+        this.forEachChild(ContextMenu::clearWidgets);
         this.childMenus.clear();
     }
 
@@ -189,23 +189,23 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         return withinBounds && super.isMouseOver(mouseX, mouseY);
     }
 
-    public void visitChildren(Consumer<ContextMenu> visitor) {
+    public void forEachChild(Consumer<ContextMenu> consumer) {
         for (ContextMenu child : this.childMenus) {
-            visitor.accept(child);
-            child.visitChildren(visitor);
+            consumer.accept(child);
+            child.forEachChild(consumer);
         }
     }
 
-    public void visitParents(Consumer<ContextMenu> visitor) {
+    public void forEachParent(Consumer<ContextMenu> visitor) {
         if (this.parentMenu != null) {
             visitor.accept(this.parentMenu);
-            this.parentMenu.visitParents(visitor);
+            this.parentMenu.forEachParent(visitor);
         }
     }
 
     private void closeCascade() {
         this.setOpen(false);
-        this.visitParents(parent -> parent.setOpen(false));
+        this.forEachParent(parent -> parent.setOpen(false));
     }
 
     public static <S extends Screen & ToggleableDialogContainer> Builder builder(S screen) {
@@ -404,7 +404,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
             Direction nextDirection = parentDirection.next(parent.screen, childBounds, parentDirection.getX(parentBounds));
             int x = nextDirection.getX(this);
             int y = this.getY();
-            this.parent.visitChildren(menu -> {
+            this.parent.forEachChild(menu -> {
                 if (menu != this.child) menu.setOpen(false);
             });
             this.child.open(x, y, nextDirection, this.item.children());
@@ -412,7 +412,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
 
         private void closeChildren() {
             this.child.setOpen(false);
-            this.child.visitChildren(menu -> menu.setOpen(false));
+            this.child.forEachChild(menu -> menu.setOpen(false));
         }
 
         @Override
