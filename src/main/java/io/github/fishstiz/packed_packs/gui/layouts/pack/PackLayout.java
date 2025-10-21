@@ -38,7 +38,6 @@ public abstract class PackLayout {
     public final void init(@NotNull FlexLayout layout) {
         this.headerLayout = FlexLayout.horizontal(this.list::getWidth).spacing(SPACING);
         this.initHeader(headerLayout);
-        headerLayout.arrangeElements();
 
         this.layout = layout;
         this.layout.addChild(headerLayout);

@@ -70,7 +70,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
         ToggleableDialogContainer,
         ContextMenuContainer,
         Restorable<PackedPacksScreen.Snapshot> {
-    private static final int HEADER_AND_FOOTER_HEIGHT = 20;
     private static final Component OPEN_FOLDER_TEXT = Component.translatable("pack.openFolder");
     private final Screen previous;
     private final PackSelectionScreenArgs original;
@@ -90,6 +89,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private Modal<PackAliasLayout> aliasModal;
     private List<Path> additionalFolders;
     private CompletableFuture<Void> refreshFuture;
+    private CompletableFuture<Void> watcherFuture;
     private PackWatcher watcher;
     private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
     private @Nullable GuiEventListener hoveredElement;
@@ -257,9 +257,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     private FlexLayout createContents() {
         FlexLayout contents = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        FlexLayout packLayout = FlexLayout.vertical(this::getContentHeight).spacing(SPACING);
-        this.availablePacks.init(contents.addFlexChild(packLayout));
-        this.currentPacks.init(contents.addFlexChild(packLayout.copyLayout()));
+        FlexLayout packLayout = FlexLayout.vertical().spacing(SPACING);
+        this.availablePacks.init(contents.addFlexChild(packLayout, true));
+        this.currentPacks.init(contents.addFlexChild(packLayout.copyLayout(), true));
         this.currentPacks.getSearchField().addListener(this::recordState);
         this.availablePacks.getSearchField().addListener(this::recordState);
         return contents;
@@ -287,10 +287,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
         footer.addFlexChild(firstColumn);
         footer.addFlexChild(secondColumn);
         return footer;
-    }
-
-    public int getContentHeight() {
-        return this.height - ((HEADER_AND_FOOTER_HEIGHT * 2 + SPACING * 2) + SPACING * 2);
     }
 
     public int getMaxHeight() {
@@ -404,7 +400,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     private void createWatcher() {
         if (this.watcher == null) {
-            CompletableFuture.supplyAsync(() -> {
+            this.watcherFuture = CompletableFuture.supplyAsync(() -> {
                 try {
                     List<Path> paths = new ObjectArrayList<>(this.additionalFolders.size() + 1);
                     paths.add(this.repository.getBaseDir());
@@ -425,6 +421,10 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     private void closeWatcher() {
+        if (this.watcherFuture != null) {
+            this.watcherFuture.cancel(true);
+        }
+
         if (this.watcher != null) {
             this.watcher.close();
             this.watcher = null;

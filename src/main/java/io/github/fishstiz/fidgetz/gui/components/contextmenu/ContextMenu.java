@@ -56,6 +56,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         this.softSeparatorColor = ARGBColor.withAlpha(this.borderColor, 0.15f);
         this.parentMenu = builder.parentMenu;
         this.direction = builder.direction;
+        this.root().setMinWidth(MIN_WIDTH);
         this.addListener(open -> {
             if (!open) {
                 this.direction = this.builder.direction;
@@ -104,7 +105,6 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
 
         this.childMenus.forEach(this::addWidget);
 
-        content.arrangeElements();
         ScrollableLayout layout = new ScrollableLayout(Minecraft.getInstance(), content, content.getHeight());
 
         layout.setMaxHeight(MAX_HEIGHT);
@@ -228,7 +228,6 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
             child.autoLoseFocus = parentMenu.builder.autoLoseFocus;
             child.parentMenu = parentMenu;
             child.direction = parentMenu.direction;
-            child.root.arrangeElements();
             return child.build();
         }
 
