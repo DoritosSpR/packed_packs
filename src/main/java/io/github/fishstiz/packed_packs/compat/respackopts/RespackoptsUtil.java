@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.compat.respackopts;
 
 import io.gitlab.jfronny.respackopts.Respackopts;
+import io.gitlab.jfronny.respackopts.RespackoptsClient;
 
 import java.nio.file.Path;
 
@@ -14,5 +15,9 @@ public class RespackoptsUtil {
      */
     public static boolean isRespackOptsFile(Path path) {
         return path.getFileName().toString().endsWith(Respackopts.FILE_EXTENSION);
+    }
+
+    public static boolean isForceReload() {
+        return RespackoptsClient.forcePackReload;
     }
 }
