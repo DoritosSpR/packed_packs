@@ -1,5 +1,5 @@
 name: "Compatibility Issue"
-description: "Report a bug with a supposedly compatible mod of Packed Packs."
+description: "Report a bug with a supposedly compatible mod with Packed Packs."
 labels: [ "compatibility", "bug" ]
 body:
   - type: input
