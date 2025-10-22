@@ -45,7 +45,7 @@ public class RespackoptsModExtension implements ModExtensionInternal {
 
     @Override
     public boolean forceCommitOnClose(PackType type) {
-        return type == PackType.CLIENT_RESOURCES && this.mod().wrapError(RespackoptsWidget::isForceReload, false);
+        return type == PackType.CLIENT_RESOURCES && this.mod().wrapError(RespackoptsUtil::isForceReload, false);
     }
 
     @Override
