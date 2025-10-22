@@ -11,7 +11,6 @@ import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpi
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
-import io.gitlab.jfronny.respackopts.RespackoptsClient;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.layouts.LayoutElement;
@@ -83,10 +82,6 @@ public class RespackoptsWidget extends AbstractButton implements ContextMenuProv
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
         return super.isMouseOver(mouseX, mouseY) && Fidgetz.super.isMouseOver(mouseX, mouseY);
-    }
-
-    public static boolean isForceReload() {
-        return RespackoptsClient.forcePackReload;
     }
 
     /**
