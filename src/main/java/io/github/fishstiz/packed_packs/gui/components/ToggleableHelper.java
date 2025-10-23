@@ -6,8 +6,8 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItem;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
@@ -75,7 +75,7 @@ public record ToggleableHelper(
     }
 
     public static <T extends FidgetzButton.Builder<?, ?>> T applyPref(Preferences.Preference<Boolean> pref, T builder) {
-        if (PackedPacks.CONFIG.isDevMode()) {
+        if (Config.get().isDevMode()) {
             ToggleableHelper toggleablePref = new ToggleableHelper(pref);
             builder.setForeground(toggleablePref).setContextMenuBuilder((btn, b) -> toggleablePref.buildContext(b.separatorIfNonEmpty()));
         }

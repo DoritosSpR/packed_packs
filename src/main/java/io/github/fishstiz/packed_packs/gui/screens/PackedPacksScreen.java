@@ -8,9 +8,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
-import io.github.fishstiz.packed_packs.config.Config;
-import io.github.fishstiz.packed_packs.config.Folder;
-import io.github.fishstiz.packed_packs.config.Preferences;
+import io.github.fishstiz.packed_packs.config.*;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.pack.*;
@@ -21,10 +19,10 @@ import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import io.github.fishstiz.packed_packs.pack.*;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
+import io.github.fishstiz.packed_packs.util.AsyncUtil;
 import io.github.fishstiz.packed_packs.util.ToastUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
-import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.layouts.*;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.gui.history.HistoryManager;
@@ -73,10 +71,10 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private static final Component OPEN_FOLDER_TEXT = Component.translatable("pack.openFolder");
     private final Screen previous;
     private final PackSelectionScreenArgs original;
-    private final Config.Packs packsConfig;
     private final HistoryManager<Snapshot> history;
     private final LayoutWrapper<FlexLayout> layout;
     private final ProfilesLayout profiles;
+    private final PackOptionsContext options;
     private final PackRepositoryManager repository;
     private final AvailablePacksLayout availablePacks;
     private final CurrentPacksLayout currentPacks;
@@ -91,7 +89,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private CompletableFuture<Void> refreshFuture;
     private CompletableFuture<Void> watcherFuture;
     private PackWatcher watcher;
-    private boolean showActionBar = PackedPacks.CONFIG.isShowActionBar();
+    private boolean showActionBar = Config.get().isShowActionBar();
     private @Nullable GuiEventListener hoveredElement;
     private boolean initialized = false;
 
@@ -100,30 +98,32 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
         this.previous = previous;
         this.original = original;
-        this.packsConfig = PackedPacks.CONFIG.get(original.packType());
+        Config.Packs userConfig = Config.get().get(original.packType());
+        DevConfig.Packs config = DevConfig.get().get(original.packType());
+
         this.history = new HistoryManager<>();
         this.layout = new LayoutWrapper<>(FlexLayout.vertical(this::getMaxHeight).spacing(SPACING));
         this.layout.setPadding(SPACING);
 
-        this.profiles = new ProfilesLayout(this, this.packsConfig, this::onProfileChange, this::onProfileCopy);
-        PackOptionsContext options = new PackOptionsContext(this.profiles::getProfile, this.packsConfig);
-        this.repository = new PackRepositoryManager(this.original.repository(), options, this.original.packDir());
+        this.profiles = new ProfilesLayout(this, userConfig, config, this::onProfileChange, this::onProfileCopy);
+        this.options = new PackOptionsContext(this.profiles::getProfile, userConfig, config);
+        this.repository = new PackRepositoryManager(this.original.repository(), this.options, this.original.packDir());
 
-        WidgetFactory.PackedPacksWidgets widgets = WidgetFactory.createWidgets(this, options, this.repository, this.assetManager);
+        WidgetFactory.PackedPacksWidgets widgets = WidgetFactory.createWidgets(this, this.options, this.repository, this.assetManager);
         this.availablePacks = widgets.availablePacksLayout();
         this.currentPacks = widgets.currentPacksLayout();
         this.folderDialog = widgets.folderDialog();
         this.packLists = widgets.packLists();
         this.fileRenameModal = widgets.fileRenameModal();
         this.contextMenu = widgets.contextMenu();
-        this.optionsModal = Modal.builder(this, new OptionsLayout(this.minecraft, this.layout::getHeight, this.packsConfig))
+        this.optionsModal = Modal.builder(this, new OptionsLayout(this.minecraft, this.layout::getHeight, userConfig))
                 .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
                 .setCaptureFocus(true)
                 .padding(SPACING)
                 .build();
 
-        if (PackedPacks.CONFIG.isDevMode()) {
-            PackAliasLayout packAliasLayout = new PackAliasLayout(this.packsConfig, this.assetManager);
+        if (Config.get().isDevMode()) {
+            PackAliasLayout packAliasLayout = new PackAliasLayout(config, this.assetManager);
             this.aliasModal = Modal.builder(this, packAliasLayout)
                     .addListener(open -> {
                         if (!open) this.aliasModal.root().layout().saveAliases();
@@ -136,8 +136,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
 
         this.initAdditionalFolders();
-        if (initState) this.profiles.setProfile(this.packsConfig.getLastViewedProfile());
-        PackedPacks.CONFIG.screenInitialized = true;
+        if (initState) this.profiles.setProfile(userConfig.getLastViewedProfile());
     }
 
     public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original) {
@@ -166,12 +165,23 @@ public class PackedPacksScreen extends PackListEventHandler implements
     @Override
     public void removed() {
         this.closeWatcher();
+
+        this.availablePacks.saveFilters();
+
         Profile profile = this.profiles.getProfile();
         this.syncProfile(profile);
-        this.packsConfig.setLastViewedProfile(profile);
-        this.availablePacks.saveFilters();
-        PackedPacks.CONFIG.save();
-        Preferences.INSTANCE.save();
+        this.options.getUserConfig().setLastViewedProfile(profile);
+
+        List<Profile> profiles = this.options.getUserConfig().getProfiles();
+        this.options.getUserConfig().setProfileOrder(profiles);
+
+        AsyncUtil.submitAndWait(
+                Util.backgroundExecutor(),
+                Config.get()::save,
+                DevConfig.get()::save,
+                Preferences.INSTANCE::save,
+                () -> Profiles.saveAll(this.original.packType(), profiles, Util.backgroundExecutor())
+        );
     }
 
     @Override
@@ -199,7 +209,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     private FlexLayout createHeader() {
         FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        final boolean devMode = PackedPacks.CONFIG.isDevMode();
+        final boolean devMode = Config.get().isDevMode();
 
         header.addChild(
                 FidgetzButton.builder()
@@ -225,7 +235,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         header.addFlexChild(this.profiles.getNameField());
 
         PackSelectionScreen originalScreen = this.previous instanceof PackSelectionScreen s ? s : this.original.createDummy();
-        ModAdditions.onCreateHeader(this.packsConfig.packType(), header, this, originalScreen);
+        ModAdditions.onCreateHeader(this.original.packType(), header, this, originalScreen);
 
         if (devMode || Preferences.INSTANCE.optionsWidget.get()) {
             header.addChild(
@@ -274,7 +284,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                         .build()
         );
 
-        if (this.packsConfig.packType() == PackType.CLIENT_RESOURCES) {
+        if (this.original.packType() == PackType.CLIENT_RESOURCES) {
             secondColumn.addFlexChild(FidgetzButton.builder().setMessage(ResourceUtil.getText("apply")).setOnPress(this::commit).build());
         }
 
@@ -366,15 +376,15 @@ public class PackedPacksScreen extends PackListEventHandler implements
     public void onClose() {
         if (this.minecraft == null) return;
 
-        String commitRequestor = ModAdditions.forceCommitOnClose(this.packsConfig.packType());
+        String commitRequestor = ModAdditions.forceCommitOnClose(this.original.packType());
         if (commitRequestor != null) {
             this.commit();
             PackedPacks.LOGGER.info("[packed_packs] Commiting packs on close at the request of mod '{}'.", commitRequestor);
-        } else if (!(this.packsConfig instanceof Config.ResourcePacks resourceConfig) || resourceConfig.isApplyOnClose()) {
+        } else if (!(this.options.getUserConfig() instanceof Config.ResourcePacks resourceConfig) || resourceConfig.isApplyOnClose()) {
             this.commit();
         }
 
-        if (this.packsConfig.packType() == PackType.SERVER_DATA && !(this.previous instanceof PackSelectionScreen)) {
+        if (this.original.packType() == PackType.SERVER_DATA && !(this.previous instanceof PackSelectionScreen)) {
             this.original.output().accept(this.repository.getRepository()); // validate datapacks
             return;
         }
@@ -401,7 +411,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                     List<Path> paths = new ObjectArrayList<>(this.additionalFolders.size() + 1);
                     paths.add(this.repository.getBaseDir());
                     paths.addAll(this.additionalFolders);
-                    return new PackWatcher(this.packsConfig.packType(), paths, this::refreshPacks);
+                    return new PackWatcher(this.original.packType(), paths, this::refreshPacks);
                 } catch (Exception e) {
                     PackedPacks.LOGGER.error("[packed_packs] Failed to initialize pack directory watcher.", e);
                     return null;
@@ -429,7 +439,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     private void initAdditionalFolders() {
         this.additionalFolders = CollectionsUtil.deduplicate(CollectionsUtil.addAll(
-                mapValidDirectories(this.packsConfig.getAdditionalFolders()),
+                mapValidDirectories(this.options.getUserConfig().getAdditionalFolders()),
                 this.repository.getAdditionalDirs()
         ));
     }
@@ -450,7 +460,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     public void toggleActionBar() {
         this.showActionBar = !this.showActionBar;
-        PackedPacks.CONFIG.setShowActionBar(this.showActionBar);
+        Config.get().setShowActionBar(this.showActionBar);
         this.repositionLists();
     }
 
@@ -459,7 +469,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.syncProfile(this.profiles.getProfile());
         this.repository.selectPacks(this.currentPacks.list().copyPacks());
 
-        if (this.packsConfig.packType() == PackType.CLIENT_RESOURCES) {
+        if (this.original.packType() == PackType.CLIENT_RESOURCES) {
             this.original.output().accept(this.repository.getRepository());
         }
     }
@@ -689,20 +699,19 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     public void toggleDevMode() {
-        PackedPacks.CONFIG.setDevMode(!PackedPacks.CONFIG.isDevMode());
-        ToastUtil.onDevModeToggleToast(PackedPacks.CONFIG.isDevMode());
+        Config.get().setDevMode(!Config.get().isDevMode());
+        ToastUtil.onDevModeToggleToast(Config.get().isDevMode());
         this.rebuildWidgets();
     }
 
     public void switchDefaultProfile() {
-        Profile defaultProfile = this.packsConfig.getDefaultProfile();
-        if (defaultProfile != null) {
-            if (Objects.equals(this.profiles.getProfile(), defaultProfile)) {
+        this.options.getDefaultProfile().ifPresent(profile -> {
+            if (Objects.equals(this.profiles.getProfile(), profile)) {
                 this.profiles.setProfile(null);
             } else {
-                this.profiles.setProfile(defaultProfile);
+                this.profiles.setProfile(profile);
             }
-        }
+        });
     }
 
     @Override
@@ -762,7 +771,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (this.contextMenu.isMouseOver(mouseX, mouseY)) return;
 
         this.buildItems(mouseX, mouseY)
-                .when(PackedPacks.CONFIG.isDevMode())
+                .when(Config.get().isDevMode())
                 .ifTrue(dev -> dev.separatorIfNonEmpty()
                         .whenNonNull(this.profiles.getProfile())
                         .ifTrue((profile, b) -> b.
@@ -771,7 +780,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                                         .build())
                                 .separator())
                         .add(devItem(ResourceUtil.getText("preferences"))
-                                .addChildren(ToggleableHelper.preferences(this.packsConfig.packType()))
+                                .addChildren(ToggleableHelper.preferences(this.original.packType()))
                                 .addChild(devItem(ResourceUtil.getText("preferences.reset"))
                                         .action(Preferences.INSTANCE::reset)
                                         .build())
@@ -834,7 +843,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-        if (PackedPacks.CONFIG.isDevMode()) {
+        if (Config.get().isDevMode()) {
             float scale = 0.5f;
             int y = (int) ((height - this.font.lineHeight * scale) / scale);
 

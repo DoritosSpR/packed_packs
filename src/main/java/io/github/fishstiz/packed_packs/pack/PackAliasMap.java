@@ -1,7 +1,7 @@
 package io.github.fishstiz.packed_packs.pack;
 
 import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.config.DevConfig;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
@@ -14,10 +14,10 @@ import java.util.TreeMap;
  * The vanilla available packs map is an immutable copy ({@link com.google.common.collect.ImmutableMap}) of a {@link TreeMap}.
  */
 public class PackAliasMap extends TreeMap<String, Pack> {
-    private final Config.Packs config;
+    private final DevConfig.Packs config;
     private Set<String> unresolvedIds;
 
-    public PackAliasMap(Config.Packs config, Map<String, Pack> map) {
+    public PackAliasMap(DevConfig.Packs config, Map<String, Pack> map) {
         super(map);
         this.config = config;
     }
@@ -47,7 +47,7 @@ public class PackAliasMap extends TreeMap<String, Pack> {
             return null;
         }
 
-        String resolvedPackId = this.config.getAndSaveCanonicalId(PackedPacks.CONFIG, packId);
+        String resolvedPackId = this.config.getAndSaveCanonicalId(packId);
         if (resolvedPackId != null) {
             Pack resolvedPack = super.get(resolvedPackId);
             if (resolvedPack != null) {

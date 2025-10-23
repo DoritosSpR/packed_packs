@@ -29,6 +29,6 @@ public class Folder implements Serializable {
     }
 
     public void save(Path path) {
-        ConfigLoader.save(this, path.toFile());
+        JsonLoader.saveJson(this, path);
     }
 }

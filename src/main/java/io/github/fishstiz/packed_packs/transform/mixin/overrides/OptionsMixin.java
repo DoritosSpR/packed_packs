@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.transform.mixin.overrides;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
 import net.minecraft.client.Minecraft;
@@ -30,7 +31,7 @@ public abstract class OptionsMixin {
     @Inject(method = "<init>", at = @At("TAIL"))
     private void applyDefaultProfile(Minecraft minecraft, File gameDirectory, CallbackInfo ci) {
         if (!this.optionsFile.exists()) {
-            Profile defaultProfile = PackedPacks.CONFIG.getResourcepacks().getDefaultProfile();
+            Profile defaultProfile = DevConfig.get().getResourcepacks().getDefaultProfile();
             if (defaultProfile != null) {
                 PackedPacks.LOGGER.info("[packed_packs] options.txt not found, applying default resource packs.");
                 this.resourcePacks.clear();

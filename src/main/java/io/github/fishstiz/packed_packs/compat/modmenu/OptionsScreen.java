@@ -1,7 +1,7 @@
 package io.github.fishstiz.packed_packs.compat.modmenu;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
-import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.gui.layouts.OptionsLayout;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
@@ -39,7 +39,7 @@ public class OptionsScreen extends Screen {
 
     @Override
     public void onClose() {
-        PackedPacks.CONFIG.save();
+        Config.get().save();
         if (this.minecraft != null) {
             this.minecraft.setScreen(this.previous);
         }

@@ -5,8 +5,8 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContaine
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
-import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.MouseSelectionHandler;
 import io.github.fishstiz.packed_packs.gui.components.SelectionContext;
@@ -448,7 +448,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
                     PackList.this.itemHeight,
                     SPACING
             ));
-            boolean devMode = PackedPacks.CONFIG.isDevMode();
+            boolean devMode = Config.get().isDevMode();
             if (this.pack() instanceof FolderPack folderPack && (devMode || Preferences.INSTANCE.folderPackWidget.get())) {
                 this.folderWidget = this.addTopRenderableOnly(this.prependWidget(
                         ToggleableHelper.applyPref(Preferences.INSTANCE.folderPackWidget, FidgetzButton.<FolderPack>builder())
@@ -607,7 +607,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
         @Override
         public void renderBack(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTick) {
-            if (!this.pack().getCompatibility().isCompatible() && !PackList.this.options.getConfig().isIncompatibleWarningsHidden()) {
+            if (!this.pack().getCompatibility().isCompatible() && !PackList.this.options.getUserConfig().isIncompatibleWarningsHidden()) {
                 int backgroundLeft = this.getX() + BACKGROUND_OFFSET;
                 int backgroundRight = backgroundLeft + this.getWidth() - BACKGROUND_OFFSET * 2;
                 guiGraphics.fill(backgroundLeft, this.getY(), backgroundRight, this.getBottom(), Theme.RED_900.getARGB());

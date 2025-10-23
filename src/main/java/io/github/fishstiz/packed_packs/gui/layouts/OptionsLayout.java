@@ -3,7 +3,6 @@ package io.github.fishstiz.packed_packs.gui.layouts;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.components.ToggleButton;
 import io.github.fishstiz.fidgetz.gui.layouts.Layouts;
-import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
@@ -72,7 +71,7 @@ public class OptionsLayout implements Layout {
     }
 
     public OptionsLayout(Minecraft minecraft, IntSupplier maxHeightSupplier) {
-        this(minecraft, maxHeightSupplier, PackedPacks.CONFIG.getResourcepacks(), PackedPacks.CONFIG.getDatapacks());
+        this(minecraft, maxHeightSupplier, Config.get().getResourcepacks(), Config.get().getDatapacks());
     }
 
 
