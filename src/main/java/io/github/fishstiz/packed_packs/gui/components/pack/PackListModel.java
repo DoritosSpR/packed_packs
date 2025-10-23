@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
-import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.gui.components.SelectableList;
 import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
@@ -48,7 +48,7 @@ public class PackListModel extends SelectableList<Pack> implements Restorable<Pa
 
     @Override
     protected boolean filter(Pack pack) {
-        if (!PackedPacks.CONFIG.isDevMode() && this.options.isHidden(pack)) {
+        if (!Config.get().isDevMode() && this.options.isHidden(pack)) {
             return false;
         }
         if (!this.query.test(pack)) {

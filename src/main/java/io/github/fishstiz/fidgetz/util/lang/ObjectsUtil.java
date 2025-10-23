@@ -73,4 +73,8 @@ public class ObjectsUtil {
 
     public static void nop() {
     }
+
+    public static <T> T alwaysNull() {
+        return null;
+    }
 }

@@ -5,7 +5,7 @@ import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.components.RenderableRectWidget;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.util.AliasRegex;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
@@ -34,13 +34,13 @@ public class PackAliasLayout implements Layout {
     private final Pattern openCharSet = Pattern.compile("(?<=(?<!\\\\)(\\\\\\\\){0,128})\\[\\^?(?=[^]]*(?<=(?<!\\\\)(\\\\\\\\){0,128})])");
     private final Pattern openCaptureGroup = Pattern.compile("(?<=(?<!\\\\)(\\\\\\\\){0,128})\\((\\?(<\\w+>|:|!|=|<!|<=))?(?=.*(?<=(?<!\\\\)(\\\\\\\\){0,128})\\))");
     private final Pattern alternation = Pattern.compile("(?<!(?<!\\\\)(\\\\\\\\){0,128}\\[[^]]{0,255})(?<=(?<!\\\\)(\\\\\\\\){0,128})\\|");
-    private final Config.Packs config;
+    private final DevConfig.Packs config;
     private final PackAssetManager assetManager;
     private EditableList<String> aliases;
     private LinearLayout layout;
     private Pack pack;
 
-    public PackAliasLayout(Config.Packs config, PackAssetManager assetManager) {
+    public PackAliasLayout(DevConfig.Packs config, PackAssetManager assetManager) {
         this.config = config;
         this.assetManager = assetManager;
         this.layout = LinearLayout.vertical().spacing(GuiConstants.SPACING);

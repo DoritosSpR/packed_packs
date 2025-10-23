@@ -1,10 +1,10 @@
 package io.github.fishstiz.packed_packs.pack;
 
-import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.config.PackOptions;
 import io.github.fishstiz.packed_packs.config.Profile;
 import net.minecraft.server.packs.PackSelectionConfig;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,12 +17,12 @@ import java.util.function.*;
  */
 public record PackOptionsResolver(
         Supplier<@Nullable Profile> profileSupplier,
-        Config.Packs config
+        DevConfig.Packs config
 ) implements PackOptions {
-    public static final PackOptionsResolver DATA_PACKS = new PackOptionsResolver(PackedPacks.CONFIG.getDatapacks());
-    public static final PackOptionsResolver RESOURCE_PACKS = new PackOptionsResolver(PackedPacks.CONFIG.getResourcepacks());
+    public static final PackOptionsResolver DATA_PACKS = new PackOptionsResolver(DevConfig.get().get(PackType.SERVER_DATA));
+    public static final PackOptionsResolver RESOURCE_PACKS = new PackOptionsResolver(DevConfig.get().get(PackType.CLIENT_RESOURCES));
 
-    public PackOptionsResolver(Config.Packs config) {
+    public PackOptionsResolver(DevConfig.Packs config) {
         this(() -> null, config);
     }
 
