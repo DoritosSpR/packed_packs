@@ -5,9 +5,9 @@ import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
 import io.github.fishstiz.fidgetz.gui.components.Fidgetz;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
-import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
@@ -29,7 +29,7 @@ public class RespackoptsWidget extends AbstractButton implements ContextMenuProv
     private RespackoptsWidget(LayoutElement container, ResourcePackEntryWidget wrapped, PackSelectionModel.Entry model) {
         super(0, 0, 0, 0, Component.literal(Mod.RESPACKOPTS.getId()));
 
-        this.toggleable = PackedPacks.CONFIG.isDevMode() ? new ToggleableHelper(Preferences.INSTANCE.respackoptsButton) : null;
+        this.toggleable = Config.get().isDevMode() ? new ToggleableHelper(Preferences.INSTANCE.respackoptsButton) : null;
         this.container = container;
         this.wrapped = wrapped;
         this.model = model;

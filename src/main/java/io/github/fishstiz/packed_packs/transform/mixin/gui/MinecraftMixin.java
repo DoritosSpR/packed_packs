@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.transform.mixin.gui;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
@@ -24,8 +24,10 @@ public abstract class MinecraftMixin {
         if (guiScreen instanceof PackSelectionScreen packScreen &&
             !(((PackSelectionScreenAccessor) packScreen).packed_packs$getPrevious() instanceof PackedPacksScreen) &&
             !(this.screen instanceof PackedPacksScreen)) {
+
             PackSelectionScreenArgs args = PackSelectionScreenArgs.extract(packScreen);
-            if (PackedPacks.CONFIG.get(args.packType()).isReplaceOriginal()) {
+
+            if (Config.get().get(args.packType()).isReplaceOriginal()) {
                 ((PackSelectionScreenAccessor) packScreen).invokeCloseWatcher();
                 guiScreen = new PackedPacksScreen((Minecraft) (Object) this, this.screen, args);
             }

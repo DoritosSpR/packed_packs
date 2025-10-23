@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.transform.mixin.folders.additional;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.FolderRepositorySource;
@@ -26,7 +26,7 @@ public abstract class ServerPacksSourceMixin {
             Operation<PackRepository> original,
             @Local(argsOnly = true) DirectoryValidator validator
     ) {
-        RepositorySource[] folders = PackUtil.mapValidDirectories(PackedPacks.CONFIG.getDatapacks().getAdditionalFolders())
+        RepositorySource[] folders = PackUtil.mapValidDirectories(Config.get().getDatapacks().getAdditionalFolders())
                 .stream()
                 .map(path -> path.toAbsolutePath().normalize())
                 .distinct()
