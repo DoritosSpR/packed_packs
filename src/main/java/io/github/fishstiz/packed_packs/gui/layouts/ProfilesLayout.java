@@ -7,6 +7,7 @@ import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.profile.ProfileList;
 import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
@@ -28,7 +29,8 @@ public class ProfilesLayout {
     private static final Component UNNAMED_TEXT = ResourceUtil.getText("profile.unnamed");
     private static final Component COPY_TEXT = ResourceUtil.getText("profile.copy");
     private static final int MAX_WIDTH = SPACING * 20;
-    private final Config.Packs config;
+    private final Config.Packs userConfig;
+    private final DevConfig.Packs config;
     private final BiConsumer<Profile, Profile> copyListener;
     private final ButtonSprites toggleSprites;
     private final Sidebar sidebar;
@@ -40,10 +42,12 @@ public class ProfilesLayout {
 
     public <S extends Screen & ToggleableDialogContainer> ProfilesLayout(
             S screen,
-            Config.Packs config,
+            Config.Packs userConfig,
+            DevConfig.Packs config,
             BiConsumer<Profile, Profile> selectListener,
             BiConsumer<Profile, Profile> copyListener
     ) {
+        this.userConfig = userConfig;
         this.config = config;
         this.copyListener = copyListener;
         this.toggleSprites = new ButtonSprites(
@@ -51,7 +55,7 @@ public class ProfilesLayout {
                 Sprite.of16(ResourceUtil.getIcon("edit_inactive"))
         );
 
-        WidgetFactory.ProfileWidgets widgets = WidgetFactory.createProfileWidgets(screen, config, selectListener, this::updateGuiState);
+        WidgetFactory.ProfileWidgets widgets = WidgetFactory.createProfileWidgets(screen, userConfig, config, selectListener, this::updateGuiState);
         this.sidebar = widgets.sidebar();
         this.profileList = widgets.profileList();
     }
@@ -123,7 +127,7 @@ public class ProfilesLayout {
                 name = UNNAMED_TEXT.getString();
             }
 
-            profile.setName(name);
+            this.userConfig.renameProfile(profile, name);
         }
         this.profileList.scheduleRefresh();
     }
@@ -166,7 +170,7 @@ public class ProfilesLayout {
                 : new Profile(NO_PROFILE_TEXT.getString() + " - " + COPY_TEXT.getString());
 
         this.copyListener.accept(selectedProfile, copiedProfile);
-        this.config.addProfile(copiedProfile);
+        this.userConfig.addProfile(copiedProfile);
         this.setProfile(copiedProfile);
         this.sidebar.setOpen(false);
         this.profileList.refresh();

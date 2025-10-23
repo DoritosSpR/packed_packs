@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.pack.folder;
 
-import io.github.fishstiz.packed_packs.config.ConfigLoader;
+import io.github.fishstiz.packed_packs.config.JsonLoader;
 import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
@@ -59,7 +59,7 @@ public class FolderPack extends Pack implements FilePack {
                     throw new IOException();
                 }
                 try (InputStream inputStream = configIoSupplier.get()) {
-                    return ConfigLoader.load(inputStream, Folder.class);
+                    return JsonLoader.loadJson(inputStream, Folder.class);
                 }
             } catch (NoSuchFileException e) {
                 return ObjectsUtil.peek(new Folder(), this::saveConfig);

@@ -5,7 +5,7 @@ import io.github.fishstiz.fidgetz.gui.components.ToggleButton;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
-import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.events.BasicEvent;
 import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
@@ -52,8 +52,8 @@ public final class AvailablePacksLayout extends PackLayout {
                 .makeSquare()
                 .addListener(value -> this.recordEvent())
                 .addListener(this.list::sort)
-                .addListener(PackedPacks.CONFIG::setSort)
-                .setValue(PackedPacks.CONFIG.getSort())
+                .addListener(Config.get()::setSort)
+                .setValue(Config.get().getSort())
                 .build();
         this.compatButton = ToggleableHelper.applyPref(Preferences.INSTANCE.toggleIncompatibleWidget, ToggleButton.<Void>builder())
                 .setMessage(COMPAT_TEXT)
@@ -65,8 +65,8 @@ public final class AvailablePacksLayout extends PackLayout {
                 .makeSquare()
                 .addListener(value -> this.recordEvent())
                 .addListener(this.list::hideIncompatible)
-                .addListener(PackedPacks.CONFIG::setHideIncompatible)
-                .setValue(PackedPacks.CONFIG.isHideIncompatible())
+                .addListener(Config.get()::setHideIncompatible)
+                .setValue(Config.get().isHideIncompatible())
                 .build();
 
         this.list.sort(this.sortButton.getValue());
@@ -76,14 +76,14 @@ public final class AvailablePacksLayout extends PackLayout {
         header.addFlexChild(this.getSearchField());
         header.addChild(sortButton);
 
-        if (PackedPacks.CONFIG.isDevMode() || Preferences.INSTANCE.toggleIncompatibleWidget.get()) {
+        if (Config.get().isDevMode() || Preferences.INSTANCE.toggleIncompatibleWidget.get()) {
             header.addChild(compatButton);
         }
         header.addChild(this.getTransferButton());
     }
 
     public void saveFilters() {
-        PackedPacks.CONFIG.setHideIncompatible(this.compatButton.getValue());
-        PackedPacks.CONFIG.setSort(this.sortButton.getValue());
+        Config.get().setHideIncompatible(this.compatButton.getValue());
+        Config.get().setSort(this.sortButton.getValue());
     }
 }

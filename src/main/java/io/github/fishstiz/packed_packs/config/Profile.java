@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.config;
 
+import com.google.common.hash.Hashing;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
 import io.github.fishstiz.packed_packs.PackedPacks;
@@ -15,67 +16,79 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.mapOrDefault;
 
 public class Profile implements PackOptions, Serializable {
     public static final int NAME_MAX_LENGTH = 32;
+    private static final String TEMP_PREFIX = "__temp__";
+    private static final String DELIMITER = "__";
     private boolean locked = false;
-    private long id;
     private String name;
-    private Map<String, PackOverride> overrides;
+    private Map<String, PackOverride> overrides = new Object2ObjectOpenHashMap<>();
     private Set<String> packIds = new ObjectLinkedOpenHashSet<>();
+    private transient String id;
+    private transient String hash;
 
-    public Profile() {
-        this.overrides = new Object2ObjectOpenHashMap<>();
+    private Profile() {
+        this.id = TEMP_PREFIX + Instant.now().toEpochMilli();
     }
 
     public Profile(String name) {
-        this();
         this.name = trimName(name);
+        this.hash = Hashing.murmur3_32_fixed().hashString(this.name + Instant.now().toEpochMilli(), StandardCharsets.UTF_8).toString();
+        this.id = this.name + DELIMITER + this.hash;
     }
 
     private Profile(String name, Set<String> packIds, Map<String, PackOverride> overrides) {
-        this.name = trimName(name);
+        this(name);
         this.packIds = new ObjectLinkedOpenHashSet<>(packIds);
         this.overrides = new Object2ObjectOpenHashMap<>(overrides);
         this.overrides.replaceAll((id, override) -> new PackOverride(override.hidden(), override.required(), override.position()));
     }
 
-    void setId(long id) {
-        this.id = id;
-    }
-
-    public long getId() {
+    public String getId() {
         return this.id;
     }
 
-    public void updatePackId(String packId, String newId) {
-        if (this.packIds.contains(packId)) {
+    boolean remapPackId(String packId, String newId) {
+        boolean remapped = false;
+        if (this.packIds.contains(packId) && !this.packIds.contains(newId)) {
             List<String> packIdsList = new ObjectArrayList<>(this.packIds);
             int index = packIdsList.indexOf(packId);
             if (index != -1) {
                 PackedPacks.LOGGER.info("[packed_packs] Updating pack id '{}' to '{}' in profile '{}'", packId, newId, this.name);
                 packIdsList.add(index, newId);
                 this.packIds = new ObjectLinkedOpenHashSet<>(packIdsList);
+                remapped = true;
             }
         }
         PackOverride packOverride = this.overrides.get(packId);
         if (packOverride != null) {
             PackedPacks.LOGGER.info("[packed_packs] Copying overrides from pack id '{}' to '{}' in profile '{}'", packId, newId, this.name);
             this.overrides.put(newId, packOverride);
+            remapped = true;
         }
+        return remapped;
     }
 
     public String getName() {
         return this.name;
     }
 
-    public void setName(String name) {
-        if (!this.isLocked()) this.name = trimName(name);
+    void setName(String name) {
+        if (!this.isLocked()) {
+            this.name = trimName(name);
+            if (this.hash != null) {
+                this.id = this.id.replaceAll("^.*(?=" + Pattern.quote(this.hash) + "$)", this.name + DELIMITER);
+            }
+        }
     }
 
     public Profile copy() {
@@ -230,6 +243,15 @@ public class Profile implements PackOptions, Serializable {
         return name.length() <= NAME_MAX_LENGTH ? name : name.substring(0, NAME_MAX_LENGTH);
     }
 
+    void lockId() {
+        this.hash = null;
+    }
+
+    void lockId(String id) {
+        this.id = id;
+        this.lockId();
+    }
+
     /**
      * @deprecated removal on stable release. packIds changed from array of objects to array of plain string
      */
@@ -241,7 +263,6 @@ public class Profile implements PackOptions, Serializable {
             Profile profile = new Profile();
 
             if (obj.has("locked")) profile.locked = obj.get("locked").getAsBoolean();
-            if (obj.has("id")) profile.id = obj.get("id").getAsLong();
             if (obj.has("name")) profile.name = obj.get("name").getAsString();
 
             JsonElement packIdsJson = obj.get("packIds");
