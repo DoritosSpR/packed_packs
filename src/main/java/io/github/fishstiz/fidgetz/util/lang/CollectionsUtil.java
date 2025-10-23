@@ -106,15 +106,6 @@ public class CollectionsUtil {
         return true;
     }
 
-    public static <E, T> boolean containsId(Collection<E> collection, T id, Function<E, T> identifier) {
-        for (E e : collection) {
-            if (Objects.equals(id, identifier.apply(e))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public static <E, R, T extends Collection<R>> T map(Collection<E> collection, Function<E, R> mapper, IntFunction<T> collectionFactory) {
         T mapped = collectionFactory.apply(collection.size());
         for (E e : collection) {
@@ -158,7 +149,7 @@ public class CollectionsUtil {
 
     public static <E, T> @Nullable E firstMatch(Collection<E> collection, T value, Function<E, T> mapper) {
         for (E e : collection) {
-            if (mapper.apply(e) == value) {
+            if (Objects.equals(mapper.apply(e), value)) {
                 return e;
             }
         }

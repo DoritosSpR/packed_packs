@@ -2,8 +2,8 @@ package io.github.fishstiz.packed_packs.gui.screens;
 
 import io.github.fishstiz.fidgetz.gui.components.ToggleableDialogContainer;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenu;
-import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.components.pack.FileRenameModal;
@@ -35,6 +35,9 @@ import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.SPACIN
  * the whole dialog system may need to be rewritten.
  */
 public class WidgetFactory {
+    private static boolean screenInitialized = false;
+    private static boolean profilesInitialized = false;
+
     private WidgetFactory() {
     }
 
@@ -50,7 +53,7 @@ public class WidgetFactory {
     ) {
         PackFileOperations fileOps = new PackFileOperations(options, repository);
 
-        if (PackedPacks.CONFIG.screenInitialized) {
+        if (screenInitialized) {
             return new PackedPacksWidgets(
                     new AvailablePacksLayout(options, assets, fileOps, screen),
                     new CurrentPacksLayout(options, assets, fileOps, screen),
@@ -77,6 +80,8 @@ public class WidgetFactory {
 
         CompletableFuture.allOf(availablePacks, currentPacks, folderDialog, fileRenameModal, contextMenu).join();
 
+        screenInitialized = true;
+
         return new PackedPacksWidgets(
                 availablePacks.join(),
                 currentPacks.join(),
@@ -88,18 +93,21 @@ public class WidgetFactory {
 
     public static <S extends Screen & ToggleableDialogContainer> ProfileWidgets createProfileWidgets(
             S screen,
-            Config.Packs config,
+            Config.Packs userConfig,
+            DevConfig.Packs config,
             BiConsumer<Profile, Profile> selectListener,
             Consumer<Profile> updateListener
     ) {
-        if (PackedPacks.CONFIG.screenInitialized) {
-            return new ProfileWidgets(new Sidebar(screen), new ProfileList(config, selectListener, updateListener));
+        if (profilesInitialized) {
+            return new ProfileWidgets(new Sidebar(screen), new ProfileList(userConfig, config, selectListener, updateListener));
         }
 
         var sidebar = supplyAsync(() -> new Sidebar(screen));
-        var profileList = supplyAsync(() -> new ProfileList(config, selectListener, updateListener));
+        var profileList = supplyAsync(() -> new ProfileList(userConfig, config, selectListener, updateListener));
 
         CompletableFuture.allOf(sidebar, profileList).join();
+
+        profilesInitialized = true;
 
         return new ProfileWidgets(sidebar.join(), profileList.join());
     }

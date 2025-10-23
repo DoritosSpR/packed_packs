@@ -125,6 +125,18 @@ public record Query(
         static Comparator<Pack> folderFirst(Comparator<Pack> base) {
             return Comparator.comparing((Pack pack) -> !(pack instanceof FolderPack)).thenComparing(base);
         }
+
+        public static SortOption getOrDefault(String name) {
+            if (name == null) {
+                return VANILLA;
+            }
+
+            try {
+                return valueOf(name);
+            } catch (IllegalArgumentException e) {
+                return VANILLA;
+            }
+        }
     }
 
     private static String normalizeTitle(String title) {

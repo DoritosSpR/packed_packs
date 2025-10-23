@@ -1,10 +1,10 @@
 package io.github.fishstiz.packed_packs.pack;
 
 import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.config.PackOptions;
 import io.github.fishstiz.packed_packs.config.Profile;
 import net.minecraft.server.packs.PackSelectionConfig;
-import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,13 +14,15 @@ import java.util.function.Supplier;
 
 public class PackOptionsContext implements PackOptions {
     private final PackOptionsResolver resolver;
+    private final Config.Packs userConfig;
 
-    public PackOptionsContext(PackOptionsResolver resolver) {
+    public PackOptionsContext(PackOptionsResolver resolver, Config.Packs userConfig) {
         this.resolver = resolver;
+        this.userConfig = userConfig;
     }
 
-    public PackOptionsContext(Supplier<@Nullable Profile> profileSupplier, Config.Packs config) {
-        this(new PackOptionsResolver(profileSupplier, config));
+    public PackOptionsContext(Supplier<@Nullable Profile> profileSupplier, Config.Packs userConfig, DevConfig.Packs config) {
+        this(new PackOptionsResolver(profileSupplier, config), userConfig);
     }
 
     @Override
@@ -80,7 +82,11 @@ public class PackOptionsContext implements PackOptions {
         return profile != null && profile == this.resolver.config().getDefaultProfile();
     }
 
-    public Config.Packs getConfig() {
+    public Config.Packs getUserConfig() {
+        return this.userConfig;
+    }
+
+    public DevConfig.Packs getConfig() {
         return this.resolver.config();
     }
 

@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.transform.mixin.folders.additional;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackType;
@@ -28,7 +28,7 @@ public abstract class MinecraftMixin {
             target = "([Lnet/minecraft/server/packs/repository/RepositorySource;)Lnet/minecraft/server/packs/repository/PackRepository;")
     )
     private PackRepository addAdditionalFolders(RepositorySource[] sources, Operation<PackRepository> original) {
-        RepositorySource[] folders = PackUtil.mapValidDirectories(PackedPacks.CONFIG.getResourcepacks().getAdditionalFolders())
+        RepositorySource[] folders = PackUtil.mapValidDirectories(Config.get().getResourcepacks().getAdditionalFolders())
                 .stream()
                 .map(path -> path.toAbsolutePath().normalize())
                 .distinct()

@@ -11,8 +11,8 @@ import io.github.fishstiz.fidgetz.util.ARGBColor;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
-import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Config;
+import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.config.Profile;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
@@ -28,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -43,14 +44,19 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     private final PollingDebouncer<Void> debouncedRefresh = new SimplePollingDebouncer<>(this::refresh, 200);
     private final BiConsumer<Profile, Profile> selectListener;
     private final Consumer<Profile> updateListener;
-    private final Config.Packs config;
-    private List<Profile> profiles;
+    private final Config.Packs userConfig;
+    private final DevConfig.Packs config;
     private @Nullable Profile selectedProfile;
 
-    public ProfileList(Config.Packs config, BiConsumer<Profile, Profile> selectListener, Consumer<Profile> updateListener) {
+    public ProfileList(
+            Config.Packs userConfig,
+            DevConfig.Packs Config,
+            BiConsumer<Profile, Profile> selectListener,
+            Consumer<Profile> updateListener
+    ) {
         super(ITEM_HEIGHT, DEFAULT_SCROLLBAR_OFFSET, 0, 0);
-
-        this.config = config;
+        this.userConfig = userConfig;
+        this.config = Config;
         this.selectListener = selectListener;
         this.updateListener = updateListener;
     }
@@ -62,9 +68,18 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     public void refresh() {
         this.clearEntries();
 
-        this.profiles = this.config.getProfiles();
-        for (int i = 0; i < this.profiles.size(); i++) {
-            this.addEntry(new Entry(this.profiles.get(i), i));
+        int i = 0;
+
+        Profile defaultProfile = this.config.getDefaultProfile();
+        if (defaultProfile != null) {
+            this.addEntry(new Entry(defaultProfile, i++));
+        }
+
+        List<Profile> profiles = this.userConfig.getProfiles();
+        for (int j = 0; j < profiles.size(); j++, i++) {
+            Profile profile = profiles.get(j);
+            if (defaultProfile != null && Objects.equals(profile.getId(), defaultProfile.getId())) continue;
+            this.addEntry(new Entry(profiles.get(j), i));
         }
     }
 
@@ -81,7 +96,7 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
 
     public void removeProfile(Profile profile) {
         if (profile != null && this.selectedProfile == profile) {
-            List<Profile> profiles = this.config.getProfiles();
+            List<Profile> profiles = this.userConfig.getProfiles();
             if (!profiles.isEmpty()) {
                 int index = profiles.indexOf(profile);
                 Profile previous = (index > 0) ? profiles.get(index - 1) : null;
@@ -90,7 +105,9 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
                 this.selectProfile(null);
             }
         }
-        this.config.removeProfile(profile);
+        if (profile != null) {
+            this.userConfig.removeProfile(profile);
+        }
         this.refresh();
     }
 
@@ -105,17 +122,15 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
 
         super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
 
-        if (this.profiles == null || this.profiles.isEmpty()) {
-            int padding = 8;
-
+        if (this.children().isEmpty()) {
             renderScrollingString(
                     guiGraphics,
                     this.minecraft.font,
                     EMPTY_TEXT,
-                    this.getX() + padding,
-                    this.getY() + padding,
-                    this.getRight() - padding,
-                    this.getBottom() - padding,
+                    this.getX() + SPACING,
+                    this.getY() + SPACING,
+                    this.getRight() - SPACING,
+                    this.getBottom() - SPACING,
                     Theme.WHITE.getARGB()
             );
         }
@@ -162,7 +177,7 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
             this.deleteButton.render(guiGraphics, mouseX, mouseY, partialTick);
             this.selectButton.render(guiGraphics, mouseX, mouseY, partialTick);
 
-            if (PackedPacks.CONFIG.isDevMode()) {
+            if (Config.get().isDevMode()) {
                 boolean hasProperty = true;
                 int borderColor;
 
@@ -241,7 +256,7 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
 
         @Override
         public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
-            if (!PackedPacks.CONFIG.isDevMode()) return;
+            if (!Config.get().isDevMode()) return;
 
             builder.separatorIfNonEmpty();
             builder.add(GuiConstants.devItem(ResourceUtil.getText("profile.default." + (this.isDefault() ? "unset" : "set")))

@@ -3,9 +3,9 @@ package io.github.fishstiz.packed_packs.compat.vtdownloader;
 import io.github.fishstiz.fidgetz.gui.components.Fidgetz;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
-import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModScreenFactory;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
@@ -48,7 +48,7 @@ public class VTDEditButtonWidget extends AbstractButton implements ContextMenuPr
     private VTDEditButtonWidget(LayoutElement container, Screen previous, PackSelectionModel.Entry pack, boolean editable) {
         super(0, 0, PENCIL_SIZE, PENCIL_SIZE, CommonComponents.EMPTY);
 
-        this.toggleable = PackedPacks.CONFIG.isDevMode() ? new ToggleableHelper(Preferences.INSTANCE.vtdEditButton) : null;
+        this.toggleable = Config.get().isDevMode() ? new ToggleableHelper(Preferences.INSTANCE.vtdEditButton) : null;
         this.container = container;
         this.previous = previous;
         this.pack = pack;
