@@ -1,8 +1,8 @@
 package io.github.fishstiz.packed_packs.config;
 
+import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.Mod;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.fabricmc.loader.api.FabricLoader;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -11,7 +11,6 @@ import java.util.Properties;
 import java.util.function.Function;
 
 import static io.github.fishstiz.packed_packs.PackedPacks.LOGGER;
-import static io.github.fishstiz.packed_packs.PackedPacks.MOD_ID;
 
 public class Preferences {
     public static final Preferences INSTANCE = load();
@@ -30,7 +29,7 @@ public class Preferences {
     }
 
     private static File getFile() {
-        return FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".preferences.properties").toFile();
+        return PackedPacks.getConfigDir().resolve("preferences.properties").toFile();
     }
 
     private static Preferences load() {
@@ -73,7 +72,7 @@ public class Preferences {
         }
     }
 
-    public static Function<String, Boolean> modPrefDeserializer(Mod mod) {
+    private static Function<String, Boolean> modPrefDeserializer(Mod mod) {
         return value -> !mod.isLoaded() || Boolean.parseBoolean(value);
     }
 
