@@ -117,6 +117,20 @@ controls.
     - Default profiles load automatically in the following cases:
         - **Resource Packs**: when the `options.txt` file is missing.
         - **Data Packs**: when creating a new world.
+- **Copy to Clipboard**: Copy the select pack's ID.
+- **Pack Aliases**: Add aliases to Pack IDs
+    - Designed to help modpack devs migrate resource/data packs when updates are needed without affecting the user's
+      configured pack selection and order.
+    - Only used if the pack is selected but doesn't exist. Matching starts from the top of the alias map
+      and resolves to the first match, see the `config.meta.json` file.
+    - Supports regex (must be prefixed with `regex:`), the text color will change in the _Edit Aliases_ dialog if done
+      correctly.
+    - Exact matches always take priority over regex matches, regardless of their position in the alias map (e.g., a pack
+      ID of `file/test-v1.2` will always match `"file/test-v1.2": "file/test-v1.4"` over
+      `"regex:file\\/test-v\\d*": "file/test-v2"`).
+    - Aliases are never cleared automatically, even if it points to a pack that no longer exists. They are only removed
+      manually from the in-game GUI or the config file.
+    - It is generally not recommended to use on data packs as it could break worlds. Test thoroughly.
 
 </details>
 
