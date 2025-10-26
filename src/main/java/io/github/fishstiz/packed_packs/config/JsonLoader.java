@@ -17,6 +17,7 @@ public class JsonLoader {
             .setPrettyPrinting()
             .registerTypeAdapter(PackOverride.class, new PackOverride.Adapter())
             .registerTypeAdapter(Profile.class, new Profile.Deserializer())
+            .addSerializationExclusionStrategy(new ConfigFixer.ProfileExclusionStrategy())
             .create();
 
     private JsonLoader() {
