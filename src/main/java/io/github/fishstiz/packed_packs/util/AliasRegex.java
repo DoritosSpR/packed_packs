@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public class AliasRegex {
-    public static final String REGEX_PREFIX = "$regex;";
+    public static final String REGEX_PREFIX = "regex:";
     public static final Pattern REGEX_PREFIX_PATTERN = Pattern.compile("^" + Pattern.quote(REGEX_PREFIX));
 
     private AliasRegex() {
