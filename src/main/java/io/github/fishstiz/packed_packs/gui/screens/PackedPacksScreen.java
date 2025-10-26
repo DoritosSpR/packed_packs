@@ -139,7 +139,14 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
 
         this.initAdditionalFolders();
-        if (initState) this.profiles.setProfile(userConfig.getLastViewedProfile());
+        if (initState) {
+            Profile lastViewed = userConfig.getLastViewedProfile();
+            Profile defaultProfile = config.getDefaultProfile();
+            if (Objects.equals(lastViewed, defaultProfile)) {
+                lastViewed = defaultProfile;
+            }
+            this.profiles.setProfile(lastViewed);
+        }
     }
 
     public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original) {
