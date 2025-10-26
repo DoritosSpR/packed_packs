@@ -139,6 +139,9 @@ public class Config implements Serializable {
                 return this.cachedLastViewedProfile;
             }
             this.cachedLastViewedProfile = CollectionsUtil.firstMatch(this.getProfiles(), this.lastViewedProfile, Profile::getId);
+            if (this.cachedLastViewedProfile == null) {
+                this.lastViewedProfile = null;
+            }
             return this.cachedLastViewedProfile;
         }
 
