@@ -25,8 +25,8 @@ public class ResourcifyModExtension implements ModExtensionInternal {
 
     @Override
     public void onCreateHeader(PackType type, FlexLayout header, PackedPacksScreen screen, PackSelectionScreen original) {
-        this.mod().wrapError(header, original, screen.getTitle(), (layout, packScreen, title) -> {
-            List<? extends Button> buttons = ResourcifyButtons.getButtons(packScreen, title);
+        this.mod().wrapError(header, original, (layout, packScreen) -> {
+            List<? extends Button> buttons = ResourcifyButtons.getButtons(packScreen);
             if (buttons != null) {
                 for (Button button : buttons.reversed()) {
                     layout.addChild(button);
