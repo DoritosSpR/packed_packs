@@ -37,7 +37,7 @@ public class Profile implements PackOptions, Serializable {
     private String id;
     private transient String hash;
 
-    private Profile() {
+    Profile() {
         this.id = TEMP_PREFIX + Instant.now().toEpochMilli();
     }
 
@@ -251,6 +251,28 @@ public class Profile implements PackOptions, Serializable {
     void lockId(String id) {
         this.id = id;
         this.lockId();
+    }
+
+    @Override
+    public int hashCode() {
+        return this.id.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof Profile other)) {
+            return false;
+        }
+        if (Objects.equals(other.getId(), this.getId())) {
+            return true;
+        }
+        return false;
     }
 
     /**

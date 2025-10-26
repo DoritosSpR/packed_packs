@@ -77,10 +77,9 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
         }
 
         List<Profile> profiles = this.userConfig.getProfiles();
-        for (int j = 0; j < profiles.size(); j++, i++) {
-            Profile profile = profiles.get(j);
+        for (Profile profile : profiles) {
             if (defaultProfile != null && Objects.equals(profile.getId(), defaultProfile.getId())) continue;
-            this.addEntry(new Entry(profiles.get(j), i));
+            this.addEntry(new Entry(profile, i++));
         }
     }
 
@@ -238,11 +237,11 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
         }
 
         private boolean isDefault() {
-            return ProfileList.this.config.getDefaultProfile() == this.profile;
+            return Objects.equals(this.profile, ProfileList.this.config.getDefaultProfile());
         }
 
         private boolean isSelected() {
-            return ProfileList.this.selectedProfile == this.profile;
+            return Objects.equals(this.profile, ProfileList.this.selectedProfile);
         }
 
         @Override
