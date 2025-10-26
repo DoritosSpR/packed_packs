@@ -42,14 +42,14 @@ class ConfigFixer {
                 config.getDatapacks().availableProfiles = datapackProfiles;
                 for (Profile profile : datapackProfiles) {
                     Profiles.save(config.getDatapacks().packType(), profile);
-                    PackedPacks.LOGGER.info("[packed_packs] Migrated resource pack profile '{}' with id '{}'", profile.getName(), profile.getId());
+                    PackedPacks.LOGGER.info("[packed_packs] Migrated data pack profile '{}' with id '{}'", profile.getName(), profile.getId());
                 }
             }
             if (!resourcepackProfiles.isEmpty()) {
                 config.getResourcepacks().availableProfiles = resourcepackProfiles;
                 for (Profile profile : resourcepackProfiles) {
                     Profiles.save(config.getResourcepacks().packType(), profile);
-                    PackedPacks.LOGGER.info("[packed_packs] Migrated data pack profile '{}' with id '{}'", profile.getName(), profile.getId());
+                    PackedPacks.LOGGER.info("[packed_packs] Migrated resource pack profile '{}' with id '{}'", profile.getName(), profile.getId());
                 }
             }
 
