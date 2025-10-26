@@ -11,6 +11,7 @@
     "PackSelectionModelMixin",
     "PackSelectionScreenAccessor",
     "UtilAccess",
+    "aliases.OptionsMixin",
     "compat.vtd.VTDownloaderScreenMixin",
     "folders.FolderRepositorySourceMixin",
     "folders.PackMixin",
