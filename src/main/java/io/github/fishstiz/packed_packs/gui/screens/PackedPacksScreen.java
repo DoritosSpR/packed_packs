@@ -179,12 +179,13 @@ public class PackedPacksScreen extends PackListEventHandler implements
         List<Profile> profiles = this.options.getUserConfig().getProfiles();
         this.options.getUserConfig().setProfileOrder(profiles);
 
+        Runnable profileSaver = profile != null ? () -> Profiles.save(this.original.packType(), profile) : ObjectsUtil::nop;
         AsyncUtil.submitAndWait(
                 Util.backgroundExecutor(),
+                profileSaver,
                 Config.get()::save,
                 DevConfig.get()::save,
-                Preferences.INSTANCE::save,
-                () -> Profiles.saveAll(this.original.packType(), profiles, Util.backgroundExecutor())
+                Preferences.INSTANCE::save
         );
     }
 
@@ -519,6 +520,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     public void onProfileChange(@Nullable Profile previous, @Nullable Profile current) {
         if (previous != null) {
             previous.setPacks(this.currentPacks.list().copyPacks());
+            Profiles.save(this.original.packType(), previous);
         }
 
         boolean unlocked = current == null || !current.isLocked();
