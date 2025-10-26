@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.pack;
 
 import io.github.fishstiz.packed_packs.PackedPacks;
+import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.DevConfig;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.repository.Pack;
@@ -47,7 +48,7 @@ public class PackAliasMap extends TreeMap<String, Pack> {
             return null;
         }
 
-        String resolvedPackId = this.config.getAndSaveCanonicalId(packId);
+        String resolvedPackId = this.config.getAndSaveCanonicalId(Config.get().get(this.config.packType()).getProfiles(), packId);
         if (resolvedPackId != null) {
             Pack resolvedPack = super.get(resolvedPackId);
             if (resolvedPack != null) {
