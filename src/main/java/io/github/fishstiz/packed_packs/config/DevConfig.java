@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public class DevConfig implements Serializable {
-    private static final String FILENAME = "config.dev.json";
+    private static final String FILENAME = "config.meta.json";
     private static final DevConfig INSTANCE = loadOrDefault();
     private final ResourcePacks resourcepacks = new ResourcePacks();
     private final DataPacks datapacks = new DataPacks();
@@ -141,7 +141,16 @@ public class DevConfig implements Serializable {
             }
 
             this.cachedDefaultProfile = Profiles.get(this.packType(), this.defaultProfile);
+            if (this.cachedDefaultProfile == null) {
+                this.defaultProfile = null;
+            }
+
             return this.cachedDefaultProfile;
+        }
+
+        void setDefaultProfile(@Nullable String profileId) {
+            this.defaultProfile = profileId;
+            this.cachedDefaultProfile = null;
         }
 
         public void setDefaultProfile(@Nullable Profile profile) {
