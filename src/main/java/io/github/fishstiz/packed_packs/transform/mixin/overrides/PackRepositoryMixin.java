@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import io.github.fishstiz.packed_packs.pack.PackAliasMap;
 import io.github.fishstiz.packed_packs.pack.PackOptionsResolver;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
+import io.github.fishstiz.packed_packs.transform.interfaces.MappedPackRepository;
 import net.minecraft.client.resources.ClientPackSource;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
@@ -20,9 +21,12 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 @Mixin(value = PackRepository.class, priority = 5000)
-public abstract class PackRepositoryMixin {
+public abstract class PackRepositoryMixin implements MappedPackRepository {
     @Unique
     private PackOptionsResolver packed_packs$resolver;
+
+    @Unique
+    private boolean packed_packs$hasAlias = false;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void setConfigOnInit(RepositorySource[] sources, CallbackInfo ci) {
@@ -56,9 +60,16 @@ public abstract class PackRepositoryMixin {
     ))
     private Map<String, Pack> buildAliasMapOnReload(Map<String, Pack> original) {
         if (this.packed_packs$resolver == null || this.packed_packs$resolver.config().getAliases().isEmpty()) {
+            this.packed_packs$hasAlias = false;
             return original;
         }
 
+        this.packed_packs$hasAlias = true;
         return new PackAliasMap(this.packed_packs$resolver.config(), original);
+    }
+
+    @Override
+    public boolean packed_packs$hasAlias() {
+        return this.packed_packs$hasAlias;
     }
 }
