@@ -48,9 +48,7 @@ public class Profiles {
             for (Path file : stream) {
                 if (file.getFileName().toString().endsWith(PROFILE_EXTENSION)) {
                     futures.add(CompletableFuture.supplyAsync(() -> {
-                        Profile profile = loadJsonOrDefault(file, Profile.class, () -> {
-                            throw new RuntimeException("no");
-                        });
+                        Profile profile = loadJsonOrDefault(file, Profile.class, Profile::new);
                         profile.lockId(toId(file));
                         return profile;
                     }, executor));
