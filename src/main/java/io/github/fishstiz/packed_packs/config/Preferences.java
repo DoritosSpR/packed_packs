@@ -35,7 +35,10 @@ public class Preferences {
     private static Preferences load() {
         Preferences prefs = new Preferences();
         File file = getFile();
-        if (!file.exists()) return prefs;
+        if (!file.exists()) {
+            file = ConfigFixer.getPreviousPreferencesFile();
+            if (!file.exists()) return prefs;
+        }
 
         Properties props = new Properties();
         try (FileInputStream fis = new FileInputStream(file)) {

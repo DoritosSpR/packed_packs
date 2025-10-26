@@ -33,7 +33,8 @@ public class Profile implements PackOptions, Serializable {
     private String name;
     private Map<String, PackOverride> overrides = new Object2ObjectOpenHashMap<>();
     private Set<String> packIds = new ObjectLinkedOpenHashSet<>();
-    private transient String id;
+    @Deprecated  // should be transient
+    private String id;
     private transient String hash;
 
     private Profile() {
@@ -262,6 +263,7 @@ public class Profile implements PackOptions, Serializable {
             JsonObject obj = json.getAsJsonObject();
             Profile profile = new Profile();
 
+            if (obj.has("id")) profile.id = obj.get("id").getAsString();
             if (obj.has("locked")) profile.locked = obj.get("locked").getAsBoolean();
             if (obj.has("name")) profile.name = obj.get("name").getAsString();
 
