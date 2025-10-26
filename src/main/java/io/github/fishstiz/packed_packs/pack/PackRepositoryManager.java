@@ -342,7 +342,7 @@ public class PackRepositoryManager {
 
         return ((PackRepositoryAccessor) this.repository).packed_packs$getSources().stream()
                 .filter(FolderRepositorySourceAccessor.class::isInstance)
-                .map(source -> ((FolderRepositorySourceAccessor) source).packed_packs$getFolder().getParent().normalize())
+                .map(source -> ((FolderRepositorySourceAccessor) source).packed_packs$getFolder().toAbsolutePath().normalize())
                 .filter(path -> !path.equals(normalizedBaseDir))
                 .distinct()
                 .toList();
