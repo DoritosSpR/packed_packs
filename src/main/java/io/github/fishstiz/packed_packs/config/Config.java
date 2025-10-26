@@ -4,7 +4,6 @@ import com.google.gson.annotations.SerializedName;
 import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
-import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.Util;
@@ -162,13 +161,6 @@ public class Config implements Serializable {
                                 ? profileOrderMap.get(profile.getId()) + this.profileOrder.size()
                                 : 0
                 ).thenComparing(Profile::getName));
-
-                List<Pair<String, String>> remappedPacks = DevConfig.get().get(this.packType()).getRemappedPacks();
-                for (Pair<String, String> remappedPack : remappedPacks) {
-                    for (Profile profile : availableProfiles) {
-                        profile.remapPackId(remappedPack.key(), remappedPack.value());
-                    }
-                }
 
                 this.availableProfiles = availableProfiles;
             }

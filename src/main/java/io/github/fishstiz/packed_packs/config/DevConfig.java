@@ -75,10 +75,10 @@ public class DevConfig implements Serializable {
             return this.aliases.containsValue(packId);
         }
 
-        public @Nullable String getAndSaveCanonicalId(String packId) {
+        public @Nullable String getAndSaveCanonicalId(Collection<Profile> profiles, String packId) {
             String canonicalId = this.aliases.get(packId);
             if (canonicalId != null) {
-                this.savePackIdsOnResolve(packId, canonicalId);
+                this.savePackIdsOnResolve(profiles, packId, canonicalId);
                 return canonicalId;
             }
 
@@ -87,7 +87,7 @@ public class DevConfig implements Serializable {
                 canonicalId = AliasRegex.resolveCanonicalId(packId, patternMap);
                 if (canonicalId != null) {
                     PackedPacks.LOGGER.info("[packed_packs] Resolved unknown pack '{}' to '{}' with regex, caching result.", packId, canonicalId);
-                    this.savePackIdsOnResolve(packId, canonicalId);
+                    this.savePackIdsOnResolve(profiles, packId, canonicalId);
                 }
             }
 
@@ -104,7 +104,7 @@ public class DevConfig implements Serializable {
             return this.aliasPatterns;
         }
 
-        private void savePackIdsOnResolve(String packId, String canonicalId) {
+        private void savePackIdsOnResolve(Collection<Profile> profiles, String packId, String canonicalId) {
             if (!this.aliases.containsKey(packId)) {
                 this.aliases.put(packId, canonicalId);
                 this.aliases.remove(canonicalId);
@@ -113,19 +113,18 @@ public class DevConfig implements Serializable {
                     remappedPacks = new ObjectArrayList<>();
                 }
 
-                remappedPacks.add(Pair.of(packId, canonicalId));
-
                 Profile defaultProfile = this.getDefaultProfile();
                 if (defaultProfile != null && defaultProfile.remapPackId(packId, canonicalId)) {
                     Profiles.save(this.packType(), defaultProfile);
                 }
+                for (Profile profile : profiles) {
+                    if (!Objects.equals(profile, defaultProfile) && profile.remapPackId(packId, canonicalId)) {
+                        Profiles.save(this.packType(), profile);
+                    }
+                }
 
                 DevConfig.get().save();
             }
-        }
-
-        List<Pair<String, String>> getRemappedPacks() {
-            return this.remappedPacks != null ? Collections.unmodifiableList(this.remappedPacks) : Collections.emptyList();
         }
 
         public void setAliases(String packId, List<String> aliases) {
