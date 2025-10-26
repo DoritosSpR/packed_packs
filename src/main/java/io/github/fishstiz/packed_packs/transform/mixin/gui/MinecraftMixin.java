@@ -22,7 +22,7 @@ public abstract class MinecraftMixin {
     @WrapMethod(method = "setScreen")
     private void replacePackScreen(Screen guiScreen, Operation<Void> original) {
         if (guiScreen instanceof PackSelectionScreen packScreen &&
-            !(((PackSelectionScreenAccessor) packScreen).packed_packs$getPrevious() instanceof PackedPacksScreen) &&
+            (((PackSelectionScreenAccessor) packScreen).packed_packs$getPrevious() == null) &&
             !(this.screen instanceof PackedPacksScreen)) {
 
             PackSelectionScreenArgs args = PackSelectionScreenArgs.extract(packScreen);
