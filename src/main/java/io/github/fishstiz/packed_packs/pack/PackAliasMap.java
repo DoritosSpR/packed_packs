@@ -59,6 +59,8 @@ public class PackAliasMap extends TreeMap<String, Pack> {
             }
             return resolvedPack;
         }
+
+        this.setUnresolved(packId);
         return null;
     }
 
