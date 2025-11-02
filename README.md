@@ -18,7 +18,7 @@ controls.
 - Sort alphabetically or by last updated.
 - [Mouse](#mouse-controls) and [keyboard](#keyboard-controls) controls.
 - [Configuration](#configuration).
-- (BETA) [Developer Mode](#developer-mode).
+- [Developer Mode](#developer-mode).
 - Explicit [compatibility](#compatibility) with certain mods.
 - History (undo and redo).
 
@@ -99,7 +99,7 @@ controls.
 
 <a id="developer-mode"></a>
 <details>
-<summary><b>🚀 (BETA) Developer Mode</b></summary>
+<summary><b>🚀 Developer Mode</b></summary>
 
 - Toggle developer mode — <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>I</kbd> | <kbd>F12</kbd>
 - Additional options will appear in the context menu when in developer mode.
