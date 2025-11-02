@@ -1,7 +1,6 @@
 package io.github.fishstiz.packed_packs.config;
 
 import com.google.common.hash.Hashing;
-import com.google.common.reflect.TypeToken;
 import com.google.gson.*;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.util.PackUtil;
@@ -15,7 +14,6 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
@@ -273,64 +271,5 @@ public class Profile implements PackOptions, Serializable {
             return true;
         }
         return false;
-    }
-
-    /**
-     * @deprecated removal on stable release. packIds changed from array of objects to array of plain string
-     */
-    @Deprecated(forRemoval = true)
-    static class Deserializer implements JsonDeserializer<Profile> {
-        @Override
-        public Profile deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext ctx) throws JsonParseException {
-            JsonObject obj = json.getAsJsonObject();
-            Profile profile = new Profile();
-
-            if (obj.has("id")) profile.id = obj.get("id").getAsString();
-            if (obj.has("locked")) profile.locked = obj.get("locked").getAsBoolean();
-            if (obj.has("name")) profile.name = obj.get("name").getAsString();
-
-            JsonElement packIdsJson = obj.get("packIds");
-            Set<String> packIds = new ObjectLinkedOpenHashSet<>();
-            Map<String, PackOverride> overrides = new Object2ObjectOpenHashMap<>();
-
-            if (packIdsJson != null && packIdsJson.isJsonArray()) {
-                for (JsonElement e : packIdsJson.getAsJsonArray()) {
-                    if (e.isJsonPrimitive()) {
-                        packIds.add(e.getAsString());
-                    } else if (e.isJsonObject()) {
-                        JsonObject entry = e.getAsJsonObject();
-                        if (entry.has("id")) {
-                            String id = entry.get("id").getAsString();
-                            packIds.add(id);
-
-                            if (entry.has("hidden") || entry.has("required") || entry.has("fixed") || entry.has("position")) {
-                                PackOverride override = ctx.deserialize(entry, PackOverride.class);
-                                overrides.put(id, override);
-                            }
-                        }
-                    }
-                }
-            }
-
-            JsonElement hiddenIds = obj.get("hiddenIds");
-            if (hiddenIds != null && hiddenIds.isJsonArray()) {
-                for (JsonElement e : hiddenIds.getAsJsonArray()) {
-                    if (e.isJsonPrimitive()) {
-                        overrides.computeIfAbsent(e.getAsString(), id -> new PackOverride()).setHidden(true);
-                    }
-                }
-            }
-
-            if (obj.has("overrides")) {
-                profile.overrides = ctx.deserialize(obj.get("overrides"), new TypeToken<Map<String, PackOverride>>() {
-                }.getType());
-            } else {
-                profile.overrides = overrides;
-            }
-
-            profile.packIds = packIds;
-
-            return profile;
-        }
     }
 }
