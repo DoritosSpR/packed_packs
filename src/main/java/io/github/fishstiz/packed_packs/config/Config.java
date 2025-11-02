@@ -37,10 +37,14 @@ public class Config implements Serializable {
 
         if (!path.toFile().exists()) {
             File previousFile = ConfigFixer.getPreviousConfigFile();
-            if (previousFile.exists()) {
-                Config config = JsonLoader.loadOrCreateJson(previousFile.toPath(), Config.class, Config::new);
-                ConfigFixer.migrateConfig(config);
-                return config;
+            try {
+                if (previousFile.exists()) {
+                    Config config = JsonLoader.loadOrCreateJson(previousFile.toPath(), Config.class, Config::new);
+                    ConfigFixer.migrateConfig(config);
+                    return config;
+                }
+            } catch (Exception e) {
+                PackedPacks.LOGGER.info("[packed_packs] An error occured while migrating config. ", e);
             }
         }
 
