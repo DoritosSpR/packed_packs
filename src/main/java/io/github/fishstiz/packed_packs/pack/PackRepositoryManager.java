@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.pack;
 
+import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
@@ -15,6 +16,8 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
@@ -259,7 +262,24 @@ public class PackRepositoryManager {
      * @param selected grouped list of selected packs
      */
     public void selectPacks(List<Pack> selected) {
-        this.repository.setSelected(PackUtil.extractPackIds(PackUtil.flattenPacks(selected)).reversed());
+        boolean hasHighContrast = false;
+        List<String> packIds = new ObjectArrayList<>();
+
+        for (Pack pack : PackUtil.flattenPacks(selected).reversed()) {
+            String packId = pack.getId();
+
+            packIds.add(packId);
+            if (!hasHighContrast && packId.equals(PackUtil.HIGH_CONTRAST_ID)) {
+                hasHighContrast = true;
+            }
+        }
+
+        this.repository.setSelected(ImmutableList.copyOf(packIds));
+
+        OptionInstance<Boolean> highContrastOption = Minecraft.getInstance().options.highContrast();
+        if (highContrastOption.get() != hasHighContrast) {
+            highContrastOption.set(hasHighContrast);
+        }
 
         this.refreshModel();
         this.selectedPacksCache.clear();
