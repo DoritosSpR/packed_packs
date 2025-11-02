@@ -16,7 +16,6 @@ public class JsonLoader {
     private static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .registerTypeAdapter(PackOverride.class, new PackOverride.Adapter())
-            .registerTypeAdapter(Profile.class, new Profile.Deserializer())
             .addSerializationExclusionStrategy(new ConfigFixer.ProfileExclusionStrategy())
             .create();
 
