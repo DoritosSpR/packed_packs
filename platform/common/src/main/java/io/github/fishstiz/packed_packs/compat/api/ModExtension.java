@@ -23,7 +23,7 @@ public interface ModExtension {
     /**
      * @return A {@link ResourceLocation} that this extension should load after.
      */
-    default @Nullable ResourceLocation loadAfter() {
+    default @Nullable ResourceLocation[] loadAfter() {
         return null;
     }
 

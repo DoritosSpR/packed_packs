@@ -4,8 +4,6 @@ import io.github.fishstiz.packed_packs.compat.FabricMod;
 import io.github.fishstiz.packed_packs.compat.ModContext;
 
 public enum FabricPreferences implements Preferences.Spec<Boolean> {
-    ETF_BUTTON(FabricMod.ETF, "etf_button"),
-    RESPACKOPTS_BUTTON(FabricMod.RESPACKOPTS, "respackopts_button"),
     VTD_BUTTON(FabricMod.VTD, "vtd_button"),
     VTD_EDIT_BUTTON(FabricMod.VTD, "vtd_edit_button");
 

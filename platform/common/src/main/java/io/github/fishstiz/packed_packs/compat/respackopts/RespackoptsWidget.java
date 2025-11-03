@@ -4,10 +4,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.fishstiz.fidgetz.gui.components.Fidgetz;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
-import io.github.fishstiz.packed_packs.compat.FabricMod;
+import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.PackWrapperDelegatorAbstractionEpicModelEntry;
 import io.github.fishstiz.packed_packs.config.Config;
-import io.github.fishstiz.packed_packs.config.FabricPreferences;
+import io.github.fishstiz.packed_packs.config.ModPreferences;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import io.gitlab.jfronny.libjf.entrywidgets.api.v0.ResourcePackEntryWidget;
 import net.minecraft.client.gui.GuiGraphics;
@@ -26,9 +26,9 @@ public class RespackoptsWidget extends AbstractButton implements ContextMenuProv
     private final @Nullable ToggleableHelper toggleable;
 
     private RespackoptsWidget(LayoutElement container, ResourcePackEntryWidget wrapped, PackSelectionModel.Entry model) {
-        super(0, 0, 0, 0, Component.literal(FabricMod.RESPACKOPTS.getId()));
+        super(0, 0, 0, 0, Component.literal(Mod.RESPACKOPTS.getId()));
 
-        this.toggleable = Config.get().isDevMode() ? new ToggleableHelper(FabricPreferences.RESPACKOPTS_BUTTON.get()) : null;
+        this.toggleable = Config.get().isDevMode() ? new ToggleableHelper(ModPreferences.RESPACKOPTS_BUTTON.get()) : null;
         this.container = container;
         this.wrapped = wrapped;
         this.model = model;

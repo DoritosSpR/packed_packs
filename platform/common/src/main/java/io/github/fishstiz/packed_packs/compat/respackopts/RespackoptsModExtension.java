@@ -1,13 +1,13 @@
 package io.github.fishstiz.packed_packs.compat.respackopts;
 
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
-import io.github.fishstiz.packed_packs.compat.FabricMod;
+import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.ModContext;
 import io.github.fishstiz.packed_packs.compat.ModExtensionInternal;
 import io.github.fishstiz.packed_packs.config.Config;
-import io.github.fishstiz.packed_packs.config.FabricPreferences;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.config.ModPreferences;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import org.jetbrains.annotations.Nullable;
@@ -17,12 +17,12 @@ import java.nio.file.Path;
 public class RespackoptsModExtension implements ModExtensionInternal {
     @Override
     public ModContext mod() {
-        return FabricMod.RESPACKOPTS;
+        return Mod.RESPACKOPTS;
     }
 
     @Override
-    public @Nullable ResourceLocation loadAfter() {
-        return FabricMod.ETF.getInternalId();
+    public @Nullable ResourceLocation[] loadAfter() {
+        return new ResourceLocation[]{Mod.ETF.getInternalId()};
     }
 
     @Override
@@ -30,7 +30,7 @@ public class RespackoptsModExtension implements ModExtensionInternal {
         if (type != PackType.CLIENT_RESOURCES) return;
 
         this.mod().wrapError(entry, e -> {
-            if (Config.get().isDevMode() || FabricPreferences.RESPACKOPTS_BUTTON.isEnabled()) {
+            if (Config.get().isDevMode() || ModPreferences.RESPACKOPTS_BUTTON.isEnabled()) {
                 RespackoptsWidget widget = RespackoptsWidget.create(e, e.pack());
                 if (widget != null) e.addTopRenderableOnly(e.prependWidget(widget));
             }
@@ -41,7 +41,7 @@ public class RespackoptsModExtension implements ModExtensionInternal {
     public void onCreatePreferencesMenu(PackType type, ContextMenuItemBuilder builder) {
         if (type != PackType.CLIENT_RESOURCES) return;
 
-        this.mod().wrapError(builder, b -> b.add(ToggleableHelper.fromPref(FabricPreferences.RESPACKOPTS_BUTTON.get())));
+        this.mod().wrapError(builder, b -> b.add(ToggleableHelper.fromPref(ModPreferences.RESPACKOPTS_BUTTON.get())));
     }
 
     @Override
