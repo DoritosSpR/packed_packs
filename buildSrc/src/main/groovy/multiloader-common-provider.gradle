@@ -1,0 +1,19 @@
+plugins {
+    id 'multiloader-common'
+}
+
+configurations {
+    commonJava {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+    commonResources {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+}
+
+artifacts {
+    add(configurations.commonJava.name, sourceSets.main.java.sourceDirectories.singleFile)
+    add(configurations.commonResources.name, sourceSets.main.resources.sourceDirectories.singleFile)
+}
