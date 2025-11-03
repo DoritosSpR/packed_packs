@@ -1,6 +1,10 @@
 package io.github.fishstiz.packed_packs.transform.mixin.overrides;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.google.common.collect.ImmutableMap;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.sugar.Share;
+import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import io.github.fishstiz.packed_packs.pack.PackAliasMap;
 import io.github.fishstiz.packed_packs.pack.PackOptionsResolver;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
@@ -10,6 +14,7 @@ import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.RepositorySource;
 import net.minecraft.server.packs.repository.ServerPacksSource;
+import org.spongepowered.asm.mixin.Debug;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,6 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Map;
 import java.util.function.Consumer;
 
+@Debug(export = true)
 @Mixin(value = PackRepository.class, priority = 5000)
 public abstract class PackRepositoryMixin implements MappedPackRepository {
     @Unique
@@ -54,18 +60,30 @@ public abstract class PackRepositoryMixin implements MappedPackRepository {
         };
     }
 
-    @ModifyExpressionValue(method = "reload", at = @At(
+    @ModifyArg(method = "discoverAvailable", at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/server/packs/repository/PackRepository;discoverAvailable()Ljava/util/Map;"
+            target = "Lcom/google/common/collect/ImmutableMap;copyOf(Ljava/util/Map;)Lcom/google/common/collect/ImmutableMap;",
+            remap = false
     ))
-    private Map<String, Pack> buildAliasMapOnReload(Map<String, Pack> original) {
-        if (this.packed_packs$resolver == null || this.packed_packs$resolver.config().getAliases().isEmpty()) {
+    private Map<String, Pack> captureMutableMap(Map<String, Pack> map, @Share("mutableMap") LocalRef<Map<String, Pack>> mutableMapRef) {
+        if (!(map instanceof ImmutableMap<String, Pack>)) {
+            mutableMapRef.set(map);
+        }
+        return map;
+    }
+
+    @WrapMethod(method = "discoverAvailable")
+    private Map<String, Pack> createAliasMap(Operation<Map<String, Pack>> original, @Share("mutableMap") LocalRef<Map<String, Pack>> mutableMapRef) {
+        Map<String, Pack> immutableMap = original.call();
+        Map<String, Pack> mutableMap = mutableMapRef.get();
+
+        if (this.packed_packs$resolver == null || this.packed_packs$resolver.config().getAliases().isEmpty() || mutableMap == null) {
             this.packed_packs$hasAlias = false;
-            return original;
+            return immutableMap;
         }
 
         this.packed_packs$hasAlias = true;
-        return new PackAliasMap(this.packed_packs$resolver.config(), original);
+        return new PackAliasMap(this.packed_packs$resolver.config(), mutableMap);
     }
 
     @Override
