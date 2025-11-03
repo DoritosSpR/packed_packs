@@ -1,6 +1,10 @@
 plugins {
-    id 'multiloader-common'
+    id 'multiloader-loader'
     id 'fabric-loom'
+}
+
+loader {
+    common = ':fidgetz:common'
 }
 
 dependencies {
@@ -25,11 +29,5 @@ loom {
     runs {
         remove client
         remove server
-    }
-}
-
-processResources {
-    doLast {
-        delete "$sourceSets.main.output.resourcesDir/META-INF/accesstransformer.cfg"
     }
 }

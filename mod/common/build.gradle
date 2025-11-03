@@ -1,5 +1,5 @@
 plugins {
-    id 'multiloader-common'
+    id 'multiloader-common-provider'
     id 'net.neoforged.moddev'
 }
 
@@ -42,20 +42,4 @@ dependencies {
     compileOnly "maven.modrinth:resourcify:$resourcify_version"
     compileOnly "maven.modrinth:respackopts:$respackopts_version"
     compileOnly "io.gitlab.jfronny.libjf:libjf-resource-pack-entry-widgets-forge:$libjf_resource_pack_entry_widgets_version"
-}
-
-configurations {
-    commonJava {
-        canBeConsumed = true
-        canBeResolved = false
-    }
-    commonResources {
-        canBeConsumed = true
-        canBeResolved = false
-    }
-}
-
-artifacts {
-    commonJava sourceSets.main.java.sourceDirectories.singleFile
-    commonResources sourceSets.main.resources.sourceDirectories.singleFile
 }

@@ -69,12 +69,6 @@ loom {
     }
 }
 
-processResources {
-    doLast {
-        delete "$sourceSets.main.output.resourcesDir/META-INF/accesstransformer.cfg"
-    }
-}
-
 publishMods {
     dryRun = rootProject["publishOptions"]["dryRun"] as boolean
     type = rootProject["publishOptions"]["type"] as ReleaseType
