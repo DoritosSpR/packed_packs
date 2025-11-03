@@ -122,7 +122,9 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
 
     @Override
     public void onRelease(@NotNull DragEvent event, double mouseX, double mouseY) {
-        for (PackList packList : this.getPackLists()) {
+        List<PackList> packLists = this.getPackLists();
+        for (int i = packLists.size() - 1; i >= 0; i--) {
+            PackList packList = packLists.get(i);
             if (packList.isHovered()) {
                 packList.drop(event, mouseX, mouseY);
                 return;
