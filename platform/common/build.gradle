@@ -19,6 +19,18 @@ neoForge {
 
 repositories {
     maven { url = "https://raw.githubusercontent.com/fishstiz/maven/m2" }
+    maven { url = "https://maven.frohnmeyer-wds.de/artifacts" }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
 }
 
 dependencies {
@@ -28,7 +40,21 @@ dependencies {
     compileOnly group: 'io.github.llamalad7', name: 'mixinextras-common', version: "$mixinextras_version"
     annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: "$mixinextras_version"
 
-    compileOnly "io.github.fishstiz:minecraft-cursor-common-api:$project.minecraft_cursor_version"
+    compileOnly "io.github.fishstiz:minecraft-cursor-common-api:$minecraft_cursor_version"
+    compileOnly "maven.modrinth:resourcify:$resourcify_version"
+    compileOnly "maven.modrinth:respackopts:$respackopts_version"
+    compileOnly "io.gitlab.jfronny.libjf:libjf-resource-pack-entry-widgets-forge:$libjf_resource_pack_entry_widgets_version"
+}
+
+configurations {
+    commonJava {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+    commonResources {
+        canBeConsumed = true
+        canBeResolved = false
+    }
 }
 
 artifacts {

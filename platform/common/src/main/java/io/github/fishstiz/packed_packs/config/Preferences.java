@@ -1,7 +1,7 @@
 package io.github.fishstiz.packed_packs.config;
 
+import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.compat.ModContext;
 import io.github.fishstiz.packed_packs.platform.Services;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import org.jetbrains.annotations.Nullable;
@@ -25,6 +25,7 @@ public class Preferences {
     public final Option<Boolean> folderPackWidget = new Option<>("folder_pack", true);
 
     private Preferences() {
+        CollectionsUtil.forEach(ModPreferences.values(), Option::new);
         Services.PLATFORM.getPreferences().forEach(Option::new);
     }
 

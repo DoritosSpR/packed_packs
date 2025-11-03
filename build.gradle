@@ -7,6 +7,9 @@ plugins {
     id 'me.modmuss50.mod-publish-plugin' version "$mod_publish_version"
 }
 
+group = maven_group
+version = mod_version
+
 def basePublishOptions = [
         dryRun   : true,
         type     : publishMods.BETA,
@@ -22,6 +25,7 @@ ext {
                 version = mod_version
                 type = basePublishOptions.type
                 changelog = basePublishOptions.changelog
+                accessToken = findProperty("GITHUB_TOKEN") ?: ""
             },
             modrinth  : publishMods.modrinthOptions {
                 version = mod_version

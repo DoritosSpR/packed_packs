@@ -9,7 +9,7 @@
   "client": [
     "ContainerEventHandlerMixin",
     "EditBoxAccess",
-    "EditBoxMixin",
+    "format.EditBoxMixin",
     "ScreenMixin",
     "StringWidgetMixin"
   ]

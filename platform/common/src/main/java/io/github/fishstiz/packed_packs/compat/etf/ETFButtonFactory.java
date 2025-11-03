@@ -4,10 +4,9 @@ import io.github.fishstiz.fidgetz.gui.components.SpriteButton;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
-import io.github.fishstiz.packed_packs.compat.FabricMod;
+import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.ModScreenFactory;
-import io.github.fishstiz.packed_packs.config.FabricPreferences;
-import io.github.fishstiz.packed_packs.config.Preferences;
+import io.github.fishstiz.packed_packs.config.ModPreferences;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
@@ -24,10 +23,10 @@ public class ETFButtonFactory {
 
     public static SpriteButton<Void> create(Screen previous) {
         return ToggleableHelper.applyPref(
-                        FabricPreferences.ETF_BUTTON.get(),
+                        ModPreferences.ETF_BUTTON.get(),
                         SpriteButton.<Void>builder(SpriteButton.Sprites.of(new ButtonSprites(FOCUSED, UNFOCUSED)))
                 )
-                .setMessage(FabricMod.ETF.getId())
+                .setMessage(Mod.ETF.getId())
                 .setDimensions(SIZE.width(), SIZE.height())
                 .setOnPress(ModScreenFactory.createScreenSetter(
                         ETF_SCREEN_NAME,

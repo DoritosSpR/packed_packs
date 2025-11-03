@@ -1,0 +1,41 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
+plugins {
+    id 'multiloader-common'
+    id 'net.neoforged.moddev'
+}
+
+neoForge {
+    version = neoforge_version
+
+    def at = project(':fidgetz').file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.from(at.absolutePath)
+    }
+
+    parchment {
+        minecraftVersion = parchment_minecraft
+        mappingsVersion = parchment_version
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+processResources {
+    doLast {
+        delete "${sourceSets.main.output.resourcesDir}/${mod_id}.accesswidener"
+
+        def mixinConfigFile = file("${sourceSets.main.output.resourcesDir}/${mod_id}.mixins.json")
+        if (mixinConfigFile.exists()) {
+            def jsonSlurper = new JsonSlurper()
+            def mixinConfig = jsonSlurper.parse(mixinConfigFile)
+            mixinConfig.remove("refmap")
+            mixinConfigFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(mixinConfig))
+        }
+    }
+}
