@@ -1,35 +1,77 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
 plugins {
     id 'multiloader-common'
 }
 
-configurations {
-    commonJava {
-        canBeResolved = true
+class LoaderExtension {
+    String common = ':common'
+}
+
+def loaderExtension = extensions.create('loader', LoaderExtension)
+
+afterEvaluate {
+    def common = loaderExtension.common
+
+    if (!common) {
+        throw new GradleException("loader.common not configured for loader ${project.path}")
     }
-    commonResources {
-        canBeResolved = true
+
+    configurations {
+        commonJava {
+            canBeResolved = true
+        }
+        commonResources {
+            canBeResolved = true
+        }
     }
-}
 
-dependencies {
-    compileOnly(project(path: ":common"))
-    add("commonJava", project(path: ":common", configuration: "commonJava"))
-    add("commonResources", project(path: ":common", configuration: "commonResources"))
-}
+    dependencies {
+        compileOnly(project(path: common))
+        add("commonJava", project(path: common, configuration: 'commonJava'))
+        add("commonResources", project(path: common, configuration: 'commonResources'))
+    }
 
-tasks.named('compileJava', JavaCompile) {
-    dependsOn(configurations.commonJava)
-    source(configurations.commonJava)
-}
+    tasks.named('compileJava', JavaCompile) {
+        dependsOn(configurations.commonJava)
+        source(configurations.commonJava)
+    }
 
-processResources {
-    dependsOn(configurations.commonResources)
-    from(configurations.commonResources)
-}
+    processResources {
+        dependsOn(configurations.commonResources)
+        from(configurations.commonResources)
+    }
 
-tasks.named('sourcesJar', Jar) {
-    dependsOn(configurations.commonJava)
-    from(configurations.commonJava)
-    dependsOn(configurations.commonResources)
-    from(configurations.commonResources)
+    tasks.named('sourcesJar', Jar) {
+        dependsOn(configurations.commonJava)
+        from(configurations.commonJava)
+        dependsOn(configurations.commonResources)
+        from(configurations.commonResources)
+    }
+
+    processResources {
+        doLast {
+            def fabric = 'fabric'
+            def forge = 'forge'
+            def neoForge = 'neoforge'
+            def modId = project.findProperty("mod_id")
+
+            if (project.name == neoForge || project.name == forge) {
+                delete "$project.sourceSets.main.output.resourcesDir/${modId}.accesswidener"
+            }
+            if (project.name == fabric) {
+                delete "$project.sourceSets.main.output.resourcesDir/META-INF/accesstransformer.cfg"
+            }
+            if (project.name == neoForge) {
+                def mixinConfigFile = file("${sourceSets.main.output.resourcesDir}/${modId}.mixins.json")
+                if (mixinConfigFile.exists()) {
+                    def jsonSlurper = new JsonSlurper()
+                    def mixinConfig = jsonSlurper.parse(mixinConfigFile)
+                    mixinConfig.remove("refmap")
+                    mixinConfigFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(mixinConfig))
+                }
+            }
+        }
+    }
 }
