@@ -1,3 +1,5 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 import me.modmuss50.mpp.PublishOptions
 import me.modmuss50.mpp.ReleaseType
 import me.modmuss50.mpp.platforms.curseforge.CurseforgeOptions
@@ -6,15 +8,40 @@ import me.modmuss50.mpp.platforms.modrinth.ModrinthOptions
 
 plugins {
     id 'multiloader-loader'
-    id 'fabric-loom'
+    id 'net.neoforged.moddev'
     id 'me.modmuss50.mod-publish-plugin'
 }
 
-repositories {
-    maven {
-        name = "Terraformers"
-        url = "https://maven.terraformersmc.com/"
+neoForge {
+    version = neoforge_version
+
+    def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.from(at.absolutePath)
     }
+
+    parchment {
+        minecraftVersion = parchment_minecraft
+        mappingsVersion = parchment_version
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+
+    runs {
+        client {
+            type = "client"
+            gameDirectory = project.file('run/client')
+            ideName = "NeoForge Client ($project.name)"
+        }
+    }
+}
+
+repositories {
+    maven { url = "https://maven.frohnmeyer-wds.de/artifacts" }
     exclusiveContent {
         forRepository {
             maven {
@@ -26,52 +53,32 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
-    maven { url = "https://maven.frohnmeyer-wds.de/artifacts" }
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
 }
 
 dependencies {
-    api(project(path: ":fidgetz:fabric", configuration: "namedElements"))
-    include(project(path: ":fidgetz:fabric"))
-
-    minecraft "com.mojang:minecraft:$minecraft_version"
-    mappings loom.layered {
-        officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-$parchment_minecraft:$parchment_version@zip")
-    }
-
-    modImplementation "net.fabricmc:fabric-loader:$fabric_loader_version"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:$fabric_api_version"
-
-    // Mod Compatibility
-    modCompileOnly "com.terraformersmc:modmenu:$modmenu_version"
-    modLocalRuntime "com.terraformersmc:modmenu:$modmenu_version"
+    api project(path: ":fidgetz:neoforge")
+    jarJar project(path: ":fidgetz:neoforge")
 
     compileOnly "maven.modrinth:resourcify:$resourcify_version"
     compileOnly "maven.modrinth:respackopts:$respackopts_version"
     compileOnly "io.gitlab.jfronny.libjf:libjf-resource-pack-entry-widgets-forge:$libjf_resource_pack_entry_widgets_version"
 }
 
-loom {
-    def aw = file("src/main/resources/${mod_id}.accesswidener")
-    if (aw.exists()) {
-        accessWidenerPath.set(aw)
-    }
-    mixin {
-        defaultRefmapName.set("${mod_id}.refmap.json")
-    }
-    runs {
-        client {
-            client()
-            setConfigName('Fabric Client')
-            ideConfigGenerated(true)
-            runDir('run/client')
-        }
-    }
-}
-
 processResources {
     doLast {
-        delete "$sourceSets.main.output.resourcesDir/META-INF/accesstransformer.cfg"
+        delete "${sourceSets.main.output.resourcesDir}/${mod_id}.accesswidener"
+
+        def mixinConfigFile = file("${sourceSets.main.output.resourcesDir}/${mod_id}.mixins.json")
+        if (mixinConfigFile.exists()) {
+            def jsonSlurper = new JsonSlurper()
+            def mixinConfig = jsonSlurper.parse(mixinConfigFile)
+            mixinConfig.remove("refmap")
+            mixinConfigFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(mixinConfig))
+        }
     }
 }
 
@@ -81,10 +88,10 @@ publishMods {
     changelog = rootProject["publishOptions"]["changelog"] as String
 
     def publishOptions = publishOptions {
-        file = remapJar.archiveFile
-        additionalFiles.from(remapSourcesJar.archiveFile)
-        displayName = "Fabric v$version"
-        modLoaders.add("fabric")
+        file = jar.archiveFile
+        additionalFiles.from(sourcesJar.archiveFile)
+        displayName = "NeoForge v$version"
+        modLoaders.add("neoforge")
     }
 
     github {
@@ -94,11 +101,10 @@ publishMods {
 
     modrinth {
         from rootProject["publishOptions"]["modrinth"] as Provider<ModrinthOptions>, publishOptions as Provider<PublishOptions>
-        requires("fabric-api")
     }
 
     curseforge {
         from rootProject["publishOptions"]["curseforge"] as Provider<CurseforgeOptions>, publishOptions as Provider<PublishOptions>
-        requires("fabric-api")
     }
 }
+

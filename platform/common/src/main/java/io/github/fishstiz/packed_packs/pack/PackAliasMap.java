@@ -5,27 +5,40 @@ import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.DevConfig;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.repository.Pack;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
-/**
- * The vanilla available packs map is an immutable copy ({@link com.google.common.collect.ImmutableMap}) of a {@link TreeMap}.
- */
-public class PackAliasMap extends TreeMap<String, Pack> {
+// TreeMap in vanilla and fabric, LinkedHashMap in NeoForge
+public class PackAliasMap implements Map<String, Pack> {
     private final DevConfig.Packs config;
+    private final Map<String, Pack> map;
     private Set<String> unresolvedIds;
 
     public PackAliasMap(DevConfig.Packs config, Map<String, Pack> map) {
-        super(map);
         this.config = config;
+        this.map = map;
+    }
+
+    @Override
+    public int size() {
+        return this.map.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return this.map.isEmpty();
     }
 
     @Override
     public boolean containsKey(Object key) {
-        return super.containsKey(key) || this.resolvePackId(key) != null;
+        return this.map.containsKey(key) || this.resolvePackId(key) != null;
+    }
+
+    @Override
+    public boolean containsValue(Object value) {
+        return this.map.containsValue(value);
     }
 
     /**
@@ -33,11 +46,46 @@ public class PackAliasMap extends TreeMap<String, Pack> {
      */
     @Override
     public Pack get(Object key) {
-        Pack pack = super.get(key);
+        Pack pack = this.map.get(key);
         if (pack != null) {
             return pack;
         }
         return this.resolvePackId(key);
+    }
+
+    @Override
+    public @Nullable Pack put(String key, Pack value) {
+        return this.map.put(key, value);
+    }
+
+    @Override
+    public Pack remove(Object key) {
+        return this.map.remove(key);
+    }
+
+    @Override
+    public void putAll(@NotNull Map<? extends String, ? extends Pack> m) {
+        this.map.putAll(m);
+    }
+
+    @Override
+    public void clear() {
+        this.map.clear();
+    }
+
+    @Override
+    public @NotNull Set<String> keySet() {
+        return this.map.keySet();
+    }
+
+    @Override
+    public @NotNull Collection<Pack> values() {
+        return this.map.values();
+    }
+
+    @Override
+    public @NotNull Set<Entry<String, Pack>> entrySet() {
+        return this.map.entrySet();
     }
 
     private @Nullable Pack resolvePackId(Object key) {
@@ -50,7 +98,7 @@ public class PackAliasMap extends TreeMap<String, Pack> {
 
         String resolvedPackId = this.config.getAndSaveCanonicalId(Config.get().get(this.config.packType()).getProfiles(), packId);
         if (resolvedPackId != null) {
-            Pack resolvedPack = super.get(resolvedPackId);
+            Pack resolvedPack = this.map.get(resolvedPackId);
             if (resolvedPack != null) {
                 PackedPacks.LOGGER.info("[packed_packs] Resolved unknown pack '{}' to '{}'.", packId, resolvedPackId);
                 this.put(resolvedPackId, resolvedPack);

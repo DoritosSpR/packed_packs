@@ -57,6 +57,12 @@ public class CollectionsUtil {
         return result;
     }
 
+    public static <E> void forEach(E[] arr, Consumer<E> action) {
+        for (E e : arr) {
+            action.accept(e);
+        }
+    }
+
     public static <T> void forEachReverse(List<T> list, Consumer<T> action) {
         for (int i = list.size() - 1; i >= 0; i--) {
             action.accept(list.get(i));
@@ -159,7 +165,7 @@ public class CollectionsUtil {
     public static <T, K extends Comparable<? super K>> List<T> topoSort(
             Collection<T> collection,
             Function<T, K> keyFn,
-            Function<T, @Nullable K> predecessorKeyFn
+            Function<T, @Nullable K[]> predecessorKeysFn
     ) {
         Map<K, T> nodes = toMap(collection, keyFn);
         Map<K, Set<K>> successorMap = new Object2ObjectOpenHashMap<>(collection.size());
@@ -171,14 +177,15 @@ public class CollectionsUtil {
         }
 
         for (T node : collection) {
-            K predecessorKey = predecessorKeyFn.apply(node);
             K currentKey = keyFn.apply(node);
-
-            if (currentKey == null) continue;
-
-            if (predecessorKey != null && nodes.containsKey(predecessorKey)) {
-                successorMap.get(predecessorKey).add(currentKey);
-                inDegree.merge(currentKey, 1, Integer::sum);
+            K[] predecessorKeys = predecessorKeysFn.apply(node);
+            if (predecessorKeys != null) {
+                for (K predecessorKey : predecessorKeys) {
+                    if (predecessorKey != null && nodes.containsKey(predecessorKey)) {
+                        successorMap.get(predecessorKey).add(currentKey);
+                        inDegree.merge(currentKey, 1, Integer::sum);
+                    }
+                }
             }
         }
 

@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.compat.modmenu;
+package io.github.fishstiz.packed_packs.gui.screens;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.packed_packs.config.Config;
@@ -14,7 +14,7 @@ public class OptionsScreen extends Screen {
     private final Screen previous;
     private Layout body;
 
-    protected OptionsScreen(Screen previous) {
+    public OptionsScreen(Screen previous) {
         super(GuiConstants.OPTIONS_TEXT);
         this.previous = previous;
     }

@@ -13,11 +13,11 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(targets = "net.minecraft.client.gui.components.ScrollableLayout$Container")
 public abstract class ScrollableLayoutContainerMixin {
     @Final
-    @Shadow
-    ScrollableLayout field_60720;
+    @Shadow(aliases = { "field_60720", "this$0" })
+    ScrollableLayout scrollableLayout;
 
     @WrapOperation(method = "setX", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/layouts/Layout;setX(I)V"))
     private void removePaddingOnSet(Layout instance, int paddedX, Operation<Void> original, int x) {
-        original.call(instance, ((UnpaddedScrollableLayout) field_60720).fidgetz$unpadded() ? x : paddedX);
+        original.call(instance, ((UnpaddedScrollableLayout) scrollableLayout).fidgetz$unpadded() ? x : paddedX);
     }
 }

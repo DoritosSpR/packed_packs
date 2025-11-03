@@ -1,5 +1,6 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
+import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
 import io.github.fishstiz.fidgetz.util.text.AsyncStylizerFormatter;
 import io.github.fishstiz.fidgetz.transform.mixin.EditBoxAccess;
 import io.github.fishstiz.fidgetz.gui.Metadata;
@@ -28,6 +29,7 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
     private E metadata;
     private int focusedTextColor;
     private String previousValue;
+    private Component inactiveText = Component.empty();
 
     private ToggleableEditBox(Builder<E> builder) {
         super(builder.font, builder.x, builder.y, builder.width, builder.height, Component.literal(builder.value));
@@ -69,6 +71,11 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
         super.setEditable(enabled);
         this.moveCursorToStart(false);
         this.active = enabled;
+        this.updateInactiveText(this.getValue());
+    }
+
+    public Component getInactiveText() {
+        return this.inactiveText;
     }
 
     @Override
@@ -85,10 +92,17 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
     }
 
     public void setValueSilently(String value) {
-        super.setResponder(null);
-        this.setValue(value != null ? value : "");
+        value = value != null ? value : "";
+        super.setResponder(ObjectsUtil::nop);
+        this.setValue(value);
         this.updateTextColor();
-        this.previousValue = this.getValue();
+
+        String newValue = this.getValue();
+        if (!Objects.equals(this.previousValue, newValue)) {
+            this.previousValue = this.getValue();
+            this.updateInactiveText(value);
+        }
+
         super.setResponder(this::onRespond);
     }
 
@@ -97,9 +111,17 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
 
         if (!Objects.equals(this.previousValue, value)) {
             this.previousValue = value;
+            this.updateInactiveText(value);
+
             for (var listener : listeners) {
                 listener.accept(value);
             }
+        }
+    }
+
+    private void updateInactiveText(String value) {
+        if (!this.isEditing()) {
+            this.inactiveText = Component.literal(value);
         }
     }
 
