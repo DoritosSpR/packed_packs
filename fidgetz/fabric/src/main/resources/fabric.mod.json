@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "fidgetz",
-  "version": "${version}",
+  "id": "${mod_id}",
+  "version": "${mod_version}",
   "name": "${mod_name}",
-  "description": "${description}",
+  "description": "${mod_description}",
   "authors": [
     "${mod_author}"
   ],
@@ -12,6 +12,10 @@
   "mixins": [
     {
       "config": "fidgetz.mixins.json",
+      "environment": "client"
+    },
+    {
+      "config": "fidgetz.fabric.mixins.json",
       "environment": "client"
     }
   ],

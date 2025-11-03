@@ -1,0 +1,113 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import me.modmuss50.mpp.PublishOptions
+import me.modmuss50.mpp.ReleaseType
+import me.modmuss50.mpp.platforms.curseforge.CurseforgeOptions
+import me.modmuss50.mpp.platforms.github.GithubOptions
+import me.modmuss50.mpp.platforms.modrinth.ModrinthOptions
+
+plugins {
+    id 'multiloader-loader'
+    id 'net.neoforged.moddev'
+    id 'me.modmuss50.mod-publish-plugin'
+}
+
+neoForge {
+    version = neoforge_version
+
+    def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.from(at.absolutePath)
+    }
+
+    parchment {
+        minecraftVersion = parchment_minecraft
+        mappingsVersion = parchment_version
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+
+    runs {
+        client {
+            type = "client"
+            gameDirectory = project.file('run/client')
+            ideName = "NeoForge Client ($project.name)"
+        }
+    }
+}
+
+repositories {
+    maven { url = "https://raw.githubusercontent.com/fishstiz/maven/m2" }
+    maven { url = "https://maven.frohnmeyer-wds.de/artifacts" }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    api project(path: ":fidgetz:neoforge")
+    jarJar project(path: ":fidgetz:neoforge")
+
+    compileOnly "io.github.fishstiz:minecraft-cursor-common-api:$minecraft_cursor_version"
+    localRuntime "io.github.fishstiz:minecraft-cursor-neoforge:$minecraft_cursor_version"
+    compileOnly "maven.modrinth:resourcify:$resourcify_version"
+    compileOnly "maven.modrinth:respackopts:$respackopts_version"
+    compileOnly "io.gitlab.jfronny.libjf:libjf-resource-pack-entry-widgets-forge:$libjf_resource_pack_entry_widgets_version"
+}
+
+processResources {
+    doLast {
+        delete "${sourceSets.main.output.resourcesDir}/${mod_id}.accesswidener"
+
+        def mixinConfigFile = file("${sourceSets.main.output.resourcesDir}/${mod_id}.mixins.json")
+        if (mixinConfigFile.exists()) {
+            def jsonSlurper = new JsonSlurper()
+            def mixinConfig = jsonSlurper.parse(mixinConfigFile)
+            mixinConfig.remove("refmap")
+            mixinConfigFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(mixinConfig))
+        }
+    }
+}
+
+publishMods {
+    dryRun = rootProject["publishOptions"]["dryRun"] as boolean
+    type = rootProject["publishOptions"]["type"] as ReleaseType
+    changelog = rootProject["publishOptions"]["changelog"] as String
+
+    def publishOptions = publishOptions {
+        file = jar.archiveFile
+        additionalFiles.from(sourcesJar.archiveFile)
+        displayName = "NeoForge v$version"
+        modLoaders.add("neoforge")
+    }
+
+    github {
+        from rootProject["publishOptions"]["github"] as Provider<GithubOptions>, publishOptions as Provider<PublishOptions>
+        parent rootProject.tasks.named("publishGithub")
+    }
+
+    modrinth {
+        from rootProject["publishOptions"]["modrinth"] as Provider<ModrinthOptions>, publishOptions as Provider<PublishOptions>
+    }
+
+    curseforge {
+        from rootProject["publishOptions"]["curseforge"] as Provider<CurseforgeOptions>, publishOptions as Provider<PublishOptions>
+    }
+}
+

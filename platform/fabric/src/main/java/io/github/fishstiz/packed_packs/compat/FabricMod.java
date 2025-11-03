@@ -3,9 +3,6 @@ package io.github.fishstiz.packed_packs.compat;
 import net.fabricmc.loader.api.FabricLoader;
 
 public enum FabricMod implements ModContext {
-    RESOURCIFY("resourcify"),
-    RESPACKOPTS("respackopts"),
-    ETF("entity_texture_features"),
     VTD("vt_downloader");
 
     private final boolean loaded;

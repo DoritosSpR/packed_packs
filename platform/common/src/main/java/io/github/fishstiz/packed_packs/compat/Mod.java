@@ -3,7 +3,10 @@ package io.github.fishstiz.packed_packs.compat;
 import io.github.fishstiz.packed_packs.platform.Services;
 
 public enum Mod implements ModContext {
-    MINECRAFT_CURSOR("minecraft-cursor");
+    MINECRAFT_CURSOR("minecraft-cursor"),
+    RESOURCIFY("resourcify"),
+    RESPACKOPTS("respackopts"),
+    ETF("entity_texture_features");
 
     private final String id;
     private final boolean loaded;
