@@ -1,7 +1,6 @@
 package io.github.fishstiz.packed_packs.config;
 
 import com.google.common.hash.Hashing;
-import com.google.gson.*;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
