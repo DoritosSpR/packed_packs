@@ -31,15 +31,15 @@ pluginManagement {
 
 rootProject.name = 'packed_packs'
 include(':fidgetz')
-
 include(':fidgetz:fabric')
-project(':fidgetz:fabric').projectDir = file('fidgetz/fabric')
+include(':fidgetz:neoforge')
 
 include(':common')
 project(':common').projectDir = file('platform/common')
-
 include(':fabric')
 project(':fabric').projectDir = file('platform/fabric')
+include(':neoforge')
+project(':neoforge').projectDir = file('platform/neoforge')
 
 // https://github.com/gradle/gradle/issues/24680 workaround
 gradle.beforeProject { project ->

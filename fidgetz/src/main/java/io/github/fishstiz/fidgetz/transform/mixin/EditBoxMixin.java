@@ -19,12 +19,14 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
+import java.util.regex.Pattern;
+
 import static io.github.fishstiz.fidgetz.util.DrawUtil.renderScrollingStringLeftAlign;
 
 @Mixin(EditBox.class)
 public abstract class EditBoxMixin extends AbstractWidget implements EditBoxAccess {
     @Unique
-    private static final String fidgetz$SECTION_PLACEHOLDER = "fidgetz¶¶¶section¶¶¶placeholder";
+    private static final String fidgetz$SECTION_PLACEHOLDER = Pattern.quote("fidgetz¶¶¶section¶¶¶placeholder" + Math.random());
 
     @Unique
     private boolean fidgetz$allowPastingSectionSign = false;
@@ -35,9 +37,6 @@ public abstract class EditBoxMixin extends AbstractWidget implements EditBoxAcce
 
     @Shadow
     protected abstract boolean isEditable();
-
-    @Shadow
-    public abstract String getValue();
 
     @Override
     public void fidgetz$allowPastingSectionSign(boolean allow) {
@@ -50,11 +49,11 @@ public abstract class EditBoxMixin extends AbstractWidget implements EditBoxAcce
             ordinal = 0
     ))
     public void drawScrollingString(GuiGraphics guiGraphics, Font font, FormattedCharSequence text, int x, int y, int color, boolean shadow, Operation<Integer> original) {
-        if ((EditBox) (Object) this instanceof ToggleableEditBox && !this.isEditable()) {
+        if ((EditBox) (Object) this instanceof ToggleableEditBox<?> toggleableEditBox && !this.isEditable()) {
             renderScrollingStringLeftAlign(
                     guiGraphics,
                     font,
-                    Component.literal(this.getValue()),
+                    toggleableEditBox.getInactiveText(),
                     this.getX(),
                     this.getY(),
                     this.getRight(),

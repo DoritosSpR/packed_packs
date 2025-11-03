@@ -3,6 +3,7 @@ package io.github.fishstiz.packed_packs.compat.vtdownloader;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.compat.FabricMod;
+import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.ModContext;
 import io.github.fishstiz.packed_packs.compat.ModExtensionInternal;
 import io.github.fishstiz.packed_packs.config.Config;
@@ -23,8 +24,8 @@ public class VTDModExtension implements ModExtensionInternal {
     }
 
     @Override
-    public @Nullable ResourceLocation loadAfter() {
-        return FabricMod.RESPACKOPTS.getInternalId();
+    public @Nullable ResourceLocation[] loadAfter() {
+        return new ResourceLocation[]{Mod.RESPACKOPTS.getInternalId(), Mod.ETF.getInternalId()};
     }
 
     @Override

@@ -56,23 +56,13 @@ jar {
     }
 }
 
-configurations {
-    commonJava {
-        canBeResolved = true
-    }
-    commonResources {
-        canBeResolved = true
-    }
-}
-
 processResources {
     var expandProps = [
-            'group'                           : maven_group,
-            'version'                         : mod_version,
+            'mod_version'                     : mod_version,
             'mod_id'                          : mod_id,
             'mod_name'                        : mod_name,
             'mod_author'                      : mod_author,
-            'description'                     : mod_description,
+            'mod_description'                 : mod_description,
             'license'                         : license,
             'sources'                         : sources,
             'issues'                          : issues,
@@ -80,8 +70,9 @@ processResources {
             'fabric_loader_version'           : fabric_loader_version,
             'fabric_api_version'              : fabric_api_version,
             'fabric_minecraft_version_range'  : fabric_minecraft_version_range,
-            'neoforge_version'                : neoforge_version,
             'neoforge_loader_version_range'   : neoforge_loader_version_range,
+            'neoforge_version'                : neoforge_version,
+            'neoforge_version_range'          : neoforge_version_range,
             'neoforge_minecraft_version_range': neoforge_minecraft_version_range,
             'credits'                         : credits,
             'java_version'                    : java_version
@@ -99,22 +90,5 @@ processResources {
     }
 
     inputs.properties(expandProps)
-}
-
-tasks.named('compileJava', JavaCompile) {
-    dependsOn(configurations.commonJava)
-    source(configurations.commonJava)
-}
-
-processResources {
-    dependsOn(configurations.commonResources)
-    from(configurations.commonResources)
-}
-
-tasks.named('sourcesJar', Jar) {
-    dependsOn(configurations.commonJava)
-    from(configurations.commonJava)
-    dependsOn(configurations.commonResources)
-    from(configurations.commonResources)
 }
 

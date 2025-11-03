@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.screens;
 
+import io.github.fishstiz.packed_packs.compat.minecraftcursor.MinecraftCursor;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;

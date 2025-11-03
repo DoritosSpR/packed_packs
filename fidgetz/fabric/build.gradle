@@ -4,10 +4,6 @@ plugins {
 }
 
 dependencies {
-    compileOnlyApi project(path: ":fidgetz")
-    commonJava project(path: ":fidgetz", configuration: "commonJava")
-    commonResources project(path: ":fidgetz", configuration: "commonResources")
-
     minecraft "com.mojang:minecraft:$minecraft_version"
     mappings loom.layered {
         officialMojangMappings()
@@ -32,3 +28,8 @@ loom {
     }
 }
 
+processResources {
+    doLast {
+        delete "$sourceSets.main.output.resourcesDir/META-INF/accesstransformer.cfg"
+    }
+}

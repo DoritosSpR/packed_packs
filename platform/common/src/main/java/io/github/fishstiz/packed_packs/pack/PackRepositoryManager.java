@@ -253,7 +253,7 @@ public class PackRepositoryManager {
     }
 
     public void refresh() {
-        ((PackSelectionModelAccessor) this.model).packed_packs$reset();
+        this.refreshModel();
         this.model.findNewPacks();
         this.regenerateAvailablePacks();
     }

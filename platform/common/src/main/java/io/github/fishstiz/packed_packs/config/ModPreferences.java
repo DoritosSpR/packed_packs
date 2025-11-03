@@ -1,16 +1,16 @@
 package io.github.fishstiz.packed_packs.config;
 
-import io.github.fishstiz.packed_packs.compat.FabricMod;
+import io.github.fishstiz.packed_packs.compat.Mod;
 import io.github.fishstiz.packed_packs.compat.ModContext;
 
-public enum FabricPreferences implements Preferences.Spec<Boolean> {
-    VTD_BUTTON(FabricMod.VTD, "vtd_button"),
-    VTD_EDIT_BUTTON(FabricMod.VTD, "vtd_edit_button");
+public enum ModPreferences implements Preferences.Spec<Boolean> {
+    ETF_BUTTON(Mod.ETF, "etf_button"),
+    RESPACKOPTS_BUTTON(Mod.RESPACKOPTS, "respackopts_button");
 
     private final ModContext mod;
     private final String key;
 
-    FabricPreferences(ModContext mod, String key) {
+    ModPreferences(ModContext mod, String key) {
         this.mod = mod;
         this.key = key;
     }
