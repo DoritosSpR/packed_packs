@@ -102,13 +102,6 @@ jar {
     }
 }
 
-Properties secrets = new Properties()
-File secretsFile = project.rootProject.file('local.properties')
-
-if (secretsFile.exists()) {
-    secrets.load(secretsFile.newDataInputStream())
-}
-
 publishMods {
     file = remapJar.archiveFile
     additionalFiles.from(remapSourcesJar.archiveFile)
@@ -118,21 +111,21 @@ publishMods {
     modLoaders.add("fabric")
 
     github {
-        accessToken = secrets.getProperty("GITHUB_TOKEN")
+        accessToken = findProperty("GITHUB_TOKEN") ?: ""
         repository = "fishstiz/packed_packs"
         commitish = "mc/$minecraft_version"
         tagName = "v$mod_version"
     }
 
     modrinth {
-        accessToken = secrets.getProperty("MODRINTH_TOKEN")
+        accessToken = findProperty("MODRINTH_TOKEN") ?: ""
         projectId = "8Pq6Exn2"
         minecraftVersions.add(minecraft_version)
         requires("fabric-api")
     }
 
     curseforge {
-        accessToken = secrets.getProperty("CURSEFORGE_TOKEN")
+        accessToken = findProperty("CURSEFORGE_TOKEN") ?: ""
         projectId = "1260514"
         minecraftVersions.add(minecraft_version)
         clientRequired = true
