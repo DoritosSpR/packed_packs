@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "Pack packs into profiles with multiple selection, drag and drop, and extended mouse and keyboard controls.",
+  "authors": [
+    "${mod_author}"
+  ],
+  "contributors": [
+    "${credits}"
+  ],
+  "contact": {
+    "sources": "${sources}",
+    "issues": "${issues}"
+  },
+  "license": "${license}",
+  "icon": "icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "modmenu": [
+      "io.github.fishstiz.packed_packs.compat.modmenu.PackedPacksModMenu"
+    ],
+    "packed_packs": [
+      "io.github.fishstiz.packed_packs.compat.etf.ETFModExtension",
+      "io.github.fishstiz.packed_packs.compat.resourcify.ResourcifyModExtension",
+      "io.github.fishstiz.packed_packs.compat.respackopts.RespackoptsModExtension",
+      "io.github.fishstiz.packed_packs.compat.vtdownloader.VTDModExtension"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "${mod_id}.mixins.json",
+      "environment": "client"
+    },
+    {
+      "config": "${mod_id}.fabric.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "accessWidener": "${mod_id}.accesswidener",
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "minecraft": "${fabric_minecraft_version_range}",
+    "java": ">=${java_version}",
+    "fabric-api": "*"
+  }
+}
