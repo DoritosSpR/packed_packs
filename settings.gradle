@@ -35,11 +35,11 @@ include(':fidgetz:fabric')
 include(':fidgetz:neoforge')
 
 include(':common')
-project(':common').projectDir = file('platform/common')
+project(':common').projectDir = file('mod/common')
 include(':fabric')
-project(':fabric').projectDir = file('platform/fabric')
+project(':fabric').projectDir = file('mod/fabric')
 include(':neoforge')
-project(':neoforge').projectDir = file('platform/neoforge')
+project(':neoforge').projectDir = file('mod/neoforge')
 
 // https://github.com/gradle/gradle/issues/24680 workaround
 gradle.beforeProject { project ->
