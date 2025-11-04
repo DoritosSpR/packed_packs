@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.config;
 
 import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
+import io.github.fishstiz.fidgetz.util.lang.FunctionsUtil;
 import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -32,7 +33,7 @@ public class Profiles {
     }
 
     public static @Nullable Profile get(PackType packType, String id) {
-        Profile profile = loadJsonOrDefault(getFile(packType, id), Profile.class, ObjectsUtil::alwaysNull);
+        Profile profile = loadJsonOrDefault(getFile(packType, id), Profile.class, FunctionsUtil.nullSupplier());
         if (profile != null) profile.lockId(id);
         return profile;
     }

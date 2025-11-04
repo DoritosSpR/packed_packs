@@ -4,7 +4,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.ARGBColor;
-import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
+import io.github.fishstiz.fidgetz.util.lang.FunctionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
@@ -19,7 +19,7 @@ import java.util.function.Supplier;
 public class MenuItemBuilder {
     private final List<MenuItem> children = new ObjectArrayList<>();
     private final Component text;
-    private Runnable action = ObjectsUtil::nop;
+    private Runnable action = FunctionsUtil.nop();
     private RenderableRect background;
     private Supplier<@Nullable Sprite> iconSupplier;
     private Supplier<Tooltip> tooltipSupplier;
