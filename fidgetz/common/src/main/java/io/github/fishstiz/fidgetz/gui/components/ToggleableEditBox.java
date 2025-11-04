@@ -1,6 +1,6 @@
 package io.github.fishstiz.fidgetz.gui.components;
 
-import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
+import io.github.fishstiz.fidgetz.util.lang.FunctionsUtil;
 import io.github.fishstiz.fidgetz.util.text.AsyncStylizerFormatter;
 import io.github.fishstiz.fidgetz.transform.mixin.EditBoxAccess;
 import io.github.fishstiz.fidgetz.gui.Metadata;
@@ -93,7 +93,7 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
 
     public void setValueSilently(String value) {
         value = value != null ? value : "";
-        super.setResponder(ObjectsUtil::nop);
+        super.setResponder(FunctionsUtil.nopConsumer());
         this.setValue(value);
         this.updateTextColor();
 

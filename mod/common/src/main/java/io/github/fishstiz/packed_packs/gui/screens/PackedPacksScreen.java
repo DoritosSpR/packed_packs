@@ -6,6 +6,7 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.util.lang.FunctionsUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
 import io.github.fishstiz.packed_packs.config.*;
@@ -185,7 +186,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         List<Profile> profiles = this.options.getUserConfig().getProfiles();
         this.options.getUserConfig().setProfileOrder(profiles);
 
-        Runnable profileSaver = profile != null ? () -> Profiles.save(this.original.packType(), profile) : ObjectsUtil::nop;
+        Runnable profileSaver = profile != null ? () -> Profiles.save(this.original.packType(), profile) : FunctionsUtil.nop();
         AsyncUtil.submitAndWait(
                 Util.backgroundExecutor(),
                 profileSaver,
