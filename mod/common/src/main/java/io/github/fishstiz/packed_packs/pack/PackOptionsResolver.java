@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.pack;
 
+import io.github.fishstiz.fidgetz.util.lang.FunctionsUtil;
 import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.config.PackOptions;
 import io.github.fishstiz.packed_packs.config.Profile;
@@ -23,7 +24,7 @@ public record PackOptionsResolver(
     public static final PackOptionsResolver RESOURCE_PACKS = new PackOptionsResolver(DevConfig.get().get(PackType.CLIENT_RESOURCES));
 
     public PackOptionsResolver(DevConfig.Packs config) {
-        this(() -> null, config);
+        this(FunctionsUtil.nullSupplier(), config);
     }
 
     @Override

@@ -67,14 +67,4 @@ public class ObjectsUtil {
         action.accept(value);
         return value;
     }
-
-    public static <T> void nop(T ignored) {
-    }
-
-    public static void nop() {
-    }
-
-    public static <T> T alwaysNull() {
-        return null;
-    }
 }
