@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.pack;
 
 import com.google.common.collect.ImmutableList;
+import io.github.fishstiz.fidgetz.util.lang.FunctionsUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.config.Folder;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
@@ -59,7 +60,7 @@ public class PackRepositoryManager {
     }
 
     private void refreshModel() {
-        this.model = new PackSelectionModel(ObjectsUtil::nop, PackAssetManager::getDefaultLocation, this.repository, ObjectsUtil::nop);
+        this.model = new PackSelectionModel(FunctionsUtil.nop(), PackAssetManager::getDefaultLocation, this.repository, FunctionsUtil.nopConsumer());
         ((PackSelectionModelAccessor) this.model).packed_packs$filterHidden(false);
     }
 
