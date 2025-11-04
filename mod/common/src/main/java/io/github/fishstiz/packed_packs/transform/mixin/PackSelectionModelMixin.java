@@ -1,5 +1,6 @@
 package io.github.fishstiz.packed_packs.transform.mixin;
 
+import io.github.fishstiz.fidgetz.util.lang.FunctionsUtil;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.Pack;
@@ -32,10 +33,6 @@ public abstract class PackSelectionModelMixin implements PackSelectionModelAcces
 
     @Shadow
     @Final
-    Consumer<PackSelectionModel.EntryBase> onListChanged;
-
-    @Shadow
-    @Final
     private Consumer<PackRepository> output;
 
     @Override
@@ -43,7 +40,7 @@ public abstract class PackSelectionModelMixin implements PackSelectionModelAcces
         // needs to be reset when packs are updated in PackedPacksScreen, and user returns to original screen
 
         PackSelectionModelAccessor model = (PackSelectionModelAccessor) new PackSelectionModel(
-                this.onListChanged,
+                FunctionsUtil.nop(),
                 this.iconGetter,
                 this.repository,
                 this.output
