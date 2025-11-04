@@ -1,2 +1,4 @@
-- Fixed being unable to move folder pack entries by dragging and dropping.
-- Updated Ukrainian Translation ([#35](https://github.com/fishstiz/packed_packs/pull/35))
+- Added NeoForge support
+- Fixed hidden packs from mod loader sometimes being shown when navigating to the original screen.
+- Fixed last selected highlight being removed when packs are refreshed.
+- 1.21.1: Fixed context menu consuming clicks on clipped area when scrolled.
