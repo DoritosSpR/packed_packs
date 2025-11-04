@@ -79,7 +79,7 @@ publishMods {
     def publishOptions = publishOptions {
         file = remapJar.archiveFile
         additionalFiles.from(remapSourcesJar.archiveFile)
-        displayName = "Fabric v$version"
+        displayName = "Fabric v${this.version}"
         modLoaders.add("fabric")
     }
 

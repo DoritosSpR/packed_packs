@@ -78,7 +78,7 @@ publishMods {
     def publishOptions = publishOptions {
         file = jar.archiveFile
         additionalFiles.from(sourcesJar.archiveFile)
-        displayName = "NeoForge v$version"
+        displayName = "NeoForge v${this.version}"
         modLoaders.add("neoforge")
     }
 
