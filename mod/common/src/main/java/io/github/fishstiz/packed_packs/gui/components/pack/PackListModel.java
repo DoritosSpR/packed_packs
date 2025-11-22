@@ -8,7 +8,7 @@ import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Collections;
 import java.util.List;
@@ -221,7 +221,7 @@ public class PackListModel extends SelectableList<Pack> implements Restorable<Pa
     }
 
     @Override
-    public void replaceState(@NotNull Snapshot snapshot) {
+    public void replaceState(@NonNull Snapshot snapshot) {
         this.replaceAll(snapshot.packs);
         this.clearSelection();
         this.selectedItems.addAll(snapshot.selection);
@@ -230,7 +230,7 @@ public class PackListModel extends SelectableList<Pack> implements Restorable<Pa
     }
 
     @Override
-    public @NotNull Snapshot captureState(String eventName) {
+    public @NonNull Snapshot captureState(String eventName) {
         return new Snapshot(this, List.copyOf(this.items), List.copyOf(this.selectedItems), new Query(this.query));
     }
 

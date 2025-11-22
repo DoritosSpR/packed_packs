@@ -8,7 +8,7 @@ import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.network.chat.CommonComponents;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.SPACING;
 
@@ -33,9 +33,9 @@ public abstract class PackLayout {
                 .build();
     }
 
-    protected abstract void initHeader(@NotNull FlexLayout header);
+    protected abstract void initHeader(@NonNull FlexLayout header);
 
-    public final void init(@NotNull FlexLayout layout) {
+    public final void init(@NonNull FlexLayout layout) {
         this.headerLayout = FlexLayout.horizontal(this.list::getWidth).spacing(SPACING);
         this.initHeader(headerLayout);
 

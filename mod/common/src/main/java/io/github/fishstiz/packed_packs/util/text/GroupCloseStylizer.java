@@ -2,7 +2,7 @@ package io.github.fishstiz.packed_packs.util.text;
 
 import io.github.fishstiz.fidgetz.util.text.TextStylizer;
 import net.minecraft.network.chat.Style;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.function.Predicate;
 

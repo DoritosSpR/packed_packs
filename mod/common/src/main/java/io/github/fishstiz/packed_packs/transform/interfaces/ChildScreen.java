@@ -1,7 +1,7 @@
 package io.github.fishstiz.packed_packs.transform.interfaces;
 
 import net.minecraft.client.gui.screens.Screen;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public interface ChildScreen {
     void packed_packs$setPrevious(Screen previous);

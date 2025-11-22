@@ -4,8 +4,8 @@ import io.github.fishstiz.fidgetz.util.GuiUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public abstract class AbstractFixedListWidget<T extends AbstractFixedListWidget<T>.Entry> extends ContainerObjectSelectionList<T> {
     protected static final int DEFAULT_SCROLLBAR_OFFSET = 6;
@@ -160,7 +160,7 @@ public abstract class AbstractFixedListWidget<T extends AbstractFixedListWidget<
         }
 
         @Override
-        public @NotNull ScreenRectangle getRectangle() {
+        public @NonNull ScreenRectangle getRectangle() {
             return new ScreenRectangle(this.getX(), this.getY(), this.getWidth(), this.getHeight());
         }
 

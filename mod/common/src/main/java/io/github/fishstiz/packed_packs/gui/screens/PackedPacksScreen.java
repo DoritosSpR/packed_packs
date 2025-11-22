@@ -53,7 +53,6 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -686,7 +685,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    public boolean charTyped(@NotNull CharacterEvent charEvent) {
+    public boolean charTyped(@NonNull CharacterEvent charEvent) {
         if (super.charTyped(charEvent)) {
             return true;
         }
@@ -719,7 +718,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    public boolean keyPressed(@NotNull KeyEvent keyEvent) {
+    public boolean keyPressed(@NonNull KeyEvent keyEvent) {
         this.contextMenu.setOpen(false);
 
         if (isDeveloperMode(keyEvent)) {
@@ -842,7 +841,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.hoveredElement = this.findHovered(mouseX, mouseY);
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);

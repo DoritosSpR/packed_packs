@@ -4,8 +4,8 @@ import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.input.MouseButtonEvent;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -26,7 +26,7 @@ public interface DragEventHandler extends ContainerEventHandler {
         }
     }
 
-    default void onRelease(@NotNull DragEvent event, double mouseX, double mouseY) {
+    default void onRelease(@NonNull DragEvent event, double mouseX, double mouseY) {
         Optional<GuiEventListener> child = this.getChildAt(mouseX, mouseY);
         if (child.isPresent() && child.get() instanceof PackList packList) {
             packList.drop(event, mouseX, mouseY);
@@ -34,7 +34,7 @@ public interface DragEventHandler extends ContainerEventHandler {
     }
 
     @Override
-    default boolean mouseDragged(MouseButtonEvent mouseButtonEvent, double dragX, double dragY) {
+    default boolean mouseDragged(@NonNull MouseButtonEvent mouseButtonEvent, double dragX, double dragY) {
         if (this.isDraggingSelection()) {
             return true;
         }
@@ -43,7 +43,7 @@ public interface DragEventHandler extends ContainerEventHandler {
     }
 
     @Override
-    default boolean mouseReleased(MouseButtonEvent mouseButtonEvent) {
+    default boolean mouseReleased(@NonNull MouseButtonEvent mouseButtonEvent) {
         DragEvent event = this.getDragged();
 
         if (isLeftClick(mouseButtonEvent) && event != null) {

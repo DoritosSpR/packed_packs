@@ -4,7 +4,7 @@ import com.google.gson.*;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -25,7 +25,7 @@ public final class PackOverride implements Serializable {
     public PackOverride() {
     }
 
-    public PackOverride(@Nullable Boolean hidden, @Nullable Boolean required, @Nullable PackOverride.Position position) {
+    public PackOverride(@Nullable Boolean hidden, @Nullable Boolean required, PackOverride.@Nullable Position position) {
         this.hidden = hidden;
         this.required = required;
         this.position = position;

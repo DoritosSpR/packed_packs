@@ -7,7 +7,8 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.FormattedCharSink;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
@@ -35,7 +36,7 @@ public class AsyncStylizerFormatter implements EditBox.TextFormatter {
     }
 
     @Override
-    public @Nullable FormattedCharSequence format(String displayText, int displayPos) {
+    public @Nullable FormattedCharSequence format(@NonNull String displayText, int displayPos) {
         String currentText = this.textSupplier.get();
         if (currentText.isBlank()) return null;
 
@@ -80,7 +81,7 @@ public class AsyncStylizerFormatter implements EditBox.TextFormatter {
         int displayEnd;
 
         @Override
-        public boolean accept(FormattedCharSink sink) {
+        public boolean accept(@NonNull FormattedCharSink sink) {
             String currentText = this.text;
             int start = Math.max(0, displayPos);
             int end = Math.min(Math.min(currentText.length(), displayEnd), Math.max(this.charStyles.size(), currentText.length()));

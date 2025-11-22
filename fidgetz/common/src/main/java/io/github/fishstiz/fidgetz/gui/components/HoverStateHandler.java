@@ -3,7 +3,7 @@ package io.github.fishstiz.fidgetz.gui.components;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public interface HoverStateHandler extends ContainerEventHandler {
     @Nullable GuiEventListener getHovered();

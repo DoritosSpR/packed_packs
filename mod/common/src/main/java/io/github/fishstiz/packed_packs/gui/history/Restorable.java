@@ -1,17 +1,17 @@
 package io.github.fishstiz.packed_packs.gui.history;
 
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 public interface Restorable<T extends Restorable.Snapshot<T>> {
     String DEFAULT_EVENT_NAME = "Event";
 
-    @NotNull T captureState(String eventName);
+    @NonNull T captureState(String eventName);
 
-    default @NotNull T captureState() {
+    default @NonNull T captureState() {
         return this.captureState(DEFAULT_EVENT_NAME);
     }
 
-    void replaceState(@NotNull T snapshot);
+    void replaceState(@NonNull T snapshot);
 
     interface Snapshot<T extends Snapshot<T>> {
         Restorable<T> target();

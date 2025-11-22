@@ -12,8 +12,8 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -135,12 +135,12 @@ public class EditableList<T> extends AbstractFixedListWidget<EditableList<T>.Abs
         }
 
         @Override
-        public @NotNull List<AbstractWidget> children() {
+        public @NonNull List<AbstractWidget> children() {
             return this.widgets;
         }
 
         @Override
-        public @NotNull List<AbstractWidget> narratables() {
+        public @NonNull List<AbstractWidget> narratables() {
             return this.widgets;
         }
 

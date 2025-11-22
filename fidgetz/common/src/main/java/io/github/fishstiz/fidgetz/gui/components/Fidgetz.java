@@ -5,7 +5,7 @@ import io.github.fishstiz.fidgetz.util.GuiUtil;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 public interface Fidgetz extends GuiEventListener, GuiRectangle, LayoutElement {
     default boolean isHovered(double mouseX, double mouseY) {
@@ -18,7 +18,7 @@ public interface Fidgetz extends GuiEventListener, GuiRectangle, LayoutElement {
     }
 
     @Override
-    default @NotNull ScreenRectangle getRectangle() {
+    default @NonNull ScreenRectangle getRectangle() {
         return LayoutElement.super.getRectangle();
     }
 }

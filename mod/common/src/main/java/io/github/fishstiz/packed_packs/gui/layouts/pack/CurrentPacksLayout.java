@@ -7,7 +7,7 @@ import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 public final class CurrentPacksLayout extends PackLayout {
     public CurrentPacksLayout(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
@@ -15,7 +15,7 @@ public final class CurrentPacksLayout extends PackLayout {
     }
 
     @Override
-    protected void initHeader(@NotNull FlexLayout header) {
+    protected void initHeader(@NonNull FlexLayout header) {
         this.getTransferButton().setMessage(Component.literal("<<"));
 
         header.addChild(this.getTransferButton());

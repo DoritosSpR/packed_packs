@@ -1,7 +1,7 @@
 package io.github.fishstiz.fidgetz.util.lang;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -38,24 +38,24 @@ public class ObjectsUtil {
 
     @SafeVarargs
     @SuppressWarnings("varargs")
-    public static <E> @NotNull E firstNonNullOrDefault(@NotNull E defaultValue, E... args) {
+    public static <E> @NonNull E firstNonNullOrDefault(@NonNull E defaultValue, E... args) {
         E value = firstNonNull(args);
         return value != null ? value : Objects.requireNonNull(defaultValue);
     }
 
-    public static <E> boolean testNullable(@Nullable E obj, Predicate<@NotNull E> predicate) {
+    public static <E> boolean testNullable(@Nullable E obj, Predicate<@NonNull E> predicate) {
         return obj != null && predicate.test(obj);
     }
 
-    public static <T, R> R mapOrDefault(T obj, R defaultValue, Function<@NotNull T, R> mapper) {
+    public static <T, R> R mapOrDefault(T obj, R defaultValue, Function<@NonNull T, R> mapper) {
         return obj != null ? mapper.apply(obj) : defaultValue;
     }
 
-    public static <T, R> @Nullable R mapOrNull(T obj, Function<@NotNull T, R> mapper) {
+    public static <T, R> @Nullable R mapOrNull(T obj, Function<@NonNull T, R> mapper) {
         return mapOrDefault(obj, null, mapper);
     }
 
-    public static <T> void ifPresent(T obj, Consumer<T> consumer) {
+    public static <T> void ifPresent(T obj, Consumer<@NonNull T> consumer) {
         if (obj != null) consumer.accept(obj);
     }
 

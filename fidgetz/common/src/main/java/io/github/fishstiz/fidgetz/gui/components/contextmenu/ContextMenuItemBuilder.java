@@ -1,7 +1,7 @@
 package io.github.fishstiz.fidgetz.gui.components.contextmenu;
 
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.*;
 import java.util.function.*;
@@ -202,7 +202,7 @@ public class ContextMenuItemBuilder {
         }
 
         @Override
-        public PredicateElseChain<T> ifTrue(BiConsumer<@NotNull T, ContextMenuItemBuilder> builderAction) {
+        public PredicateElseChain<T> ifTrue(BiConsumer<@NonNull T, ContextMenuItemBuilder> builderAction) {
             if (this.condition) builderAction.accept(Objects.requireNonNull(this.t), this.builder);
             return new PredicateElseChain<>(this.builder, this.condition, this.t);
         }

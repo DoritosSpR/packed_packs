@@ -5,8 +5,8 @@ import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.DevConfig;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 
@@ -64,7 +64,7 @@ public class PackAliasMap implements Map<String, Pack> {
     }
 
     @Override
-    public void putAll(@NotNull Map<? extends String, ? extends Pack> m) {
+    public void putAll(@NonNull Map<? extends String, ? extends Pack> m) {
         this.map.putAll(m);
     }
 
@@ -74,17 +74,17 @@ public class PackAliasMap implements Map<String, Pack> {
     }
 
     @Override
-    public @NotNull Set<String> keySet() {
+    public @NonNull Set<String> keySet() {
         return this.map.keySet();
     }
 
     @Override
-    public @NotNull Collection<Pack> values() {
+    public @NonNull Collection<Pack> values() {
         return this.map.values();
     }
 
     @Override
-    public @NotNull Set<Entry<String, Pack>> entrySet() {
+    public @NonNull Set<Entry<String, Pack>> entrySet() {
         return this.map.entrySet();
     }
 

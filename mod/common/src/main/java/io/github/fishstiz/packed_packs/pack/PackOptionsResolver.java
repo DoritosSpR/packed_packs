@@ -7,8 +7,8 @@ import io.github.fishstiz.packed_packs.config.Profile;
 import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.function.*;
@@ -42,7 +42,7 @@ public record PackOptionsResolver(
     }
 
     @Override
-    public @Nullable Pack.Position getPosition(Pack pack) {
+    public Pack.@Nullable Position getPosition(Pack pack) {
         return this.inDefaultOrSelected(pack, Profile::overridesPosition, Profile::getPosition);
     }
 
@@ -59,11 +59,11 @@ public record PackOptionsResolver(
         return this.inDefaultOrSelected(pack, Profile::overridesPosition, Profile::isFixed, Pack::isFixedPosition);
     }
 
-    public @NotNull Pack.Position getPositionOrDefault(Pack pack) {
+    public Pack.@NonNull Position getPositionOrDefault(Pack pack) {
         return Objects.requireNonNull(this.inDefaultOrSelected(pack, Profile::overridesPosition, Profile::getPosition, Pack::getDefaultPosition));
     }
 
-    public @NotNull PackSelectionConfig getSelectionConfigOrDefault(Pack pack) {
+    public @NonNull PackSelectionConfig getSelectionConfigOrDefault(Pack pack) {
         return Objects.requireNonNull(this.getOrDefault(pack, PackOptions::getSelectionConfig, Objects::nonNull, Pack::selectionConfig));
     }
 

@@ -7,7 +7,7 @@ import io.github.fishstiz.packed_packs.pack.PackFileOperations;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 public class FolderPackList extends CurrentPackList {
     public FolderPackList(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
@@ -15,7 +15,7 @@ public class FolderPackList extends CurrentPackList {
     }
 
     @Override
-    protected @NotNull Entry createEntry(SelectionContext<Pack> context, int index) {
+    protected @NonNull Entry createEntry(SelectionContext<Pack> context, int index) {
         return new SubPackEntry(context, index);
     }
 

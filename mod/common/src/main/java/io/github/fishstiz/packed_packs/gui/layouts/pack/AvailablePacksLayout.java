@@ -18,7 +18,7 @@ import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 public final class AvailablePacksLayout extends PackLayout {
     private static final Component SORT_TEXT = ResourceUtil.getText("sort");
@@ -46,7 +46,7 @@ public final class AvailablePacksLayout extends PackLayout {
     }
 
     @Override
-    protected void initHeader(@NotNull FlexLayout header) {
+    protected void initHeader(@NonNull FlexLayout header) {
         this.sortButton = CyclicButton.<Query.SortOption, Void>builder(Query.SortOption.values())
                 .setPrefix(SORT_TEXT)
                 .makeSquare()

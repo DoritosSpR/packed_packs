@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.transform.interfaces;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 

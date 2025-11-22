@@ -10,7 +10,7 @@ import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -152,13 +152,13 @@ public class Profile implements PackOptions, Serializable {
         }
     }
 
-    public void setPosition(@Nullable PackOverride.Position position, Collection<Pack> packs) {
+    public void setPosition(PackOverride.@Nullable Position position, Collection<Pack> packs) {
         for (Pack pack : PackUtil.flattenPacks(packs)) {
             this.setPosition(position, pack);
         }
     }
 
-    public void setPosition(@Nullable PackOverride.Position position, Pack pack) {
+    public void setPosition(PackOverride.@Nullable Position position, Pack pack) {
         this.applyOrRemoveOverride(pack.getId(), position, PackOverride::setPosition);
     }
 
@@ -189,14 +189,14 @@ public class Profile implements PackOptions, Serializable {
     }
 
     @Override
-    public @Nullable Pack.Position getPosition(Pack pack) {
+    public Pack.@Nullable Position getPosition(Pack pack) {
         if (this.overridesPosition(pack)) {
             return Objects.requireNonNull(this.overrides.get(pack.getId()).position()).get(pack);
         }
         return null;
     }
 
-    public @Nullable PackOverride.Position getPositionOverride(Pack pack) {
+    public PackOverride.@Nullable Position getPositionOverride(Pack pack) {
         if (this.overridesPosition(pack)) {
             return this.overrides.get(pack.getId()).position();
         }

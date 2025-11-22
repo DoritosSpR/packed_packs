@@ -10,8 +10,8 @@ import io.github.fishstiz.packed_packs.util.PackUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.Locale;
@@ -108,7 +108,7 @@ public record Query(
         }
 
         @Override
-        public @NotNull Component text() {
+        public @NonNull Component text() {
             return this.component;
         }
 

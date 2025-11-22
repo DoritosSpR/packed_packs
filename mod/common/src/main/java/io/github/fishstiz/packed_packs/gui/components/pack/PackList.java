@@ -37,8 +37,8 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 
@@ -69,7 +69,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         this.list = new PackListModel(this.options);
     }
 
-    protected abstract @NotNull Entry createEntry(SelectionContext<Pack> context, int index);
+    protected abstract @NonNull Entry createEntry(SelectionContext<Pack> context, int index);
 
     public @Nullable Entry getEntry(@Nullable Pack pack) {
         if (pack == null) return null;
@@ -108,7 +108,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         this.refresh();
     }
 
-    public @NotNull List<Pack> copyPacks() {
+    public @NonNull List<Pack> copyPacks() {
         return List.copyOf(this.list.getItems());
     }
 
@@ -139,7 +139,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         }
     }
 
-    public void search(@NotNull String search) {
+    public void search(@NonNull String search) {
         if (this.list.search(search)) {
             this.refresh();
         }
@@ -395,11 +395,11 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         return maxScrollAmount > 0 ? maxScrollAmount + Y_OFFSET : maxScrollAmount;
     }
 
-    public @NotNull Snapshot captureState(String eventName) {
+    public @NonNull Snapshot captureState(String eventName) {
         return new Snapshot(this);
     }
 
-    public void replaceState(@NotNull Snapshot snapshot) {
+    public void replaceState(@NonNull Snapshot snapshot) {
         snapshot.model.restore();
         this.refreshEntries();
         this.setFocused(this.getEntry(snapshot.focused));
@@ -746,12 +746,12 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         }
 
         @Override
-        public @NotNull List<GuiEventListener> children() {
+        public @NonNull List<GuiEventListener> children() {
             return this.children;
         }
 
         @Override
-        public @NotNull List<NarratableEntry> narratables() {
+        public @NonNull List<NarratableEntry> narratables() {
             return this.narratables;
         }
     }

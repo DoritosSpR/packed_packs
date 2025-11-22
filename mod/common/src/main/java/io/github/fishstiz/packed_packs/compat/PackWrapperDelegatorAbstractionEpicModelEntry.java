@@ -7,36 +7,37 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackCompatibility;
 import net.minecraft.server.packs.repository.PackSource;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public record PackWrapperDelegatorAbstractionEpicModelEntry(Pack pack) implements PackSelectionModel.Entry {
     @Override
-    public @NotNull Identifier getIconTexture() {
+    public Identifier getIconTexture() {
         return PackAssetManager.getDefaultLocation(pack);
     }
 
     @Override
-    public @NotNull PackCompatibility getCompatibility() {
+    public PackCompatibility getCompatibility() {
         return pack.getCompatibility();
     }
 
     @Override
-    public @NotNull String getId() {
+    public String getId() {
         return pack.getId();
     }
 
     @Override
-    public @NotNull Component getTitle() {
+    public Component getTitle() {
         return pack.getTitle();
     }
 
     @Override
-    public @NotNull Component getDescription() {
+    public Component getDescription() {
         return pack.getDescription();
     }
 
     @Override
-    public @NotNull PackSource getPackSource() {
+    public PackSource getPackSource() {
         return pack.getPackSource();
     }
 

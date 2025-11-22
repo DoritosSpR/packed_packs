@@ -6,9 +6,8 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -158,7 +157,7 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
     }
 
     public interface Option {
-        @NotNull Component text();
+        @NonNull Component text();
 
         default @Nullable Tooltip tooltip() {
             return null;

@@ -2,12 +2,11 @@ package io.github.fishstiz.packed_packs.config;
 
 import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import io.github.fishstiz.fidgetz.util.lang.FunctionsUtil;
-import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import net.minecraft.server.packs.PackType;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;

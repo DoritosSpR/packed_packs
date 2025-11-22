@@ -20,7 +20,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Collections;
 import java.util.List;
@@ -52,7 +52,7 @@ public class CurrentPackList extends PackList {
     }
 
     @Override
-    protected @NotNull Entry createEntry(SelectionContext<Pack> pack, int index) {
+    protected @NonNull Entry createEntry(SelectionContext<Pack> pack, int index) {
         return new Entry(pack, index);
     }
 

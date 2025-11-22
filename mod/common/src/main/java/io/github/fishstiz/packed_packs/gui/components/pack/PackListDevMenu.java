@@ -18,7 +18,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.BiPredicate;
@@ -73,7 +73,7 @@ public record PackListDevMenu(
 
         record Reposition(
                 Pack trigger,
-                @Nullable PackOverride.Position value,
+                PackOverride.@Nullable Position value,
                 List<Pack> packs
         ) implements Event<PackOverride.Position> {
         }
@@ -159,7 +159,7 @@ public record PackListDevMenu(
         });
     }
 
-    private void updatePosition(@Nullable PackOverride.Position position) {
+    private void updatePosition(PackOverride.@Nullable Position position) {
         this.options.getProfile().ifPresent(profile -> {
             List<Pack> selected = this.getPackOrSelection();
             profile.setPosition(position, selected);

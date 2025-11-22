@@ -1,7 +1,7 @@
 package io.github.fishstiz.fidgetz.util.lang;
 
 import it.unimi.dsi.fastutil.objects.*;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.*;
