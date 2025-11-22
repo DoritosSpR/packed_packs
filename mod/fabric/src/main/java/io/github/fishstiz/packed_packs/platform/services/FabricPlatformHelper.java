@@ -41,7 +41,6 @@ public class FabricPlatformHelper implements PlatformHelper {
 
     @Override
     public boolean isBuiltInPack(Pack pack) {
-        //noinspection UnstableApiUsage
         return pack.getPackSource() instanceof BuiltinModResourcePackSource;
     }
 }

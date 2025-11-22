@@ -18,7 +18,8 @@ import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public class RespackoptsWidget extends AbstractButton implements ContextMenuProvider, Fidgetz {
     private final ResourcePackEntryWidget wrapped;
@@ -46,12 +47,12 @@ public class RespackoptsWidget extends AbstractButton implements ContextMenuProv
     }
 
     @Override
-    public void onPress(InputWithModifiers inputWithModifiers) {
+    public void onPress(@NonNull InputWithModifiers inputWithModifiers) {
         this.wrapped.onClick(this.model);
     }
 
     @Override
-    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderContents(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         int width = this.wrapped.getWidth(this.model);
         int height = this.wrapped.getHeight(this.model, this.container.getHeight());
         int marginRight = this.wrapped.getXMargin(this.model);
@@ -75,7 +76,7 @@ public class RespackoptsWidget extends AbstractButton implements ContextMenuProv
     }
 
     @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    protected void updateWidgetNarration(@NonNull NarrationElementOutput narrationElementOutput) {
         // unsupported
     }
 

@@ -1,6 +1,6 @@
 package io.github.fishstiz.fidgetz.util.debounce;
 
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;

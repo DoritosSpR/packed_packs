@@ -5,9 +5,9 @@ import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 
@@ -18,12 +18,12 @@ public interface ModExtension {
     /**
      * The identifier
      */
-    ResourceLocation id();
+    Identifier id();
 
     /**
-     * @return A {@link ResourceLocation} that this extension should load after.
+     * @return A {@link Identifier} that this extension should load after.
      */
-    default @Nullable ResourceLocation[] loadAfter() {
+    default @Nullable Identifier[] loadAfter() {
         return null;
     }
 

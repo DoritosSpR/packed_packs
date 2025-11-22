@@ -5,10 +5,10 @@ import io.github.fishstiz.fidgetz.gui.shapes.Line;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class Sprite implements RenderableRect {
-    public final ResourceLocation location;
+    public final Identifier location;
     public final int width;
     public final int height;
     public final int uOffset;
@@ -16,7 +16,7 @@ public class Sprite implements RenderableRect {
     public final int uWidth;
     public final int vHeight;
 
-    public Sprite(ResourceLocation location, int width, int height, int uOffset, int vOffset, int uWidth, int vHeight) {
+    public Sprite(Identifier location, int width, int height, int uOffset, int vOffset, int uWidth, int vHeight) {
         this.location = location;
         this.width = width;
         this.height = height;
@@ -26,23 +26,23 @@ public class Sprite implements RenderableRect {
         this.vHeight = vHeight;
     }
 
-    public Sprite(ResourceLocation location, int width, int height) {
+    public Sprite(Identifier location, int width, int height) {
         this(location, width, height, 0, 0, width, height);
     }
 
-    public Sprite(ResourceLocation location, Size size, Line u, Line v) {
+    public Sprite(Identifier location, Size size, Line u, Line v) {
         this(location, size.width(), size.height(), u.start(), v.start(), u.length(), v.length());
     }
 
-    public Sprite(ResourceLocation location, Size size) {
+    public Sprite(Identifier location, Size size) {
         this(location, size.width(), size.height());
     }
 
-    public static Sprite of32(ResourceLocation location) {
+    public static Sprite of32(Identifier location) {
         return new Sprite(location, Size.of32());
     }
 
-    public static Sprite of16(ResourceLocation location) {
+    public static Sprite of16(Identifier location) {
         return new Sprite(location, Size.of16());
     }
 

@@ -9,7 +9,7 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.CommonComponents;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.function.Consumer;
 
@@ -36,7 +36,7 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
         this(layout, 0, 0);
     }
 
-    public void setLayout(@NotNull T layout) {
+    public void setLayout(@NonNull T layout) {
         this.layout = layout;
     }
 
@@ -119,12 +119,12 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
     }
 
     @Override
-    public void visitChildren(Consumer<LayoutElement> visitor) {
+    public void visitChildren(@NonNull Consumer<LayoutElement> visitor) {
         this.layout.visitChildren(visitor);
     }
 
     @Override
-    public void visitWidgets(Consumer<AbstractWidget> consumer) {
+    public void visitWidgets(@NonNull Consumer<AbstractWidget> consumer) {
         this.layout.visitWidgets(consumer);
     }
 
@@ -137,20 +137,20 @@ public class LayoutWrapper<T extends Layout> extends AbstractWidget implements L
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+    public boolean mouseClicked(@NonNull MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
         return false;
     }
 
     @Override
-    protected final void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected final void renderWidget(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
     }
 
     @Override
-    protected final void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    protected final void updateWidgetNarration(@NonNull NarrationElementOutput narrationElementOutput) {
         this.layout.visitWidgets(widget -> widget.updateNarration(narrationElementOutput));
     }
 
     @Override
-    public final void playDownSound(SoundManager handler) {
+    public final void playDownSound(@NonNull SoundManager handler) {
     }
 }

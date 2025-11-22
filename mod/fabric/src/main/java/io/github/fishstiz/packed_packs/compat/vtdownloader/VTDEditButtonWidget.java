@@ -20,8 +20,9 @@ import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.resources.Identifier;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import static io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFactory.VTD_SCREEN_NAME;
 import static io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFactory.VTD_SUBTITLE;
@@ -37,7 +38,7 @@ import static io.github.fishstiz.packed_packs.compat.vtdownloader.VTDButtonFacto
  */
 public class VTDEditButtonWidget extends AbstractButton implements ContextMenuProvider, Fidgetz {
     private static final String VT_DESCRIPTION_MARKER = "vanillatweaks.net";
-    private static final ResourceLocation PENCIL_TEXTURE = ResourceLocation.fromNamespaceAndPath("vt_downloader", "textures/pencil.png");
+    private static final Identifier PENCIL_TEXTURE = Identifier.fromNamespaceAndPath("vt_downloader", "textures/pencil.png");
     private static final int PENCIL_TEXTURE_SIZE = 32;
     private static final int PENCIL_SIZE = 16;
     private static final int PENCIL_MARGIN_RIGHT = 1;
@@ -65,7 +66,7 @@ public class VTDEditButtonWidget extends AbstractButton implements ContextMenuPr
     }
 
     @Override
-    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderContents(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.isHovered = this.isHovered && Fidgetz.super.isHovered(mouseX, mouseY);
 
         int pencilX = this.container.getX() + this.container.getWidth() - PENCIL_SIZE - PENCIL_MARGIN_RIGHT;
@@ -104,7 +105,7 @@ public class VTDEditButtonWidget extends AbstractButton implements ContextMenuPr
     }
 
     @Override
-    public void onPress(InputWithModifiers inputWithModifiers) {
+    public void onPress(@NonNull InputWithModifiers inputWithModifiers) {
         if (this.editable) {
             ModScreenFactory.createScreenSetter(
                     VTD_SCREEN_NAME,
@@ -116,7 +117,7 @@ public class VTDEditButtonWidget extends AbstractButton implements ContextMenuPr
     }
 
     @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    protected void updateWidgetNarration(@NonNull NarrationElementOutput narrationElementOutput) {
         this.defaultButtonNarrationText(narrationElementOutput);
     }
 

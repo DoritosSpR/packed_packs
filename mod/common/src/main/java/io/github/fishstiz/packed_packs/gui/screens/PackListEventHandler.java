@@ -5,7 +5,6 @@ import io.github.fishstiz.packed_packs.compat.cursors_extended.CursorsExtended;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -13,8 +12,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
@@ -23,9 +22,8 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
     private final DragEventRenderer dragEventRenderer;
     private DragEvent dragged;
 
-    protected PackListEventHandler(Minecraft minecraft, Component title) {
+    protected PackListEventHandler(Component title) {
         super(title);
-        this.minecraft = minecraft;
         this.assetManager = new PackAssetManager(minecraft);
         this.dragEventRenderer = new DragEventRenderer(this.assetManager);
     }
@@ -104,7 +102,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
         this.dragged = dragged;
     }
 
-    protected abstract @NotNull List<PackList> getPackLists();
+    protected abstract @NonNull List<PackList> getPackLists();
 
     protected abstract @Nullable PackList getDestination(PackList source);
 
@@ -124,7 +122,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
     }
 
     @Override
-    public void onRelease(@NotNull DragEvent event, double mouseX, double mouseY) {
+    public void onRelease(@NonNull DragEvent event, double mouseX, double mouseY) {
         List<PackList> packLists = this.getPackLists();
         for (int i = packLists.size() - 1; i >= 0; i--) {
             PackList packList = packLists.get(i);
@@ -136,7 +134,7 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
         DragEvent event = this.getDragged();
@@ -160,12 +158,12 @@ public abstract class PackListEventHandler extends Screen implements PackListEve
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
+    public boolean keyPressed(@NonNull KeyEvent keyEvent) {
         return this.isDraggingSelection() || super.keyPressed(keyEvent);
     }
 
     @Override
-    public boolean charTyped(CharacterEvent charEvent) {
+    public boolean charTyped(@NonNull CharacterEvent charEvent) {
         return this.isDraggingSelection() || super.charTyped(charEvent);
     }
 }

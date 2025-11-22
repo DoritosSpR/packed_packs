@@ -1,13 +1,13 @@
 package io.github.fishstiz.packed_packs.compat;
 
 import io.github.fishstiz.packed_packs.compat.api.ModExtension;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public interface ModExtensionInternal extends ModExtension {
     ModContext mod();
 
     @Override
-    default ResourceLocation id() {
+    default Identifier id() {
         return this.mod().getInternalId();
     }
 }

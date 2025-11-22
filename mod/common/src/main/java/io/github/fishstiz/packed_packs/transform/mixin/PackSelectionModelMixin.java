@@ -1,7 +1,7 @@
 package io.github.fishstiz.packed_packs.transform.mixin;
 
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
 import org.spongepowered.asm.mixin.Final;
@@ -28,7 +28,7 @@ public abstract class PackSelectionModelMixin implements PackSelectionModelAcces
 
     @Shadow
     @Final
-    Function<Pack, ResourceLocation> iconGetter;
+    Function<Pack, Identifier> iconGetter;
 
     @Shadow
     @Final

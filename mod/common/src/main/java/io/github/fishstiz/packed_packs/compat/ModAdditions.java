@@ -24,7 +24,7 @@ public class ModAdditions {
     static {
         List<ModExtension> extensions = Services.PLATFORM.getExtensions();
         List<ModExtension> loadedExtensions = extensions.isEmpty() ? Collections.emptyList() : CollectionsUtil.filter(
-                Services.PLATFORM.getExtensions(),
+                extensions,
                 ext -> !(ext instanceof ModExtensionInternal extInternal) || extInternal.mod().isLoaded(),
                 ObjectArrayList::new
         );

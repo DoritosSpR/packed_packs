@@ -9,7 +9,7 @@ import io.github.fishstiz.packed_packs.compat.ModScreenFactory;
 import io.github.fishstiz.packed_packs.config.ModPreferences;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class ETFButtonFactory {
     private static final String NAMESPACE = "entity_features";
@@ -35,7 +35,7 @@ public class ETFButtonFactory {
                 .build();
     }
 
-    private static ResourceLocation getEtfIcon(String icon) {
-        return ResourceLocation.fromNamespaceAndPath(NAMESPACE, "textures/gui/").withSuffix(icon);
+    private static Identifier getEtfIcon(String icon) {
+        return Identifier.fromNamespaceAndPath(NAMESPACE, "textures/gui/").withSuffix(icon);
     }
 }

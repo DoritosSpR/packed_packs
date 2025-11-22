@@ -24,7 +24,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.CommonComponents;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -284,20 +285,21 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
                     .setOffsetY(MENU_POINT_OFFSET)
                     .setShadow(true)
                     .setMessage(item.text())
+                    .setColor(item.textColor())
                     .build();
             this.parent = parent;
             this.item = item;
         }
 
         @Override
-        public void playDownSound(SoundManager handler) {
+        public void playDownSound(@NonNull SoundManager handler) {
             if (this.item.active()) {
                 super.playDownSound(handler);
             }
         }
 
         @Override
-        public void onClick(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+        public void onClick(@NonNull MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
             if (this.item.active()) {
                 this.item.run();
             }
@@ -321,7 +323,6 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         }
 
         protected void renderText(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
-            this.text.setColor(this.item.textColor());
             this.text.setPosition(x, y);
             this.text.setSize(width, height);
             this.text.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
@@ -334,12 +335,12 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         }
 
         @SuppressWarnings("unused")
-        protected void renderForeground(GuiGraphics guiGraphics, int x, int y, int width, int height, boolean hovered, double mouseX, double mouseY, float partialTick) {
+        protected void renderForeground(@NonNull GuiGraphics guiGraphics, int x, int y, int width, int height, boolean hovered, double mouseX, double mouseY, float partialTick) {
             // for subclass
         }
 
         @Override
-        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        protected void renderWidget(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
             this.setTooltip(this.item.tooltip());
 
             this.isHovered = this.isHovered && this.isMouseOver(mouseX, mouseY);
@@ -415,7 +416,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         }
 
         @Override
-        public void onClick(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+        public void onClick(@NonNull MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
             if (this.item.active()) {
                 this.item.run();
                 this.child.forceOpen = !this.child.forceOpen || !this.child.isOpen();
@@ -460,7 +461,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         }
 
         @Override
-        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        protected void renderWidget(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
             super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
 
             if (!this.item.active()) {
@@ -494,7 +495,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         }
 
         @Override
-        public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean bl) {
+        public boolean mouseClicked(@NonNull MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
             return false;
         }
 
@@ -509,7 +510,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
         }
 
         @Override
-        protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+        protected void updateWidgetNarration(@NonNull NarrationElementOutput narrationElementOutput) {
             // no-op
         }
     }

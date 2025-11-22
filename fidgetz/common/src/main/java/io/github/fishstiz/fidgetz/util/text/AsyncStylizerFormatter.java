@@ -2,7 +2,7 @@ package io.github.fishstiz.fidgetz.util.text;
 
 import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;

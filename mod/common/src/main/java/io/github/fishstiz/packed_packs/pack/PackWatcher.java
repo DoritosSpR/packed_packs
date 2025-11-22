@@ -4,7 +4,7 @@ import io.github.fishstiz.fidgetz.util.debounce.ConcurrentPollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.compat.ModAdditions;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.server.packs.PackType;
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
@@ -13,6 +13,7 @@ import org.apache.commons.io.monitor.FileAlterationObserver;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.*;
@@ -21,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.github.fishstiz.packed_packs.util.PackUtil.hasFolderConfig;
 import static io.github.fishstiz.packed_packs.util.PackUtil.hasMcmeta;
 import static java.nio.file.Files.isDirectory;
-import static net.minecraft.Util.backgroundExecutor;
+import static net.minecraft.util.Util.backgroundExecutor;
 
 /**
  * Migrated from {@link java.nio.file.WatchService} due to registered subdirectories locking parent directory on Windows.
@@ -53,7 +54,17 @@ public class PackWatcher implements AutoCloseable {
         if (!isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) return;
 
         Path normalizedPath = directory.toAbsolutePath().normalize();
-        FileAlterationObserver observer = new FileAlterationObserver(directory.toFile(), new Filter(normalizedPath), IOCase.SENSITIVE);
+        FileAlterationObserver observer;
+        try {
+            observer = FileAlterationObserver.builder()
+                    .setFile(directory.toFile())
+                    .setFileFilter(new Filter(normalizedPath))
+                    .setIOCase(IOCase.SENSITIVE).get();
+        } catch (IOException e) {
+            PackedPacks.LOGGER.error("[packed_packs] Failed to create observer for directory: '{}' " , directory, e);
+            return;
+        }
+
         observer.addListener(this.directoryListener);
 
         backgroundExecutor().execute(() -> {

@@ -8,9 +8,9 @@ import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
@@ -21,8 +21,8 @@ public class ResourcifyModExtension implements ModExtensionInternal {
     }
 
     @Override
-    public @Nullable ResourceLocation[] loadAfter() {
-        return new ResourceLocation[]{Mod.ETF.getInternalId(), ResourceUtil.getResource("vt_downloader")};
+    public @Nullable Identifier[] loadAfter() {
+        return new Identifier[]{Mod.ETF.getInternalId(), ResourceUtil.id("vt_downloader")};
     }
 
     @Override

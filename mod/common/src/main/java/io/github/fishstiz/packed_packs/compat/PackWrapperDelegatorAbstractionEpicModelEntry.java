@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.compat;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackCompatibility;
 import net.minecraft.server.packs.repository.PackSource;
@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 public record PackWrapperDelegatorAbstractionEpicModelEntry(Pack pack) implements PackSelectionModel.Entry {
     @Override
-    public @NotNull ResourceLocation getIconTexture() {
+    public @NotNull Identifier getIconTexture() {
         return PackAssetManager.getDefaultLocation(pack);
     }
 

@@ -20,6 +20,6 @@ public abstract class OptionsScreenMixin extends Screen {
             target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"
     ))
     public boolean shouldCloseOnApplyPacks(Minecraft instance, Screen guiScreen) {
-        return this.minecraft == null || !(this.minecraft.screen instanceof PackedPacksScreen);
+        return !(this.minecraft.screen instanceof PackedPacksScreen);
     }
 }

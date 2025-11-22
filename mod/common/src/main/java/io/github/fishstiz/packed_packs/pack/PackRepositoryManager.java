@@ -16,13 +16,14 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -277,7 +278,7 @@ public class PackRepositoryManager {
 
         this.repository.setSelected(ImmutableList.copyOf(packIds));
 
-        OptionInstance<Boolean> highContrastOption = Minecraft.getInstance().options.highContrast();
+        OptionInstance<@NonNull Boolean> highContrastOption = Minecraft.getInstance().options.highContrast();
         if (highContrastOption.get() != hasHighContrast) {
             highContrastOption.set(hasHighContrast);
         }

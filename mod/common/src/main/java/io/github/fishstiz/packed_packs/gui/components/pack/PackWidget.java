@@ -3,15 +3,15 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
-import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.MultiLineLabel;
+import net.minecraft.client.gui.components.MultiLineTextWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
+import org.jspecify.annotations.NonNull;
 
 class PackWidget extends AbstractWidget {
     private static final int DESCRIPTION_LINES = 2;
@@ -22,7 +22,7 @@ class PackWidget extends AbstractWidget {
             .setColor(ChatFormatting.WHITE.getColor())
             .setShadow(true)
             .build();
-    private MultiLineLabel description;
+    private MultiLineTextWidget description;
     private Sprite sprite;
     private final int spacing;
     private boolean lazyLoaded = false;
@@ -48,12 +48,10 @@ class PackWidget extends AbstractWidget {
     }
 
     private void cacheDescription() {
-        this.description = MultiLineLabel.create(
-                Minecraft.getInstance().font,
-                this.title.getWidth(),
-                DESCRIPTION_LINES,
-                this.pack.getPackSource().decorate(this.pack.getDescription())
-        );
+        this.description = new MultiLineTextWidget(this.pack.getPackSource().decorate(this.pack.getDescription()), Minecraft.getInstance().font);
+        this.description.setMaxRows(DESCRIPTION_LINES);
+        this.description.setWidth(this.title.getWidth());
+        this.description.setCentered(false);
     }
 
     @Override
@@ -91,7 +89,7 @@ class PackWidget extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderWidget(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.renderSprite(guiGraphics, partialTick);
 
         int lineHeight = Minecraft.getInstance().font.lineHeight;
@@ -101,15 +99,8 @@ class PackWidget extends AbstractWidget {
         this.title.setY(startY);
         this.title.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
 
-        this.description.render(
-                guiGraphics,
-                MultiLineLabel.Align.LEFT,
-                this.title.getX(),
-                startY + lineHeight + this.spacing,
-                lineHeight,
-                false,
-                Theme.GRAY_500.getARGB()
-        );
+        this.description.setPosition(this.title.getX(), startY + lineHeight + this.spacing);
+        this.description.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     @Override
@@ -123,7 +114,7 @@ class PackWidget extends AbstractWidget {
     }
 
     @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    protected void updateWidgetNarration(@NonNull NarrationElementOutput narrationElementOutput) {
         // unsupported
     }
 }

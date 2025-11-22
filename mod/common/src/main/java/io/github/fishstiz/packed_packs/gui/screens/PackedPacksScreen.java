@@ -36,8 +36,7 @@ import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
+import net.minecraft.util.Util;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
@@ -55,7 +54,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -97,8 +97,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private @Nullable GuiEventListener hoveredElement;
     private boolean initialized = false;
 
-    private PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original, boolean initState) {
-        super(minecraft, ResourceUtil.getModName());
+    private PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, boolean initState) {
+        super(ResourceUtil.getModName());
 
         this.previous = previous;
         this.original = original;
@@ -150,17 +150,17 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
     }
 
-    public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original) {
-        this(minecraft, previous, original, true);
+    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original) {
+        this(previous, original, true);
     }
 
-    public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original, Profile profile) {
-        this(minecraft, previous, original, false);
+    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, Profile profile) {
+        this(previous, original, false);
         this.profiles.setProfile(profile);
     }
 
-    public PackedPacksScreen(Minecraft minecraft, Screen previous, PackSelectionScreenArgs original, PackGroup packs) {
-        this(minecraft, previous, original, false);
+    public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, PackGroup packs) {
+        this(previous, original, false);
         this.applyPacks(packs.unselected(), packs.selected());
     }
 
@@ -317,38 +317,31 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     @Override
     protected void rebuildWidgets() {
-        if (this.minecraft == null) return;
-
         PackedPacksScreen screen;
         Profile profile = this.profiles.getProfile();
 
         if (profile != null) {
             profile.setPacks(this.currentPacks.list().copyPacks());
-            screen = new PackedPacksScreen(this.minecraft, this.previous, this.original, profile);
+            screen = new PackedPacksScreen(this.previous, this.original, profile);
         } else {
             PackGroup packs = PackGroup.of(this.currentPacks.list().copyPacks(), this.availablePacks.list().copyPacks());
-            screen = new PackedPacksScreen(this.minecraft, this.previous, this.original, packs);
+            screen = new PackedPacksScreen(this.previous, this.original, packs);
         }
 
         this.minecraft.setScreen(screen);
     }
 
     @Override
-    public void onFilesDrop(List<Path> packs) {
-        if (this.minecraft != null) {
-            this.minecraft.setScreen(new ConfirmScreen(
-                    this.confirmFileDrop(packs),
-                    Component.translatable("pack.dropConfirm"),
-                    Component.literal(joinPackNames(packs))
-            ));
-        }
+    public void onFilesDrop(@NonNull List<Path> packs) {
+        this.minecraft.setScreen(new ConfirmScreen(
+                this.confirmFileDrop(packs),
+                Component.translatable("pack.dropConfirm"),
+                Component.literal(joinPackNames(packs))
+        ));
     }
 
     private BooleanConsumer confirmFileDrop(List<Path> packs) {
         return confirmed -> {
-            if (this.minecraft == null) {
-                return;
-            }
             if (!confirmed) {
                 this.minecraft.setScreen(this);
                 return;
@@ -379,15 +372,13 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private void setOriginalScreen() {
         if (this.previous instanceof PackSelectionScreen) {
             this.onClose();
-        } else if (this.minecraft != null) {
+        } else {
             this.minecraft.setScreen(this.original.createScreen(this.previous));
         }
     }
 
     @Override
     public void onClose() {
-        if (this.minecraft == null) return;
-
         String commitRequestor = ModAdditions.forceCommitOnClose(this.original.packType());
         if (commitRequestor != null) {
             this.commit();
@@ -545,11 +536,11 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
     }
 
-    public void onProfileCopy(@Nullable Profile original, @NotNull Profile copy) {
+    public void onProfileCopy(@Nullable Profile original, @NonNull Profile copy) {
         copy.setPacks(this.currentPacks.list().copyPacks());
     }
 
-    private void applyProfile(@NotNull Profile profile) {
+    private void applyProfile(@NonNull Profile profile) {
         List<Pack> available = this.availablePacks.list().copyPacks();
         List<Pack> current = this.repository.getPacksByFlattenedIds(profile.getPackIds());
         this.applyPacks(available, current);
@@ -575,7 +566,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    public @NotNull List<PackList> getPackLists() {
+    public @NonNull List<PackList> getPackLists() {
         return this.packLists;
     }
 
@@ -687,7 +678,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
         );
     }
 
-    public ToggleableEditBox<Void> focusSearchField(@NotNull PackLayout packLayout) {
+    public ToggleableEditBox<Void> focusSearchField(@NonNull PackLayout packLayout) {
         if (!this.showActionBar) this.toggleActionBar();
         ToggleableEditBox<Void> searchField = packLayout.getSearchField();
         this.focus(searchField);
@@ -695,7 +686,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    public boolean charTyped(CharacterEvent charEvent) {
+    public boolean charTyped(@NotNull CharacterEvent charEvent) {
         if (super.charTyped(charEvent)) {
             return true;
         }
@@ -728,7 +719,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
+    public boolean keyPressed(@NotNull KeyEvent keyEvent) {
         this.contextMenu.setOpen(false);
 
         if (isDeveloperMode(keyEvent)) {
@@ -817,7 +808,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent mouseEvent, boolean doubleClicked) {
+    public boolean mouseClicked(@NonNull MouseButtonEvent mouseEvent, boolean doubleClicked) {
         this.setDragged(null);
         if (isRightClick(mouseEvent) && !this.optionsModal.isMouseOver(mouseEvent.x(), mouseEvent.y())) {
             this.openContextMenu((int) mouseEvent.x(), (int) mouseEvent.y());
@@ -851,7 +842,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.hoveredElement = this.findHovered(mouseX, mouseY);
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
@@ -880,12 +871,12 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
-    public @NotNull Snapshot captureState(String eventName) {
+    public @NonNull Snapshot captureState(String eventName) {
         return new Snapshot(this, this.availablePacks.list().captureState(), this.currentPacks.list().captureState());
     }
 
     @Override
-    public void replaceState(@NotNull Snapshot snapshot) {
+    public void replaceState(@NonNull Snapshot snapshot) {
         Set<Pack> validPacks = new ObjectOpenHashSet<>(this.repository.getPacks());
         Query availablePacksQuery = snapshot.availablePacks.model().query();
         this.availablePacks.getSortButton().setValueSilently(availablePacksQuery.sort());

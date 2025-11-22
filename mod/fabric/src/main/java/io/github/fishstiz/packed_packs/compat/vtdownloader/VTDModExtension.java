@@ -13,9 +13,9 @@ import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import io.github.fishstiz.packed_packs.gui.screens.PackedPacksScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class VTDModExtension implements ModExtensionInternal {
     @Override
@@ -24,8 +24,8 @@ public class VTDModExtension implements ModExtensionInternal {
     }
 
     @Override
-    public @Nullable ResourceLocation[] loadAfter() {
-        return new ResourceLocation[]{Mod.RESPACKOPTS.getInternalId(), Mod.ETF.getInternalId()};
+    public @Nullable Identifier[] loadAfter() {
+        return new Identifier[]{Mod.RESPACKOPTS.getInternalId(), Mod.ETF.getInternalId()};
     }
 
     @Override

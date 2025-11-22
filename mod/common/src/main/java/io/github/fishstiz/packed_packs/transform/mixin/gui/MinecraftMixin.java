@@ -29,7 +29,7 @@ public abstract class MinecraftMixin {
 
             if (Config.get().get(args.packType()).isReplaceOriginal()) {
                 ((PackSelectionScreenAccessor) packScreen).invokeCloseWatcher();
-                guiScreen = new PackedPacksScreen((Minecraft) (Object) this, this.screen, args);
+                guiScreen = new PackedPacksScreen(this.screen, args);
             }
         }
         original.call(guiScreen);

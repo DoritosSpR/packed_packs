@@ -8,9 +8,9 @@ import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.ModPreferences;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 
@@ -21,8 +21,8 @@ public class RespackoptsModExtension implements ModExtensionInternal {
     }
 
     @Override
-    public @Nullable ResourceLocation[] loadAfter() {
-        return new ResourceLocation[]{Mod.ETF.getInternalId()};
+    public @Nullable Identifier[] loadAfter() {
+        return new Identifier[]{Mod.ETF.getInternalId()};
     }
 
     @Override

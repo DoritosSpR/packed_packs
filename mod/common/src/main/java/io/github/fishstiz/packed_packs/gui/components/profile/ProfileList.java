@@ -24,8 +24,8 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,22 +117,13 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     }
 
     @Override
-    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void renderWidget(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.debouncedRefresh.poll();
 
         super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
 
         if (this.children().isEmpty()) {
-            renderScrollingString(
-                    guiGraphics,
-                    this.minecraft.font,
-                    EMPTY_TEXT,
-                    this.getX() + SPACING,
-                    this.getY() + SPACING,
-                    this.getRight() - SPACING,
-                    this.getBottom() - SPACING,
-                    Theme.WHITE.getARGB()
-            );
+            this.renderScrollingStringOverContents(guiGraphics.textRenderer(), EMPTY_TEXT, 0);
         }
     }
 
@@ -167,7 +158,7 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
         }
 
         @Override
-        public void renderContent(GuiGraphics guiGraphics, int mouseX, int mouseY, boolean hovering, float partialTick) {
+        public void renderContent(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, boolean hovering, float partialTick) {
             this.selectButton.active = ProfileList.this.selectedProfile != this.profile;
 
             int left = this.getX();
@@ -245,17 +236,17 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
         }
 
         @Override
-        public @NotNull List<? extends GuiEventListener> children() {
+        public @NonNull List<? extends GuiEventListener> children() {
             return this.children;
         }
 
         @Override
-        public @NotNull List<? extends NarratableEntry> narratables() {
+        public @NonNull List<? extends NarratableEntry> narratables() {
             return this.children;
         }
 
         @Override
-        public void visitWidgets(Consumer<AbstractWidget> consumer) {
+        public void visitWidgets(@NonNull Consumer<AbstractWidget> consumer) {
             this.children.forEach(consumer);
         }
 

@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +56,7 @@ public class ToggleButton<E> extends FidgetzButton<E> {
     }
 
     @Override
-    public void onClick(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+    public void onClick(@NonNull MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
         super.onClick(mouseButtonEvent, doubleClicked);
 
         this.setValue(!this.getValue());
@@ -66,7 +67,7 @@ public class ToggleButton<E> extends FidgetzButton<E> {
     }
 
     @Override
-    public void setMessage(Component message) {
+    public void setMessage(@NonNull Component message) {
         this.prefix = message;
         this.updateMessage();
     }
@@ -79,7 +80,7 @@ public class ToggleButton<E> extends FidgetzButton<E> {
         Component valueText = this.getValue() ? CommonComponents.OPTION_ON : CommonComponents.OPTION_OFF;
 
         if (this.prefixMessage) {
-            super.setMessage(this.getPrefix().copy().append(": ").append(valueText));
+            super.setMessage(CommonComponents.optionNameValue(this.getPrefix(), valueText));
         } else {
             super.setMessage(valueText);
         }

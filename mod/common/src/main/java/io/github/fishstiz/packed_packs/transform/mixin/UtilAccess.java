@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.transform.mixin;
 
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 

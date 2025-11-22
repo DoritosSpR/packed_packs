@@ -1,7 +1,7 @@
 package io.github.fishstiz.packed_packs.gui.components.contextmenu;
 
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItem;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.network.chat.Component;
 
 import java.nio.file.Path;

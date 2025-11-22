@@ -27,8 +27,8 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -136,12 +136,12 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     }
 
     @Override
-    public @NotNull List<? extends GuiEventListener> children() {
+    public @NonNull List<? extends GuiEventListener> children() {
         return this.isOpen() ? this.children : Collections.emptyList();
     }
 
     @Override
-    public @NotNull Optional<GuiEventListener> getChildAt(double mouseX, double mouseY) {
+    public @NonNull Optional<GuiEventListener> getChildAt(double mouseX, double mouseY) {
         for (var child : this.children) {
             if (child.isMouseOver(mouseX, mouseY)) {
                 return Optional.of(child);
@@ -187,7 +187,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     }
 
     @Override
-    public final void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public final void render(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.hovered = this.isMouseOverBounds(mouseX, mouseY);
 
         this.focusOnOpenTask.poll();
@@ -216,7 +216,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
+    public boolean keyPressed(@NonNull KeyEvent keyEvent) {
         if (!this.isOpen()) {
             return false;
         }
@@ -253,7 +253,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+    public boolean mouseClicked(@NonNull MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
         if (!this.isOpen()) {
             return false;
         }
@@ -322,7 +322,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     }
 
     @Override
-    public @NotNull ScreenRectangle getRectangle() {
+    public @NonNull ScreenRectangle getRectangle() {
         return this.boundingBox.getScreenRectangle();
     }
 
@@ -346,7 +346,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     }
 
     @Override
-    public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent event) {
+    public @Nullable ComponentPath nextFocusPath(@NonNull FocusNavigationEvent event) {
         if (!this.isOpen()) {
             return null;
         }
@@ -418,7 +418,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     }
 
     @Override
-    public @NotNull NarrationPriority narrationPriority() {
+    public @NonNull NarrationPriority narrationPriority() {
         return this.isHovered() ? NarrationPriority.HOVERED : NarrationPriority.NONE;
     }
 
@@ -427,7 +427,7 @@ public class ToggleableDialog<T extends LayoutElement> extends AbstractContainer
     }
 
     @Override
-    public void updateNarration(NarrationElementOutput narrationElementOutput) {
+    public void updateNarration(@NonNull NarrationElementOutput narrationElementOutput) {
         List<NarratableEntry> sortedNarratables = this.narratables
                 .stream()
                 .filter(NarratableEntry::isActive)

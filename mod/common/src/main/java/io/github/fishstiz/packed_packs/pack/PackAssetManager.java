@@ -8,16 +8,17 @@ import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.resources.IoSupplier;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.io.InputStream;
 import java.nio.file.NoSuchFileException;
@@ -26,8 +27,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class PackAssetManager {
-    public static final Sprite DEFAULT_FOLDER_ICON = Sprite.of16(ResourceUtil.getResource("textures/misc/unknown_folder.png"));
-    public static final Sprite DEFAULT_ICON = Sprite.of16(ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png"));
+    public static final Sprite DEFAULT_FOLDER_ICON = Sprite.of16(ResourceUtil.id("textures/misc/unknown_folder.png"));
+    public static final Sprite DEFAULT_ICON = Sprite.of16(Identifier.withDefaultNamespace("textures/misc/unknown_pack.png"));
     private final Map<String, Sprite> cachedIcons = new Object2ObjectOpenHashMap<>();
     private final Minecraft minecraft;
     private Map<String, Sprite> staleIcons;
@@ -72,20 +73,20 @@ public class PackAssetManager {
         return pack instanceof FolderPack ? DEFAULT_FOLDER_ICON : DEFAULT_ICON;
     }
 
-    public static ResourceLocation getDefaultLocation(Pack pack) {
+    public static Identifier getDefaultLocation(Pack pack) {
         return getDefaultIcon(pack).location;
     }
 
     /**
      * Copied from {@link PackSelectionScreen#loadPackIcon(TextureManager, Pack)}
      */
-    private CompletableFuture<@Nullable ResourceLocation> loadPackIcon(Pack pack) {
+    private CompletableFuture<@Nullable Identifier> loadPackIcon(Pack pack) {
         return CompletableFuture.supplyAsync(() -> {
             try (PackResources packResources = pack.open()) {
-                IoSupplier<InputStream> iconIoSupplier = packResources.getRootResource(PackUtil.ICON_FILENAME);
+                IoSupplier<@NonNull InputStream> iconIoSupplier = packResources.getRootResource(PackUtil.ICON_FILENAME);
                 if (iconIoSupplier == null) return null;
 
-                ResourceLocation icon = ResourceLocation.withDefaultNamespace(hashIconName(pack.getId()));
+                Identifier icon = Identifier.withDefaultNamespace(hashIconName(pack.getId()));
                 try (InputStream iconStream = iconIoSupplier.get()) {
                     NativeImage nativeImage = NativeImage.read(iconStream);
                     TextureManager manager = this.minecraft.getTextureManager();
@@ -103,6 +104,6 @@ public class PackAssetManager {
 
     @SuppressWarnings("deprecation")
     private static String hashIconName(String id) {
-        return "pack/" + Util.sanitizeName(id, ResourceLocation::validPathChar) + "/" + Hashing.sha1().hashUnencodedChars(id) + "/icon";
+        return "pack/" + Util.sanitizeName(id, Identifier::validPathChar) + "/" + Hashing.sha1().hashUnencodedChars(id) + "/icon";
     }
 }

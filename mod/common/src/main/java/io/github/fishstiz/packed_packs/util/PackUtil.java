@@ -11,7 +11,7 @@ import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackLocationInfo;
@@ -20,6 +20,7 @@ import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackDetector;
 import net.minecraft.server.packs.repository.PackSource;
 import net.minecraft.world.level.validation.ForbiddenSymlinkInfo;
+import org.jspecify.annotations.NonNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -237,14 +238,14 @@ public class PackUtil {
     }
 
     public static PathValidationResults validatePaths(List<Path> packs) {
-        PackDetector<Path> packDetector = new PackDetector<>(Minecraft.getInstance().directoryValidator()) {
+        PackDetector<@NonNull Path> packDetector = new PackDetector<>(Minecraft.getInstance().directoryValidator()) {
             @Override
-            protected Path createZipPack(Path path) {
+            protected Path createZipPack(@NonNull Path path) {
                 return path;
             }
 
             @Override
-            protected Path createDirectoryPack(Path path) {
+            protected Path createDirectoryPack(@NonNull Path path) {
                 return path;
             }
         };
@@ -275,7 +276,7 @@ public class PackUtil {
         return results;
     }
 
-    private static boolean validatePath(Path path, PackDetector<Path> packDetector, List<ForbiddenSymlinkInfo> symlinkWarnings) throws IOException {
+    private static boolean validatePath(Path path, PackDetector<@NonNull Path> packDetector, List<ForbiddenSymlinkInfo> symlinkWarnings) throws IOException {
         Path detectedPack = packDetector.detectPackResources(path, symlinkWarnings);
         if (detectedPack == null) {
             PackedPacks.LOGGER.warn("Path {} does not seem like pack", path);

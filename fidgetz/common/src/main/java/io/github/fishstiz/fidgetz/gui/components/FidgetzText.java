@@ -8,7 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E> {
     private E metadata;
@@ -19,16 +19,28 @@ public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E>
                 builder.y,
                 builder.hasWidth ? builder.width : builder.font.width(builder.message),
                 builder.height,
-                builder.message,
+                applyStylesFromBuilder(builder.message, builder),
                 builder.font
         );
 
         this.metadata = builder.metadata;
 
-        if (builder.color != null) this.setColor(builder.color);
-
-        ((IStringWidget) this).fidgetz$setShadow(builder.shadow);
         ((IStringWidget) this).fidgetz$setOffsetY(builder.offsetY);
+    }
+
+    private static Component applyStylesFromBuilder(Component message, Builder<?> builder) {
+        if (builder.color == null && builder.shadow) return message;
+
+        return message.copy().withStyle(style -> {
+            if (builder.color != null) {
+                style = style.withColor(builder.color);
+            }
+            if (!builder.shadow) {
+                style = style.withoutShadow();
+            }
+            return style;
+        });
+
     }
 
     public void setOffsetY(int offsetY) {
@@ -36,7 +48,7 @@ public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E>
     }
 
     @Override
-    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void renderWidget(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.isHovered = this.isHovered && Fidgetz.super.isHovered(mouseX, mouseY);
         super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
     }
@@ -78,7 +90,7 @@ public class FidgetzText<E> extends StringWidget implements Fidgetz, Metadata<E>
         }
 
         @Override
-        public @NotNull Builder<E> setWidth(int width) {
+        public @NonNull Builder<E> setWidth(int width) {
             this.hasWidth = true;
             return super.setWidth(width);
         }

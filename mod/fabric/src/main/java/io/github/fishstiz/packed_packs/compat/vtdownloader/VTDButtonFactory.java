@@ -9,11 +9,11 @@ import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class VTDButtonFactory {
     static final String VTD_SCREEN_NAME = "me.bymartrixx.vtd.gui.VTDownloadScreen";
-    static final Sprite VTD_ICON = Sprite.of32(ResourceLocation.fromNamespaceAndPath("vt_downloader", "icon.png"));
+    static final Sprite VTD_ICON = Sprite.of32(Identifier.fromNamespaceAndPath("vt_downloader", "icon.png"));
     static final Component VTD_MESSAGE = Component.translatable("vtd.resourcePack.button");
     static final Component VTD_SUBTITLE = Component.translatable("vtd.resourcePack.subtitle");
 

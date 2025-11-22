@@ -1,6 +1,6 @@
 package io.github.fishstiz.packed_packs.gui.components;
 
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.input.MouseButtonEvent;
 

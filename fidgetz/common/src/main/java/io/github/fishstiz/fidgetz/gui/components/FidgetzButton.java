@@ -9,19 +9,20 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.ActiveTextCollector;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProvider, Metadata<E> {
+public class FidgetzButton<E> extends Button.Plain implements Fidgetz, ContextMenuProvider, Metadata<E> {
     private final List<Runnable> listeners;
     private final Integer focusedBorder;
     private final boolean spriteOnly;
@@ -49,7 +50,7 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
     }
 
     @Override
-    public void onPress(InputWithModifiers inputWithModifiers) {
+    public void onPress(@NonNull InputWithModifiers inputWithModifiers) {
         super.onPress(inputWithModifiers);
 
         for (var listener : this.listeners) {
@@ -90,11 +91,11 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
     }
 
     @Override
-    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderContents(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.isHovered = this.isHovered && this.isHovered(mouseX, mouseY);
 
         if (!this.spriteOnly) {
-            super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+            super.renderContents(guiGraphics, mouseX, mouseY, partialTick);
         }
 
         if (this.hasSprite()) {
@@ -127,9 +128,9 @@ public class FidgetzButton<E> extends Button implements Fidgetz, ContextMenuProv
     }
 
     @Override
-    public void renderString(GuiGraphics guiGraphics, Font font, int color) {
+    protected void renderDefaultLabel(@NonNull ActiveTextCollector activeTextCollector) {
         if (!this.hasSprite()) {
-            super.renderString(guiGraphics, font, color);
+            super.renderDefaultLabel(activeTextCollector);
         }
     }
 

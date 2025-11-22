@@ -18,7 +18,7 @@ import io.github.fishstiz.packed_packs.pack.PackFileOperations;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.pack.PackRepositoryManager;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.gui.screens.Screen;
 
 import java.util.List;

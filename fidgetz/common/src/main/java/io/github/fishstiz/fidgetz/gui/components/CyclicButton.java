@@ -4,9 +4,11 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.InputWithModifiers;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +58,7 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
     }
 
     @Override
-    public void onPress(InputWithModifiers inputWithModifiers) {
+    public void onPress(@NonNull InputWithModifiers inputWithModifiers) {
         if (this.allowReverseClick && inputWithModifiers.hasShiftDown()) {
             this.value = this.value <= 0 ? this.options.length - 1 : this.value - 1;
         } else {
@@ -69,7 +71,7 @@ public class CyclicButton<T extends CyclicButton.Option, E> extends FidgetzButto
 
     private void updateMessage() {
         this.setMessage(this.prefix != null
-                ? this.prefix.copy().append(": ").append(this.getValue().text())
+                ? CommonComponents.optionNameValue(this.prefix, this.getValue().text())
                 : this.getValue().text()
         );
         this.setTooltip(this.getValue().tooltip());

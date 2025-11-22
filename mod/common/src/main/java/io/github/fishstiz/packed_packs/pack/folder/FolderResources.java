@@ -1,14 +1,14 @@
 package io.github.fishstiz.packed_packs.pack.folder;
 
 import io.github.fishstiz.packed_packs.util.PackUtil;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.metadata.MetadataSectionType;
 import net.minecraft.server.packs.resources.IoSupplier;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
+@NullMarked
 public record FolderResources(PackLocationInfo location, Path path) implements PackResources {
     public static final String FOLDER_CONFIG_FILENAME = "packed_packs.folderpack.json";
 
@@ -33,7 +34,7 @@ public record FolderResources(PackLocationInfo location, Path path) implements P
     }
 
     @Override
-    public @Nullable IoSupplier<InputStream> getResource(PackType packType, ResourceLocation location) {
+    public @Nullable IoSupplier<InputStream> getResource(PackType packType, Identifier location) {
         return null;
     }
 
@@ -43,7 +44,7 @@ public record FolderResources(PackLocationInfo location, Path path) implements P
     }
 
     @Override
-    public @NotNull Set<String> getNamespaces(PackType type) {
+    public Set<String> getNamespaces(PackType type) {
         return Collections.emptySet();
     }
 

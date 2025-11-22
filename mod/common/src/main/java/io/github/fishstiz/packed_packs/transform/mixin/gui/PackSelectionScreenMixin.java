@@ -16,11 +16,12 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.PackRepository;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.file.Path;
@@ -56,22 +57,25 @@ public abstract class PackSelectionScreenMixin extends Screen implements PackSel
         this.packed_packs$original = new PackSelectionScreenArgs(repository, output, packDir, title);
     }
 
-    @WrapOperation(method = "init", at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/layouts/LinearLayout;spacing(I)Lnet/minecraft/client/gui/layouts/LinearLayout;",
-            ordinal = 1
-    ))
+    @WrapOperation(
+            method = "init",
+            slice = @Slice(from = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/layouts/HeaderAndFooterLayout;addToContents(Lnet/minecraft/client/gui/layouts/LayoutElement;)Lnet/minecraft/client/gui/layouts/LayoutElement;"
+            )),
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/layouts/LinearLayout;spacing(I)Lnet/minecraft/client/gui/layouts/LinearLayout;",
+                    ordinal = 0
+            )
+    )
     public LinearLayout addPackedPacksButton(LinearLayout instance, int spacing, Operation<LinearLayout> original) {
-        if (this.minecraft == null) {
-            return original.call(instance, spacing);
-        }
-
         Screen previous = this.packed_packs$previous != null ? this.packed_packs$previous : this;
         this.packed_packs$button = FidgetzButton.<GridWrapper<LinearLayout>>builder()
                 .makeSquare()
                 .setTooltip(Tooltip.create(ResourceUtil.getModName()))
                 .setSprite(new Sprite(ResourceUtil.getIcon("packed_packs"), Size.of16()))
-                .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(this.minecraft, previous, this.packed_packs$original)))
+                .setOnPress(() -> this.minecraft.setScreen(new PackedPacksScreen(previous, this.packed_packs$original)))
                 .setMetadata(new GridWrapper<>(original.call(instance, spacing), spacing))
                 .build();
 

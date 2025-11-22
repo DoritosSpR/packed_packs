@@ -25,8 +25,8 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.apache.commons.io.FilenameUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -208,7 +208,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         return PackUtil.isZipPack(pack) ? newName + ZIP_PACK_EXTENSION : newName;
     }
 
-    private static boolean testIllegalChars(@NotNull String input) {
+    private static boolean testIllegalChars(@NonNull String input) {
         input = input.trim();
         if (!input.equals(FilenameUtils.getName(input))) {
             return false;
@@ -223,7 +223,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
+    public boolean keyPressed(@NonNull KeyEvent keyEvent) {
         boolean keyPressed = super.keyPressed(keyEvent);
         if (!keyPressed && this.isOpen() && keyEvent.key() == InputConstants.KEY_RETURN && this.canSave(this.nameEditor.getValue())) {
             this.saveName();
@@ -233,7 +233,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
     }
 
     @Override
-    public boolean charTyped(CharacterEvent characterEvent) {
+    public boolean charTyped(@NonNull CharacterEvent characterEvent) {
         boolean charTyped = super.charTyped(characterEvent);
 
         if (!charTyped && this.isOpen() && !this.nameEditor.isFocused()) {
@@ -245,7 +245,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
     }
 
     @Override
-    public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent event) {
+    public @Nullable ComponentPath nextFocusPath(@NonNull FocusNavigationEvent event) {
         if (this.nameEditor.isFocused() &&
             event instanceof FocusNavigationEvent.ArrowNavigation(ScreenDirection direction) &&
             direction.getAxis() == ScreenAxis.HORIZONTAL) {

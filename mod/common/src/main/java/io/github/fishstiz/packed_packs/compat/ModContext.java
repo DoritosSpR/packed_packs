@@ -2,8 +2,7 @@ package io.github.fishstiz.packed_packs.compat;
 
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
-import net.minecraft.resources.ResourceLocation;
-import org.apache.commons.lang3.function.TriConsumer;
+import net.minecraft.resources.Identifier;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -15,8 +14,8 @@ public interface ModContext {
 
     boolean isLoaded();
 
-    default ResourceLocation getInternalId() {
-        return ResourceUtil.getResource(this.getId());
+    default Identifier getInternalId() {
+        return ResourceUtil.id(this.getId());
     }
 
     private void logError(Throwable e) {
@@ -59,16 +58,6 @@ public interface ModContext {
         if (this.isLoaded()) {
             try {
                 consumer.accept(arg1, arg2);
-            } catch (LinkageError | Exception e) {
-                this.logError(e);
-            }
-        }
-    }
-
-    default <T1, T2, T3> void wrapError(T1 arg1, T2 arg2, T3 arg3, TriConsumer<T1, T2, T3> consumer) {
-        if (this.isLoaded()) {
-            try {
-                consumer.accept(arg1, arg2, arg3);
             } catch (LinkageError | Exception e) {
                 this.logError(e);
             }
