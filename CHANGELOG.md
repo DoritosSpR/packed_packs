@@ -1,4 +1,2 @@
-- Added NeoForge support
-- Fixed hidden packs from mod loader sometimes being shown when navigating to the original screen.
-- Fixed last selected highlight being removed when packs are refreshed.
-- 1.21.1: Fixed context menu consuming clicks on clipped area when scrolled.
+- Fixed load order not respected in folder packs when it hasn't been opened in the in-game screen.
+- Port to 1.21.11
