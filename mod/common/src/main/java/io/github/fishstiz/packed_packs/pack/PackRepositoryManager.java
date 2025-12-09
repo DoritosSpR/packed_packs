@@ -233,7 +233,7 @@ public class PackRepositoryManager {
                 String folderName = PackUtil.generatePackName(folderPath);
                 String folderId = PackUtil.generatePackId(folderName);
                 if (!this.availablePacks.containsKey(folderId)) {
-                    FolderPack folderPack = new FolderPack(folderId, folderName, this.folderPacks::get, folderPath);
+                    FolderPack folderPack = new FolderPack(folderId, folderName, this::getNestedPacks, folderPath);
                     this.folderConfigs.put(folderId, folderPack.loadConfig());
                     this.availablePacks.put(folderId, folderPack);
                 }
