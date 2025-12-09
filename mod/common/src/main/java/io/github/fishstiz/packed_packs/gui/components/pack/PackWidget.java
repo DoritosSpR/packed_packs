@@ -50,7 +50,7 @@ class PackWidget extends AbstractWidget {
     private void cacheDescription() {
         this.description = new MultiLineTextWidget(this.pack.getPackSource().decorate(this.pack.getDescription()), Minecraft.getInstance().font);
         this.description.setMaxRows(DESCRIPTION_LINES);
-        this.description.setWidth(this.title.getWidth());
+        this.description.setMaxWidth(this.title.getWidth());
         this.description.setCentered(false);
     }
 

@@ -1,3 +1,1 @@
-- Fixed load order not respected in folder packs when it hasn't been opened in the in-game screen ([#38](https://github.com/fishstiz/packed_packs/issues/38)).
-- Fixed context menu consuming clicks on clipped area when scrolled.
-- Port to 1.21.11
+- Fixed description of packs not wrapping
