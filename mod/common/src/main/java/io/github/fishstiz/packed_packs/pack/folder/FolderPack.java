@@ -30,10 +30,10 @@ public class FolderPack extends Pack implements FilePack {
     public static final Component FOLDER_DESCRIPTION = ResourceUtil.getText("folder");
     public static final PackSelectionConfig FOLDER_SELECTION_CONFIG = new PackSelectionConfig(false, Position.TOP, false);
     public static final Metadata FOLDER_METADATA = new Metadata(FOLDER_DESCRIPTION, PackCompatibility.COMPATIBLE, FeatureFlagSet.of(), Collections.emptyList());
-    private final Function<String, List<Pack>> nestedPacksProvider;
+    private final Function<FolderPack, List<Pack>> nestedPacksProvider;
     private final Path path;
 
-    public FolderPack(String id, String name, Function<String, List<Pack>> nestedPacksProvider, Path path) {
+    public FolderPack(String id, String name, Function<FolderPack, List<Pack>> nestedPacksProvider, Path path) {
         super(
                 new PackLocationInfo(id, Component.literal(name), PackUtil.PACK_SOURCE, Optional.empty()),
                 new FolderResourcesSupplier(path),
@@ -47,7 +47,7 @@ public class FolderPack extends Pack implements FilePack {
     public List<Pack> flatten() {
         List<Pack> result = new ObjectArrayList<>();
         result.add(this);
-        result.addAll(ObjectsUtil.getOrDefault(this.nestedPacksProvider.apply(this.getId()), Collections.emptyList()));
+        result.addAll(ObjectsUtil.getOrDefault(this.nestedPacksProvider.apply(this), Collections.emptyList()));
         return result;
     }
 
