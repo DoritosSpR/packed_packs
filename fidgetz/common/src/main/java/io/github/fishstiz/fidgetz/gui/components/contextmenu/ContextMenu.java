@@ -179,7 +179,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
     }
 
     @Override
-    public boolean isMouseOver(double mouseX, double mouseY) {
+    public boolean isMouseOverBounds(double mouseX, double mouseY) {
         if (!this.isOpen()) return false;
 
         ContextMenu child = this.getOpenedChildMenu();
@@ -187,7 +187,7 @@ public class ContextMenu extends ToggleableDialog<LayoutWrapper<ScrollableLayout
                 ? this.getBoundingBox().containsPoint(mouseX, mouseY) || child.getBoundingBox().containsPoint(mouseX, mouseY)
                 : this.getBoundingBox().containsPoint(mouseX, mouseY);
 
-        return withinBounds && super.isMouseOver(mouseX, mouseY);
+        return withinBounds && super.isMouseOverBounds(mouseX, mouseY);
     }
 
     public void forEachChild(Consumer<ContextMenu> consumer) {
