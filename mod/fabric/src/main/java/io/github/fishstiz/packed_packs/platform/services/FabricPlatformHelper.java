@@ -4,7 +4,7 @@ import io.github.fishstiz.packed_packs.compat.api.ModExtension;
 import io.github.fishstiz.packed_packs.config.FabricPreferences;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import it.unimi.dsi.fastutil.objects.ReferenceImmutableList;
-import net.fabricmc.fabric.impl.resource.loader.BuiltinModResourcePackSource;
+import net.fabricmc.fabric.impl.resource.pack.ModResourcePackCreator;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.packs.repository.Pack;
 
@@ -41,6 +41,6 @@ public class FabricPlatformHelper implements PlatformHelper {
 
     @Override
     public boolean isBuiltInPack(Pack pack) {
-        return pack.getPackSource() instanceof BuiltinModResourcePackSource;
+        return pack.getPackSource() == ModResourcePackCreator.RESOURCE_PACK_SOURCE;
     }
 }
