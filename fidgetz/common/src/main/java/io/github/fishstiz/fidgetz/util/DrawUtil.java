@@ -1,9 +1,7 @@
 package io.github.fishstiz.fidgetz.util;
 
-import io.github.fishstiz.fidgetz.gui.renderables.sprites.NineSliceSprite;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.GuiSprite;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.fidgetz.gui.shapes.Line;
-import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import net.minecraft.util.Util;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -13,12 +11,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 
 public class DrawUtil {
-    public static final Sprite DEMO_BACKGROUND = new NineSliceSprite(new Sprite(
-            Identifier.withDefaultNamespace("textures/gui/demo_background.png"),
-            Size.square(256),
-            Line.zero(247),
-            Line.zero(165)
-    ));
+    public static final Sprite DEMO_BACKGROUND = new GuiSprite(Identifier.withDefaultNamespace("popup/background"), 236, 34);
     public static final Identifier SHADOW_SPRITE = Identifier.fromNamespaceAndPath("fidgetz", "drop_shadow");
     private static final int SHADOW_BORDER = 32;
 

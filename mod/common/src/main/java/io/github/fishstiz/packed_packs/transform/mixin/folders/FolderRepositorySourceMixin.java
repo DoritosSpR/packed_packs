@@ -87,7 +87,7 @@ public abstract class FolderRepositorySourceMixin {
     }
 
     @SuppressWarnings("UnresolvedMixinReference")
-    @ModifyArg(method = {"method_45272", "lambda$loadPacks$0"}, at = @At(
+    @ModifyArg(method = "lambda$loadPacks$0", at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/server/packs/repository/Pack;readMetaAndCreate(Lnet/minecraft/server/packs/PackLocationInfo;Lnet/minecraft/server/packs/repository/Pack$ResourcesSupplier;Lnet/minecraft/server/packs/PackType;Lnet/minecraft/server/packs/PackSelectionConfig;)Lnet/minecraft/server/packs/repository/Pack;"
     ))
@@ -96,7 +96,7 @@ public abstract class FolderRepositorySourceMixin {
     }
 
     @SuppressWarnings("UnresolvedMixinReference")
-    @ModifyArg(method = {"method_45272", "lambda$loadPacks$0"}, at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V"))
+    @ModifyArg(method = "lambda$loadPacks$0", at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V"))
     private Object bindDirToNestedPack(Object arg, @Local(argsOnly = true) Path path) {
         if (arg instanceof FilePack pack) {
             pack.packed_packs$setNestedPack(IS_SUBDIRECTORY.get());

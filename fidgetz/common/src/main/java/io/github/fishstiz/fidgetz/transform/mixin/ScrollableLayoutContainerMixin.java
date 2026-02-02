@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(targets = "net.minecraft.client.gui.components.ScrollableLayout$Container")
 public abstract class ScrollableLayoutContainerMixin {
     @Final
-    @Shadow(aliases = { "field_60720", "this$0" })
+    @Shadow(aliases = "this$0")
     ScrollableLayout scrollableLayout;
 
     @WrapOperation(method = "setX", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/layouts/Layout;setX(I)V"))

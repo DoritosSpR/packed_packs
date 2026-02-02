@@ -10,14 +10,13 @@ public class Layouts {
     }
 
     public static ScrollableLayout unpaddedScrollableLayout(Minecraft minecraft, Layout layout) {
+        layout.arrangeElements();
         ScrollableLayout scrollableLayout = new ScrollableLayout(minecraft, layout, layout.getHeight());
         ((UnpaddedScrollableLayout) scrollableLayout).fidgetz$setUnpadded(true);
         return scrollableLayout;
     }
 
     public static ScrollableLayout unpaddedScrollableLayout(Layout layout) {
-        ScrollableLayout scrollableLayout = new ScrollableLayout(Minecraft.getInstance(), layout, layout.getHeight());
-        ((UnpaddedScrollableLayout) scrollableLayout).fidgetz$setUnpadded(true);
-        return scrollableLayout;
+        return unpaddedScrollableLayout(Minecraft.getInstance(), layout);
     }
 }

@@ -29,6 +29,11 @@ public abstract class AbstractFixedListWidget<T extends AbstractFixedListWidget<
         this(itemHeight, 0, 0);
     }
 
+    @Deprecated
+    public boolean scrollbarVisible() {
+        return this.scrollable();
+    }
+
     @Override
     protected boolean isOverScrollbar(double mouseX, double mouseY) {
         return super.isOverScrollbar(mouseX, mouseY) && this.isHovered();

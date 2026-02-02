@@ -28,6 +28,7 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
     private final int hintColor;
     private E metadata;
     private int focusedTextColor;
+    private Predicate<String> filter = Objects::nonNull;
     private String previousValue;
     private Component inactiveText = Component.empty();
 
@@ -40,8 +41,7 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
         this.previousValue = builder.value;
         this.metadata = builder.metadata;
 
-        if (builder.filter != null) this.setFilter(builder.filter);
-
+        this.setFilter(builder.filter);
         this.setMaxLength(builder.maxLength);
         this.setValue(builder.value);
         this.setEditable(builder.editable);
@@ -122,6 +122,17 @@ public class ToggleableEditBox<E> extends EditBox implements Fidgetz, Metadata<E
     private void updateInactiveText(String value) {
         if (!this.isEditing()) {
             this.inactiveText = Component.literal(value);
+        }
+    }
+
+    public void setFilter(Predicate<String> filter) {
+        this.filter = filter;
+    }
+
+    @Override
+    public void setValue(String input) {
+        if (this.filter == null || this.filter.test(input)) {
+            super.setValue(input);
         }
     }
 

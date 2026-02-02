@@ -247,7 +247,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
     @Override
     public @Nullable ComponentPath nextFocusPath(@NonNull FocusNavigationEvent event) {
         if (this.nameEditor.isFocused() &&
-            event instanceof FocusNavigationEvent.ArrowNavigation(ScreenDirection direction) &&
+            event instanceof FocusNavigationEvent.ArrowNavigation(ScreenDirection direction, _) &&
             direction.getAxis() == ScreenAxis.HORIZONTAL) {
             if (!Minecraft.getInstance().hasShiftDown()) {
                 this.nameEditor.setHighlightPos(this.nameEditor.getCursorPosition());

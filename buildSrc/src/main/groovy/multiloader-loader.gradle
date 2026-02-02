@@ -59,18 +59,10 @@ afterEvaluate {
 
             if (project.name == neoForge || project.name == forge) {
                 delete "$project.sourceSets.main.output.resourcesDir/${modId}.accesswidener"
+                delete "$project.sourceSets.main.output.resourcesDir/${modId}.classtweaker"
             }
             if (project.name == fabric) {
                 delete "$project.sourceSets.main.output.resourcesDir/META-INF/accesstransformer.cfg"
-            }
-            if (project.name == neoForge) {
-                def mixinConfigFile = file("${sourceSets.main.output.resourcesDir}/${modId}.mixins.json")
-                if (mixinConfigFile.exists()) {
-                    def jsonSlurper = new JsonSlurper()
-                    def mixinConfig = jsonSlurper.parse(mixinConfigFile)
-                    mixinConfig.remove("refmap")
-                    mixinConfigFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(mixinConfig))
-                }
             }
         }
     }
