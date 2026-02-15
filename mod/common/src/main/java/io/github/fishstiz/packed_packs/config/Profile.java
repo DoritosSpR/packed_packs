@@ -1,6 +1,5 @@
 package io.github.fishstiz.packed_packs.config;
 
-import com.google.common.hash.Hashing;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
@@ -8,13 +7,16 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import net.minecraft.util.FileUtil;
 import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.repository.Pack;
 import org.jspecify.annotations.Nullable;
 
+import java.io.IOException;
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -24,27 +26,29 @@ import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.mapOrDefault;
 
 public class Profile implements PackOptions, Serializable {
     public static final int NAME_MAX_LENGTH = 32;
-    private static final String TEMP_PREFIX = "__temp__";
-    private static final String DELIMITER = "__";
+    static final String PROFILE_EXTENSION = ".profile.json";
+    private static final String PROFILE_EXTENSION_QUOTE = Pattern.quote(PROFILE_EXTENSION);
     private boolean locked = false;
     private String name;
     private Map<String, PackOverride> overrides = new Object2ObjectOpenHashMap<>();
     private Set<String> packIds = new ObjectLinkedOpenHashSet<>();
-    private transient String id;
-    private transient String hash;
+    transient String id;
+    transient Path saveFolder;
+    transient boolean temp = false;
 
     Profile() {
-        this.id = TEMP_PREFIX + Instant.now().toEpochMilli();
+        this.id = createTempId();
     }
 
-    public Profile(String name) {
+    Profile(String name, Path saveFolder) {
+        this.temp = true;
+        this.saveFolder = saveFolder;
         this.name = trimName(name);
-        this.hash = Hashing.murmur3_32_fixed().hashString(this.name + Instant.now().toEpochMilli(), StandardCharsets.UTF_8).toString();
-        this.id = this.name + DELIMITER + this.hash;
+        this.id = findAvailableId(this.saveFolder, this.name);
     }
 
-    private Profile(String name, Set<String> packIds, Map<String, PackOverride> overrides) {
-        this(name);
+    private Profile(String name, Set<String> packIds, Map<String, PackOverride> overrides, Path saveFolder) {
+        this(name, saveFolder);
         this.packIds = new ObjectLinkedOpenHashSet<>(packIds);
         this.overrides = new Object2ObjectOpenHashMap<>(overrides);
         this.overrides.replaceAll((id, override) -> new PackOverride(override.hidden(), override.required(), override.position()));
@@ -82,8 +86,8 @@ public class Profile implements PackOptions, Serializable {
     void setName(String name) {
         if (!this.isLocked()) {
             this.name = trimName(name);
-            if (this.hash != null) {
-                this.id = this.id.replaceAll("^.*(?=" + Pattern.quote(this.hash) + "$)", this.name + DELIMITER);
+            if (this.temp && this.saveFolder != null) {
+                this.id = findAvailableId(this.saveFolder, this.name);
             }
         }
     }
@@ -95,7 +99,7 @@ public class Profile implements PackOptions, Serializable {
             profileName += " - " + ResourceUtil.getText("profile.copy").getString();
         }
 
-        return new Profile(profileName, this.packIds, this.overrides);
+        return new Profile(profileName, this.packIds, this.overrides, this.saveFolder);
     }
 
     public boolean includes(Pack pack) {
@@ -240,13 +244,28 @@ public class Profile implements PackOptions, Serializable {
         return name.length() <= NAME_MAX_LENGTH ? name : name.substring(0, NAME_MAX_LENGTH);
     }
 
-    void lockId() {
-        this.hash = null;
+    private static String createTempId() {
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss.SSS"));
     }
 
-    void lockId(String id) {
-        this.id = id;
-        this.lockId();
+    private static String findAvailableId(Path saveFolder, String name) {
+        try {
+            return removeExtension(FileUtil.findAvailableName(
+                    Objects.requireNonNull(saveFolder, "saveFolder"),
+                    Objects.requireNonNull(name, "name"),
+                    PROFILE_EXTENSION
+            ));
+        } catch (IOException e) {
+            return createTempId();
+        }
+    }
+
+    static String removeExtension(String id) {
+        return id.replaceFirst(PROFILE_EXTENSION_QUOTE + "$", "");
+    }
+
+    public boolean isTemp() {
+        return this.temp;
     }
 
     @Override
