@@ -9,6 +9,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.config.Profile;
+import io.github.fishstiz.packed_packs.config.Profiles;
 import io.github.fishstiz.packed_packs.gui.components.profile.ProfileList;
 import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
 import io.github.fishstiz.packed_packs.gui.screens.WidgetFactory;
@@ -165,9 +166,16 @@ public class ProfilesLayout {
 
     private void copyProfile() {
         Profile selectedProfile = this.profileList.getSelectedProfile();
-        Profile copiedProfile = selectedProfile != null
-                ? selectedProfile.copy()
-                : new Profile(NO_PROFILE_TEXT.getString() + " - " + COPY_TEXT.getString());
+        Profile copiedProfile;
+
+        if (selectedProfile != null) {
+            if (selectedProfile.isTemp()) {
+                Profiles.save(this.userConfig.packType(), selectedProfile);
+            }
+            copiedProfile = selectedProfile.copy();
+        } else {
+            copiedProfile = Profiles.create(NO_PROFILE_TEXT.getString() + " - " + COPY_TEXT.getString(), this.userConfig.packType());
+        }
 
         this.copyListener.accept(selectedProfile, copiedProfile);
         this.userConfig.addProfile(copiedProfile);
