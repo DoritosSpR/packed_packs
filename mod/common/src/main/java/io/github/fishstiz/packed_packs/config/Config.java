@@ -1,6 +1,5 @@
 package io.github.fishstiz.packed_packs.config;
 
-import com.google.gson.annotations.SerializedName;
 import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
@@ -10,7 +9,6 @@ import net.minecraft.util.Util;
 import net.minecraft.server.packs.PackType;
 import org.jspecify.annotations.Nullable;
 
-import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.*;
@@ -33,22 +31,7 @@ public class Config implements Serializable {
     }
 
     private static Config loadOrCreate() {
-        Path path = getPath();
-
-        if (!path.toFile().exists()) {
-            File previousFile = ConfigFixer.getPreviousConfigFile();
-            try {
-                if (previousFile.exists()) {
-                    Config config = JsonLoader.loadOrCreateJson(previousFile.toPath(), Config.class, Config::new);
-                    ConfigFixer.migrateConfig(config);
-                    return config;
-                }
-            } catch (Exception e) {
-                PackedPacks.LOGGER.info("[packed_packs] An error occured while migrating config. ", e);
-            }
-        }
-
-        return JsonLoader.loadOrCreateJson(path, Config.class, Config::new);
+        return JsonLoader.loadOrCreateJson(getPath(), Config.class, Config::new);
     }
 
     public static Config get() {
@@ -114,16 +97,8 @@ public class Config implements Serializable {
         private boolean rememberLastViewedProfile = false;
         private @Nullable String lastViewedProfile = null;
         private List<String> profileOrder = new ObjectArrayList<>();
-        transient @Nullable List<Profile> availableProfiles; // should be private
+        private transient @Nullable List<Profile> availableProfiles;
         private transient @Nullable Profile cachedLastViewedProfile = null;
-
-        @Deprecated(forRemoval = true)
-        @SerializedName("profiles")
-        List<Profile> oldProfiles = Collections.emptyList();
-        @Deprecated(forRemoval = true)
-        @SerializedName("defaultProfile")
-        @Nullable
-        String oldDefaultProfile = null;
 
         public abstract PackType packType();
 

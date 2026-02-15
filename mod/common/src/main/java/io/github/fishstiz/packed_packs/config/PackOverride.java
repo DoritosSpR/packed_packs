@@ -10,11 +10,6 @@ import java.io.Serializable;
 import java.lang.reflect.Type;
 
 public final class PackOverride implements Serializable {
-    /**
-     * @deprecated remove on stable release. from fixed -> position.
-     */
-    @Deprecated(forRemoval = true)
-    private static final String FIXED_DEPRECATED_SERIALIZED_NAME = "fixed";
     private static final String HIDDEN_SERIALIZED_NAME = "hidden";
     private static final String REQUIRED_SERIALIZED_NAME = "required";
     private static final String POSITION_SERIALIZED_NAME = "position";
@@ -97,20 +92,17 @@ public final class PackOverride implements Serializable {
 
             Boolean hidden = obj.has(HIDDEN_SERIALIZED_NAME) ? obj.get(HIDDEN_SERIALIZED_NAME).getAsBoolean() : null;
             Boolean required = obj.has(REQUIRED_SERIALIZED_NAME) ? obj.get(REQUIRED_SERIALIZED_NAME).getAsBoolean() : null;
-            Position fixed = null;
-            if (obj.has(POSITION_SERIALIZED_NAME) || obj.has(FIXED_DEPRECATED_SERIALIZED_NAME)) {
-                String position = obj.has(POSITION_SERIALIZED_NAME)
-                        ? obj.get(POSITION_SERIALIZED_NAME).getAsString()
-                        : obj.get(FIXED_DEPRECATED_SERIALIZED_NAME).getAsString();
+            Position position = null;
 
+            if (obj.has(POSITION_SERIALIZED_NAME)) {
                 try {
-                    fixed = Position.valueOf(position.toUpperCase());
+                    position = Position.valueOf(obj.get(POSITION_SERIALIZED_NAME).getAsString().toUpperCase());
                 } catch (IllegalArgumentException e) {
                     PackedPacks.LOGGER.error("[packed_packs] Invalid value for key 'position': '{}'. Expected one of {}", position, Position.values());
                 }
             }
 
-            return new PackOverride(hidden, required, fixed);
+            return new PackOverride(hidden, required, position);
         }
     }
 }

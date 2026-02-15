@@ -74,8 +74,7 @@ public class Preferences {
         Preferences prefs = new Preferences();
         File file = getFile();
         if (!file.exists()) {
-            file = ConfigFixer.getPreviousPreferencesFile();
-            if (!file.exists()) return prefs;
+            return prefs;
         }
 
         Properties props = new Properties();
