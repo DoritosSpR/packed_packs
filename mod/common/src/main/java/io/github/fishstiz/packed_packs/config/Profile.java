@@ -30,8 +30,7 @@ public class Profile implements PackOptions, Serializable {
     private String name;
     private Map<String, PackOverride> overrides = new Object2ObjectOpenHashMap<>();
     private Set<String> packIds = new ObjectLinkedOpenHashSet<>();
-    @Deprecated  // should be transient
-    private String id;
+    private transient String id;
     private transient String hash;
 
     Profile() {
