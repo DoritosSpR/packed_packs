@@ -17,12 +17,12 @@ public class ResourceUtil {
         return Component.translatable(PackedPacks.MOD_ID + "." + keySuffix, args);
     }
 
-    public static ResourceLocation getResource(String path) {
+    public static ResourceLocation id(String path) {
         return ResourceLocation.fromNamespaceAndPath(PackedPacks.MOD_ID, path);
     }
 
     public static ResourceLocation getIcon(String icon) {
-        return getResource("textures/gui/sprites/icon/").withSuffix(icon + ".png");
+        return id("textures/gui/sprites/icon/").withSuffix(icon + ".png");
     }
 
     public static ResourceLocation getVanillaSprite(String path) {
