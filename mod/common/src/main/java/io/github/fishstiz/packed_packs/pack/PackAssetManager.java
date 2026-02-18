@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class PackAssetManager {
-    public static final Sprite DEFAULT_FOLDER_ICON = Sprite.of16(ResourceUtil.getResource("textures/misc/unknown_folder.png"));
+    public static final Sprite DEFAULT_FOLDER_ICON = Sprite.of16(ResourceUtil.id("textures/misc/unknown_folder.png"));
     public static final Sprite DEFAULT_ICON = Sprite.of16(ResourceLocation.withDefaultNamespace("textures/misc/unknown_pack.png"));
     private final Map<String, Sprite> cachedIcons = new Object2ObjectOpenHashMap<>();
     private final Minecraft minecraft;
