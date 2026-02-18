@@ -6,7 +6,7 @@ import io.github.fishstiz.packed_packs.compat.Mod;
 
 import java.util.function.Consumer;
 
-public class MinecraftCursor {
+public final class MinecraftCursor {
     private MinecraftCursor() {
     }
 
@@ -14,6 +14,8 @@ public class MinecraftCursor {
             CursorController.getInstance().setSingleCycleCursor(dragging ? CursorType.GRABBING : CursorType.NOT_ALLOWED);
 
     public static void handleDrag(boolean dragging) {
-        Mod.MINECRAFT_CURSOR.wrapError(dragging, HANDLE_DRAG);
+        if (!Mod.MINECRAFT_CURSOR.isLoaded()) return;
+
+        HANDLE_DRAG.accept(dragging);
     }
 }

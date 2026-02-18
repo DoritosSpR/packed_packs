@@ -1,7 +1,6 @@
 package io.github.fishstiz.packed_packs.platform.services;
 
-import io.github.fishstiz.packed_packs.compat.api.ModExtension;
-import io.github.fishstiz.packed_packs.config.Preferences;
+import io.github.fishstiz.packed_packs.api.PackedPacksInitializer;
 import net.minecraft.server.packs.repository.Pack;
 
 import java.nio.file.Path;
@@ -15,11 +14,7 @@ public interface PlatformHelper {
 
     boolean isModLoaded(String id);
 
-    default List<ModExtension> getExtensions() {
-        return Collections.emptyList();
-    }
-
-    default List<Preferences.Spec<?>> getPreferences() {
+    default List<PackedPacksInitializer> getModExtensions() {
         return Collections.emptyList();
     }
 
