@@ -1,7 +1,6 @@
 @ApiStatus.Internal
-@ParametersAreNonnullByDefault
+@NotNullByDefault
 package io.github.fishstiz.packed_packs.impl;
 
 import org.jetbrains.annotations.ApiStatus;
-
-import javax.annotation.ParametersAreNonnullByDefault;
+import org.jetbrains.annotations.NotNullByDefault;
