@@ -6,8 +6,10 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItem;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.MenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.packed_packs.api.PreferenceRegistry;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Preferences;
+import io.github.fishstiz.packed_packs.impl.PackedPacksApiImpl;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
@@ -29,6 +31,10 @@ public record ToggleableHelper(
 
     public ToggleableHelper(Preferences.Option<Boolean> pref) {
         this(pref::set, pref::get, enabled -> ResourceUtil.getText("preferences.widgets." + pref.getKey()));
+    }
+
+    public ToggleableHelper(PreferenceRegistry.Key<Boolean> prefKey) {
+        this(Preferences.INSTANCE.getOrThrow(PackedPacksApiImpl.getInstance().preferences().getSpec(prefKey)));
     }
 
     public void toggle() {
@@ -65,11 +71,23 @@ public record ToggleableHelper(
         return enabled ? RADIO_ON_SPRITE : RADIO_OFF_SPRITE;
     }
 
+    public static MenuItem createMenuItem(PreferenceRegistry preferences, PreferenceRegistry.Key<Boolean> key, Component text) {
+        return new ToggleableHelper(
+                value -> preferences.set(key, value),
+                () -> Boolean.TRUE.equals(preferences.get(key)),
+                value -> text
+        ).itemBuilder().closeOnInteract(false).build();
+    }
+
     public static MenuItem fromPref(Preferences.Option<Boolean> pref) {
         return new ToggleableHelper(pref)
                 .itemBuilder()
                 .closeOnInteract(false)
                 .build();
+    }
+
+    public static <T extends FidgetzButton.Builder<?, ?>> T applyPref(PreferenceRegistry.Key<Boolean> prefKey, T builder) {
+        return applyPref(Preferences.INSTANCE.getOrThrow(PackedPacksApiImpl.getInstance().preferences().getSpec(prefKey)), builder);
     }
 
     public static <T extends FidgetzButton.Builder<?, ?>> T applyPref(Preferences.Option<Boolean> pref, T builder) {
