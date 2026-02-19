@@ -1,4 +1,4 @@
-@ParametersAreNonnullByDefault
+@NotNullByDefault
 package io.github.fishstiz.packed_packs.api;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import org.jetbrains.annotations.NotNullByDefault;
