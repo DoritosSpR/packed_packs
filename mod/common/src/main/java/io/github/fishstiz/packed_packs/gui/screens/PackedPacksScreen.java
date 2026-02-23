@@ -101,6 +101,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private PackWatcher watcher;
     private boolean showActionBar = Config.get().isShowActionBar();
     private @Nullable GuiEventListener hoveredElement;
+    private boolean refreshOnInit = true; // to avoid reloading repository when rebuilding widgets
     private boolean initialized = false;
 
     private PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, boolean initState) {
@@ -188,6 +189,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     @Override
     public void removed() {
         this.closeWatcher();
+        this.cancelRefresh();
 
         this.availablePacks.saveFilters();
 
@@ -214,10 +216,10 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
         this.profiles.init(this::setInitialFocus);
 
-//        InitializeLayoutEvent event = PackedPacksApiImpl.getInstance().eventBus().post(new InitializeLayoutEvent(this.context));
-        this.layout.layout().addChild(this.createHeader(null));
+        InitializeLayoutEvent event = PackedPacksApiImpl.getInstance().eventBus().post(new InitializeLayoutEvent(this.context));
+        this.layout.layout().addChild(this.createHeader(event));
         this.layout.layout().addFlexChild(this.createContents());
-        this.layout.layout().addChild(this.createFooter(null));
+        this.layout.layout().addChild(this.createFooter(event));
 
         this.dialogs.forEach(this::addWidget);
         this.layout.visitWidgets(this::addRenderableWidget);
@@ -226,14 +228,17 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.clearHistory();
         this.repositionElements();
 
-        this.refreshPacks();
+        if (this.refreshOnInit) {
+            this.refreshPacks();
+        }
+
         this.createWatcher();
 
         this.initialized = true;
     }
 
     private void addExtensions(FlexLayout layout, InitializeLayoutEvent.Pos pos, InitializeLayoutEvent extensions) {
-//        extensions.getPendingWidgets(pos).forEach(layout::addChild);
+        extensions.getPendingWidgets(pos).forEach(layout::addChild);
     }
 
     private FlexLayout createHeader(InitializeLayoutEvent extensions) {
@@ -350,10 +355,10 @@ public class PackedPacksScreen extends PackListEventHandler implements
             profile.setPacks(this.currentPacks.list().copyPacks());
             screen = new PackedPacksScreen(this.previous, this.original, profile);
         } else {
-            PackGroup packs = PackGroup.of(this.currentPacks.list().copyPacks(), this.availablePacks.list().copyPacks());
+            PackGroup packs = new PackGroup(this.currentPacks.list().copyPacks(), this.availablePacks.list().copyPacks());
             screen = new PackedPacksScreen(this.previous, this.original, packs);
         }
-
+        screen.refreshOnInit = false;
         this.minecraft.setScreen(screen);
     }
 
@@ -528,6 +533,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     public void refreshPacks() {
+        this.cancelRefresh();
         this.refreshFuture = CompletableFuture.runAsync(this.repository::refresh, Util.backgroundExecutor())
                 .thenRunAsync(this::revalidatePacks, this.minecraft);
     }
@@ -908,7 +914,15 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     public boolean canRefresh() {
-        return this.refreshFuture == null || this.refreshFuture.isDone();
+        var future = this.refreshFuture;
+        return future == null || future.isDone();
+    }
+
+    private void cancelRefresh() {
+        var future = this.refreshFuture;
+        if (future != null && !future.isDone()) {
+            this.refreshFuture.cancel(true);
+        }
     }
 
     public void clearHistory() {

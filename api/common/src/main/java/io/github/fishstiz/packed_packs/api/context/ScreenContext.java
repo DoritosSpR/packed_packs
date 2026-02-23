@@ -73,10 +73,9 @@ public interface ScreenContext {
     void reload();
 
     /**
-     * Finalizes the current selection. This applies the pack changes to the game environment
-     * and may trigger a resource/data reload when changes are made.
+     * Applies the changes in the selected list and may trigger a resource/data reload.
      * <p>
-     * <b>Note:</b> This closes the screen when {@link #isServerData()} returns {@code true}
+     * <b>Note:</b> This closes the screen when data packs are being managed.
      */
     void commit();
 

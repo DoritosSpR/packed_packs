@@ -155,7 +155,7 @@ public class PackRepositoryManager {
                 }
             }
         }
-        return PackGroup.of(validSelected, validUnselected);
+        return new PackGroup(validSelected, validUnselected);
     }
 
     /**
