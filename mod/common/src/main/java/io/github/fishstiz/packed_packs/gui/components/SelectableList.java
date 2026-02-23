@@ -23,15 +23,15 @@ public class SelectableList<T> {
     }
 
     public List<T> getItems() {
-        return Collections.unmodifiableList(this.items);
+        return this.items;
     }
 
     public List<T> getSelection() {
-        return Collections.unmodifiableList(this.selectedItems);
+        return this.selectedItems;
     }
 
     public List<T> getVisibleItems() {
-        return Collections.unmodifiableList(this.visibleItems);
+        return this.visibleItems;
     }
 
     public int size() {

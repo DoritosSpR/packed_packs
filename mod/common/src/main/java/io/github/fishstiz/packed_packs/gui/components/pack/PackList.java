@@ -3,17 +3,14 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
-import io.github.fishstiz.fidgetz.gui.layouts.*;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.api.context.PackContext;
 import io.github.fishstiz.packed_packs.api.events.ContextMenuEvent;
 import io.github.fishstiz.packed_packs.api.events.InitializePackEntryEvent;
-import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.MouseSelectionHandler;
-import io.github.fishstiz.packed_packs.gui.components.SelectionContext;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.gui.history.Restorable;
@@ -75,7 +72,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         this.list = new PackListModel(this.options);
     }
 
-    protected abstract @NonNull Entry createEntry(PackContext context, SelectionContext<Pack> selectionContext, int index);
+    protected abstract @NonNull Entry createEntry(PackContext context, int index);
 
     public @Nullable Entry getEntry(@Nullable Pack pack) {
         if (pack == null) return null;
@@ -87,17 +84,13 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
     private void refreshEntries() {
         Entry focused = this.getFocused();
-        List<Pack> selection = this.list.getSelection();
         List<Pack> visiblePacks = this.list.getVisibleItems();
 
         this.clearEntries();
         for (int i = 0; i < visiblePacks.size(); i++) {
             Pack pack = visiblePacks.get(i);
             PackContext context = new PackContextImpl(pack, this.assets, this.fileOps);
-            Entry entry = this.createEntry(context, new SelectionContext<>(selection, pack), i);
-            InitializePackEntryEvent event = new InitializePackEntryEvent(listener.ctx(), context, entry, entry::addTopLayer);
-            PackedPacksApiImpl.getInstance().eventBus().post(event);
-
+            Entry entry = this.createEntry(context, i);
             this.addEntry(entry);
         }
 
@@ -390,6 +383,12 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     }
 
     @Override
+    public List<Entry> children() {
+        // for performance, return raw children instead of a new view
+        return this.children;
+    }
+
+    @Override
     protected void renderListItems(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.renderListItems(guiGraphics, mouseX, mouseY, partialTick);
 
@@ -399,6 +398,12 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
             int outlineHeight = focused.getHeight() + Y_OFFSET;
             DrawUtil.renderOutline(guiGraphics, focused.getX(), outlineTop, focused.getWidth(), outlineHeight, Theme.WHITE.getARGB());
         }
+    }
+
+    @Override
+    protected void renderItem(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, Entry item) {
+        item.ensureInitialized();
+        super.renderItem(guiGraphics, mouseX, mouseY, partialTick, item);
     }
 
     @Override
@@ -452,21 +457,29 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         protected static final int H_SPACING = 2;
         protected static final ColoredRect SELECTED_OVERLAY = new ColoredRect(Theme.BLUE_500.withAlpha(0.25F));
         protected final PackContext context;
-        protected final SelectionContext<Pack> selectionContext;
         private final MouseSelectionHandler<Pack> selectionHandler;
         private final List<GuiEventListener> children = new ObjectArrayList<>();
         private final List<Renderable> renderables = new ObjectArrayList<>();
         private final List<Renderable> topRenderables = new ObjectArrayList<>();
-        private final PackWidget packWidget;
-        private final @Nullable PackListDevMenu devMenu;
-        private FidgetzButton<FolderPack> folderWidget;
+        private @Nullable PackListDevMenu devMenu;
+        private @Nullable PackWidget packWidget;
+        private @Nullable FidgetzButton<FolderPack> folderWidget;
+        private boolean initialized;
         private boolean stale = false;
 
-        protected Entry(PackContext context, SelectionContext<Pack> selectionContext, int index) {
+        protected Entry(PackContext context, int index) {
             super(index);
             this.context = context;
-            this.selectionContext = selectionContext;
-            this.selectionHandler = new MouseSelectionHandler<>(this, selectionContext);
+            this.selectionHandler = new MouseSelectionHandler<>(this, PackList.this.list.getSelection(), context.pack());
+        }
+
+        private void ensureInitialized() {
+            if (!this.initialized) {
+                this.init();
+            }
+        }
+
+        private void init() {
             this.packWidget = this.addRenderableWidget(new PackWidget(
                     this.pack(),
                     PackList.this.assets,
@@ -476,7 +489,9 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
                     ITEM_HEIGHT - ROW_GAP,
                     H_SPACING
             ));
-            boolean devMode = Config.get().isDevMode();
+
+            boolean devMode = listener.ctx().devMode();
+
             if (this.pack() instanceof FolderPack folderPack && (devMode || Preferences.INSTANCE.folderPackWidget.get())) {
                 this.folderWidget = this.addTopRenderableOnly(this.prependWidget(
                         ToggleableHelper.applyPref(Preferences.INSTANCE.folderPackWidget, FidgetzButton.<FolderPack>builder())
@@ -490,9 +505,15 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
                                 .build()
                 ));
             }
-            this.devMenu = devMode
-                    ? new PackListDevMenu(PackList.this.minecraft, PackList.this.options, this.selectionContext, this::handleDevMenuEvent)
-                    : null;
+
+            if (devMode) {
+                this.devMenu = new PackListDevMenu(PackList.this.minecraft, PackList.this.options, this);
+            }
+
+            this.initialized = true;
+
+            InitializePackEntryEvent event = new InitializePackEntryEvent(listener.ctx(), this.context, this, this::addTopLayer);
+            PackedPacksApiImpl.getInstance().eventBus().post(event);
         }
 
         public Pack pack() {
@@ -524,11 +545,16 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         }
 
         public boolean isSelected() {
-            return this.selectionContext.isSelected();
+            return PackList.this.list.getSelection().contains(this.pack());
         }
 
         public boolean isSelectedLast() {
-            return this.selectionContext.isSelectedLast();
+            List<Pack> selection = PackList.this.list.getSelection();
+            return !selection.isEmpty() && Objects.equals(selection.getLast(), this.pack());
+        }
+
+        public List<Pack> getPackOrSelection() {
+            return this.isSelected() ? List.copyOf(PackList.this.list.getSelection()) : List.of(this.pack());
         }
 
         protected void sendPacks(Pack trigger, List<Pack> payload) {
@@ -702,6 +728,8 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
         @Override
         public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
+            if (!this.initialized) return;
+
             PackList.this.setFocused(this);
 
             var extensions = ContextMenuEventImpl.postPackEntry(PackList.this.listener.ctx(), this.context);
@@ -759,7 +787,10 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
         public void onRename(Component newName) {
             this.stale = true;
-            this.packWidget.onRename(newName);
+
+            if (this.packWidget != null) {
+                this.packWidget.onRename(newName);
+            }
             if (this.folderWidget != null) {
                 this.folderWidget.active = false;
             }

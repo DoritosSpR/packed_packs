@@ -4,7 +4,6 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuil
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.config.PackOverride;
 import io.github.fishstiz.packed_packs.config.Profile;
-import io.github.fishstiz.packed_packs.gui.components.SelectionContext;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.pack.ProfileScope;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
@@ -22,19 +21,13 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.BiPredicate;
-import java.util.function.Consumer;
 
 import static io.github.fishstiz.packed_packs.gui.components.ToggleableHelper.getDefaultIcon;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.devItem;
 import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.pick;
 
-public record PackListDevMenu(
-        Minecraft minecraft,
-        PackOptionsContext options,
-        SelectionContext<Pack> context,
-        Consumer<Event<?>> listener
-) {
+public record PackListDevMenu(Minecraft minecraft, PackOptionsContext options, PackList.Entry entry) {
     private static final int DEV_SPRITE_SIZE = 16;
     private static final int DEV_SPRITE_MARGIN_RIGHT = 8;
     private static final Sprite EYE_SLASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("eye_slash"));
@@ -85,9 +78,7 @@ public record PackListDevMenu(
     }
 
     private <T> void notifyListener(T value, List<Pack> packs, EventFactory<T> eventFactory) {
-        if (this.listener != null) {
-            this.listener.accept(eventFactory.create(this.pack(), value, packs));
-        }
+        this.entry.handleDevMenuEvent(eventFactory.create(this.pack(), value, packs));
     }
 
     private static Component overrideText(String keySuffix) {
@@ -95,15 +86,11 @@ public record PackListDevMenu(
     }
 
     private Pack pack() {
-        return this.context.item();
+        return this.entry.pack();
     }
 
     private ProfileScope hasOverride(BiPredicate<Profile, Pack> option) {
-        return this.options.hasOverride(this.context.item(), option);
-    }
-
-    private List<Pack> getPackOrSelection() {
-        return this.context.getItemOrSelection();
+        return this.options.hasOverride(this.pack(), option);
     }
 
     public void renderDevSprites(GuiGraphics guiGraphics, int top, int left, int width) {
@@ -145,7 +132,7 @@ public record PackListDevMenu(
 
     private void updateHidden(boolean hidden) {
         this.options.getProfile().ifPresent(profile -> {
-            List<Pack> selected = this.getPackOrSelection();
+            List<Pack> selected = this.entry.getPackOrSelection();
             profile.setHidden(hidden, selected);
             this.notifyListener(hidden, selected, Event.Hide::new);
         });
@@ -153,7 +140,7 @@ public record PackListDevMenu(
 
     private void updateRequired(@Nullable Boolean required) {
         this.options.getProfile().ifPresent(profile -> {
-            List<Pack> selected = this.getPackOrSelection();
+            List<Pack> selected = this.entry.getPackOrSelection();
             profile.setRequired(required, selected);
             this.notifyListener(required, selected, Event.Require::new);
         });
@@ -161,7 +148,7 @@ public record PackListDevMenu(
 
     private void updatePosition(PackOverride.@Nullable Position position) {
         this.options.getProfile().ifPresent(profile -> {
-            List<Pack> selected = this.getPackOrSelection();
+            List<Pack> selected = this.entry.getPackOrSelection();
             profile.setPosition(position, selected);
             this.notifyListener(position, selected, Event.Reposition::new);
         });
@@ -188,7 +175,7 @@ public record PackListDevMenu(
         ).separator();
 
         builder.add(devItem(ResourceUtil.getText("aliases.edit"))
-                .action(() -> this.listener.accept(new Event.EditAliases(this.pack(), this.options.getConfig().hasAlias(this.pack().getId()))))
+                .action(() -> this.entry.handleDevMenuEvent(new Event.EditAliases(this.pack(), this.options.getConfig().hasAlias(this.pack().getId()))))
                 .build()
         ).separator();
     }
