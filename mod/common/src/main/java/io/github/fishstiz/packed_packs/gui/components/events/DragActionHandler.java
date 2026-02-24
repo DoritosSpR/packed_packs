@@ -11,10 +11,11 @@ import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
-public class DragEventRenderer {
+public class DragActionHandler {
     private static final int OFFSET_Y = 4;
     private static final int ICON_SIZE = 48;
     private static final int NUM_SIZE = 16;
@@ -25,30 +26,43 @@ public class DragEventRenderer {
     private final ColoredRect overlay = new ColoredRect(Theme.BLACK.withAlpha(0.5f));
     private final ColoredRect numberBackground = new ColoredRect(Theme.BLUE_500.getARGB());
     private final PackAssetManager assetManager;
+    private PackListAction.@Nullable Drag dragAction;
 
-    public DragEventRenderer(PackAssetManager assetManager) {
+    public DragActionHandler(PackAssetManager assetManager) {
         this.assetManager = assetManager;
     }
 
-    public void render(DragEvent dragEvent, List<PackList> dropZones, GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        PackList source = dragEvent.target();
+    public void setDragAction(PackListAction.@Nullable Drag dragAction) {
+        this.dragAction = dragAction;
+    }
+
+    public PackListAction.@Nullable Drag getDragAction() {
+        return dragAction;
+    }
+
+    public boolean isDragging() {
+        return this.dragAction != null;
+    }
+
+    public void render(List<PackList> dropZones, GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         boolean validDrop = false;
 
+        PackList source = this.dragAction.source();
         for (PackList list : dropZones) {
-            list.renderDroppableZone(guiGraphics, dragEvent, mouseX, mouseY, partialTick);
+            list.renderDroppableZone(guiGraphics, this.dragAction, mouseX, mouseY, partialTick);
             if (!validDrop && list.isMouseOver(mouseX, mouseY)) {
                 validDrop = source == list || source.canInteract(list);
             }
         }
 
-        this.renderDragEvent(dragEvent, guiGraphics, mouseX, mouseY, partialTick);
+        this.renderDragEvent(guiGraphics, mouseX, mouseY, partialTick);
 
         guiGraphics.requestCursor(validDrop ? CursorsExtended.GRABBING : CursorTypes.NOT_ALLOWED);
     }
 
-    private void renderDragEvent(DragEvent dragEvent, GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        Sprite icon = this.assetManager.getIcon(dragEvent.trigger());
-        String sizeString = String.valueOf(dragEvent.payload().size());
+    private void renderDragEvent(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        Sprite icon = this.assetManager.getIcon(this.dragAction.pack());
+        String sizeString = String.valueOf(this.dragAction.payload().size());
         Font font = Minecraft.getInstance().font;
         int sizeStringWidth = font.width(sizeString);
         int iconX = mouseX - ICON_OFFSET_X;

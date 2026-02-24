@@ -8,6 +8,7 @@ import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.gui.components.pack.FileRenameModal;
 import io.github.fishstiz.packed_packs.gui.components.pack.FolderDialog;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackListProps;
 import io.github.fishstiz.packed_packs.gui.layouts.OptionsLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.ProfilesLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
@@ -33,6 +34,7 @@ import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.SPACIN
  * maybe hacky or overkill, but reduces first constructor call of {@link PackedPacksScreen} by ~25%.
  */
 record Components(
+        PackFileOperations fileOps,
         ProfilesLayout profilesLayout,
         AvailablePacksLayout availablePacks,
         CurrentPacksLayout currentPacks,
@@ -56,14 +58,16 @@ record Components(
             IntSupplier maxHeight
     ) {
         PackFileOperations fileOps = new PackFileOperations(options, repository);
+        PackListProps props = new PackListProps(screen, screen.ctx(), options, assets, fileOps);
 
         if (warmed) {
             return new Components(
+                    fileOps,
                     new ProfilesLayout(screen, screen, options),
-                    new AvailablePacksLayout(options, assets, fileOps, screen, screen.ctx()),
-                    new CurrentPacksLayout(options, assets, fileOps, screen, screen.ctx()),
-                    new FolderDialog(screen, options, assets, fileOps, screen.ctx()),
-                    new FileRenameModal(screen, fileOps, assets),
+                    new AvailablePacksLayout(props),
+                    new CurrentPacksLayout(props),
+                    new FolderDialog(screen, props),
+                    new FileRenameModal(screen, assets),
                     buildMenu(screen),
                     buildOptionsModal(screen, maxHeight, options),
                     buildAliasModal(screen, options, assets)
@@ -71,10 +75,10 @@ record Components(
         }
 
         var profiles = async(() -> new ProfilesLayout(screen, screen, options));
-        var available = async(() -> new AvailablePacksLayout(options, assets, fileOps, screen, screen.ctx()));
-        var current = async(() -> new CurrentPacksLayout(options, assets, fileOps, screen, screen.ctx()));
-        var folder = async(() -> new FolderDialog(screen, options, assets, fileOps, screen.ctx()));
-        var rename = async(() -> new FileRenameModal(screen, fileOps, assets));
+        var available = async(() -> new AvailablePacksLayout(props));
+        var current = async(() -> new CurrentPacksLayout(props));
+        var folder = async(() -> new FolderDialog(screen, props));
+        var rename = async(() -> new FileRenameModal(screen, assets));
         var menu = async(() -> buildMenu(screen));
         var alias = async(() -> buildAliasModal(screen, options, assets));
         var optionsModal = async(() -> buildOptionsModal(screen, maxHeight, options));
@@ -84,6 +88,7 @@ record Components(
         warmed = true;
 
         return new Components(
+                fileOps,
                 profiles.join(),
                 available.join(),
                 current.join(),
@@ -110,7 +115,7 @@ record Components(
     ) {
         if (!Config.get().isDevMode()) return null;
 
-        PackAliasLayout layout = new PackAliasLayout(options.getConfig(), assets);
+        PackAliasLayout layout = new PackAliasLayout(screen, options.getConfig(), assets);
         return Modal.builder(screen, layout)
                 .addListener(open -> {
                     if (!open) layout.saveAliases();

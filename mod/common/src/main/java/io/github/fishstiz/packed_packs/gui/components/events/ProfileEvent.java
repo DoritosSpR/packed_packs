@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.gui.components.events;
 import io.github.fishstiz.packed_packs.config.Profile;
 import org.jspecify.annotations.Nullable;
 
-public sealed interface ProfileEvent extends Event {
+public sealed interface ProfileEvent extends Action {
     @Override
     default boolean pushToHistory() {
         return false;

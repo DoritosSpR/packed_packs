@@ -3,7 +3,7 @@ package io.github.fishstiz.packed_packs.pack;
 import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.util.lang.FunctionsUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
-import io.github.fishstiz.packed_packs.config.Folder;
+import io.github.fishstiz.packed_packs.config.FolderPackMeta;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
@@ -32,7 +32,7 @@ import java.util.concurrent.CompletableFuture;
 public class PackRepositoryManager {
     private final Map<String, Pack> availablePacks = new Object2ObjectLinkedOpenHashMap<>();
     private final Map<String, List<Pack>> folderPacks = new Object2ObjectOpenHashMap<>();
-    private final Map<String, CompletableFuture<Folder>> folderConfigs = new Object2ObjectOpenHashMap<>();
+    private final Map<String, CompletableFuture<FolderPackMeta>> folderConfigs = new Object2ObjectOpenHashMap<>();
     private final Set<String> selectedPacksCache = new ObjectOpenHashSet<>();
     private final PackRepository repository;
     private final PackOptionsContext options;
@@ -350,14 +350,14 @@ public class PackRepositoryManager {
                 .toList();
     }
 
-    public @Nullable Folder getFolderConfig(@Nullable FolderPack folderPack) {
+    public @Nullable FolderPackMeta getFolderConfig(@Nullable FolderPack folderPack) {
         if (folderPack == null) return null;
-        CompletableFuture<Folder> future = this.folderConfigs.get(folderPack.getId());
+        CompletableFuture<FolderPackMeta> future = this.folderConfigs.get(folderPack.getId());
         return future != null ? future.join() : null;
     }
 
     public List<Pack> getNestedPacks(FolderPack folderPack) {
-        Folder config = this.getFolderConfig(folderPack);
+        FolderPackMeta config = this.getFolderConfig(folderPack);
         if (config == null) return Collections.emptyList();
         return this.validateAndOrderNestedPackIds(folderPack, config.getPackIds());
     }

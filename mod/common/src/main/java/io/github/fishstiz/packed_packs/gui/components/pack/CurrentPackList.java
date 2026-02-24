@@ -7,15 +7,9 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.api.context.PackContext;
-import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.gui.components.MouseSelectionHandler;
-import io.github.fishstiz.packed_packs.gui.components.events.DragEvent;
-import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
-import io.github.fishstiz.packed_packs.pack.PackAssetManager;
-import io.github.fishstiz.packed_packs.pack.PackFileOperations;
-import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
+import io.github.fishstiz.packed_packs.gui.components.events.PackListAction;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.gui.components.events.MoveEvent;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.input.KeyEvent;
@@ -23,7 +17,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.server.packs.repository.Pack;
 import org.jspecify.annotations.NonNull;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.function.*;
 
@@ -48,14 +41,8 @@ public class CurrentPackList extends PackList {
     private static final double SCROLL_STEP = 10;
     private boolean scrolling;
 
-    public CurrentPackList(
-            PackOptionsContext options,
-            PackAssetManager assets,
-            PackFileOperations fileOps,
-            ActionDispatcher listener,
-            ScreenContext screenContext
-    ) {
-        super(options, assets, fileOps, listener, screenContext);
+    public CurrentPackList(PackListProps props) {
+        super(props);
     }
 
     @Override
@@ -133,10 +120,10 @@ public class CurrentPackList extends PackList {
     }
 
     @Override
-    public boolean canDrop(DragEvent dragEvent, double mouseX, double mouseY) {
-        PackList source = dragEvent.target();
-        List<Pack> payload = dragEvent.payload();
-        Pack trigger = dragEvent.trigger();
+    public boolean canDrop(PackListAction.Drag dragged, double mouseX, double mouseY) {
+        PackList source = dragged.source();
+        List<Pack> payload = dragged.payload();
+        Pack trigger = dragged.pack();
 
         if (this.scrolling || this.isQueried() || this.options.isLocked() || payload.isEmpty() || !source.canInteract(this)) {
             return false;
@@ -158,35 +145,20 @@ public class CurrentPackList extends PackList {
     }
 
     @Override
-    protected List<Pack> handleDrop(DragEvent dragEvent, double mouseX, double mouseY) {
-        if (!this.canDrop(dragEvent, mouseX, mouseY)) {
-            return Collections.emptyList();
-        }
-
-        PackList source = dragEvent.target();
-        List<Pack> payload = dragEvent.payload();
+    protected void handleDrop(PackListAction.Drag dragged, double mouseX, double mouseY) {
+        PackList source = dragged.source();
+        List<Pack> payload = dragged.payload();
 
         int dropPackIndex = this.list.clampPosition(this.toPackIndex(this.getDropIndex(mouseY)));
-        if (source == this) {
-            List<Pack> movable = new ObjectArrayList<>(payload);
-            movable.removeIf(this.options::isFixed);
-            return this.moveAll(movable, dropPackIndex) ? payload : Collections.emptyList();
+        if (source != this) {
+            this.dispatch(new PackListAction.Transfer(dragged.source(), this, dragged.pack(), payload, dropPackIndex));
+            return;
         }
 
-        this.clearSelection();
-        List<Pack> dropped = new ObjectArrayList<>(payload);
-        for (Pack selected : payload) {
-            if (source.isTransferable(selected)) {
-                dropped.add(selected);
-                this.addOrMove(selected, dropPackIndex);
-            }
-        }
-        this.refreshList();
-        source.removeAll(dropped);
-        dropped.forEach(this::select);
-        this.select(dragEvent.trigger());
-
-        return dropped;
+        List<Pack> movable = new ObjectArrayList<>(payload);
+        movable.removeIf(this.options::isFixed);
+        this.moveAll(movable, dropPackIndex);
+        this.dispatch(new PackListAction.Focus(this, dragged.pack()));
     }
 
     private void renderDropIndex(GuiGraphics guiGraphics, int mouseY, int x, int width) {
@@ -204,8 +176,8 @@ public class CurrentPackList extends PackList {
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, DragEvent dragEvent, int mouseX, int mouseY, float partialTick) {
-        PackList source = dragEvent.target();
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackListAction.Drag dragged, int mouseX, int mouseY, float partialTick) {
+        PackList source = dragged.source();
         if (this.options.isLocked() || !source.canInteract(this)) {
             return;
         }
@@ -230,7 +202,7 @@ public class CurrentPackList extends PackList {
                 this.scrolling = false;
             }
 
-            if (this.canDrop(dragEvent, mouseX, mouseY)) {
+            if (this.canDrop(dragged, mouseX, mouseY)) {
                 this.renderDropIndex(guiGraphics, mouseY, x, width);
             }
         }
@@ -304,8 +276,8 @@ public class CurrentPackList extends PackList {
             );
         }
 
-        private void sendMoveEvent(List<Pack> moved) {
-            CurrentPackList.this.sendEvent(new MoveEvent(CurrentPackList.this, this.pack(), moved));
+        private void sendMoveEvent() {
+            CurrentPackList.this.dispatch(new PackListAction.Focus(CurrentPackList.this, this.pack()));
             PackList.Entry entry = CurrentPackList.this.getEntry(this.pack());
             if (entry != null) CurrentPackList.this.scrollToEntry(entry);
         }
@@ -317,7 +289,7 @@ public class CurrentPackList extends PackList {
                 if (moveDirection.movePack(CurrentPackList.this.list, pack)) {
                     CurrentPackList.this.selectExclusive(pack);
                     CurrentPackList.this.refreshList();
-                    this.sendMoveEvent(selectedPacks);
+                    this.sendMoveEvent();
                     return true;
                 }
             } else if (selectedPacks.size() > 1) {
@@ -326,7 +298,7 @@ public class CurrentPackList extends PackList {
                 if (!moved.isEmpty()) {
                     CurrentPackList.this.select(lastSelected);
                     CurrentPackList.this.refreshList();
-                    this.sendMoveEvent(moved);
+                    this.sendMoveEvent();
                     return true;
                 }
             }

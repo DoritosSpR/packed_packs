@@ -6,12 +6,10 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuil
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
-import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
-import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
@@ -36,20 +34,14 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     private PackList parent;
     private FolderPack folderPack;
 
-    public <S extends Screen & ToggleableDialogContainer & ActionDispatcher> FolderDialog(
-            S screen,
-            PackOptionsContext options,
-            PackAssetManager assets,
-            PackFileOperations fileOps,
-            ScreenContext screenContext
-    ) {
-        super(builder(screen, new FolderPackList(options, assets, fileOps, screen, screenContext)).setBackground(DrawUtil.DEMO_BACKGROUND));
+    public <S extends Screen & ToggleableDialogContainer & ActionDispatcher> FolderDialog(S screen, PackListProps props) {
+        super(builder(screen, new FolderPackList(props)).setBackground(DrawUtil.DEMO_BACKGROUND));
 
         this.eventHandler = screen;
-        this.fileOps = fileOps;
+        this.fileOps = props.fileOps();
         this.closeButton = this.addRenderableWidget(
                 FidgetzButton.<Void>builder()
-                        .setOnPress(() -> this.sendEvent(new FolderCloseEvent(this.root(), this.folderPack)))
+                        .setOnPress(() -> this.sendEvent(new PackListAction.CloseFolder(this.root(), this.folderPack)))
                         .makeSquare(CROSS_SPRITE.width)
                         .spriteOnly()
                         .build()
@@ -65,7 +57,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         this.root().visible = false;
         this.addListener(open -> {
             this.root().visible = open;
-            if (!open) this.sendEvent(new FolderCloseEvent(this.root(), this.folderPack));
+            if (!open) this.sendEvent(new PackListAction.CloseFolder(this.root(), this.folderPack));
         });
         this.root().visitWidgets(this::addRenderableWidget);
     }
@@ -157,16 +149,13 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
 
     private void renameDirectory() {
         if (this.folderPack != null) {
-            this.sendEvent(new FileRenameOpenEvent(this.root(), this.folderPack));
+            this.sendEvent(new PackListAction.OpenRename(this.root(), this.folderPack));
         }
     }
 
     private void deleteDirectory() {
-        if (this.fileOps.deletePack(this.folderPack)) {
-            this.setOpen(false);
-            this.root().remove(this.folderPack);
-            this.sendEvent(new FileDeleteEvent(this.root()));
-        }
+        this.eventHandler.dispatch(new PackListAction.Delete(this.root(), this.folderPack));
+        this.setOpen(false);
     }
 
     public void onRename(Pack pack, Component newName) {
@@ -179,7 +168,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         }
     }
 
-    private void sendEvent(PackListEvent event) {
+    private void sendEvent(PackListAction event) {
         this.eventHandler.dispatch(event);
     }
 }

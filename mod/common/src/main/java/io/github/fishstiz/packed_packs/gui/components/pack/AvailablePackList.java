@@ -6,12 +6,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.api.context.PackContext;
-import io.github.fishstiz.packed_packs.api.context.ScreenContext;
-import io.github.fishstiz.packed_packs.gui.components.events.DragEvent;
-import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
-import io.github.fishstiz.packed_packs.pack.PackAssetManager;
-import io.github.fishstiz.packed_packs.pack.PackFileOperations;
-import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
+import io.github.fishstiz.packed_packs.gui.components.events.PackListAction;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,14 +14,11 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.server.packs.repository.Pack;
 import org.jspecify.annotations.NonNull;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.isLeftClick;
 import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanillaSprite;
-import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.ifPresent;
 import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.pick;
 
 public class AvailablePackList extends PackList {
@@ -35,14 +27,8 @@ public class AvailablePackList extends PackList {
     private static final Theme DROP_ZONE_THEME = Theme.RED_700;
     private static final ColoredRect DROP_ZONE = new ColoredRect(DROP_ZONE_THEME.withAlpha(0.25f));
 
-    public AvailablePackList(
-            PackOptionsContext options,
-            PackAssetManager assets,
-            PackFileOperations fileOps,
-            ActionDispatcher listener,
-            ScreenContext screenContext
-    ) {
-        super(options, assets, fileOps, listener, screenContext);
+    public AvailablePackList(PackListProps props) {
+        super(props);
     }
 
     @Override
@@ -60,42 +46,26 @@ public class AvailablePackList extends PackList {
     }
 
     @Override
-    public boolean canDrop(DragEvent dragEvent, double mouseX, double mouseY) {
-        return this.isMouseOver(mouseX, mouseY) && !this.isInvalidDrop(dragEvent.target(), dragEvent.payload(), dragEvent.trigger());
+    public boolean canDrop(PackListAction.Drag dragged, double mouseX, double mouseY) {
+        return this.isMouseOver(mouseX, mouseY) && !this.isInvalidDrop(dragged.source(), dragged.payload(), dragged.pack());
     }
 
     @Override
-    protected List<Pack> handleDrop(DragEvent dragEvent, double mouseX, double mouseY) {
-        PackList source = dragEvent.target();
-        List<Pack> payload = dragEvent.payload();
-        Pack trigger = dragEvent.trigger();
+    protected void handleDrop(PackListAction.Drag dragged, double mouseX, double mouseY) {
+        PackList source = dragged.source();
+        List<Pack> payload = dragged.payload();
+        Pack trigger = dragged.pack();
 
-        if (this.isInvalidDrop(source, payload, trigger)) {
-            return Collections.emptyList();
+        if (!this.isInvalidDrop(source, payload, trigger)) {
+            this.dispatch(new PackListAction.Transfer(source, this, trigger, payload, 0));
         }
-
-        List<Pack> dropped = new ArrayList<>();
-        for (Pack pack : payload) {
-            if (source.isTransferable(pack)) {
-                dropped.add(pack);
-            }
-        }
-
-        this.clearSelection();
-        source.removeAll(dropped);
-        this.addAll(dropped);
-        this.selectAll(dropped);
-        this.select(trigger);
-        ifPresent(this.getEntry(trigger), this::scrollToEntry);
-
-        return dropped;
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, DragEvent dragEvent, int mouseX, int mouseY, float partialTick) {
-        PackList source = dragEvent.target();
-        List<Pack> payload = dragEvent.payload();
-        Pack trigger = dragEvent.trigger();
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackListAction.Drag dragged, int mouseX, int mouseY, float partialTick) {
+        PackList source = dragged.source();
+        List<Pack> payload = dragged.payload();
+        Pack trigger = dragged.pack();
 
         if (this.isInvalidDrop(source, payload, trigger)) return;
 

@@ -5,17 +5,14 @@ import io.github.fishstiz.fidgetz.gui.components.ToggleButton;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
-import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.events.BasicEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
 import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackListProps;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
-import io.github.fishstiz.packed_packs.pack.PackAssetManager;
-import io.github.fishstiz.packed_packs.pack.PackFileOperations;
-import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
@@ -29,15 +26,9 @@ public final class AvailablePacksLayout extends PackLayout {
     private CyclicButton<Query.SortOption, Void> sortButton;
     private ToggleButton<Void> compatButton;
 
-    public AvailablePacksLayout(
-            PackOptionsContext options,
-            PackAssetManager assets,
-            PackFileOperations fileOps,
-            ActionDispatcher listener,
-            ScreenContext screenContext
-    ) {
-        super(new AvailablePackList(options, assets, fileOps, listener, screenContext));
-        this.eventListener = listener;
+    public AvailablePacksLayout(PackListProps props) {
+        super(new AvailablePackList(props));
+        this.eventListener = props.dispatcher();
     }
 
     public CyclicButton<Query.SortOption, Void> getSortButton() {

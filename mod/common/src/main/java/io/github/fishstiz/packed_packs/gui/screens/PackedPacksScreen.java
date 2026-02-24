@@ -85,8 +85,9 @@ public class PackedPacksScreen extends Screen implements
     private final ProfilesLayout profiles;
     private final PackOptionsContext options;
     private final PackRepositoryManager repository;
+    private final PackFileOperations fileOps;
     private final PackAssetManager assetManager;
-    private final DragEventRenderer dragEventRenderer;
+    private final DragActionHandler dragActionHandler;
     private final AvailablePacksLayout availablePacks;
     private final CurrentPacksLayout currentPacks;
     private final FolderDialog folderDialog;
@@ -105,7 +106,6 @@ public class PackedPacksScreen extends Screen implements
     private @Nullable GuiEventListener hoveredElement;
     private boolean refreshOnInit = true; // to avoid reloading repository when rebuilding widgets
     private boolean initialized = false;
-    private DragEvent dragged;
 
     private PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, boolean initState) {
         super(ResourceUtil.getModName());
@@ -119,13 +119,14 @@ public class PackedPacksScreen extends Screen implements
         this.options = new PackOptionsContext(this::getSelectedProfile, userConfig, config);
         this.repository = new PackRepositoryManager(this.original.repository(), this.options, this.original.packDir());
         this.assetManager = new PackAssetManager(this.minecraft);
-        this.dragEventRenderer = new DragEventRenderer(this.assetManager);
+        this.dragActionHandler = new DragActionHandler(this.assetManager);
         this.history = new HistoryManager<>();
 
         this.layout = new LayoutWrapper<>(FlexLayout.vertical(this::getMaxHeight).spacing(SPACING));
         this.layout.setPadding(SPACING);
 
         var components = Components.bootstrap(this, this.options, this.repository, this.assetManager, this.layout::getHeight);
+        this.fileOps = components.fileOps();
         this.profiles = components.profilesLayout();
         this.availablePacks = components.availablePacks();
         this.currentPacks = components.currentPacks();
@@ -636,6 +637,12 @@ public class PackedPacksScreen extends Screen implements
     }
 
     private void focusList(PackList packList, PackList.@Nullable Entry entry) {
+        for (PackList pl : this.packLists) {
+            if (pl != packList) {
+                pl.setFocused(false);
+            }
+        }
+
         if (packList == this.folderDialog.root()) {
             if (entry != null) {
                 this.focus(ComponentPath.path(entry, packList, this.folderDialog, this));
@@ -653,14 +660,6 @@ public class PackedPacksScreen extends Screen implements
         this.focusList(packList, packList.getSelected());
     }
 
-    private void unfocusOtherLists(PackList focused) {
-        for (PackList packList : this.packLists) {
-            if (packList != focused) {
-                packList.setFocused(null);
-            }
-        }
-    }
-
     private void transferFocus(PackList source, PackList destination) {
         source.setFocused(null);
         this.focusList(destination);
@@ -670,102 +669,119 @@ public class PackedPacksScreen extends Screen implements
         }
     }
 
-    private void onTransferRequested(PackList source, List<Pack> payload, Pack requestor) {
+    private void onTransfer(PackList source, @Nullable PackList destination, List<Pack> payload, Pack requestor, int index) {
         if (payload.isEmpty()) return;
 
-        PackList destination = null;
-
-        if (source == this.availablePacks.list()) {
-            destination = this.currentPacks.list();
-        } else if (source == this.currentPacks.list()) {
-            destination = this.availablePacks.list();
-        }
-
         if (destination == null) {
-            PackedPacks.LOGGER.warn("[packed_packs] Attempted to transfer packs without a designated destination.");
-            return;
-        }
-
-        destination.clearSelection();
-        source.removeAll(payload);
-        destination.addAll(payload);
-        destination.selectAll(payload);
-        destination.select(requestor);
-
-        this.transferFocus(source, destination);
-    }
-
-    private void onFolderOpen(PackList parentList, FolderPack source) {
-        this.folderDialog.root().reload(this.repository.getNestedPacks(source));
-        this.folderDialog.updateFolder(parentList, source, this.assetManager);
-        this.folderDialog.setOpen(true);
-    }
-
-    private void onFolderClose(PackList sourceList, FolderPack source) {
-        this.folderDialog.setOpen(false);
-
-        if (source == null) return;
-
-        Folder folder = this.repository.getFolderConfig(source);
-        if (folder != null && this.isUnlocked()) {
-            if (folder.trySetPacks(this.repository.validateAndOrderNestedPacks(source, sourceList.copyPacks()))) {
-                source.saveConfig(folder);
+            if (source == this.availablePacks.list()) {
+                destination = this.currentPacks.list();
+            } else if (source == this.currentPacks.list()) {
+                destination = this.availablePacks.list();
+            } else {
+                return;
             }
-            this.focusList(ObjectsUtil.firstNonNullOrDefault(this.availablePacks.list(), this.folderDialog.getParent()));
+        }
+
+        List<Pack> transferable = new ObjectArrayList<>(payload.size());
+        for (Pack pack : payload) {
+            if (source.isTransferable(pack)) {
+                transferable.add(pack);
+            }
+        }
+
+        if (!transferable.isEmpty()) {
+            destination.clearSelection();
+            source.removeAll(transferable);
+            destination.addAll(transferable, index);
+            destination.selectAll(transferable);
+            destination.select(requestor);
+            destination.scrollToLastSelected();
+            this.transferFocus(source, destination);
         }
     }
 
-    private void onFileRename(Pack renamedPack, Component newName) {
-        if (this.folderDialog.isOpen()) {
-            this.folderDialog.onRename(renamedPack, newName);
-        }
-        this.refreshPacks();
-    }
-
-    private void onOpenAliases(Pack pack) {
-        if (this.aliasModal == null) return;
-        this.aliasModal.clear();
-        this.aliasModal.root().layout().editAliases(pack, this.aliasModal::closeModal);
-        this.aliasModal.root().visitWidgets(this.aliasModal::addRenderableWidget);
-        this.aliasModal.repositionElements();
-        this.aliasModal.setOpen(true);
-    }
-
-    private boolean handlePackListEvent(PackListEvent event) {
-        this.profiles.getSidebar().setOpen(false);
-
-        boolean triggeredByFolderDialog = event.target() == this.folderDialog.root();
-        if (!triggeredByFolderDialog) {
-            this.folderDialog.setOpen(false);
-        }
-
-        switch (event) {
-            case SelectionEvent selection -> this.unfocusOtherLists(selection.target());
-            case RequestTransferEvent request ->
-                    this.onTransferRequested(request.target(), request.payload(), request.trigger());
-            case MoveEvent(PackList source, Pack moved, List<Pack> ignore) ->
-                    this.focusList(source, source.getEntry(moved));
-            case DragEvent drag -> {
-                if (this.dragged == null) {
-                    this.dragged = drag;
+    private void handlePackListAction(PackListAction action) {
+        switch (action) {
+            case PackListAction.Focus focus -> this.focusList(focus.source(), focus.entry());
+            case PackListAction.Transfer transfer ->
+                    this.onTransfer(transfer.source(), transfer.destination(), transfer.payload(), transfer.pack(), transfer.index());
+            case PackListAction.Drag drag -> {
+                if (!this.dragActionHandler.isDragging()) {
+                    this.dragActionHandler.setDragAction(drag);
                 }
-                this.unfocusOtherLists(drag.target());
             }
-            case DropEvent drop -> this.transferFocus(drop.target(), drop.destination());
-            case FileDeleteEvent ignore -> this.revalidatePacks();
-            case FileRenameOpenEvent(PackList target, Pack trigger) -> this.fileRenameModal.open(target, trigger);
-            case FileRenameEvent renamed -> this.onFileRename(renamed.renamed(), renamed.newName());
-            case FileRenameCloseEvent renameModalClosed ->
-                    this.focusList(renameModalClosed.target(), renameModalClosed.target().getEntry(renameModalClosed.trigger()));
-            case FolderOpenEvent folderOpen -> this.onFolderOpen(folderOpen.target(), folderOpen.opened());
-            case FolderCloseEvent folderClose -> this.onFolderClose(folderClose.target(), folderClose.folderPack());
-            case PackAliasOpenEvent openAlias -> this.onOpenAliases(openAlias.trigger());
-        }
+            case PackListAction.Rename rename -> {
+                if (this.fileOps.renamePack(rename.pack(), rename.newName())) {
+                    PackList.Entry entry = rename.entry();
+                    if (entry != null) {
+                        entry.onRename(rename.component());
+                    }
 
-        return !triggeredByFolderDialog;
+                    PackList source = rename.source();
+                    if (source == this.folderDialog.root() && rename.pack() instanceof FolderPack) {
+                        this.folderDialog.setOpen(false);
+                    }
+
+                    this.fileRenameModal.setOpen(false);
+                    this.refreshPacks();
+                } else {
+                    ToastUtil.onRenameFailToast(rename.pack().getTitle(), rename.newName());
+                }
+            }
+            case PackListAction.Delete delete -> {
+                if (this.fileOps.deletePack(delete.pack())) {
+                    PackList.Entry entry = delete.entry();
+                    if (entry != null) {
+                        entry.onDelete();
+                    }
+
+                    PackList source = delete.source();
+                    if (source == this.folderDialog.root() && delete.pack() instanceof FolderPack) {
+                        this.folderDialog.setOpen(false);
+                    }
+
+                    delete.source().remove(delete.pack());
+                    this.revalidatePacks();
+                } else {
+                    ToastUtil.onDeleteFailToast(delete.pack().getTitle());
+                }
+            }
+            case PackListAction.OpenFolder openFolder -> {
+                this.folderDialog.root().reload(this.repository.getNestedPacks(openFolder.pack()));
+                this.folderDialog.updateFolder(openFolder.source(), openFolder.pack(), this.assetManager);
+                this.folderDialog.setOpen(true);
+            }
+            case PackListAction.CloseFolder(PackList source, FolderPack pack) -> {
+                FolderPackMeta meta = this.repository.getFolderConfig(pack);
+                if (meta != null && this.isUnlocked()) {
+                    if (meta.trySetPacks(this.repository.validateAndOrderNestedPacks(pack, source.copyPacks()))) {
+                        pack.saveConfig(meta);
+                    }
+                    this.focusList(ObjectsUtil.firstNonNullOrDefault(this.availablePacks.list(), this.folderDialog.getParent()));
+                }
+                this.folderDialog.setOpen(false);
+            }
+            case PackListAction.OpenRename(PackList source, Pack pack) -> this.fileRenameModal.open(source, pack);
+            case PackListAction.CloseRename closeRename -> {
+                this.fileRenameModal.setOpen(false);
+                this.focusList(closeRename.source(), closeRename.entry());
+            }
+            case PackListAction.OpenAliases(PackList source, Pack pack) -> {
+                if (this.aliasModal == null) return;
+                this.aliasModal.clear();
+                this.aliasModal.root().layout().editAliases(source, pack);
+                this.aliasModal.root().visitWidgets(this.aliasModal::addRenderableWidget);
+                this.aliasModal.repositionElements();
+                this.aliasModal.setOpen(true);
+            }
+            case PackListAction.CloseAliases closeAliases -> {
+                this.aliasModal.closeModal();
+                this.focusList(closeAliases.source(), closeAliases.entry());
+            }
+        }
     }
 
-    private boolean handleProfileEvent(ProfileEvent event) {
+    private void handleProfileEvent(ProfileEvent event) {
         switch (event) {
             case ProfileEvent.Copy(Profile profile) -> this.onProfileCopy(profile);
             case ProfileEvent.Delete(Profile profile) -> this.onProfileDelete(profile);
@@ -778,22 +794,28 @@ public class PackedPacksScreen extends Screen implements
         if (event.shouldRefresh()) {
             this.profiles.refresh();
         }
-
-        return true;
     }
 
     @Override
-    public void dispatch(Event action) {
+    public void dispatch(Action action) {
         this.contextMenu.setOpen(false);
-        this.fileRenameModal.setOpen(false);
+        this.fileRenameModal.setOpen(false); // move somewhere else
         ObjectsUtil.ifPresent(this.aliasModal, Modal::closeModal);
 
         boolean shouldPush = true;
 
-        if (action instanceof PackListEvent packListEvent) {
-            shouldPush = this.handlePackListEvent(packListEvent);
+        if (action instanceof PackListAction packListAction) {
+            this.profiles.getSidebar().setOpen(false);
+
+            if (packListAction.source() == this.folderDialog.root()) {
+                shouldPush = false;
+            } else {
+                this.folderDialog.setOpen(false);
+            }
+
+            this.handlePackListAction(packListAction);
         } else if (action instanceof ProfileEvent profileEvent) {
-            shouldPush = this.handleProfileEvent(profileEvent);
+            this.handleProfileEvent(profileEvent);
         }
 
         if (this.isUnlocked() && action.pushToHistory() && shouldPush) {
@@ -818,7 +840,7 @@ public class PackedPacksScreen extends Screen implements
 
     @Override
     public boolean charTyped(@NonNull CharacterEvent charEvent) {
-        if (this.dragged != null) {
+        if (this.dragActionHandler.isDragging()) {
             return true;
         }
         if (super.charTyped(charEvent)) {
@@ -854,7 +876,7 @@ public class PackedPacksScreen extends Screen implements
 
     @Override
     public boolean keyPressed(@NonNull KeyEvent keyEvent) {
-        if (this.dragged != null) {
+        if (this.dragActionHandler.isDragging()) {
             return true;
         }
 
@@ -889,7 +911,7 @@ public class PackedPacksScreen extends Screen implements
             PackLayout packLayout = this.getLayoutFromSelectedList();
             if (packLayout != null) {
                 packLayout.list().selectAll();
-                this.handlePackListEvent(new SelectionEvent(packLayout.list()));
+                this.dispatch(new PackListAction.Focus(packLayout.list(), packLayout.list().getLastSelected()));
                 return true;
             }
         }
@@ -956,7 +978,7 @@ public class PackedPacksScreen extends Screen implements
 
     @Override
     public boolean mouseClicked(@NonNull MouseButtonEvent mouseEvent, boolean doubleClicked) {
-        this.dragged = null;
+        this.dragActionHandler.setDragAction(null);
 
         if (isRightClick(mouseEvent) && !this.optionsModal.isMouseOver(mouseEvent.x(), mouseEvent.y())) {
             this.openContextMenu((int) mouseEvent.x(), (int) mouseEvent.y());
@@ -981,18 +1003,20 @@ public class PackedPacksScreen extends Screen implements
 
     @Override
     public boolean mouseDragged(@NonNull MouseButtonEvent mouseButtonEvent, double dragX, double dragY) {
-        return this.dragged != null || super.mouseDragged(mouseButtonEvent, dragX, dragY);
+        return this.dragActionHandler.isDragging() || super.mouseDragged(mouseButtonEvent, dragX, dragY);
     }
 
     @Override
     public boolean mouseReleased(@NonNull MouseButtonEvent mouseButtonEvent) {
-        if (isLeftClick(mouseButtonEvent) && this.dragged != null) {
+        PackListAction.Drag dragAction = this.dragActionHandler.getDragAction();
+        if (isLeftClick(mouseButtonEvent) && dragAction != null) {
             for (PackList packList : this.packLists) {
                 if (packList.isHovered()) {
-                    packList.drop(this.dragged, mouseButtonEvent.x(), mouseButtonEvent.y());
+                    packList.drop(dragAction, mouseButtonEvent.x(), mouseButtonEvent.y());
+                    break;
                 }
             }
-            this.dragged = null;
+            this.dragActionHandler.setDragAction(null);
             return true;
         }
 
@@ -1019,9 +1043,9 @@ public class PackedPacksScreen extends Screen implements
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-        if (this.dragged != null) {
+        if (this.dragActionHandler.isDragging()) {
             List<PackList> dropZones = this.isUnlocked() ? this.packLists : Collections.emptyList();
-            this.dragEventRenderer.render(dragged, dropZones, guiGraphics, mouseX, mouseY, partialTick);
+            this.dragActionHandler.render(dropZones, guiGraphics, mouseX, mouseY, partialTick);
         }
 
         if (this.context.devMode()) {

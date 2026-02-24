@@ -1,24 +1,14 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import io.github.fishstiz.packed_packs.api.context.PackContext;
-import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
-import io.github.fishstiz.packed_packs.pack.PackAssetManager;
-import io.github.fishstiz.packed_packs.pack.PackFileOperations;
-import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.server.packs.repository.Pack;
 import org.jspecify.annotations.NonNull;
 
 public class FolderPackList extends CurrentPackList {
-    public FolderPackList(
-            PackOptionsContext options,
-            PackAssetManager assets,
-            PackFileOperations fileOps,
-            ActionDispatcher listener,
-            ScreenContext context
-    ) {
-        super(options, assets, fileOps, listener, context);
+    public FolderPackList(PackListProps props) {
+        super(props);
     }
 
     @Override
@@ -37,14 +27,14 @@ public class FolderPackList extends CurrentPackList {
     }
 
     @Override
-    public boolean canDrop(DragEvent dragEvent, double mouseX, double mouseY) {
-        return this.canInteract(dragEvent.target()) && super.canDrop(dragEvent, mouseX, mouseY);
+    public boolean canDrop(PackListAction.Drag dragged, double mouseX, double mouseY) {
+        return this.canInteract(dragged.source()) && super.canDrop(dragged, mouseX, mouseY);
     }
 
     @Override
-    public void renderDroppableZone(GuiGraphics guiGraphics, DragEvent dragEvent, int mouseX, int mouseY, float partialTick) {
-        if (dragEvent.target() == this) {
-            super.renderDroppableZone(guiGraphics, dragEvent, mouseX, mouseY, partialTick);
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackListAction.Drag dragged, int mouseX, int mouseY, float partialTick) {
+        if (dragged.source() == this) {
+            super.renderDroppableZone(guiGraphics, dragged, mouseX, mouseY, partialTick);
         }
     }
 

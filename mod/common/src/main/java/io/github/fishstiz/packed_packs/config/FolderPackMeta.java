@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Folder implements Serializable {
+public class FolderPackMeta implements Serializable {
     private List<String> packIds = new ArrayList<>();
 
     public boolean trySetPacks(List<Pack> packs) {

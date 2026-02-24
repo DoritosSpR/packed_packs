@@ -23,7 +23,6 @@ import io.github.fishstiz.packed_packs.pack.PackFileOperations;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
-import io.github.fishstiz.packed_packs.util.ToastUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
@@ -57,26 +56,20 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     protected static final int Y_OFFSET = 1;
     protected static final int ITEM_HEIGHT = 35;
     protected static final int ROW_GAP = 3;
+    protected final ScreenContext screenContext;
     protected final PackOptionsContext options;
     protected final PackAssetManager assets;
     protected final PackListModel list;
     private final PackFileOperations fileOps;
-    private final ActionDispatcher eventHandler;
-    private final ScreenContext screenContext;
+    private final ActionDispatcher dispatcher;
 
-    protected PackList(
-            PackOptionsContext options,
-            PackAssetManager assets,
-            PackFileOperations fileOps,
-            ActionDispatcher eventHandler,
-            ScreenContext screenContext
-    ) {
+    protected PackList(PackListProps props) {
         super(ITEM_HEIGHT);
-        this.assets = assets;
-        this.options = options;
-        this.fileOps = fileOps;
-        this.eventHandler = eventHandler;
-        this.screenContext = screenContext;
+        this.assets = props.assets();
+        this.options = props.options();
+        this.screenContext = props.screenContext();
+        this.dispatcher = props.dispatcher();
+        this.fileOps = props.fileOps();
         this.list = new PackListModel(this.options);
     }
 
@@ -169,9 +162,16 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         this.refreshList();
     }
 
-    public void addOrMove(Pack pack, int to) {
+    private void addOrMove(Pack pack, int to) {
         this.list.insertOrMove(to, pack);
         this.list.select(pack);
+    }
+
+    public void addAll(List<Pack> packs, int to) {
+        for (Pack pack : packs) {
+            this.addOrMove(pack, to);
+        }
+        this.refreshList();
     }
 
     public boolean moveAll(List<Pack> selection, int to) {
@@ -290,37 +290,30 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
             }
         }
         if (!payload.isEmpty()) {
-            this.sendEvent(new RequestTransferEvent(this, this.getLastSelected(), payload));
+            this.dispatch(new PackListAction.Transfer(this, this.getLastSelected(), payload));
         }
     }
 
-    protected void sendEvent(PackListEvent event) {
-        this.eventHandler.dispatch(event);
+    protected void dispatch(PackListAction action) {
+        this.dispatcher.dispatch(action);
     }
 
     public abstract boolean canInteract(PackList source);
 
-    protected abstract boolean canDrop(DragEvent dragEvent, double mouseX, double mouseY);
+    protected abstract boolean canDrop(PackListAction.Drag dragged, double mouseX, double mouseY);
 
-    protected abstract List<Pack> handleDrop(DragEvent dragEvent, double mouseX, double mouseY);
+    protected abstract void handleDrop(PackListAction.Drag dragged, double mouseX, double mouseY);
 
-    public abstract void renderDroppableZone(GuiGraphics guiGraphics, DragEvent dragEvent, int mouseX, int mouseY, float partialTick);
+    public abstract void renderDroppableZone(GuiGraphics guiGraphics, PackListAction.Drag dragged, int mouseX, int mouseY, float partialTick);
 
-    public final void drop(DragEvent dragEvent, double mouseX, double mouseY) {
-        if (this.options.isLocked()) return;
-
-        List<Pack> dropped = this.handleDrop(dragEvent, mouseX, mouseY);
-        if (!dropped.isEmpty()) {
-            if (dragEvent.target() != this) {
-                this.sendEvent(new DropEvent(dragEvent.target(), this, dropped));
-            } else {
-                this.sendEvent(new MoveEvent(this, dragEvent.trigger(), dropped));
-            }
+    public final void drop(PackListAction.Drag dragged, double mouseX, double mouseY) {
+        if (!this.options.isLocked() && this.canDrop(dragged, mouseX, mouseY)) {
+            this.handleDrop(dragged, mouseX, mouseY);
         }
     }
 
     protected void openFolder(FolderPack folderPack) {
-        this.sendEvent(new FolderOpenEvent(this, folderPack));
+        this.dispatch(new PackListAction.OpenFolder(this, folderPack));
     }
 
     private @Nullable ComponentPath handleArrowNavigation(FocusNavigationEvent.ArrowNavigation arrowNavigation) {
@@ -335,7 +328,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
             } else {
                 this.selectExclusive(entry.pack());
             }
-            this.sendEvent(new SelectionEvent(this));
+            this.dispatch(new PackListAction.Focus(this, null));
             this.scrollToEntry(entry);
             return ComponentPath.path(entry, this);
         }
@@ -566,7 +559,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         }
 
         protected void sendPacks(Pack trigger, List<Pack> payload) {
-            PackList.this.sendEvent(new RequestTransferEvent(PackList.this, trigger, payload));
+            PackList.this.dispatch(new PackListAction.Transfer(PackList.this, trigger, payload));
         }
 
         private boolean sendSelection() {
@@ -589,7 +582,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
         public boolean transfer() {
             if (!this.isSelected() && this.isTransferable()) {
-                PackList.this.sendEvent(new RequestTransferEvent(PackList.this, this.pack()));
+                PackList.this.dispatch(new PackListAction.Transfer(PackList.this, this.pack()));
                 return true;
             }
 
@@ -606,16 +599,18 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
                 case SELECT_RANGE -> PackList.this.selectRange(this.pack());
                 case TRANSFER -> {
                     if (this.isTransferable()) {
-                        PackList.this.sendEvent(new RequestTransferEvent(PackList.this, this.pack()));
+                        PackList.this.dispatch(new PackListAction.Transfer(PackList.this, this.pack()));
                         return false;
                     }
                 }
-                case DRAG ->
-                        PackList.this.sendEvent(new DragEvent(PackList.this, PackList.this.getOrderedSelection().reversed(), this.pack()));
+                case DRAG -> {
+                    List<Pack> payload = PackList.this.getOrderedSelection().reversed();
+                    PackList.this.dispatch(new PackListAction.Drag(PackList.this, this.pack(), payload));
+                }
             }
 
             if (action.isSelection()) {
-                PackList.this.sendEvent(new SelectionEvent(PackList.this));
+                PackList.this.dispatch(new PackListAction.Focus(PackList.this, this.pack()));
             }
 
             return true;
@@ -730,7 +725,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
         protected void handleDevMenuEvent(PackListDevMenu.Event<?> event) {
             if (event instanceof PackListDevMenu.Event.EditAliases editAliases) {
-                PackList.this.sendEvent(new PackAliasOpenEvent(PackList.this, editAliases.trigger()));
+                PackList.this.dispatch(new PackListAction.OpenAliases(PackList.this, editAliases.trigger()));
             }
         }
 
@@ -780,17 +775,15 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         }
 
         public void deletePack() {
-            if (PackList.this.fileOps.deletePack(this.pack())) {
-                this.stale = true;
-                PackList.this.remove(this.pack());
-                PackList.this.sendEvent(new FileDeleteEvent(PackList.this));
-            } else {
-                ToastUtil.onFileFailToast(ToastUtil.getDeleteFailText(this.pack().getTitle().getString()));
-            }
+            PackList.this.dispatch(new PackListAction.Delete(PackList.this, this.pack()));
         }
 
         public void renamePack() {
-            PackList.this.sendEvent(new FileRenameOpenEvent(PackList.this, this.pack()));
+            PackList.this.dispatch(new PackListAction.OpenRename(PackList.this, this.pack()));
+        }
+
+        public void onDelete() {
+            this.stale = true;
         }
 
         public void onRename(Component newName) {

@@ -5,12 +5,9 @@ import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
-import io.github.fishstiz.packed_packs.gui.components.events.FileRenameCloseEvent;
-import io.github.fishstiz.packed_packs.gui.components.events.FileRenameEvent;
+import io.github.fishstiz.packed_packs.gui.components.events.PackListAction;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
-import io.github.fishstiz.packed_packs.pack.PackFileOperations;
 import io.github.fishstiz.packed_packs.util.PackUtil;
-import io.github.fishstiz.packed_packs.util.ToastUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
@@ -22,7 +19,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.CommonComponents;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.apache.commons.io.FilenameUtils;
 import org.jspecify.annotations.NonNull;
@@ -44,19 +40,15 @@ public class FileRenameModal extends Modal<LinearLayout> {
     private final FidgetzText<Void> title;
     private final ToggleableEditBox<Void> nameEditor;
     private final FidgetzButton<Void> saveButton;
-    private final PackFileOperations fileOps;
     private final PackAssetManager assets;
+    private final ActionDispatcher dispatcher;
     private PackList packList;
     private Pack pack;
     private String oldName;
 
-    public <S extends Screen & ToggleableDialogContainer & ActionDispatcher> FileRenameModal(
-            S screen,
-            PackFileOperations fileOps,
-            PackAssetManager assets
-    ) {
+    public <S extends Screen & ToggleableDialogContainer & ActionDispatcher> FileRenameModal(S screen, PackAssetManager assets) {
         super(Modal.builder(screen, LinearLayout.vertical().spacing(SPACING)).padding(SPACING));
-        this.fileOps = fileOps;
+        this.dispatcher = screen;
         this.assets = assets;
 
         this.sprite = RenderableRectWidget.<Void>builder(PackAssetManager.DEFAULT_ICON)
@@ -82,7 +74,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
                 .build();
 
         FidgetzButton<Void> cancelButton = FidgetzButton.<Void>builder()
-                .setOnPress(this::closeModal)
+                .setOnPress(() -> this.dispatcher.dispatch(new PackListAction.CloseRename(this.packList, this.pack)))
                 .setMessage(CommonComponents.GUI_CANCEL)
                 .build();
         this.saveButton = FidgetzButton.<Void>builder()
@@ -163,14 +155,6 @@ public class FileRenameModal extends Modal<LinearLayout> {
 
     private void onClose(boolean open) {
         if (open) return;
-
-        PackList target = this.packList;
-        Pack trigger = this.pack;
-
-        if (target != null) {
-            ((ActionDispatcher) this.screen).dispatch(new FileRenameCloseEvent(target, trigger));
-        }
-
         this.clearReferences();
     }
 
@@ -181,21 +165,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         }
 
         String sanitizedName = sanitizeNameForSave(this.pack, newName);
-        if (this.fileOps.renamePack(this.pack, sanitizedName)) {
-            Component sanitizedNameText = Component.literal(sanitizedName);
-            if (this.packList != null) {
-                PackList.Entry entry = this.packList.getEntry(this.pack);
-                if (entry != null) {
-                    entry.onRename(sanitizedNameText);
-                }
-            }
-
-            ((ActionDispatcher) this.screen).dispatch(new FileRenameEvent(this.packList, this.pack, sanitizedNameText));
-            this.setOpen(false);
-            this.clearReferences();
-        } else {
-            ToastUtil.onFileFailToast(ToastUtil.getRenameFailText(pack.getTitle().getString(), newName));
-        }
+        this.dispatcher.dispatch(new PackListAction.Rename(this.packList, this.pack, sanitizedName));
     }
 
     private static String sanitizeNameForEdit(Pack pack) {
