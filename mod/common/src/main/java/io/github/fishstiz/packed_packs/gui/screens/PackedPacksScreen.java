@@ -1,10 +1,8 @@
 package io.github.fishstiz.packed_packs.gui.screens;
 
-import com.google.common.collect.ImmutableList;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.lang.FunctionsUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
@@ -39,7 +37,6 @@ import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccess
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
-import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.gui.screens.Screen;
@@ -68,11 +65,13 @@ import java.util.concurrent.CompletableFuture;
 
 import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
+import static io.github.fishstiz.packed_packs.gui.layouts.ProfilesLayout.*;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.PackUtil.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
-public class PackedPacksScreen extends PackListEventHandler implements
+public class PackedPacksScreen extends Screen implements
+        ActionDispatcher,
         HoverStateHandler,
         ToggleableDialogContainer,
         ContextMenuContainer,
@@ -86,6 +85,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private final ProfilesLayout profiles;
     private final PackOptionsContext options;
     private final PackRepositoryManager repository;
+    private final PackAssetManager assetManager;
+    private final DragEventRenderer dragEventRenderer;
     private final AvailablePacksLayout availablePacks;
     private final CurrentPacksLayout currentPacks;
     private final FolderDialog folderDialog;
@@ -94,7 +95,8 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private final ContextMenu contextMenu;
     private final Modal<OptionsLayout> optionsModal;
     private final List<ToggleableDialog<?>> dialogs;
-    private Modal<PackAliasLayout> aliasModal;
+    private final @Nullable Modal<PackAliasLayout> aliasModal;
+    private @Nullable Profile selectedProfile;
     private List<Path> additionalFolders;
     private CompletableFuture<Void> refreshFuture;
     private CompletableFuture<Void> watcherFuture;
@@ -103,50 +105,37 @@ public class PackedPacksScreen extends PackListEventHandler implements
     private @Nullable GuiEventListener hoveredElement;
     private boolean refreshOnInit = true; // to avoid reloading repository when rebuilding widgets
     private boolean initialized = false;
+    private DragEvent dragged;
 
     private PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, boolean initState) {
         super(ResourceUtil.getModName());
 
+        DevConfig.Packs config = DevConfig.get().get(original.packType());
+        Config.Packs userConfig = Config.get().get(original.packType());
+
         this.previous = previous;
         this.original = original;
-        Config.Packs userConfig = Config.get().get(original.packType());
-        DevConfig.Packs config = DevConfig.get().get(original.packType());
-
         this.context = new ScreenContextImpl(previous, this, original, Config.get().isDevMode());
-
+        this.options = new PackOptionsContext(this::getSelectedProfile, userConfig, config);
+        this.repository = new PackRepositoryManager(this.original.repository(), this.options, this.original.packDir());
+        this.assetManager = new PackAssetManager(this.minecraft);
+        this.dragEventRenderer = new DragEventRenderer(this.assetManager);
         this.history = new HistoryManager<>();
+
         this.layout = new LayoutWrapper<>(FlexLayout.vertical(this::getMaxHeight).spacing(SPACING));
         this.layout.setPadding(SPACING);
 
-        this.profiles = new ProfilesLayout(this, userConfig, config, this::onProfileChange, this::onProfileCopy);
-        this.options = new PackOptionsContext(this.profiles::getProfile, userConfig, config);
-        this.repository = new PackRepositoryManager(this.original.repository(), this.options, this.original.packDir());
-
-        WidgetFactory.PackedPacksWidgets widgets = WidgetFactory.createWidgets(this, this.options, this.repository, this.assetManager);
-        this.availablePacks = widgets.availablePacksLayout();
-        this.currentPacks = widgets.currentPacksLayout();
-        this.folderDialog = widgets.folderDialog();
-        this.packLists = widgets.packLists();
-        this.fileRenameModal = widgets.fileRenameModal();
-        this.contextMenu = widgets.contextMenu();
-        this.optionsModal = Modal.builder(this, new OptionsLayout(this.minecraft, this.layout::getHeight, userConfig))
-                .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
-                .setCaptureFocus(true)
-                .padding(SPACING)
-                .build();
-
-        if (Config.get().isDevMode()) {
-            PackAliasLayout packAliasLayout = new PackAliasLayout(config, this.assetManager);
-            this.aliasModal = Modal.builder(this, packAliasLayout)
-                    .addListener(open -> {
-                        if (!open) this.aliasModal.root().layout().saveAliases();
-                    })
-                    .padding(SPACING)
-                    .build();
-            this.dialogs = List.of(this.optionsModal, this.contextMenu, this.aliasModal, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
-        } else {
-            this.dialogs = List.of(this.optionsModal, this.contextMenu, this.fileRenameModal, this.profiles.getSidebar(), this.folderDialog);
-        }
+        var components = Components.bootstrap(this, this.options, this.repository, this.assetManager, this.layout::getHeight);
+        this.profiles = components.profilesLayout();
+        this.availablePacks = components.availablePacks();
+        this.currentPacks = components.currentPacks();
+        this.folderDialog = components.folderDialog();
+        this.packLists = components.packLists();
+        this.fileRenameModal = components.renameModal();
+        this.contextMenu = components.contextMenu();
+        this.aliasModal = components.aliasModal();
+        this.optionsModal = components.optionsModal();
+        this.dialogs = components.dialogs();
 
         this.initAdditionalFolders();
         if (initState) {
@@ -156,7 +145,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                 if (Objects.equals(lastViewed, defaultProfile)) {
                     lastViewed = defaultProfile;
                 }
-                this.profiles.setProfile(lastViewed);
+                this.onProfileChange(lastViewed);
             } else {
                 this.useSelected();
             }
@@ -169,7 +158,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, Profile profile) {
         this(previous, original, false);
-        this.profiles.setProfile(profile);
+        this.onProfileChange(profile);
     }
 
     public PackedPacksScreen(Screen previous, PackSelectionScreenArgs original, PackGroup packs) {
@@ -193,14 +182,16 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
         this.availablePacks.saveFilters();
 
-        Profile profile = this.profiles.getProfile();
-        this.syncProfile(profile);
-        this.options.getUserConfig().setLastViewedProfile(profile);
+        this.syncProfile();
+        this.options.getUserConfig().setLastViewedProfile(this.selectedProfile);
 
         List<Profile> profiles = this.options.getUserConfig().getProfiles();
         this.options.getUserConfig().setProfileOrder(profiles);
 
-        Runnable profileSaver = profile != null ? () -> Profiles.save(this.original.packType(), profile) : FunctionsUtil.nop();
+        Runnable profileSaver = this.selectedProfile != null
+                ? () -> Profiles.save(this.original.packType(), this.selectedProfile)
+                : FunctionsUtil.nop();
+
         AsyncUtil.submitAndWait(
                 Util.backgroundExecutor(),
                 profileSaver,
@@ -224,14 +215,12 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.dialogs.forEach(this::addWidget);
         this.layout.visitWidgets(this::addRenderableWidget);
         CollectionsUtil.forEachReverse(this.dialogs, this::addRenderableOnly);
-
-        this.clearHistory();
         this.repositionElements();
 
+        this.clearHistory();
         if (this.refreshOnInit) {
             this.refreshPacks();
         }
-
         this.createWatcher();
 
         this.initialized = true;
@@ -243,53 +232,47 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     private FlexLayout createHeader(InitializeLayoutEvent extensions) {
         FlexLayout header = FlexLayout.horizontal(this::getMaxWidth).spacing(SPACING);
-        final boolean devMode = Config.get().isDevMode();
 
-        header.addChild(
-                FidgetzButton.builder()
-                        .makeSquare()
-                        .setMessage(ProfilesLayout.TITLE_TEXT)
-                        .setTooltip(Tooltip.create(ProfilesLayout.TITLE_TEXT))
-                        .setSprite(HAMBURGER_SPRITE)
-                        .setOnPress(this.profiles.getSidebar()::toggle)
-                        .build()
-        );
-
-        if (devMode || Preferences.INSTANCE.actionBarWidget.get()) {
-            header.addChild(
-                    ToggleableHelper.applyPref(Preferences.INSTANCE.actionBarWidget, FidgetzButton.<Void>builder())
-                            .makeSquare()
-                            .setTooltip(Tooltip.create(ResourceUtil.getText("toggle_actionbar.info")))
-                            .setSprite(Sprite.of16(ResourceUtil.getIcon("filter")))
-                            .setOnPress(this::toggleActionBar)
-                            .build()
-            );
+        header.addChild(FidgetzButton.builder()
+                .makeSquare()
+                .setMessage(ProfilesLayout.TITLE_TEXT)
+                .setTooltip(Tooltip.create(ProfilesLayout.TITLE_TEXT))
+                .setSprite(HAMBURGER_SPRITE)
+                .setOnPress(this.profiles.getSidebar()::toggle)
+                .build());
+        if (this.context.devMode() || Preferences.INSTANCE.actionBarWidget.get()) {
+            header.addChild(ToggleableHelper.applyPref(Preferences.INSTANCE.actionBarWidget, FidgetzButton.<Void>builder())
+                    .makeSquare()
+                    .setTooltip(Tooltip.create(ResourceUtil.getText("toggle_actionbar.info")))
+                    .setSprite(Sprite.of16(ResourceUtil.getIcon("filter")))
+                    .setOnPress(this::toggleActionBar)
+                    .build());
         }
         header.addChild(this.profiles.getToggleNameButton());
         header.addFlexChild(this.profiles.getNameField());
-
         this.addExtensions(header, InitializeLayoutEvent.Pos.AFTER_TITLE, extensions);
-
-        if (devMode || Preferences.INSTANCE.optionsWidget.get()) {
-            header.addChild(
-                    ToggleableHelper.applyPref(Preferences.INSTANCE.optionsWidget, FidgetzButton.<Void>builder())
-                            .makeSquare()
-                            .setMessage(OPTIONS_TEXT)
-                            .setTooltip(Tooltip.create(OPTIONS_TEXT.copy().append(CommonComponents.ELLIPSIS)))
-                            .setSprite(Sprite.of16(ResourceUtil.getIcon("gear")))
-                            .setOnPress(this.optionsModal::toggle)
-                            .build()
-            );
+        if (this.context.devMode() || Preferences.INSTANCE.optionsWidget.get()) {
+            header.addChild(ToggleableHelper.applyPref(Preferences.INSTANCE.optionsWidget, FidgetzButton.<Void>builder())
+                    .makeSquare()
+                    .setMessage(OPTIONS_TEXT)
+                    .setTooltip(Tooltip.create(OPTIONS_TEXT.copy().append(CommonComponents.ELLIPSIS)))
+                    .setSprite(Sprite.of16(ResourceUtil.getIcon("gear")))
+                    .setOnPress(this.optionsModal::toggle)
+                    .build());
         }
-        if (devMode || Preferences.INSTANCE.originalScreenWidget.get()) {
-            header.addChild(
-                    ToggleableHelper.applyPref(Preferences.INSTANCE.originalScreenWidget, FidgetzButton.<Void>builder())
-                            .makeSquare()
-                            .setTooltip(Tooltip.create(ResourceUtil.getText("original_screen.info").append(CommonComponents.ELLIPSIS)))
-                            .setSprite(Sprite.of16(ResourceUtil.getIcon("exit")))
-                            .setOnPress(this::setOriginalScreen)
-                            .build()
-            );
+        if (this.context.devMode() || Preferences.INSTANCE.originalScreenWidget.get()) {
+            header.addChild(ToggleableHelper.applyPref(Preferences.INSTANCE.originalScreenWidget, FidgetzButton.<Void>builder())
+                    .makeSquare()
+                    .setTooltip(Tooltip.create(ResourceUtil.getText("original_screen.info").append(CommonComponents.ELLIPSIS)))
+                    .setSprite(Sprite.of16(ResourceUtil.getIcon("exit")))
+                    .setOnPress(() -> {
+                        if (this.previous instanceof PackSelectionScreen) {
+                            this.onClose();
+                        } else {
+                            this.minecraft.setScreen(this.original.createScreen(this.previous));
+                        }
+                    })
+                    .build());
         }
 
         return header;
@@ -311,27 +294,18 @@ public class PackedPacksScreen extends PackListEventHandler implements
         FlexLayout secondColumn = firstColumn.copyLayout();
 
         this.addExtensions(firstColumn, InitializeLayoutEvent.Pos.BEFORE_FOOTER, extensions);
-
-        firstColumn.addFlexChild(
-                FidgetzButton.builder()
-                        .setMessage(OPEN_FOLDER_TEXT)
-                        .setTooltip(Tooltip.create(Component.translatable("pack.folderInfo")))
-                        .setOnPress(this.repository::openDir)
-                        .build()
-        );
-
+        firstColumn.addFlexChild(FidgetzButton.builder()
+                .setMessage(OPEN_FOLDER_TEXT)
+                .setTooltip(Tooltip.create(Component.translatable("pack.folderInfo")))
+                .setOnPress(this.repository::openDir)
+                .build());
         this.addExtensions(firstColumn, InitializeLayoutEvent.Pos.AFTER_LEFT_FOOTER, extensions);
-
-        if (this.original.packType() == PackType.CLIENT_RESOURCES) {
+        if (this.context.isClientResources()) {
             secondColumn.addFlexChild(FidgetzButton.builder().setMessage(ResourceUtil.getText("apply")).setOnPress(this::commit).build());
         }
-
         this.addExtensions(secondColumn, InitializeLayoutEvent.Pos.BEFORE_RIGHT_FOOTER, extensions);
-
         secondColumn.addFlexChild(FidgetzButton.builder().setMessage(CommonComponents.GUI_DONE).setOnPress(this::onClose).build());
-
         this.addExtensions(secondColumn, InitializeLayoutEvent.Pos.AFTER_FOOTER, extensions);
-
         footer.addFlexChild(firstColumn);
         footer.addFlexChild(secondColumn);
 
@@ -346,10 +320,31 @@ public class PackedPacksScreen extends PackListEventHandler implements
         return this.width - SPACING * 2;
     }
 
+    public void toggleActionBar() {
+        this.showActionBar = !this.showActionBar;
+        Config.get().setShowActionBar(this.showActionBar);
+        this.repositionLists();
+    }
+
+    private void repositionLists() {
+        this.availablePacks.setHeaderVisibility(this.showActionBar);
+        this.currentPacks.setHeaderVisibility(this.showActionBar);
+    }
+
+    @Override
+    protected void repositionElements() {
+        this.layout.arrangeElements();
+        this.layout.setPosition(0, 0);
+        this.dialogs.forEach(ToggleableDialog::repositionElements);
+        this.contextMenu.setOpen(false);
+        this.repositionLists();
+    }
+
+
     @Override
     protected void rebuildWidgets() {
         PackedPacksScreen screen;
-        Profile profile = this.profiles.getProfile();
+        Profile profile = this.selectedProfile;
 
         if (profile != null) {
             profile.setPacks(this.currentPacks.list().copyPacks());
@@ -365,47 +360,35 @@ public class PackedPacksScreen extends PackListEventHandler implements
     @Override
     public void onFilesDrop(@NonNull List<Path> packs) {
         this.minecraft.setScreen(new ConfirmScreen(
-                this.confirmFileDrop(packs),
+                confirmed -> {
+                    if (!confirmed) {
+                        this.minecraft.setScreen(this);
+                        return;
+                    }
+
+                    PathValidationResults results = validatePaths(packs);
+                    if (!results.symlinkWarnings().isEmpty()) {
+                        this.minecraft.setScreen(NoticeWithLinkScreen.createPackSymlinkWarningScreen(() -> this.minecraft.setScreen(this)));
+                        return;
+                    }
+                    if (!results.valid().isEmpty()) {
+                        PackSelectionScreen.copyPacks(this.minecraft, results.valid(), this.original.packDir());
+                        this.refreshPacks();
+                    }
+                    if (!results.rejected().isEmpty()) {
+                        String rejectedNames = joinPackNames(results.rejected());
+                        this.minecraft.setScreen(new AlertScreen(
+                                () -> this.minecraft.setScreen(this),
+                                Component.translatable("pack.dropRejected.title"),
+                                Component.translatable("pack.dropRejected.message", rejectedNames)
+                        ));
+                        return;
+                    }
+                    this.minecraft.setScreen(this);
+                },
                 Component.translatable("pack.dropConfirm"),
                 Component.literal(joinPackNames(packs))
         ));
-    }
-
-    private BooleanConsumer confirmFileDrop(List<Path> packs) {
-        return confirmed -> {
-            if (!confirmed) {
-                this.minecraft.setScreen(this);
-                return;
-            }
-            PathValidationResults results = validatePaths(packs);
-
-            if (!results.symlinkWarnings().isEmpty()) {
-                this.minecraft.setScreen(NoticeWithLinkScreen.createPackSymlinkWarningScreen(() -> this.minecraft.setScreen(this)));
-                return;
-            }
-            if (!results.valid().isEmpty()) {
-                PackSelectionScreen.copyPacks(this.minecraft, results.valid(), this.original.packDir());
-                this.refreshPacks();
-            }
-            if (!results.rejected().isEmpty()) {
-                String rejectedNames = joinPackNames(results.rejected());
-                this.minecraft.setScreen(new AlertScreen(
-                        () -> this.minecraft.setScreen(this),
-                        Component.translatable("pack.dropRejected.title"),
-                        Component.translatable("pack.dropRejected.message", rejectedNames)
-                ));
-                return;
-            }
-            this.minecraft.setScreen(this);
-        };
-    }
-
-    private void setOriginalScreen() {
-        if (this.previous instanceof PackSelectionScreen) {
-            this.onClose();
-        } else {
-            this.minecraft.setScreen(this.original.createScreen(this.previous));
-        }
     }
 
     @Override
@@ -436,6 +419,13 @@ public class PackedPacksScreen extends PackListEventHandler implements
         }
     }
 
+    private void initAdditionalFolders() {
+        this.additionalFolders = CollectionsUtil.deduplicate(CollectionsUtil.addAll(
+                mapValidDirectories(this.options.getUserConfig().getAdditionalFolders()),
+                this.repository.getAdditionalDirs()
+        ));
+    }
+
     private void createWatcher() {
         if (this.watcher == null) {
             this.watcherFuture = CompletableFuture.supplyAsync(() -> {
@@ -462,46 +452,18 @@ public class PackedPacksScreen extends PackListEventHandler implements
         if (this.watcherFuture != null) {
             this.watcherFuture.cancel(true);
         }
-
         if (this.watcher != null) {
             this.watcher.close();
             this.watcher = null;
         }
     }
 
-    private void initAdditionalFolders() {
-        this.additionalFolders = CollectionsUtil.deduplicate(CollectionsUtil.addAll(
-                mapValidDirectories(this.options.getUserConfig().getAdditionalFolders()),
-                this.repository.getAdditionalDirs()
-        ));
-    }
-
-    private void repositionLists() {
-        this.availablePacks.setHeaderVisibility(this.showActionBar);
-        this.currentPacks.setHeaderVisibility(this.showActionBar);
-    }
-
-    @Override
-    protected void repositionElements() {
-        this.layout.arrangeElements();
-        this.layout.setPosition(0, 0);
-        this.dialogs.forEach(ToggleableDialog::repositionElements);
-        this.contextMenu.setOpen(false);
-        this.repositionLists();
-    }
-
-    public void toggleActionBar() {
-        this.showActionBar = !this.showActionBar;
-        Config.get().setShowActionBar(this.showActionBar);
-        this.repositionLists();
-    }
-
     public void commit() {
         this.currentPacks.getSearchField().setValue("");
-        this.syncProfile(this.profiles.getProfile());
+        this.syncProfile();
         this.repository.selectPacks(this.currentPacks.list().copyPacks());
 
-        if (this.original.packType() == PackType.CLIENT_RESOURCES) {
+        if (this.context.isClientResources()) {
             this.original.output().accept(this.repository.getRepository());
         }
     }
@@ -516,7 +478,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
             if (folderPack == null || this.repository.getFolderConfig(folderPack) == null) {
                 this.folderDialog.setOpen(false);
             } else {
-                this.replacePacks(this.folderDialog.root(), ImmutableList.copyOf(this.repository.getNestedPacks(folderPack)));
+                this.replacePacks(this.folderDialog.root(), this.repository.getNestedPacks(folderPack));
             }
         }
     }
@@ -532,6 +494,18 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.clearHistory();
     }
 
+    public boolean canRefresh() {
+        var future = this.refreshFuture;
+        return future == null || future.isDone();
+    }
+
+    private void cancelRefresh() {
+        var future = this.refreshFuture;
+        if (future != null && !future.isDone()) {
+            this.refreshFuture.cancel(true);
+        }
+    }
+
     public void refreshPacks() {
         this.cancelRefresh();
         this.refreshFuture = CompletableFuture.runAsync(this.repository::refresh, Util.backgroundExecutor())
@@ -545,59 +519,11 @@ public class PackedPacksScreen extends PackListEventHandler implements
         this.clearHistory();
     }
 
-    public void onProfileChange(@Nullable Profile previous, @Nullable Profile current) {
-        if (previous != null) {
-            previous.setPacks(this.currentPacks.list().copyPacks());
-            Profiles.save(this.original.packType(), previous);
-        }
-
-        boolean unlocked = current == null || !current.isLocked();
-        this.availablePacks.getTransferButton().active = unlocked;
-        this.currentPacks.getTransferButton().active = unlocked;
-        this.availablePacks.getSearchField().setValueSilently("");
-        this.currentPacks.getSearchField().setValueSilently("");
-        this.availablePacks.list().search("");
-        this.currentPacks.list().search("");
-
-        if (current != null && !current.getPackIds().isEmpty()) {
-            this.applyProfile(current);
-        } else {
-            this.useSelected();
-        }
-    }
-
-    public void onProfileCopy(@Nullable Profile original, @NonNull Profile copy) {
-        copy.setPacks(this.currentPacks.list().copyPacks());
-    }
-
-    private void applyProfile(@NonNull Profile profile) {
-        List<Pack> available = this.availablePacks.list().copyPacks();
-        List<Pack> current = this.repository.getPacksByFlattenedIds(profile.getPackIds());
-        this.applyPacks(available, current);
-    }
-
     private void applyPacks(List<Pack> available, List<Pack> current) {
         PackGroup packs = this.repository.validatePacks(available, current);
         this.availablePacks.list().reload(packs.unselected());
         this.currentPacks.list().reload(packs.selected());
         this.clearHistory();
-    }
-
-    public void syncProfile(@Nullable Profile profile) {
-        if (profile != null) {
-            profile.syncPacks(this.repository.getPacks(), this.currentPacks.list().copyPacks());
-        }
-    }
-
-    @Override
-    public boolean isUnlocked() {
-        Profile profile = this.profiles.getProfile();
-        return profile == null || !profile.isLocked();
-    }
-
-    @Override
-    public @NonNull List<PackList> getPackLists() {
-        return this.packLists;
     }
 
     public List<Pack> getAvailablePacks() {
@@ -608,109 +534,271 @@ public class PackedPacksScreen extends PackListEventHandler implements
         return this.currentPacks.list().copyPacks();
     }
 
-    @Override
-    public @Nullable PackList getDestination(PackList source) {
+    public @Nullable Profile getSelectedProfile() {
+        return this.selectedProfile;
+    }
+
+    public void onToggleLock(Profile profile) {
+        profile.setLocked(!profile.isLocked());
+    }
+
+    public void onToggleDefault(Profile profile) {
+        DevConfig.Packs config = this.options.getConfig();
+        boolean isDefault = profile.equals(config.getDefaultProfile());
+        config.setDefaultProfile(isDefault ? null : profile);
+
+        if (!isDefault) {
+            this.onProfileChange(profile);
+        }
+    }
+
+    public void onProfileDelete(Profile profile) {
+        if (profile.equals(this.selectedProfile)) {
+            List<Profile> profiles = this.options.getUserConfig().getProfiles();
+            if (!profiles.isEmpty()) {
+                int index = profiles.indexOf(profile);
+                Profile previous = (index > 0) ? profiles.get(index - 1) : null;
+                this.onProfileChange(previous);
+            } else {
+                this.onProfileChange(null);
+            }
+        }
+        this.options.getUserConfig().removeProfile(profile);
+    }
+
+    public void onProfileChange(@Nullable Profile profile) {
+        Profile previousProfile = this.selectedProfile;
+        this.selectedProfile = profile;
+
+        if (previousProfile != null) {
+            previousProfile.setPacks(this.currentPacks.list().copyPacks());
+            Profiles.save(this.original.packType(), previousProfile);
+        }
+
+        boolean unlocked = profile == null || !profile.isLocked();
+        this.availablePacks.getTransferButton().active = unlocked;
+        this.currentPacks.getTransferButton().active = unlocked;
+        this.availablePacks.getSearchField().setValueSilently("");
+        this.currentPacks.getSearchField().setValueSilently("");
+        this.availablePacks.list().search("");
+        this.currentPacks.list().search("");
+
+        if (profile != null && !profile.getPackIds().isEmpty()) {
+            this.applyProfile(profile);
+        } else {
+            this.useSelected();
+        }
+    }
+
+    public void onProfileCopy(@Nullable Profile profile) {
+        Profile copy;
+        if (profile != null) {
+            if (profile.isTemp()) {
+                Profiles.save(this.context.packType(), profile);
+            }
+            copy = profile.copy();
+        } else {
+            copy = Profiles.create(NO_PROFILE_TEXT.getString() + " - " + COPY_TEXT.getString(), this.context.packType());
+        }
+
+        copy.setPacks(this.getCurrentPacks());
+        this.options.getUserConfig().addProfile(copy);
+        this.onProfileChange(copy);
+    }
+
+    public void onProfileRename(Profile profile, String name) {
+        this.options.getUserConfig().renameProfile(profile, name);
+    }
+
+    private void applyProfile(@NonNull Profile profile) {
+        List<Pack> available = this.getAvailablePacks();
+        List<Pack> current = this.repository.getPacksByFlattenedIds(profile.getPackIds());
+        this.applyPacks(available, current);
+    }
+
+    public void syncProfile() {
+        if (this.selectedProfile != null) {
+            this.selectedProfile.syncPacks(this.repository.getPacks(), this.currentPacks.list().copyPacks());
+        }
+    }
+
+    public boolean isUnlocked() {
+        return this.selectedProfile == null || !this.selectedProfile.isLocked();
+    }
+
+    private void focus(ComponentPath path) {
+        this.clearFocus();
+        path.applyFocus(true);
+    }
+
+    private void focus(GuiEventListener element) {
+        this.focus(ComponentPath.path(element, this));
+    }
+
+    private void focusList(PackList packList, PackList.@Nullable Entry entry) {
+        if (packList == this.folderDialog.root()) {
+            if (entry != null) {
+                this.focus(ComponentPath.path(entry, packList, this.folderDialog, this));
+            } else {
+                this.focus(ComponentPath.path(packList, this, this.folderDialog));
+            }
+        } else if (entry != null) {
+            this.focus(ComponentPath.path(entry, packList, this));
+        } else {
+            this.focus(packList);
+        }
+    }
+
+    private void focusList(PackList packList) {
+        this.focusList(packList, packList.getSelected());
+    }
+
+    private void unfocusOtherLists(PackList focused) {
+        for (PackList packList : this.packLists) {
+            if (packList != focused) {
+                packList.setFocused(null);
+            }
+        }
+    }
+
+    private void transferFocus(PackList source, PackList destination) {
+        source.setFocused(null);
+        this.focusList(destination);
+
+        if (destination == this.currentPacks.list()) {
+            this.currentPacks.list().scrollToLastSelected();
+        }
+    }
+
+    private void onTransferRequested(PackList source, List<Pack> payload, Pack requestor) {
+        if (payload.isEmpty()) return;
+
+        PackList destination = null;
+
         if (source == this.availablePacks.list()) {
-            return this.currentPacks.list();
+            destination = this.currentPacks.list();
         } else if (source == this.currentPacks.list()) {
-            return this.availablePacks.list();
+            destination = this.availablePacks.list();
         }
-        return null;
+
+        if (destination == null) {
+            PackedPacks.LOGGER.warn("[packed_packs] Attempted to transfer packs without a designated destination.");
+            return;
+        }
+
+        destination.clearSelection();
+        source.removeAll(payload);
+        destination.addAll(payload);
+        destination.selectAll(payload);
+        destination.select(requestor);
+
+        this.transferFocus(source, destination);
     }
 
-    @Override
-    protected void transferFocus(PackList source, PackList destination) {
-        super.transferFocus(source, destination);
-
-        if (destination == currentPacks.list()) {
-            currentPacks.list().scrollToLastSelected();
-        }
-    }
-
-    private void onFolderOpen(FolderOpenEvent event) {
-        this.folderDialog.root().reload(this.repository.getNestedPacks(event.opened()));
-        this.folderDialog.updateFolder(event.target(), event.opened(), this.assetManager);
+    private void onFolderOpen(PackList parentList, FolderPack source) {
+        this.folderDialog.root().reload(this.repository.getNestedPacks(source));
+        this.folderDialog.updateFolder(parentList, source, this.assetManager);
         this.folderDialog.setOpen(true);
     }
 
-    private void onFolderClose(FolderCloseEvent event) {
+    private void onFolderClose(PackList sourceList, FolderPack source) {
         this.folderDialog.setOpen(false);
 
-        FolderPack folderPack = event.folderPack();
-        if (folderPack == null) return;
+        if (source == null) return;
 
-        Folder folder = this.repository.getFolderConfig(folderPack);
+        Folder folder = this.repository.getFolderConfig(source);
         if (folder != null && this.isUnlocked()) {
-            if (folder.trySetPacks(this.repository.validateAndOrderNestedPacks(folderPack, event.target().copyPacks()))) {
-                folderPack.saveConfig(folder);
+            if (folder.trySetPacks(this.repository.validateAndOrderNestedPacks(source, sourceList.copyPacks()))) {
+                source.saveConfig(folder);
             }
             this.focusList(ObjectsUtil.firstNonNullOrDefault(this.availablePacks.list(), this.folderDialog.getParent()));
         }
     }
 
-    private void onFileRename(FileRenameEvent event) {
+    private void onFileRename(Pack renamedPack, Component newName) {
         if (this.folderDialog.isOpen()) {
-            this.folderDialog.onRename(event.renamed(), event.newName());
+            this.folderDialog.onRename(renamedPack, newName);
         }
         this.refreshPacks();
     }
 
-    @Override
-    protected void handleMoveEvent(MoveEvent event) {
-        if (event.target() != this.folderDialog.root()) {
-            super.handleMoveEvent(event);
-            return;
-        }
-
-        PackList.Entry entry = event.target().getEntry(event.trigger());
-        if (entry != null) {
-            this.focus(ComponentPath.path(entry, event.target(), this.folderDialog, this));
-        } else {
-            this.focus(ComponentPath.path(event.target(), this.folderDialog, this));
-        }
-    }
-
-    private void onOpenAliases(PackAliasOpenEvent event) {
-        Objects.requireNonNull(this.aliasModal, "aliasModal");
+    private void onOpenAliases(Pack pack) {
+        if (this.aliasModal == null) return;
         this.aliasModal.clear();
-        this.aliasModal.root().layout().editAliases(event.trigger(), this.aliasModal::closeModal);
+        this.aliasModal.root().layout().editAliases(pack, this.aliasModal::closeModal);
         this.aliasModal.root().visitWidgets(this.aliasModal::addRenderableWidget);
         this.aliasModal.repositionElements();
         this.aliasModal.setOpen(true);
     }
 
-    @Override
-    public void onEvent(PackListEvent event) {
-        super.onEvent(event);
-
+    private boolean handlePackListEvent(PackListEvent event) {
         this.profiles.getSidebar().setOpen(false);
+
+        boolean triggeredByFolderDialog = event.target() == this.folderDialog.root();
+        if (!triggeredByFolderDialog) {
+            this.folderDialog.setOpen(false);
+        }
+
+        switch (event) {
+            case SelectionEvent selection -> this.unfocusOtherLists(selection.target());
+            case RequestTransferEvent request ->
+                    this.onTransferRequested(request.target(), request.payload(), request.trigger());
+            case MoveEvent(PackList source, Pack moved, List<Pack> ignore) ->
+                    this.focusList(source, source.getEntry(moved));
+            case DragEvent drag -> {
+                if (this.dragged == null) {
+                    this.dragged = drag;
+                }
+                this.unfocusOtherLists(drag.target());
+            }
+            case DropEvent drop -> this.transferFocus(drop.target(), drop.destination());
+            case FileDeleteEvent ignore -> this.revalidatePacks();
+            case FileRenameOpenEvent(PackList target, Pack trigger) -> this.fileRenameModal.open(target, trigger);
+            case FileRenameEvent renamed -> this.onFileRename(renamed.renamed(), renamed.newName());
+            case FileRenameCloseEvent renameModalClosed ->
+                    this.focusList(renameModalClosed.target(), renameModalClosed.target().getEntry(renameModalClosed.trigger()));
+            case FolderOpenEvent folderOpen -> this.onFolderOpen(folderOpen.target(), folderOpen.opened());
+            case FolderCloseEvent folderClose -> this.onFolderClose(folderClose.target(), folderClose.folderPack());
+            case PackAliasOpenEvent openAlias -> this.onOpenAliases(openAlias.trigger());
+        }
+
+        return !triggeredByFolderDialog;
+    }
+
+    private boolean handleProfileEvent(ProfileEvent event) {
+        switch (event) {
+            case ProfileEvent.Copy(Profile profile) -> this.onProfileCopy(profile);
+            case ProfileEvent.Delete(Profile profile) -> this.onProfileDelete(profile);
+            case ProfileEvent.Rename(Profile profile, String name) -> this.onProfileRename(profile, name);
+            case ProfileEvent.Select(Profile profile) -> this.onProfileChange(profile);
+            case ProfileEvent.ToggleDefault(Profile profile) -> this.onToggleDefault(profile);
+            case ProfileEvent.ToggleLock(Profile profile) -> this.onToggleLock(profile);
+        }
+
+        if (event.shouldRefresh()) {
+            this.profiles.refresh();
+        }
+
+        return true;
+    }
+
+    @Override
+    public void dispatch(Event action) {
         this.contextMenu.setOpen(false);
         this.fileRenameModal.setOpen(false);
         ObjectsUtil.ifPresent(this.aliasModal, Modal::closeModal);
 
-        boolean notFolderDialogEvent = event.target() != this.folderDialog.root();
-        if (notFolderDialogEvent) this.folderDialog.setOpen(false);
+        boolean shouldPush = true;
 
-        switch (event) {
-            case FileDeleteEvent ignore -> this.revalidatePacks();
-            case FileRenameOpenEvent(PackList target, Pack trigger) -> this.fileRenameModal.open(target, trigger);
-            case FileRenameEvent e -> this.onFileRename(e);
-            case FileRenameCloseEvent e -> this.focusList(e.target());
-            case FolderOpenEvent e -> this.onFolderOpen(e);
-            case FolderCloseEvent e -> this.onFolderClose(e);
-            case PackAliasOpenEvent e -> this.onOpenAliases(e);
-            default -> {
-            }
+        if (action instanceof PackListEvent packListEvent) {
+            shouldPush = this.handlePackListEvent(packListEvent);
+        } else if (action instanceof ProfileEvent profileEvent) {
+            shouldPush = this.handleProfileEvent(profileEvent);
         }
 
-        if (this.isUnlocked() && event.pushToHistory() && notFolderDialogEvent) {
+        if (this.isUnlocked() && action.pushToHistory() && shouldPush) {
             this.history.push(this.captureState());
         }
-    }
-
-    @Override
-    public ScreenContext ctx() {
-        return this.context;
     }
 
     public @Nullable PackLayout getLayoutFromSelectedList() {
@@ -730,6 +818,9 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     @Override
     public boolean charTyped(@NonNull CharacterEvent charEvent) {
+        if (this.dragged != null) {
+            return true;
+        }
         if (super.charTyped(charEvent)) {
             return true;
         }
@@ -753,16 +844,20 @@ public class PackedPacksScreen extends PackListEventHandler implements
 
     public void switchDefaultProfile() {
         this.options.getDefaultProfile().ifPresent(profile -> {
-            if (Objects.equals(this.profiles.getProfile(), profile)) {
-                this.profiles.setProfile(null);
+            if (Objects.equals(this.selectedProfile, profile)) {
+                this.onProfileChange(null);
             } else {
-                this.profiles.setProfile(profile);
+                this.onProfileChange(profile);
             }
         });
     }
 
     @Override
     public boolean keyPressed(@NonNull KeyEvent keyEvent) {
+        if (this.dragged != null) {
+            return true;
+        }
+
         this.contextMenu.setOpen(false);
 
         if (isDeveloperMode(keyEvent)) {
@@ -794,7 +889,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
             PackLayout packLayout = this.getLayoutFromSelectedList();
             if (packLayout != null) {
                 packLayout.list().selectAll();
-                this.onEvent(new SelectionEvent(packLayout.list()));
+                this.handlePackListEvent(new SelectionEvent(packLayout.list()));
                 return true;
             }
         }
@@ -810,10 +905,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
         return false;
     }
 
-    private boolean hasHeader(List<MenuItem> items) {
-        return !items.isEmpty() && items.getFirst() instanceof PackMenuHeader;
-    }
-
     private void openContextMenu(int mouseX, int mouseY) {
         if (this.contextMenu.isMouseOver(mouseX, mouseY)) return;
 
@@ -825,7 +916,7 @@ public class PackedPacksScreen extends PackListEventHandler implements
                 .ifTrue((items, b) -> b.addAll(items))
                 .when(Config.get().isDevMode())
                 .ifTrue(dev -> dev.separatorIfNonEmpty()
-                        .whenNonNull(this.profiles.getProfile())
+                        .whenNonNull(this.selectedProfile)
                         .ifTrue((profile, b) -> b.
                                 add(devItem(ResourceUtil.getText("profile.save"))
                                         .action(() -> profile.setPacks(this.currentPacks.list().copyPacks()))
@@ -857,14 +948,16 @@ public class PackedPacksScreen extends PackListEventHandler implements
                 .whenNonNull(extensions.getItems(ContextMenuEvent.Screen.Pos.BOTTOM))
                 .ifTrue((items, b) -> b.addAll(items))
                 .peek(items -> {
-                    int yOffset = this.hasHeader(items) ? this.contextMenu.getItemHeight() : 0;
+                    boolean hasHeader = !items.isEmpty() && items.getFirst() instanceof PackMenuHeader;
+                    int yOffset = hasHeader ? this.contextMenu.getItemHeight() : 0;
                     this.contextMenu.open(mouseX, mouseY - yOffset, items);
                 });
     }
 
     @Override
     public boolean mouseClicked(@NonNull MouseButtonEvent mouseEvent, boolean doubleClicked) {
-        this.setDragged(null);
+        this.dragged = null;
+
         if (isRightClick(mouseEvent) && !this.optionsModal.isMouseOver(mouseEvent.x(), mouseEvent.y())) {
             this.openContextMenu((int) mouseEvent.x(), (int) mouseEvent.y());
             return true;
@@ -887,6 +980,26 @@ public class PackedPacksScreen extends PackListEventHandler implements
     }
 
     @Override
+    public boolean mouseDragged(@NonNull MouseButtonEvent mouseButtonEvent, double dragX, double dragY) {
+        return this.dragged != null || super.mouseDragged(mouseButtonEvent, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(@NonNull MouseButtonEvent mouseButtonEvent) {
+        if (isLeftClick(mouseButtonEvent) && this.dragged != null) {
+            for (PackList packList : this.packLists) {
+                if (packList.isHovered()) {
+                    packList.drop(this.dragged, mouseButtonEvent.x(), mouseButtonEvent.y());
+                }
+            }
+            this.dragged = null;
+            return true;
+        }
+
+        return super.mouseReleased(mouseButtonEvent);
+    }
+
+    @Override
     public List<ToggleableDialog<?>> getDialogs() {
         return this.dialogs;
     }
@@ -896,13 +1009,22 @@ public class PackedPacksScreen extends PackListEventHandler implements
         return this.hoveredElement;
     }
 
+    public ScreenContext ctx() {
+        return this.context;
+    }
+
     @Override
     public void render(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.hoveredElement = this.findHovered(mouseX, mouseY);
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-        if (Config.get().isDevMode()) {
+        if (this.dragged != null) {
+            List<PackList> dropZones = this.isUnlocked() ? this.packLists : Collections.emptyList();
+            this.dragEventRenderer.render(dragged, dropZones, guiGraphics, mouseX, mouseY, partialTick);
+        }
+
+        if (this.context.devMode()) {
             float scale = 0.5f;
             int y = (int) ((height - this.font.lineHeight * scale) / scale);
 
@@ -910,18 +1032,6 @@ public class PackedPacksScreen extends PackListEventHandler implements
             guiGraphics.pose().scale(scale);
             guiGraphics.drawString(this.font, ResourceUtil.getText("dev_mode", DEV_MODE_SHORTCUT), 0, y, Theme.WHITE.getARGB());
             guiGraphics.pose().popMatrix();
-        }
-    }
-
-    public boolean canRefresh() {
-        var future = this.refreshFuture;
-        return future == null || future.isDone();
-    }
-
-    private void cancelRefresh() {
-        var future = this.refreshFuture;
-        if (future != null && !future.isDone()) {
-            this.refreshFuture.cancel(true);
         }
     }
 

@@ -6,8 +6,9 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.api.context.PackContext;
+import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.gui.components.events.DragEvent;
-import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
@@ -34,8 +35,14 @@ public class AvailablePackList extends PackList {
     private static final Theme DROP_ZONE_THEME = Theme.RED_700;
     private static final ColoredRect DROP_ZONE = new ColoredRect(DROP_ZONE_THEME.withAlpha(0.25f));
 
-    public AvailablePackList(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
-        super(options, assets, fileOps, listener);
+    public AvailablePackList(
+            PackOptionsContext options,
+            PackAssetManager assets,
+            PackFileOperations fileOps,
+            ActionDispatcher listener,
+            ScreenContext screenContext
+    ) {
+        super(options, assets, fileOps, listener, screenContext);
     }
 
     @Override
@@ -111,7 +118,7 @@ public class AvailablePackList extends PackList {
         }
 
         @Override
-        public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+        public boolean mouseClicked(@NonNull MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
             if (isLeftClick(mouseButtonEvent) && this.isMouseOverSelect(mouseButtonEvent.x(), mouseButtonEvent.y())) {
                 playClickSound();
                 this.transfer();

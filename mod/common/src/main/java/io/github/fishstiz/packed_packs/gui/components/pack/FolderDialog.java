@@ -6,6 +6,7 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuil
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
+import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
@@ -30,20 +31,21 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     private final FidgetzButton<Void> closeButton;
     private final FidgetzText<Void> folderTitle;
     private final PackFileOperations fileOps;
-    private final PackListEventListener listener;
+    private final ActionDispatcher eventHandler;
     private Sprite folderSprite = PackAssetManager.DEFAULT_FOLDER_ICON;
     private PackList parent;
     private FolderPack folderPack;
 
-    public <S extends Screen & ToggleableDialogContainer & PackListEventListener> FolderDialog(
+    public <S extends Screen & ToggleableDialogContainer & ActionDispatcher> FolderDialog(
             S screen,
             PackOptionsContext options,
             PackAssetManager assets,
-            PackFileOperations fileOps
+            PackFileOperations fileOps,
+            ScreenContext screenContext
     ) {
-        super(builder(screen, new FolderPackList(options, assets, fileOps, screen)).setBackground(DrawUtil.DEMO_BACKGROUND));
+        super(builder(screen, new FolderPackList(options, assets, fileOps, screen, screenContext)).setBackground(DrawUtil.DEMO_BACKGROUND));
 
-        this.listener = screen;
+        this.eventHandler = screen;
         this.fileOps = fileOps;
         this.closeButton = this.addRenderableWidget(
                 FidgetzButton.<Void>builder()
@@ -178,6 +180,6 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     private void sendEvent(PackListEvent event) {
-        this.listener.onEvent(event);
+        this.eventHandler.dispatch(event);
     }
 }

@@ -18,27 +18,21 @@ public class MouseSelectionHandler<T> {
     private long lastClickTime = 0;
 
     public enum Action {
-        NONE(false),
-        FOCUS(false),
-        SELECT(true),
-        SELECT_TOGGLE(true),
-        SELECT_EXCLUSIVE(true),
-        SELECT_RANGE(true),
-        TRANSFER(false),
-        DRAG(false);
-
-        private final boolean select;
-
-        Action(boolean select) {
-            this.select = select;
-        }
+        NONE,
+        FOCUS,
+        SELECT,
+        SELECT_TOGGLE,
+        SELECT_EXCLUSIVE,
+        SELECT_RANGE,
+        TRANSFER,
+        DRAG;
 
         public boolean shouldDispatch() {
             return this != NONE;
         }
 
-        public boolean shouldSelect() {
-            return this.select;
+        public boolean isSelection() {
+            return this == SELECT || this == SELECT_TOGGLE || this == SELECT_EXCLUSIVE || this == SELECT_RANGE;
         }
     }
 
@@ -63,7 +57,7 @@ public class MouseSelectionHandler<T> {
     }
 
     private boolean isSelectedLast() {
-        return !this.selection.isEmpty() && Objects.equals(this.selection.getLast(), this.item) ;
+        return !this.selection.isEmpty() && Objects.equals(this.selection.getLast(), this.item);
     }
 
     private boolean updateDoubleClick() {

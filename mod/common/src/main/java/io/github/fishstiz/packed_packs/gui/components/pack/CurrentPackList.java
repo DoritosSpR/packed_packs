@@ -7,9 +7,10 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.packed_packs.api.context.PackContext;
+import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.gui.components.MouseSelectionHandler;
 import io.github.fishstiz.packed_packs.gui.components.events.DragEvent;
-import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
+import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
@@ -47,8 +48,14 @@ public class CurrentPackList extends PackList {
     private static final double SCROLL_STEP = 10;
     private boolean scrolling;
 
-    public CurrentPackList(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
-        super(options, assets, fileOps, listener);
+    public CurrentPackList(
+            PackOptionsContext options,
+            PackAssetManager assets,
+            PackFileOperations fileOps,
+            ActionDispatcher listener,
+            ScreenContext screenContext
+    ) {
+        super(options, assets, fileOps, listener, screenContext);
     }
 
     @Override
@@ -57,7 +64,7 @@ public class CurrentPackList extends PackList {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
+    public boolean keyPressed(@NonNull KeyEvent keyEvent) {
         boolean keyPressed = super.keyPressed(keyEvent);
         if (!keyPressed) {
             PackList.Entry entry = this.getEntry(this.getLastSelected());
@@ -335,7 +342,7 @@ public class CurrentPackList extends PackList {
         }
 
         @Override
-        public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+        public boolean mouseClicked(@NonNull MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
             if (isLeftClick(mouseButtonEvent)) {
                 double mouseX = mouseButtonEvent.x();
                 double mouseY = mouseButtonEvent.y();

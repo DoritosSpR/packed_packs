@@ -6,33 +6,28 @@ import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.packed_packs.config.Config;
-import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.config.Profile;
-import io.github.fishstiz.packed_packs.config.Profiles;
+import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
+import io.github.fishstiz.packed_packs.gui.components.events.ProfileEvent;
 import io.github.fishstiz.packed_packs.gui.components.profile.ProfileList;
 import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
-import io.github.fishstiz.packed_packs.gui.screens.WidgetFactory;
+import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import org.jspecify.annotations.Nullable;
-
-import java.util.function.BiConsumer;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
 public class ProfilesLayout {
     public static final Component TITLE_TEXT = ResourceUtil.getText("profile");
-    private static final Component NO_PROFILE_TEXT = ResourceUtil.getText("profile.none");
-    private static final Component UNNAMED_TEXT = ResourceUtil.getText("profile.unnamed");
-    private static final Component COPY_TEXT = ResourceUtil.getText("profile.copy");
+    public static final Component NO_PROFILE_TEXT = ResourceUtil.getText("profile.none");
+    public static final Component UNNAMED_TEXT = ResourceUtil.getText("profile.unnamed");
+    public static final Component COPY_TEXT = ResourceUtil.getText("profile.copy");
     private static final int MAX_WIDTH = SPACING * 20;
-    private final Config.Packs userConfig;
-    private final DevConfig.Packs config;
-    private final BiConsumer<Profile, Profile> copyListener;
+    private final PackOptionsContext options;
+    private final ActionDispatcher eventHandler;
     private final ButtonSprites toggleSprites;
     private final Sidebar sidebar;
     private final ProfileList profileList;
@@ -41,24 +36,15 @@ public class ProfilesLayout {
     private FidgetzButton<Void> noProfileButton;
     private boolean initialized = false;
 
-    public <S extends Screen & ToggleableDialogContainer> ProfilesLayout(
-            S screen,
-            Config.Packs userConfig,
-            DevConfig.Packs config,
-            BiConsumer<Profile, Profile> selectListener,
-            BiConsumer<Profile, Profile> copyListener
-    ) {
-        this.userConfig = userConfig;
-        this.config = config;
-        this.copyListener = copyListener;
+    public <S extends Screen & ToggleableDialogContainer> ProfilesLayout(S screen, ActionDispatcher eventHandler, PackOptionsContext options) {
+        this.options = options;
+        this.eventHandler = eventHandler;
         this.toggleSprites = new ButtonSprites(
                 Sprite.of16(ResourceUtil.getIcon("edit")),
                 Sprite.of16(ResourceUtil.getIcon("edit_inactive"))
         );
-
-        WidgetFactory.ProfileWidgets widgets = WidgetFactory.createProfileWidgets(screen, userConfig, config, selectListener, this::updateGuiState);
-        this.sidebar = widgets.sidebar();
-        this.profileList = widgets.profileList();
+        this.sidebar = new Sidebar(screen);
+        this.profileList = new ProfileList(options, eventHandler);
     }
 
     public void init(Runnable onClose) {
@@ -82,7 +68,7 @@ public class ProfilesLayout {
                 .build();
         this.noProfileButton = FidgetzButton.<Void>builder()
                 .setMessage(NO_PROFILE_TEXT)
-                .setOnPress(() -> this.setProfile(null))
+                .setOnPress(() -> this.eventHandler.dispatch(new ProfileEvent.Select(null)))
                 .build();
 
         final FlexLayout actions = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
@@ -99,7 +85,7 @@ public class ProfilesLayout {
 
         this.initialized = true;
 
-        this.updateGuiState(this.profileList.getSelectedProfile());
+        this.refresh();
         this.profileList.refresh();
     }
 
@@ -120,24 +106,22 @@ public class ProfilesLayout {
     }
 
     private void onNameChange(String value) {
-        Profile profile = this.profileList.getSelectedProfile();
-        if (profile != null) {
+        this.options.getProfile().ifPresent(profile -> {
             String name = value;
-
             if (value.isEmpty()) {
                 name = UNNAMED_TEXT.getString();
             }
-
-            this.userConfig.renameProfile(profile, name);
-        }
+            this.eventHandler.dispatch(new ProfileEvent.Rename(profile, name));
+        });
         this.profileList.scheduleRefresh();
     }
 
-    private void updateGuiState(@Nullable Profile profile) {
+    public void refresh() {
         if (!this.initialized) return;
 
         this.nameField.setEditable(false);
 
+        Profile profile = this.options.getProfile().orElse(null);
         boolean hasProfile = profile != null;
         this.nameField.setHint(hasProfile ? UNNAMED_TEXT : NO_PROFILE_TEXT);
         this.nameField.setValueSilently(hasProfile ? profile.getName() : "");
@@ -148,38 +132,18 @@ public class ProfilesLayout {
         this.toggleNameButton.active = hasProfile && !profile.isLocked();
 
         if (hasProfile && profile.isLocked()) {
-            Profile defaultProfile = this.config.getDefaultProfile();
+            Profile defaultProfile = this.options.getConfig().getDefaultProfile();
             ButtonSprites sprites = profile == defaultProfile ? ButtonSprites.of(STAR_SPRITE) : ButtonSprites.unclamp(LOCK_SPRITE);
             this.toggleNameButton.setSprites(sprites);
         } else {
             this.toggleNameButton.setSprites(this.toggleSprites);
         }
-    }
 
-    public void setProfile(@Nullable Profile profile) {
-        this.profileList.selectProfile(profile);
-    }
-
-    public @Nullable Profile getProfile() {
-        return this.profileList.getSelectedProfile();
+        this.profileList.refresh();
     }
 
     private void copyProfile() {
-        Profile selectedProfile = this.profileList.getSelectedProfile();
-        Profile copiedProfile;
-
-        if (selectedProfile != null) {
-            if (selectedProfile.isTemp()) {
-                Profiles.save(this.userConfig.packType(), selectedProfile);
-            }
-            copiedProfile = selectedProfile.copy();
-        } else {
-            copiedProfile = Profiles.create(NO_PROFILE_TEXT.getString() + " - " + COPY_TEXT.getString(), this.userConfig.packType());
-        }
-
-        this.copyListener.accept(selectedProfile, copiedProfile);
-        this.userConfig.addProfile(copiedProfile);
-        this.setProfile(copiedProfile);
+        this.eventHandler.dispatch(new ProfileEvent.Copy(this.options.getProfile().orElse(null)));
         this.sidebar.setOpen(false);
         this.profileList.refresh();
     }

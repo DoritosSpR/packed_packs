@@ -68,8 +68,9 @@ public class Profiles {
     }
 
     public static void save(PackType packType, Profile profile) {
-        profile.temp = false;
-        saveJson(profile, getFile(packType, profile.getId()));
+        if (saveJson(profile, getFile(packType, profile.getId()))) {
+            profile.temp = false;
+        }
     }
 
     public static void delete(PackType packType, Profile profile) {

@@ -1,13 +1,18 @@
 package io.github.fishstiz.packed_packs.gui.components.events;
 
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
+import io.github.fishstiz.packed_packs.compat.cursors_extended.CursorsExtended;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+
+import java.util.List;
 
 public class DragEventRenderer {
     private static final int OFFSET_Y = 4;
@@ -25,7 +30,23 @@ public class DragEventRenderer {
         this.assetManager = assetManager;
     }
 
-    public void renderDragEvent(DragEvent dragEvent, GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void render(DragEvent dragEvent, List<PackList> dropZones, GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        PackList source = dragEvent.target();
+        boolean validDrop = false;
+
+        for (PackList list : dropZones) {
+            list.renderDroppableZone(guiGraphics, dragEvent, mouseX, mouseY, partialTick);
+            if (!validDrop && list.isMouseOver(mouseX, mouseY)) {
+                validDrop = source == list || source.canInteract(list);
+            }
+        }
+
+        this.renderDragEvent(dragEvent, guiGraphics, mouseX, mouseY, partialTick);
+
+        guiGraphics.requestCursor(validDrop ? CursorsExtended.GRABBING : CursorTypes.NOT_ALLOWED);
+    }
+
+    private void renderDragEvent(DragEvent dragEvent, GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         Sprite icon = this.assetManager.getIcon(dragEvent.trigger());
         String sizeString = String.valueOf(dragEvent.payload().size());
         Font font = Minecraft.getInstance().font;

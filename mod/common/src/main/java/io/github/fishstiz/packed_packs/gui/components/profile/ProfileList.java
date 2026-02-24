@@ -13,8 +13,10 @@ import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
 import io.github.fishstiz.packed_packs.config.Config;
-import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.config.Profile;
+import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
+import io.github.fishstiz.packed_packs.gui.components.events.ProfileEvent;
+import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
@@ -25,12 +27,9 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
@@ -43,23 +42,13 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     private static final Sprite TRASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("trash"));
     private static final Sprite STAR_OUTLINE_SPRITE = Sprite.of16(ResourceUtil.getIcon("star_outline"));
     private final PollingDebouncer<Void> debouncedRefresh = new SimplePollingDebouncer<>(this::refresh, 200);
-    private final BiConsumer<Profile, Profile> selectListener;
-    private final Consumer<Profile> updateListener;
-    private final Config.Packs userConfig;
-    private final DevConfig.Packs config;
-    private @Nullable Profile selectedProfile;
+    private final PackOptionsContext options;
+    private final ActionDispatcher eventHandler;
 
-    public ProfileList(
-            Config.Packs userConfig,
-            DevConfig.Packs Config,
-            BiConsumer<Profile, Profile> selectListener,
-            Consumer<Profile> updateListener
-    ) {
+    public ProfileList(PackOptionsContext options, ActionDispatcher eventHandler) {
         super(ITEM_HEIGHT);
-        this.userConfig = userConfig;
-        this.config = Config;
-        this.selectListener = selectListener;
-        this.updateListener = updateListener;
+        this.options = options;
+        this.eventHandler = eventHandler;
     }
 
     public void scheduleRefresh() {
@@ -71,49 +60,16 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
 
         int i = 0;
 
-        Profile defaultProfile = this.config.getDefaultProfile();
+        Profile defaultProfile = this.options.getConfig().getDefaultProfile();
         if (defaultProfile != null) {
             this.addEntry(new Entry(defaultProfile, i++));
         }
 
-        List<Profile> profiles = this.userConfig.getProfiles();
+        List<Profile> profiles = this.options.getUserConfig().getProfiles();
         for (Profile profile : profiles) {
             if (defaultProfile != null && Objects.equals(profile.getId(), defaultProfile.getId())) continue;
             this.addEntry(new Entry(profile, i++));
         }
-    }
-
-    public @Nullable Profile getSelectedProfile() {
-        return this.selectedProfile;
-    }
-
-    public void selectProfile(@Nullable Profile profile) {
-        Profile previous = this.selectedProfile;
-        this.selectedProfile = profile;
-        this.selectListener.accept(previous, profile);
-        this.updateListener.accept(profile);
-    }
-
-    public void removeProfile(Profile profile) {
-        if (profile != null && this.selectedProfile == profile) {
-            List<Profile> profiles = this.userConfig.getProfiles();
-            if (!profiles.isEmpty()) {
-                int index = profiles.indexOf(profile);
-                Profile previous = (index > 0) ? profiles.get(index - 1) : null;
-                this.selectProfile(previous);
-            } else {
-                this.selectProfile(null);
-            }
-        }
-        if (profile != null) {
-            this.userConfig.removeProfile(profile);
-        }
-        this.refresh();
-    }
-
-    private void resync() {
-        this.selectListener.accept(this.selectedProfile, this.selectedProfile);
-        this.updateListener.accept(this.selectedProfile);
     }
 
     @Override
@@ -129,7 +85,7 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
 
     public class Entry extends AbstractFixedListWidget<Entry>.Entry implements ContextMenuProvider {
         private final Profile profile;
-        private final List<FidgetzButton<Void>> children = new ArrayList<>();
+        private final List<FidgetzButton<Void>> children;
         private final FidgetzButton<Void> selectButton;
         private final FidgetzButton<Void> deleteButton;
 
@@ -152,15 +108,13 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
                     .setMessage(Component.literal(this.profile.getName()))
                     .setOnPress(this::select)
                     .build();
+            this.selectButton.active = !this.isSelected();
 
-            this.children.add(this.deleteButton);
-            this.children.add(this.selectButton);
+            this.children = List.of(this.deleteButton, this.selectButton);
         }
 
         @Override
         public void renderContent(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            this.selectButton.active = ProfileList.this.selectedProfile != this.profile;
-
             int left = this.getX();
             int top = this.getY();
 
@@ -199,40 +153,32 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
             }
         }
 
-        private void toggleLock() {
-            boolean selected = this.isSelected();
-            if (selected) ProfileList.this.resync();
-
-            this.profile.setLocked(!this.profile.isLocked());
-            ProfileList.this.refresh();
-            if (selected) ProfileList.this.updateListener.accept(this.profile);
-        }
-
-        private void toggleDefault() {
-            ProfileList.this.config.setDefaultProfile(this.isDefault() ? null : this.profile);
-            ProfileList.this.refresh();
-
-            if (!this.isSelected() && this.isDefault()) {
-                this.select();
-            } else {
-                ProfileList.this.resync();
-            }
-        }
-
-        private void remove() {
-            ProfileList.this.removeProfile(this.profile);
+        private void sendEvent(ProfileEvent event) {
+            ProfileList.this.eventHandler.dispatch(event);
         }
 
         private void select() {
-            ProfileList.this.selectProfile(this.profile);
+            this.sendEvent(new ProfileEvent.Select(this.profile));
+        }
+
+        private void toggleLock() {
+            this.sendEvent(new ProfileEvent.ToggleLock(this.profile));
+        }
+
+        private void toggleDefault() {
+            this.sendEvent(new ProfileEvent.ToggleDefault(this.profile));
+        }
+
+        private void remove() {
+            this.sendEvent(new ProfileEvent.Delete(this.profile));
         }
 
         private boolean isDefault() {
-            return Objects.equals(this.profile, ProfileList.this.config.getDefaultProfile());
+            return Objects.equals(this.profile, ProfileList.this.options.getConfig().getDefaultProfile());
         }
 
         private boolean isSelected() {
-            return Objects.equals(this.profile, ProfileList.this.selectedProfile);
+            return ProfileList.this.options.getProfile().map(profile -> profile.equals(this.profile)).orElse(false);
         }
 
         @Override

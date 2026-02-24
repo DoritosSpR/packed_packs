@@ -4,9 +4,9 @@ import com.mojang.blaze3d.platform.InputConstants;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
+import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
 import io.github.fishstiz.packed_packs.gui.components.events.FileRenameCloseEvent;
 import io.github.fishstiz.packed_packs.gui.components.events.FileRenameEvent;
-import io.github.fishstiz.packed_packs.gui.components.events.PackListEventListener;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
 import io.github.fishstiz.packed_packs.util.PackUtil;
@@ -50,7 +50,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
     private Pack pack;
     private String oldName;
 
-    public <S extends Screen & ToggleableDialogContainer & PackListEventListener> FileRenameModal(
+    public <S extends Screen & ToggleableDialogContainer & ActionDispatcher> FileRenameModal(
             S screen,
             PackFileOperations fileOps,
             PackAssetManager assets
@@ -168,7 +168,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         Pack trigger = this.pack;
 
         if (target != null) {
-            ((PackListEventListener) this.screen).onEvent(new FileRenameCloseEvent(target, trigger));
+            ((ActionDispatcher) this.screen).dispatch(new FileRenameCloseEvent(target, trigger));
         }
 
         this.clearReferences();
@@ -190,7 +190,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
                 }
             }
 
-            ((PackListEventListener) this.screen).onEvent(new FileRenameEvent(this.packList, this.pack, sanitizedNameText));
+            ((ActionDispatcher) this.screen).dispatch(new FileRenameEvent(this.packList, this.pack, sanitizedNameText));
             this.setOpen(false);
             this.clearReferences();
         } else {

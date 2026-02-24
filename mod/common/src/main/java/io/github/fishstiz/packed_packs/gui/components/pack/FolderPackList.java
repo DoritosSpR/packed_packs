@@ -1,6 +1,7 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import io.github.fishstiz.packed_packs.api.context.PackContext;
+import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
@@ -10,8 +11,14 @@ import net.minecraft.server.packs.repository.Pack;
 import org.jspecify.annotations.NonNull;
 
 public class FolderPackList extends CurrentPackList {
-    public FolderPackList(PackOptionsContext options, PackAssetManager assets, PackFileOperations fileOps, PackListEventListener listener) {
-        super(options, assets, fileOps, listener);
+    public FolderPackList(
+            PackOptionsContext options,
+            PackAssetManager assets,
+            PackFileOperations fileOps,
+            ActionDispatcher listener,
+            ScreenContext context
+    ) {
+        super(options, assets, fileOps, listener, context);
     }
 
     @Override

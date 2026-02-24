@@ -5,6 +5,7 @@ import net.minecraft.server.packs.repository.Pack;
 
 import java.util.List;
 
+// notification
 public record DropEvent(PackList target, PackList destination, List<Pack> payload) implements PackListEvent {
     public DropEvent {
         payload = List.copyOf(payload);
