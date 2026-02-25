@@ -25,7 +25,7 @@ import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.gui.components.events.*;
+import io.github.fishstiz.packed_packs.gui.components.actions.*;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.ComponentPath;
@@ -43,6 +43,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
@@ -61,10 +62,11 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     protected final PackAssetManager assets;
     protected final PackListModel list;
     private final PackFileOperations fileOps;
-    private final ActionDispatcher dispatcher;
+    private final Consumer<PackListAction> dispatcher;
 
     protected PackList(PackListProps props) {
         super(ITEM_HEIGHT);
+
         this.assets = props.assets();
         this.options = props.options();
         this.screenContext = props.screenContext();
@@ -295,7 +297,7 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     }
 
     protected void dispatch(PackListAction action) {
-        this.dispatcher.dispatch(action);
+        this.dispatcher.accept(action);
     }
 
     public abstract boolean canInteract(PackList source);

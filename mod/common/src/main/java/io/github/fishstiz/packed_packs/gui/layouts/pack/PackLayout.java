@@ -3,28 +3,35 @@ package io.github.fishstiz.packed_packs.gui.layouts.pack;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
+import io.github.fishstiz.packed_packs.gui.components.actions.PackListAction;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackListProps;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.network.chat.CommonComponents;
 import org.jspecify.annotations.NonNull;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.SPACING;
 
 public abstract class PackLayout {
     protected final PackList list;
+    private final Consumer<PackListAction> dispatcher;
     private final ToggleableEditBox<Void> searchField;
     private final FidgetzButton<Void> transferButton;
     private FlexLayout headerLayout;
     private FlexLayout layout;
 
-    protected PackLayout(PackList list) {
-        this.list = list;
+    protected PackLayout(Function<PackListProps, PackList> listFactory, PackListProps listProps) {
+        this.list = listFactory.apply(listProps);
+        this.dispatcher = listProps.dispatcher();
         this.searchField = ToggleableEditBox.<Void>builder()
                 .setHint(ResourceUtil.getText("search").append(CommonComponents.ELLIPSIS))
                 .setEditable(true)
-                .addListener(this.list::search)
+                .addListener(search -> this.dispatcher.accept(new PackListAction.Search(this.list, search)))
                 .build();
         this.transferButton = FidgetzButton.<Void>builder()
                 .makeSquare()

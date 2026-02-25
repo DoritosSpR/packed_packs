@@ -1,4 +1,4 @@
-package io.github.fishstiz.packed_packs.gui.components.events;
+package io.github.fishstiz.packed_packs.gui.components.actions;
 
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;

@@ -7,8 +7,7 @@ import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.ButtonSprites;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.config.Profile;
-import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
-import io.github.fishstiz.packed_packs.gui.components.events.ProfileEvent;
+import io.github.fishstiz.packed_packs.gui.components.actions.ProfileAction;
 import io.github.fishstiz.packed_packs.gui.components.profile.ProfileList;
 import io.github.fishstiz.packed_packs.gui.components.profile.Sidebar;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
@@ -17,6 +16,8 @@ import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
+import java.util.function.Consumer;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
@@ -27,7 +28,7 @@ public class ProfilesLayout {
     public static final Component COPY_TEXT = ResourceUtil.getText("profile.copy");
     private static final int MAX_WIDTH = SPACING * 20;
     private final PackOptionsContext options;
-    private final ActionDispatcher eventHandler;
+    private final Consumer<ProfileAction> dispatcher;
     private final ButtonSprites toggleSprites;
     private final Sidebar sidebar;
     private final ProfileList profileList;
@@ -36,15 +37,15 @@ public class ProfilesLayout {
     private FidgetzButton<Void> noProfileButton;
     private boolean initialized = false;
 
-    public <S extends Screen & ToggleableDialogContainer> ProfilesLayout(S screen, ActionDispatcher eventHandler, PackOptionsContext options) {
+    public <S extends Screen & ToggleableDialogContainer> ProfilesLayout(S screen, Consumer<ProfileAction> dispatcher, PackOptionsContext options) {
         this.options = options;
-        this.eventHandler = eventHandler;
+        this.dispatcher = dispatcher;
         this.toggleSprites = new ButtonSprites(
                 Sprite.of16(ResourceUtil.getIcon("edit")),
                 Sprite.of16(ResourceUtil.getIcon("edit_inactive"))
         );
         this.sidebar = new Sidebar(screen);
-        this.profileList = new ProfileList(options, eventHandler);
+        this.profileList = new ProfileList(options, dispatcher);
     }
 
     public void init(Runnable onClose) {
@@ -68,7 +69,7 @@ public class ProfilesLayout {
                 .build();
         this.noProfileButton = FidgetzButton.<Void>builder()
                 .setMessage(NO_PROFILE_TEXT)
-                .setOnPress(() -> this.eventHandler.dispatch(new ProfileEvent.Select(null)))
+                .setOnPress(() -> this.dispatcher.accept(new ProfileAction.Select(null)))
                 .build();
 
         final FlexLayout actions = FlexLayout.horizontal(this::getMaxWidth).spacing(GuiConstants.SPACING);
@@ -111,7 +112,7 @@ public class ProfilesLayout {
             if (value.isEmpty()) {
                 name = UNNAMED_TEXT.getString();
             }
-            this.eventHandler.dispatch(new ProfileEvent.Rename(profile, name));
+            this.dispatcher.accept(new ProfileAction.Rename(profile, name));
         });
         this.profileList.scheduleRefresh();
     }
@@ -143,7 +144,7 @@ public class ProfilesLayout {
     }
 
     private void copyProfile() {
-        this.eventHandler.dispatch(new ProfileEvent.Copy(this.options.getProfile().orElse(null)));
+        this.dispatcher.accept(new ProfileAction.Copy(this.options.getProfile().orElse(null)));
         this.sidebar.setOpen(false);
         this.profileList.refresh();
     }

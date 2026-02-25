@@ -4,8 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
-import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
-import io.github.fishstiz.packed_packs.gui.components.events.PackListAction;
+import io.github.fishstiz.packed_packs.gui.components.actions.PackListAction;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import net.minecraft.client.Minecraft;
@@ -25,6 +24,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import static io.github.fishstiz.packed_packs.util.PackUtil.ZIP_PACK_EXTENSION;
@@ -41,14 +41,18 @@ public class FileRenameModal extends Modal<LinearLayout> {
     private final ToggleableEditBox<Void> nameEditor;
     private final FidgetzButton<Void> saveButton;
     private final PackAssetManager assets;
-    private final ActionDispatcher dispatcher;
+    private final Consumer<PackListAction> dispatcher;
     private PackList packList;
     private Pack pack;
     private String oldName;
 
-    public <S extends Screen & ToggleableDialogContainer & ActionDispatcher> FileRenameModal(S screen, PackAssetManager assets) {
+    public <S extends Screen & ToggleableDialogContainer> FileRenameModal(
+            S screen,
+            Consumer<PackListAction> dispatcher,
+            PackAssetManager assets
+    ) {
         super(Modal.builder(screen, LinearLayout.vertical().spacing(SPACING)).padding(SPACING));
-        this.dispatcher = screen;
+        this.dispatcher = dispatcher;
         this.assets = assets;
 
         this.sprite = RenderableRectWidget.<Void>builder(PackAssetManager.DEFAULT_ICON)
@@ -74,7 +78,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
                 .build();
 
         FidgetzButton<Void> cancelButton = FidgetzButton.<Void>builder()
-                .setOnPress(() -> this.dispatcher.dispatch(new PackListAction.CloseRename(this.packList, this.pack)))
+                .setOnPress(() -> this.dispatcher.accept(new PackListAction.CloseRename(this.packList, this.pack)))
                 .setMessage(CommonComponents.GUI_CANCEL)
                 .build();
         this.saveButton = FidgetzButton.<Void>builder()
@@ -165,7 +169,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
         }
 
         String sanitizedName = sanitizeNameForSave(this.pack, newName);
-        this.dispatcher.dispatch(new PackListAction.Rename(this.packList, this.pack, sanitizedName));
+        this.dispatcher.accept(new PackListAction.Rename(this.packList, this.pack, sanitizedName));
     }
 
     private static String sanitizeNameForEdit(Pack pack) {

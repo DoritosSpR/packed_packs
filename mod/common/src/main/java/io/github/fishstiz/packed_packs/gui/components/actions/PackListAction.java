@@ -1,6 +1,7 @@
-package io.github.fishstiz.packed_packs.gui.components.events;
+package io.github.fishstiz.packed_packs.gui.components.actions;
 
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
@@ -12,21 +13,32 @@ import java.util.List;
 public sealed interface PackListAction extends Action {
     PackList source();
 
-    Pack pack();
-
-    default PackList.@Nullable Entry entry() {
-        return this.source().getEntry(this.pack());
-    }
-
     @Override
     default boolean pushToHistory() {
         return true;
     }
 
+    record Search(PackList source, String query) implements PackListAction {
+    }
+
+    record Sort(PackList source, Query.SortOption sort) implements PackListAction {
+    }
+
+    record HideIncompatible(PackList source, boolean hide) implements PackListAction {
+    }
+
+    sealed interface Entry extends PackListAction {
+        Pack pack();
+
+        default PackList.@Nullable Entry entry() {
+            return this.source().getEntry(this.pack());
+        }
+    }
+
     // currently used after selection and move actions
     // inherently flawed, actions that proceed with a focus action needs to be an action handled by the screen
     // in general, the pack list model should be moved up ... return to PackSelectionModel
-    record Focus(PackList source, @Nullable Pack pack) implements PackListAction {
+    record Focus(PackList source, @Nullable Pack pack) implements Entry {
     }
 
     record Transfer(
@@ -45,48 +57,48 @@ public sealed interface PackListAction extends Action {
         }
     }
 
-    record Drag(PackList source, Pack pack, List<Pack> payload) implements PackListAction {
+    record Drag(PackList source, Pack pack, List<Pack> payload) implements Entry {
         @Override
         public boolean pushToHistory() {
             return false;
         }
     }
 
-    record OpenRename(PackList source, Pack pack) implements PackListAction {
+    record OpenRename(PackList source, Pack pack) implements Entry {
     }
 
-    record CloseRename(PackList source, Pack pack) implements PackListAction {
+    record CloseRename(PackList source, Pack pack) implements Entry {
     }
 
-    record OpenFolder(PackList source, FolderPack pack) implements PackListAction {
+    record OpenFolder(PackList source, FolderPack pack) implements Entry {
         @Override
         public boolean pushToHistory() {
             return false;
         }
     }
 
-    record CloseFolder(PackList source, FolderPack pack) implements PackListAction {
+    record CloseFolder(PackList source, FolderPack pack) implements Entry {
         @Override
         public boolean pushToHistory() {
             return false;
         }
     }
 
-    record OpenAliases(PackList source, Pack pack) implements PackListAction {
+    record OpenAliases(PackList source, Pack pack) implements Entry {
         @Override
         public boolean pushToHistory() {
             return false;
         }
     }
 
-    record CloseAliases(PackList source, Pack pack) implements PackListAction {
+    record CloseAliases(PackList source, Pack pack) implements Entry {
         @Override
         public boolean pushToHistory() {
             return false;
         }
     }
 
-    record Rename(PackList source, Pack pack, String newName) implements PackListAction {
+    record Rename(PackList source, Pack pack, String newName) implements Entry {
         public Component component() {
             return Component.literal(this.newName);
         }
@@ -97,7 +109,7 @@ public sealed interface PackListAction extends Action {
         }
     }
 
-    record Delete(PackList source, Pack pack) implements PackListAction {
+    record Delete(PackList source, Pack pack) implements Entry {
         @Override
         public boolean pushToHistory() {
             return false;

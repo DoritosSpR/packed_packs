@@ -6,8 +6,8 @@ import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuil
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
+import io.github.fishstiz.packed_packs.gui.components.actions.PackListAction;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
-import io.github.fishstiz.packed_packs.gui.components.events.*;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
@@ -21,6 +21,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jspecify.annotations.Nullable;
 
+import java.util.function.Consumer;
+
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
 public class FolderDialog extends ToggleableDialog<FolderPackList> implements ContextMenuContainer {
@@ -29,15 +31,15 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     private final FidgetzButton<Void> closeButton;
     private final FidgetzText<Void> folderTitle;
     private final PackFileOperations fileOps;
-    private final ActionDispatcher eventHandler;
+    private final Consumer<PackListAction> dispatcher;
     private Sprite folderSprite = PackAssetManager.DEFAULT_FOLDER_ICON;
     private PackList parent;
     private FolderPack folderPack;
 
-    public <S extends Screen & ToggleableDialogContainer & ActionDispatcher> FolderDialog(S screen, PackListProps props) {
+    public <S extends Screen & ToggleableDialogContainer> FolderDialog(S screen, PackListProps props) {
         super(builder(screen, new FolderPackList(props)).setBackground(DrawUtil.DEMO_BACKGROUND));
 
-        this.eventHandler = screen;
+        this.dispatcher = props.dispatcher();
         this.fileOps = props.fileOps();
         this.closeButton = this.addRenderableWidget(
                 FidgetzButton.<Void>builder()
@@ -154,7 +156,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     private void deleteDirectory() {
-        this.eventHandler.dispatch(new PackListAction.Delete(this.root(), this.folderPack));
+        this.dispatcher.accept(new PackListAction.Delete(this.root(), this.folderPack));
         this.setOpen(false);
     }
 
@@ -169,6 +171,6 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     }
 
     private void sendEvent(PackListAction event) {
-        this.eventHandler.dispatch(event);
+        this.dispatcher.accept(event);
     }
 }

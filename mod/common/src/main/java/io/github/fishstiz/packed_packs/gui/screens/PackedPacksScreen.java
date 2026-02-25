@@ -1,46 +1,42 @@
 package io.github.fishstiz.packed_packs.gui.screens;
 
 import io.github.fishstiz.fidgetz.gui.components.*;
-import io.github.fishstiz.fidgetz.gui.components.contextmenu.*;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenu;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
+import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
 import io.github.fishstiz.fidgetz.util.lang.FunctionsUtil;
+import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
 import io.github.fishstiz.packed_packs.PackedPacks;
 import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.api.events.ContextMenuEvent;
 import io.github.fishstiz.packed_packs.api.events.InitializeLayoutEvent;
 import io.github.fishstiz.packed_packs.api.events.ScreenClosingEvent;
 import io.github.fishstiz.packed_packs.config.*;
-import io.github.fishstiz.packed_packs.gui.components.contextmenu.DirectoryMenuItem;
-import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
-import io.github.fishstiz.packed_packs.gui.components.pack.*;
-import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
-import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
-import io.github.fishstiz.packed_packs.gui.layouts.pack.PackAliasLayout;
-import io.github.fishstiz.packed_packs.gui.layouts.pack.PackLayout;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
+import io.github.fishstiz.packed_packs.gui.components.actions.*;
+import io.github.fishstiz.packed_packs.gui.components.contextmenu.*;
+import io.github.fishstiz.packed_packs.gui.components.pack.*;
+import io.github.fishstiz.packed_packs.gui.history.HistoryManager;
+import io.github.fishstiz.packed_packs.gui.history.Restorable;
+import io.github.fishstiz.packed_packs.gui.layouts.OptionsLayout;
+import io.github.fishstiz.packed_packs.gui.layouts.ProfilesLayout;
+import io.github.fishstiz.packed_packs.gui.layouts.pack.*;
+import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
 import io.github.fishstiz.packed_packs.impl.PackedPacksApiImpl;
 import io.github.fishstiz.packed_packs.impl.context.ScreenContextImpl;
 import io.github.fishstiz.packed_packs.impl.events.ContextMenuEventImpl;
 import io.github.fishstiz.packed_packs.pack.*;
+import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionModelAccessor;
+import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
 import io.github.fishstiz.packed_packs.util.AsyncUtil;
+import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.ToastUtil;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
-import io.github.fishstiz.packed_packs.gui.layouts.*;
-import io.github.fishstiz.packed_packs.gui.components.events.*;
-import io.github.fishstiz.packed_packs.gui.history.HistoryManager;
-import io.github.fishstiz.packed_packs.gui.history.Restorable;
-import io.github.fishstiz.packed_packs.gui.metadata.PackSelectionScreenArgs;
-import io.github.fishstiz.packed_packs.transform.mixin.PackSelectionScreenAccessor;
-import io.github.fishstiz.packed_packs.util.ResourceUtil;
-import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
-import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.util.Util;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
@@ -48,6 +44,7 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.AlertScreen;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.NoticeWithLinkScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.packs.PackSelectionScreen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -56,22 +53,26 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
 import static com.mojang.blaze3d.platform.InputConstants.KEY_SPACE;
-import static io.github.fishstiz.packed_packs.gui.layouts.ProfilesLayout.*;
+import static io.github.fishstiz.packed_packs.gui.layouts.ProfilesLayout.COPY_TEXT;
+import static io.github.fishstiz.packed_packs.gui.layouts.ProfilesLayout.NO_PROFILE_TEXT;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 import static io.github.fishstiz.packed_packs.util.PackUtil.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
 public class PackedPacksScreen extends Screen implements
-        ActionDispatcher,
         HoverStateHandler,
         ToggleableDialogContainer,
         ContextMenuContainer,
@@ -121,12 +122,12 @@ public class PackedPacksScreen extends Screen implements
         this.assetManager = new PackAssetManager(this.minecraft);
         this.dragActionHandler = new DragActionHandler(this.assetManager);
         this.history = new HistoryManager<>();
+        this.fileOps = new PackFileOperations(this.options, this.repository);
 
         this.layout = new LayoutWrapper<>(FlexLayout.vertical(this::getMaxHeight).spacing(SPACING));
         this.layout.setPadding(SPACING);
 
-        var components = Components.bootstrap(this, this.options, this.repository, this.assetManager, this.layout::getHeight);
-        this.fileOps = components.fileOps();
+        var components = Components.bootstrap(this, this.options, this.fileOps, this.assetManager, this.layout::getHeight);
         this.profiles = components.profilesLayout();
         this.availablePacks = components.availablePacks();
         this.currentPacks = components.currentPacks();
@@ -284,8 +285,6 @@ public class PackedPacksScreen extends Screen implements
         FlexLayout packLayout = FlexLayout.vertical().spacing(SPACING);
         this.availablePacks.init(contents.addFlexChild(packLayout, true));
         this.currentPacks.init(contents.addFlexChild(packLayout.copyLayout(), true));
-        this.currentPacks.getSearchField().addListener(this::recordState);
-        this.availablePacks.getSearchField().addListener(this::recordState);
         return contents;
     }
 
@@ -702,6 +701,9 @@ public class PackedPacksScreen extends Screen implements
 
     private void handlePackListAction(PackListAction action) {
         switch (action) {
+            case PackListAction.HideIncompatible(PackList source, boolean hide) -> source.hideIncompatible(hide);
+            case PackListAction.Search(PackList source, String search) -> source.search(search);
+            case PackListAction.Sort(PackList source, Query.SortOption sort) -> source.sort(sort);
             case PackListAction.Focus focus -> this.focusList(focus.source(), focus.entry());
             case PackListAction.Transfer transfer ->
                     this.onTransfer(transfer.source(), transfer.destination(), transfer.payload(), transfer.pack(), transfer.index());
@@ -781,14 +783,14 @@ public class PackedPacksScreen extends Screen implements
         }
     }
 
-    private void handleProfileEvent(ProfileEvent event) {
+    private void handleProfileAction(ProfileAction event) {
         switch (event) {
-            case ProfileEvent.Copy(Profile profile) -> this.onProfileCopy(profile);
-            case ProfileEvent.Delete(Profile profile) -> this.onProfileDelete(profile);
-            case ProfileEvent.Rename(Profile profile, String name) -> this.onProfileRename(profile, name);
-            case ProfileEvent.Select(Profile profile) -> this.onProfileChange(profile);
-            case ProfileEvent.ToggleDefault(Profile profile) -> this.onToggleDefault(profile);
-            case ProfileEvent.ToggleLock(Profile profile) -> this.onToggleLock(profile);
+            case ProfileAction.Copy(Profile profile) -> this.onProfileCopy(profile);
+            case ProfileAction.Delete(Profile profile) -> this.onProfileDelete(profile);
+            case ProfileAction.Rename(Profile profile, String name) -> this.onProfileRename(profile, name);
+            case ProfileAction.Select(Profile profile) -> this.onProfileChange(profile);
+            case ProfileAction.ToggleDefault(Profile profile) -> this.onToggleDefault(profile);
+            case ProfileAction.ToggleLock(Profile profile) -> this.onToggleLock(profile);
         }
 
         if (event.shouldRefresh()) {
@@ -796,7 +798,6 @@ public class PackedPacksScreen extends Screen implements
         }
     }
 
-    @Override
     public void dispatch(Action action) {
         this.contextMenu.setOpen(false);
         this.fileRenameModal.setOpen(false); // move somewhere else
@@ -814,8 +815,8 @@ public class PackedPacksScreen extends Screen implements
             }
 
             this.handlePackListAction(packListAction);
-        } else if (action instanceof ProfileEvent profileEvent) {
-            this.handleProfileEvent(profileEvent);
+        } else if (action instanceof ProfileAction profileEvent) {
+            this.handleProfileAction(profileEvent);
         }
 
         if (this.isUnlocked() && action.pushToHistory() && shouldPush) {
@@ -1061,10 +1062,6 @@ public class PackedPacksScreen extends Screen implements
 
     public void clearHistory() {
         this.history.reset(this.captureState());
-    }
-
-    public void recordState(String eventName) {
-        this.history.push(this.captureState(eventName));
     }
 
     @Override

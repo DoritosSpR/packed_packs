@@ -5,7 +5,6 @@ import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.fidgetz.util.lang.CollectionsUtil;
-import io.github.fishstiz.packed_packs.util.lang.IntsUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.server.packs.repository.Pack;
@@ -136,7 +135,7 @@ public class PackListModel implements Restorable<PackListModel.Snapshot> {
         int[] indices = this.getVisibilityIndices(this.selectedPacks);
         Arrays.sort(indices);
 
-        if (!(Ints.contains(indices, -1) || IntsUtil.hasGap(indices, true)) && indices.length > 0) {
+        if (!(Ints.contains(indices, -1) || hasGap(indices, true)) && indices.length > 0) {
             if (indices[0] == anchorIndex) {
                 anchor = this.visiblePacks.get(indices[indices.length - 1]);
             } else if (indices[indices.length - 1] == anchorIndex) {
@@ -354,7 +353,7 @@ public class PackListModel implements Restorable<PackListModel.Snapshot> {
     public boolean isValidInsertPosition(int index, List<Pack> selection) {
         int[] indices = this.getVisibilityIndices(selection);
         if (indices.length == 0) return false;
-        if (IntsUtil.hasGap(indices)) return true;
+        if (hasGap(indices)) return true;
         Arrays.sort(indices);
 
         int lastSelectionIndex = indices[indices.length - 1];
@@ -393,6 +392,31 @@ public class PackListModel implements Restorable<PackListModel.Snapshot> {
             selectionIndices[i] = index;
         }
         return selectionIndices;
+    }
+
+    private static boolean hasGap(int[] arr, boolean isSorted) {
+        if (arr == null || arr.length <= 1) {
+            return false;
+        }
+
+        int[] sorted = arr.clone();
+        if (!isSorted) {
+            Arrays.sort(sorted);
+        }
+
+        for (int i = 1; i < sorted.length; i++) {
+            if (sorted[i] == sorted[i - 1]) {
+                continue;
+            }
+            if (sorted[i] != sorted[i - 1] + 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasGap(int[] arr) {
+        return hasGap(arr, false);
     }
 
     @Override

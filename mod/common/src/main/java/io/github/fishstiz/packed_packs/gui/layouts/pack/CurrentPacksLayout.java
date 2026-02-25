@@ -1,19 +1,14 @@
 package io.github.fishstiz.packed_packs.gui.layouts.pack;
 
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.api.context.ScreenContext;
-import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
 import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListProps;
-import io.github.fishstiz.packed_packs.pack.PackAssetManager;
-import io.github.fishstiz.packed_packs.pack.PackFileOperations;
-import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 
 public final class CurrentPacksLayout extends PackLayout {
     public CurrentPacksLayout(PackListProps props) {
-        super(new CurrentPackList(props));
+        super(CurrentPackList::new, props);
     }
 
     @Override

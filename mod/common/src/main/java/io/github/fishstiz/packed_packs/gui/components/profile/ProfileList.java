@@ -14,8 +14,7 @@ import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Profile;
-import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
-import io.github.fishstiz.packed_packs.gui.components.events.ProfileEvent;
+import io.github.fishstiz.packed_packs.gui.components.actions.ProfileAction;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
@@ -43,12 +42,12 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     private static final Sprite STAR_OUTLINE_SPRITE = Sprite.of16(ResourceUtil.getIcon("star_outline"));
     private final PollingDebouncer<Void> debouncedRefresh = new SimplePollingDebouncer<>(this::refresh, 200);
     private final PackOptionsContext options;
-    private final ActionDispatcher eventHandler;
+    private final Consumer<ProfileAction> dispatcher;
 
-    public ProfileList(PackOptionsContext options, ActionDispatcher eventHandler) {
+    public ProfileList(PackOptionsContext options, Consumer<ProfileAction> dispatcher) {
         super(ITEM_HEIGHT);
         this.options = options;
-        this.eventHandler = eventHandler;
+        this.dispatcher = dispatcher;
     }
 
     public void scheduleRefresh() {
@@ -153,24 +152,24 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
             }
         }
 
-        private void sendEvent(ProfileEvent event) {
-            ProfileList.this.eventHandler.dispatch(event);
+        private void dispatch(ProfileAction event) {
+            ProfileList.this.dispatcher.accept(event);
         }
 
         private void select() {
-            this.sendEvent(new ProfileEvent.Select(this.profile));
+            this.dispatch(new ProfileAction.Select(this.profile));
         }
 
         private void toggleLock() {
-            this.sendEvent(new ProfileEvent.ToggleLock(this.profile));
+            this.dispatch(new ProfileAction.ToggleLock(this.profile));
         }
 
         private void toggleDefault() {
-            this.sendEvent(new ProfileEvent.ToggleDefault(this.profile));
+            this.dispatch(new ProfileAction.ToggleDefault(this.profile));
         }
 
         private void remove() {
-            this.sendEvent(new ProfileEvent.Delete(this.profile));
+            this.dispatch(new ProfileAction.Delete(this.profile));
         }
 
         private boolean isDefault() {

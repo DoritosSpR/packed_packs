@@ -7,8 +7,7 @@ import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Preferences;
-import io.github.fishstiz.packed_packs.gui.components.events.BasicEvent;
-import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
+import io.github.fishstiz.packed_packs.gui.components.actions.PackListAction;
 import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackListProps;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
@@ -18,17 +17,19 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 
+import java.util.function.Consumer;
+
 public final class AvailablePacksLayout extends PackLayout {
     private static final Component SORT_TEXT = ResourceUtil.getText("sort");
     private static final Component COMPAT_TEXT = ResourceUtil.getText("hide_incompatible");
     private static final Component COMPAT_INFO = ResourceUtil.getText("hide_incompatible.info");
-    private final ActionDispatcher eventListener;
+    private final Consumer<PackListAction> dispatcher;
     private CyclicButton<Query.SortOption, Void> sortButton;
     private ToggleButton<Void> compatButton;
 
     public AvailablePacksLayout(PackListProps props) {
-        super(new AvailablePackList(props));
-        this.eventListener = props.dispatcher();
+        super(AvailablePackList::new, props);
+        this.dispatcher = props.dispatcher();
     }
 
     public CyclicButton<Query.SortOption, Void> getSortButton() {
@@ -39,17 +40,13 @@ public final class AvailablePacksLayout extends PackLayout {
         return this.compatButton;
     }
 
-    private void recordEvent() {
-        this.eventListener.dispatch(new BasicEvent(true));
-    }
 
     @Override
     protected void initHeader(@NonNull FlexLayout header) {
         this.sortButton = CyclicButton.<Query.SortOption, Void>builder(Query.SortOption.values())
                 .setPrefix(SORT_TEXT)
                 .makeSquare()
-                .addListener(value -> this.recordEvent())
-                .addListener(this.list::sort)
+                .addListener(sort -> this.dispatcher.accept(new PackListAction.Sort(this.list, sort)))
                 .addListener(Config.get()::setSort)
                 .setValue(Config.get().getSort())
                 .build();
@@ -61,8 +58,7 @@ public final class AvailablePacksLayout extends PackLayout {
                         new Sprite(ResourceUtil.getIcon("incompatible"), Size.of16())
                 ))
                 .makeSquare()
-                .addListener(value -> this.recordEvent())
-                .addListener(this.list::hideIncompatible)
+                .addListener(value -> this.dispatcher.accept(new PackListAction.HideIncompatible(this.list, value)))
                 .addListener(Config.get()::setHideIncompatible)
                 .setValue(Config.get().isHideIncompatible())
                 .build();

@@ -17,7 +17,6 @@ import io.github.fishstiz.packed_packs.gui.layouts.pack.PackAliasLayout;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.pack.PackFileOperations;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
-import io.github.fishstiz.packed_packs.pack.PackRepositoryManager;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Util;
@@ -53,32 +52,31 @@ record Components(
     static Components bootstrap(
             PackedPacksScreen screen,
             PackOptionsContext options,
-            PackRepositoryManager repository,
+            PackFileOperations fileOps,
             PackAssetManager assets,
             IntSupplier maxHeight
     ) {
-        PackFileOperations fileOps = new PackFileOperations(options, repository);
-        PackListProps props = new PackListProps(screen, screen.ctx(), options, assets, fileOps);
+        PackListProps props = new PackListProps(screen::dispatch, screen.ctx(), options, assets, fileOps);
 
         if (warmed) {
             return new Components(
                     fileOps,
-                    new ProfilesLayout(screen, screen, options),
+                    new ProfilesLayout(screen, screen::dispatch, options),
                     new AvailablePacksLayout(props),
                     new CurrentPacksLayout(props),
                     new FolderDialog(screen, props),
-                    new FileRenameModal(screen, assets),
+                    new FileRenameModal(screen, screen::dispatch, assets),
                     buildMenu(screen),
                     buildOptionsModal(screen, maxHeight, options),
                     buildAliasModal(screen, options, assets)
             );
         }
 
-        var profiles = async(() -> new ProfilesLayout(screen, screen, options));
+        var profiles = async(() -> new ProfilesLayout(screen, screen::dispatch, options));
         var available = async(() -> new AvailablePacksLayout(props));
         var current = async(() -> new CurrentPacksLayout(props));
         var folder = async(() -> new FolderDialog(screen, props));
-        var rename = async(() -> new FileRenameModal(screen, assets));
+        var rename = async(() -> new FileRenameModal(screen, screen::dispatch, assets));
         var menu = async(() -> buildMenu(screen));
         var alias = async(() -> buildAliasModal(screen, options, assets));
         var optionsModal = async(() -> buildOptionsModal(screen, maxHeight, options));
@@ -115,7 +113,7 @@ record Components(
     ) {
         if (!Config.get().isDevMode()) return null;
 
-        PackAliasLayout layout = new PackAliasLayout(screen, options.getConfig(), assets);
+        PackAliasLayout layout = new PackAliasLayout(screen::dispatch, options.getConfig(), assets);
         return Modal.builder(screen, layout)
                 .addListener(open -> {
                     if (!open) layout.saveAliases();

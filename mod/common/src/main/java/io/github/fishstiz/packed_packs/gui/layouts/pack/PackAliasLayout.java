@@ -6,8 +6,7 @@ import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.components.RenderableRectWidget;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.packed_packs.config.DevConfig;
-import io.github.fishstiz.packed_packs.gui.components.events.ActionDispatcher;
-import io.github.fishstiz.packed_packs.gui.components.events.PackListAction;
+import io.github.fishstiz.packed_packs.gui.components.actions.PackListAction;
 import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
 import io.github.fishstiz.packed_packs.util.AliasRegex;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
@@ -38,14 +37,14 @@ public class PackAliasLayout implements Layout {
     private final Pattern openCharSet = Pattern.compile("(?<=(?<!\\\\)(\\\\\\\\){0,128})\\[\\^?(?=[^]]*(?<=(?<!\\\\)(\\\\\\\\){0,128})])");
     private final Pattern openCaptureGroup = Pattern.compile("(?<=(?<!\\\\)(\\\\\\\\){0,128})\\((\\?(<\\w+>|:|!|=|<!|<=))?(?=.*(?<=(?<!\\\\)(\\\\\\\\){0,128})\\))");
     private final Pattern alternation = Pattern.compile("(?<!(?<!\\\\)(\\\\\\\\){0,128}\\[[^]]{0,255})(?<=(?<!\\\\)(\\\\\\\\){0,128})\\|");
-    private final ActionDispatcher dispatcher;
+    private final Consumer<PackListAction> dispatcher;
     private final DevConfig.Packs config;
     private final PackAssetManager assetManager;
     private EditableList<String> aliases;
     private LinearLayout layout;
     private Pack pack;
 
-    public PackAliasLayout(ActionDispatcher dispatcher, DevConfig.Packs config, PackAssetManager assetManager) {
+    public PackAliasLayout(Consumer<PackListAction> dispatcher, DevConfig.Packs config, PackAssetManager assetManager) {
         this.dispatcher = dispatcher;
         this.config = config;
         this.assetManager = assetManager;
@@ -93,7 +92,7 @@ public class PackAliasLayout implements Layout {
         FidgetzButton<Void> closeButton = FidgetzButton.<Void>builder()
                 .makeSquare()
                 .setSprite(GuiConstants.CROSS_SPRITE)
-                .setOnPress(() -> this.dispatcher.dispatch(new PackListAction.CloseAliases(source, pack)))
+                .setOnPress(() -> this.dispatcher.accept(new PackListAction.CloseAliases(source, pack)))
                 .build();
 
         final FlexLayout titleLayout = FlexLayout.horizontal(this.aliases::getWidth).spacing(GuiConstants.SPACING);
