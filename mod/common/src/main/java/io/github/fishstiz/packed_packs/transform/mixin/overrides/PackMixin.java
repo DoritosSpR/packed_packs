@@ -86,7 +86,7 @@ public abstract class PackMixin implements ConfiguredPack {
     @WrapMethod(method = "getCompatibility")
     private PackCompatibility resolveCompatibility(Operation<PackCompatibility> original) {
         if (this.packed_packs$resolver != null) {
-            Profile defaultProfile = this.packed_packs$resolver.config().getDefaultProfile();
+            Profile defaultProfile = this.packed_packs$resolver.defaultProfileSupplier().get();
             if (defaultProfile != null && defaultProfile.includes(self())) {
                 return PackCompatibility.COMPATIBLE;
             }
@@ -97,7 +97,7 @@ public abstract class PackMixin implements ConfiguredPack {
     @Override
     public boolean packed_packs$isConfigured() {
         if (this.packed_packs$resolver != null) {
-            Profile defaultProfile = this.packed_packs$resolver.config().getDefaultProfile();
+            Profile defaultProfile = this.packed_packs$resolver.defaultProfileSupplier().get();
             return defaultProfile != null && defaultProfile.includes(self());
         }
 

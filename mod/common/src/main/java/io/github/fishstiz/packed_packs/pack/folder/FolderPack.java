@@ -44,6 +44,10 @@ public class FolderPack extends Pack implements FilePack {
         this.path = path;
     }
 
+    public List<Pack> contents() {
+        return ObjectsUtil.getOrDefault(this.nestedPacksProvider.apply(this), Collections.emptyList());
+    }
+
     public List<Pack> flatten() {
         List<Pack> result = new ObjectArrayList<>();
         result.add(this);

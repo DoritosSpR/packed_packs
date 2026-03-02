@@ -16,7 +16,6 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.screens.packs.PackSelectionModel;
@@ -316,10 +315,6 @@ public class PackRepositoryManager {
             }
         }
         return grouped;
-    }
-
-    public void openDir() {
-        Util.getPlatform().openPath(this.packDir);
     }
 
     public boolean isEnabled(Pack pack) {

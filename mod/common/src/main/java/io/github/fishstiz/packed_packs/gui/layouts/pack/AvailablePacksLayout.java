@@ -5,31 +5,29 @@ import io.github.fishstiz.fidgetz.gui.components.ToggleButton;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.Size;
+import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.config.Config;
 import io.github.fishstiz.packed_packs.config.Preferences;
-import io.github.fishstiz.packed_packs.gui.components.actions.PackListAction;
-import io.github.fishstiz.packed_packs.gui.components.pack.AvailablePackList;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackListProps;
+import io.github.fishstiz.packed_packs.gui.components.pack.FolderDialog;
 import io.github.fishstiz.packed_packs.gui.components.pack.Query;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
+import io.github.fishstiz.packed_packs.gui.model.PackListViewModel;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 
-import java.util.function.Consumer;
-
 public final class AvailablePacksLayout extends PackLayout {
     private static final Component SORT_TEXT = ResourceUtil.getText("sort");
     private static final Component COMPAT_TEXT = ResourceUtil.getText("hide_incompatible");
     private static final Component COMPAT_INFO = ResourceUtil.getText("hide_incompatible.info");
-    private final Consumer<PackListAction> dispatcher;
+    private final PackListViewModel viewModel;
     private CyclicButton<Query.SortOption, Void> sortButton;
     private ToggleButton<Void> compatButton;
 
-    public AvailablePacksLayout(PackListProps props) {
-        super(AvailablePackList::new, props);
-        this.dispatcher = props.dispatcher();
+    public AvailablePacksLayout(ScreenContext screenContext, PackListViewModel viewModel) {
+        super(screenContext, viewModel);
+        this.viewModel = viewModel;
     }
 
     public CyclicButton<Query.SortOption, Void> getSortButton() {
@@ -40,13 +38,12 @@ public final class AvailablePacksLayout extends PackLayout {
         return this.compatButton;
     }
 
-
     @Override
     protected void initHeader(@NonNull FlexLayout header) {
         this.sortButton = CyclicButton.<Query.SortOption, Void>builder(Query.SortOption.values())
                 .setPrefix(SORT_TEXT)
                 .makeSquare()
-                .addListener(sort -> this.dispatcher.accept(new PackListAction.Sort(this.list, sort)))
+                .addListener(this.viewModel::sort)
                 .addListener(Config.get()::setSort)
                 .setValue(Config.get().getSort())
                 .build();
@@ -58,26 +55,17 @@ public final class AvailablePacksLayout extends PackLayout {
                         new Sprite(ResourceUtil.getIcon("incompatible"), Size.of16())
                 ))
                 .makeSquare()
-                .addListener(value -> this.dispatcher.accept(new PackListAction.HideIncompatible(this.list, value)))
+                .addListener(this.viewModel::hideIncompatible)
                 .addListener(Config.get()::setHideIncompatible)
                 .setValue(Config.get().isHideIncompatible())
                 .build();
 
-        this.list.sort(this.sortButton.getValue());
-        this.list.hideIncompatible(this.compatButton.getValue());
         this.getTransferButton().setMessage(Component.literal(">>"));
-
         header.addFlexChild(this.getSearchField());
         header.addChild(sortButton);
-
         if (Config.get().isDevMode() || Preferences.INSTANCE.toggleIncompatibleWidget.get()) {
             header.addChild(compatButton);
         }
         header.addChild(this.getTransferButton());
-    }
-
-    public void saveFilters() {
-        Config.get().setHideIncompatible(this.compatButton.getValue());
-        Config.get().setSort(this.sortButton.getValue());
     }
 }

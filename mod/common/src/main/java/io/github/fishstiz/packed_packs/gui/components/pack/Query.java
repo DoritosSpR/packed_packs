@@ -20,9 +20,9 @@ import java.util.function.Predicate;
 
 public record Query(
         boolean hideIncompatible,
-        SortOption sort,
-        String search,
-        String unmodifiedSearch
+        @Nullable SortOption sort,
+        @Nullable String search,
+        @Nullable String unmodifiedSearch
 ) implements Predicate<Pack>, Comparator<Pack> {
     public Query {
         search = search != null ? search.toLowerCase(Locale.ROOT) : null;
@@ -32,7 +32,7 @@ public record Query(
         this(query.hideIncompatible, query.sort, query.search, query.unmodifiedSearch);
     }
 
-    Query() {
+    public Query() {
         this(false, null, null, null);
     }
 
@@ -71,7 +71,7 @@ public record Query(
         return this.sort != null ? this.sort.comparator.compare(first, second) : 0;
     }
 
-    boolean hasQuery() {
+    public boolean hasQuery() {
         return this.hideIncompatible || (this.search != null && !this.search.isEmpty()) || this.sort != null;
     }
 

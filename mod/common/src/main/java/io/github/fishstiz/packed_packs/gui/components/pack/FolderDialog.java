@@ -3,63 +3,47 @@ package io.github.fishstiz.packed_packs.gui.components.pack;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
-import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.gui.shapes.GuiRectangle;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
-import io.github.fishstiz.packed_packs.gui.components.actions.PackListAction;
+import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
-import io.github.fishstiz.packed_packs.pack.PackAssetManager;
-import io.github.fishstiz.packed_packs.pack.PackFileOperations;
-import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
+import io.github.fishstiz.packed_packs.gui.model.PackListViewModel;
 import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.fidgetz.util.lang.ObjectsUtil;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.repository.Pack;
-import org.jspecify.annotations.Nullable;
-
-import java.util.function.Consumer;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 
-public class FolderDialog extends ToggleableDialog<FolderPackList> implements ContextMenuContainer {
+public class FolderDialog extends ToggleableDialog<PackListContainer> implements ContextMenuContainer {
     private static final Component BACK_TEXT = CommonComponents.GUI_BACK.copy().append(CommonComponents.ELLIPSIS);
     private static final int HEADER_HEIGHT = 16;
     private final FidgetzButton<Void> closeButton;
     private final FidgetzText<Void> folderTitle;
-    private final PackFileOperations fileOps;
-    private final Consumer<PackListAction> dispatcher;
-    private Sprite folderSprite = PackAssetManager.DEFAULT_FOLDER_ICON;
-    private PackList parent;
-    private FolderPack folderPack;
+    private final PackListViewModel.Module viewModel;
 
-    public <S extends Screen & ToggleableDialogContainer> FolderDialog(S screen, PackListProps props) {
-        super(builder(screen, new FolderPackList(props)).setBackground(DrawUtil.DEMO_BACKGROUND));
-
-        this.dispatcher = props.dispatcher();
-        this.fileOps = props.fileOps();
-        this.closeButton = this.addRenderableWidget(
-                FidgetzButton.<Void>builder()
-                        .setOnPress(() -> this.sendEvent(new PackListAction.CloseFolder(this.root(), this.folderPack)))
-                        .makeSquare(CROSS_SPRITE.width)
-                        .spriteOnly()
-                        .build()
-        );
-        this.folderTitle = this.addRenderableWidget(
-                FidgetzText.<Void>builder()
-                        .setHeight(CROSS_SPRITE.height)
-                        .setOffsetY(1)
-                        .setShadow(true)
-                        .build()
-        );
-
-        this.root().visible = false;
+    public FolderDialog(ScreenContext screenContext, PackListViewModel.Module viewModel) {
+        super(builder(screenContext.screen(), new PackListContainer(screenContext, viewModel))
+                .setOpen(true)
+                .setBackground(DrawUtil.DEMO_BACKGROUND));
+        this.viewModel = viewModel;
+        this.closeButton = this.addRenderableWidget(FidgetzButton.<Void>builder()
+                .makeSquare(CROSS_SPRITE.width)
+                .setOnPress(() -> this.setOpen(false))
+                .spriteOnly()
+                .build());
+        this.folderTitle = this.addRenderableWidget(FidgetzText.<Void>builder()
+                .setMessage(viewModel.module().getTitle())
+                .setHeight(CROSS_SPRITE.height)
+                .setOffsetY(1)
+                .setShadow(true)
+                .build());
+        this.root().visible = this.isOpen();
         this.addListener(open -> {
             this.root().visible = open;
-            if (!open) this.sendEvent(new PackListAction.CloseFolder(this.root(), this.folderPack));
+            if (!open) viewModel.close();
         });
         this.root().visitWidgets(this::addRenderableWidget);
     }
@@ -84,16 +68,6 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         this.folderTitle.setWidth(bounds.getRight() - this.folderTitle.getX() - SPACING * 2);
     }
 
-    public void updateFolder(PackList parent, FolderPack folderPack, PackAssetManager assets) {
-        this.parent = parent;
-        this.folderPack = folderPack;
-        this.folderTitle.setMessage(folderPack.getTitle());
-        assets.getOrLoadIcon(folderPack, icon -> this.folderSprite = icon);
-
-        this.setBoundingBox(parent);
-        this.updateBounds();
-    }
-
     @Override
     protected void renderBackground(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
         this.updateBounds();
@@ -104,7 +78,7 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
     protected void renderForeground(GuiGraphics guiGraphics, int x, int y, int width, int height, int mouseX, int mouseY, float partialTick) {
         int left = this.closeButton.getX();
         int top = this.closeButton.getY();
-        this.folderSprite.renderClamped(guiGraphics, left, top, CROSS_SPRITE.width, CROSS_SPRITE.height, partialTick);
+        this.viewModel.sprite().renderClamped(guiGraphics, left, top, CROSS_SPRITE.width, CROSS_SPRITE.height, partialTick);
 
         if (this.closeButton.isHovered()) {
             WHITE_OVERLAY.render(guiGraphics, left, top, CROSS_SPRITE.width, CROSS_SPRITE.height);
@@ -112,30 +86,22 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         }
     }
 
-    public @Nullable PackList getParent() {
-        return this.parent;
-    }
-
-    public @Nullable FolderPack getFolderPack() {
-        return this.folderPack;
-    }
-
     @Override
     public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
         ContextMenuContainer.super.buildItems(
-                builder.when(this.folderPack != null && this.isOpen())
+                builder.when(this.isOpen())
                         .ifTrue(folderMenuBuilder -> folderMenuBuilder
-                                .add(new PackMenuHeader(this.folderPack, this.folderSprite))
+                                .add(new PackMenuHeader(this.viewModel.module(), this.viewModel.sprite()))
                                 .simpleItem(BACK_TEXT, () -> this.setOpen(false))
                                 .when(this.root().getChildAt(mouseX, mouseY).isEmpty())
                                 .ifTrue(b -> b
-                                        .whenNonNull(ObjectsUtil.mapOrNull(this.folderPack, FilePack::packed_packs$getPath))
+                                        .whenNonNull(ObjectsUtil.mapOrNull(this.viewModel.module(), FilePack::packed_packs$getPath))
                                         .ifTrue((path, operationsMenuBuilder) -> operationsMenuBuilder
                                                 .separator()
-                                                .simpleItem(RENAME_FILE_TEXT, this::canOperateFolder, this::renameDirectory)
-                                                .simpleItem(DELETE_FILE_TEXT, this::canOperateFolder, this::deleteDirectory)
-                                                .simpleItem(OPEN_FILE_TEXT, () -> PackUtil.openPack(this.folderPack))
-                                                .simpleItem(OPEN_PARENT_TEXT, () -> PackUtil.openParent(this.folderPack))
+                                                .simpleItem(RENAME_FILE_TEXT, this.viewModel::fileModifiable, this.viewModel::openRename)
+                                                .simpleItem(DELETE_FILE_TEXT, this.viewModel::fileModifiable, this.viewModel::delete)
+                                                .simpleItem(OPEN_FILE_TEXT, () -> PackUtil.openPack(this.viewModel.module()))
+                                                .simpleItem(OPEN_PARENT_TEXT, () -> PackUtil.openParent(this.viewModel.module()))
                                         )
                                 )
                         ),
@@ -144,33 +110,13 @@ public class FolderDialog extends ToggleableDialog<FolderPackList> implements Co
         );
     }
 
-    private boolean canOperateFolder() {
-        return ObjectsUtil.testNullable(this.folderPack, this.fileOps::isOperable) &&
-               PackUtil.validatePackPath(this.folderPack) != null;
-    }
-
-    private void renameDirectory() {
-        if (this.folderPack != null) {
-            this.sendEvent(new PackListAction.OpenRename(this.root(), this.folderPack));
-        }
-    }
-
-    private void deleteDirectory() {
-        this.dispatcher.accept(new PackListAction.Delete(this.root(), this.folderPack));
-        this.setOpen(false);
-    }
-
-    public void onRename(Pack pack, Component newName) {
-        if (this.parent != null && pack == this.folderPack) {
-            PackList.Entry entry = this.parent.getEntry(this.folderPack);
-            if (entry != null) {
-                entry.onRename(newName);
-            }
-            this.setOpen(false);
-        }
-    }
-
-    private void sendEvent(PackListAction event) {
-        this.dispatcher.accept(event);
-    }
+//    public void onRename(Pack pack, Component newName) {
+//        if (this.parent != null && pack == this.folderPack) {
+//            PackList.Entry entry = this.parent.getEntry(this.folderPack);
+//            if (entry != null) {
+//                entry.onRename(newName);
+//            }
+//            this.setOpen(false);
+//        }
+//    }
 }

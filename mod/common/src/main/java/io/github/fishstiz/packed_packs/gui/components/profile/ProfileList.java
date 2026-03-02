@@ -13,9 +13,7 @@ import io.github.fishstiz.fidgetz.util.GuiUtil;
 import io.github.fishstiz.fidgetz.util.debounce.PollingDebouncer;
 import io.github.fishstiz.fidgetz.util.debounce.SimplePollingDebouncer;
 import io.github.fishstiz.packed_packs.config.Config;
-import io.github.fishstiz.packed_packs.config.Profile;
-import io.github.fishstiz.packed_packs.gui.components.actions.ProfileAction;
-import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
+import io.github.fishstiz.packed_packs.gui.model.ProfilesViewModel;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
@@ -28,7 +26,6 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
@@ -41,13 +38,11 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     private static final Sprite TRASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("trash"));
     private static final Sprite STAR_OUTLINE_SPRITE = Sprite.of16(ResourceUtil.getIcon("star_outline"));
     private final PollingDebouncer<Void> debouncedRefresh = new SimplePollingDebouncer<>(this::refresh, 200);
-    private final PackOptionsContext options;
-    private final Consumer<ProfileAction> dispatcher;
+    private final ProfilesViewModel viewModel;
 
-    public ProfileList(PackOptionsContext options, Consumer<ProfileAction> dispatcher) {
+    public ProfileList(ProfilesViewModel viewModel) {
         super(ITEM_HEIGHT);
-        this.options = options;
-        this.dispatcher = dispatcher;
+        this.viewModel = viewModel;
     }
 
     public void scheduleRefresh() {
@@ -57,17 +52,9 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     public void refresh() {
         this.clearEntries();
 
-        int i = 0;
-
-        Profile defaultProfile = this.options.getConfig().getDefaultProfile();
-        if (defaultProfile != null) {
-            this.addEntry(new Entry(defaultProfile, i++));
-        }
-
-        List<Profile> profiles = this.options.getUserConfig().getProfiles();
-        for (Profile profile : profiles) {
-            if (defaultProfile != null && Objects.equals(profile.getId(), defaultProfile.getId())) continue;
-            this.addEntry(new Entry(profile, i++));
+        List<ProfilesViewModel.Entry> entries = this.viewModel.entries();
+        for (int i = 0; i < entries.size(); i++) {
+            this.addEntry(new Entry(entries.get(i), i));
         }
     }
 
@@ -83,37 +70,37 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
     }
 
     public class Entry extends AbstractFixedListWidget<Entry>.Entry implements ContextMenuProvider {
-        private final Profile profile;
         private final List<FidgetzButton<Void>> children;
         private final FidgetzButton<Void> selectButton;
         private final FidgetzButton<Void> deleteButton;
+        private final ProfilesViewModel.Entry viewModel;
 
-        protected Entry(Profile profile, int index) {
+        protected Entry(ProfilesViewModel.Entry viewModel, int index) {
             super(index);
-
-            this.profile = profile;
+            this.viewModel = viewModel;
             this.deleteButton = FidgetzButton.<Void>builder()
                     .makeSquare(this.getHeight())
                     .setMessage(DELETE_TEXT)
-                    .setSprite(this.isDefault()
-                            ? ButtonSprites.of(STAR_SPRITE) : profile.isLocked()
+                    .setSprite(viewModel.isDefault()
+                            ? ButtonSprites.of(STAR_SPRITE) : viewModel.isLocked()
                             ? ButtonSprites.unclamp(LOCK_SPRITE) : ButtonSprites.of(TRASH_SPRITE))
-                    .setOnPress(this::remove)
+                    .setOnPress(this.viewModel::delete)
                     .build();
-            this.deleteButton.active = !profile.isLocked() && !this.isDefault();
+            this.deleteButton.active = !viewModel.isLocked() && !viewModel.isDefault();
             if (this.deleteButton.active) this.deleteButton.setTooltip(DELETE_INFO);
 
             this.selectButton = FidgetzButton.<Void>builder()
-                    .setMessage(Component.literal(this.profile.getName()))
-                    .setOnPress(this::select)
+                    .setMessage(this.viewModel.name())
+                    .setOnPress(this.viewModel::select)
                     .build();
-            this.selectButton.active = !this.isSelected();
+            this.selectButton.active = !this.viewModel.isSelected();
 
             this.children = List.of(this.deleteButton, this.selectButton);
         }
 
         @Override
         public void renderContent(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, boolean hovering, float partialTick) {
+            this.selectButton.active = !this.viewModel.isSelected();
             int left = this.getX();
             int top = this.getY();
 
@@ -130,11 +117,11 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
                 int height = this.getHeight();
                 int borderColor;
 
-                if (this.isDefault() && this.profile.isLocked()) {
+                if (this.viewModel.isDefault() && this.viewModel.isLocked()) {
                     borderColor = Theme.PURPLE_500.getARGB();
-                } else if (this.isDefault()) {
+                } else if (this.viewModel.isDefault()) {
                     borderColor = Theme.BLUE_500.getARGB();
-                } else if (this.profile.isLocked()) {
+                } else if (this.viewModel.isLocked()) {
                     borderColor = Theme.RED_700.getARGB();
                 } else {
                     borderColor = Theme.WHITE.getARGB();
@@ -150,34 +137,6 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
                     guiGraphics.fill(left, top, left + width, top + height, foregroundColor);
                 }
             }
-        }
-
-        private void dispatch(ProfileAction event) {
-            ProfileList.this.dispatcher.accept(event);
-        }
-
-        private void select() {
-            this.dispatch(new ProfileAction.Select(this.profile));
-        }
-
-        private void toggleLock() {
-            this.dispatch(new ProfileAction.ToggleLock(this.profile));
-        }
-
-        private void toggleDefault() {
-            this.dispatch(new ProfileAction.ToggleDefault(this.profile));
-        }
-
-        private void remove() {
-            this.dispatch(new ProfileAction.Delete(this.profile));
-        }
-
-        private boolean isDefault() {
-            return Objects.equals(this.profile, ProfileList.this.options.getConfig().getDefaultProfile());
-        }
-
-        private boolean isSelected() {
-            return ProfileList.this.options.getProfile().map(profile -> profile.equals(this.profile)).orElse(false);
         }
 
         @Override
@@ -200,13 +159,13 @@ public class ProfileList extends AbstractFixedListWidget<ProfileList.Entry> impl
             if (!Config.get().isDevMode()) return;
 
             builder.separatorIfNonEmpty();
-            builder.add(GuiConstants.devItem(ResourceUtil.getText("profile.default." + (this.isDefault() ? "unset" : "set")))
-                    .icon(() -> this.isDefault() ? STAR_SPRITE : STAR_OUTLINE_SPRITE)
-                    .action(this::toggleDefault)
+            builder.add(GuiConstants.devItem(ResourceUtil.getText("profile.default." + (this.viewModel.isDefault() ? "unset" : "set")))
+                    .icon(() -> this.viewModel.isDefault() ? STAR_SPRITE : STAR_OUTLINE_SPRITE)
+                    .action(this.viewModel::toggleDefault)
                     .build());
-            builder.add(GuiConstants.devItem(ResourceUtil.getText("profile." + (this.profile.isLocked() ? "unlock" : "lock")))
-                    .icon(this.profile.isLocked() ? LOCK_SPRITE_SMALL : UNLOCK_SPRITE_SMALL)
-                    .action(this::toggleLock)
+            builder.add(GuiConstants.devItem(ResourceUtil.getText("profile." + (this.viewModel.isLocked() ? "unlock" : "lock")))
+                    .icon(this.viewModel.isLocked() ? LOCK_SPRITE_SMALL : UNLOCK_SPRITE_SMALL)
+                    .action(this.viewModel::toggleLock)
                     .build());
         }
     }

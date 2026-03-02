@@ -1,67 +1,65 @@
-package io.github.fishstiz.packed_packs.gui.history;
+package io.github.fishstiz.packed_packs.gui;
 
-import io.github.fishstiz.packed_packs.gui.history.Restorable.Snapshot;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 
-public class HistoryManager<T extends Snapshot<T>> {
+public class HistoryManager<S> {
     private static final int DEFAULT_CAPACITY = 25;
     private final int capacity;
-    private final Deque<Snapshot<T>> history;
-    private final Deque<Snapshot<T>> undone;
+    private final Deque<S> history;
+    private final Deque<S> undone;
 
-    public HistoryManager(Snapshot<T> initialState, int capacity) {
+    public HistoryManager(S initialState, int capacity) {
         this.capacity = capacity;
         this.history = new ArrayDeque<>(capacity);
         this.undone = new ArrayDeque<>(capacity);
         this.push(initialState);
     }
 
-    public HistoryManager() {
-        this(null, DEFAULT_CAPACITY);
+    public HistoryManager(S initialState) {
+        this(initialState, DEFAULT_CAPACITY);
     }
 
-    public void push(Snapshot<T> snapshot) {
-        if (snapshot == null) {
+    public void push(S state) {
+        if (state == null) {
             return;
         }
         while (this.history.size() >= this.capacity) {
             this.history.removeFirst();
         }
         this.undone.clear();
-        this.history.addLast(snapshot);
+        this.history.addLast(state);
     }
 
-    public boolean undo() {
+    public Optional<S> undo() {
         if (this.history.size() > 1) {
             this.undone.addLast(this.history.removeLast());
-            this.history.getLast().restore();
-            return true;
+            return Optional.of(this.history.getLast());
         }
-        return false;
+        return Optional.empty();
     }
 
-    public boolean redo() {
+    public Optional<S> redo() {
         if (!this.undone.isEmpty()) {
-            Snapshot<T> snapshot = this.undone.removeLast();
-            snapshot.restore();
-            this.history.addLast(snapshot);
-            return true;
+            S state = this.undone.removeLast();
+            this.history.addLast(state);
+            return Optional.of(state);
         }
-        return false;
+        return Optional.empty();
     }
 
-    public void reset(Snapshot<T> initialState) {
+    public void reset(S initialState) {
         this.history.clear();
         this.undone.clear();
         this.push(initialState);
     }
 
-    public List<Snapshot<T>> getStack() {
-        List<Snapshot<T>> stack = new ObjectArrayList<>(this.history.size() + this.undone.size());
+    public List<S> getStack() {
+        List<S> stack = new ObjectArrayList<>(this.history.size() + this.undone.size());
         stack.addAll(this.history);
         stack.addAll(this.undone);
         return stack;
@@ -74,12 +72,12 @@ public class HistoryManager<T extends Snapshot<T>> {
         return this.history.size() - 1;
     }
 
-    public void restore(int index) {
-        List<Snapshot<T>> stack = this.getStack();
+    public Optional<S> getState(int index) {
+        List<S> stack = this.getStack();
         int totalSize = stack.size();
 
         if (index < 0 || index >= totalSize) {
-            return;
+            return Optional.empty();
         }
 
         this.history.clear();
@@ -92,7 +90,9 @@ public class HistoryManager<T extends Snapshot<T>> {
             this.undone.addLast(stack.get(i));
         }
         if (!this.history.isEmpty()) {
-            this.history.getLast().restore();
+            return Optional.of(this.history.getLast());
         }
+
+        return Optional.empty();
     }
 }

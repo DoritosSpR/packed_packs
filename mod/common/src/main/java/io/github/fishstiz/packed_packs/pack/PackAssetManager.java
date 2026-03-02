@@ -38,30 +38,18 @@ public class PackAssetManager {
     }
 
     public Sprite getIcon(Pack pack) {
-        return this.cachedIcons.getOrDefault(pack.getId(), this.staleIcons != null
-                ? this.staleIcons.getOrDefault(pack.getId(), getDefaultIcon(pack))
-                : getDefaultIcon(pack)
-        );
-    }
-
-    public void getOrLoadIcon(Pack pack, Consumer<Sprite> iconCallback) {
-        if (this.staleIcons != null) {
-            Sprite staleIcon = this.staleIcons.get(pack.getId());
-            if (staleIcon != null) {
-                iconCallback.accept(staleIcon);
+        if (!this.cachedIcons.containsKey(pack.getId())) {
+            Sprite fallback = (this.staleIcons != null) ? this.staleIcons.get(pack.getId()) : null;
+            if (fallback == null) {
+                fallback = getDefaultIcon(pack);
             }
-        }
-
-        Sprite cachedIcon = this.cachedIcons.get(pack.getId());
-        if (cachedIcon != null) {
-            iconCallback.accept(cachedIcon);
-        } else {
-            this.loadPackIcon(pack).thenAcceptAsync(location -> {
-                Sprite sprite = location != null ? Sprite.of16(location) : getDefaultIcon(pack);
-                this.cachedIcons.put(pack.getId(), sprite);
-                iconCallback.accept(sprite);
+            this.cachedIcons.put(pack.getId(), fallback);
+            this.loadPackIcon(pack).thenAcceptAsync(icon -> {
+                if (icon != null) this.cachedIcons.put(pack.getId(), Sprite.of16(icon));
             }, this.minecraft);
         }
+
+        return this.cachedIcons.getOrDefault(pack.getId(), getDefaultIcon(pack));
     }
 
     public void clearIconCache() {

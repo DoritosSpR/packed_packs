@@ -3,39 +3,34 @@ package io.github.fishstiz.packed_packs.gui.layouts.pack;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.ToggleableEditBox;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.gui.components.actions.PackListAction;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackListProps;
+import io.github.fishstiz.packed_packs.api.context.ScreenContext;
+import io.github.fishstiz.packed_packs.gui.components.pack.PackListContainer;
+import io.github.fishstiz.packed_packs.gui.model.PackListViewModel;
 import io.github.fishstiz.packed_packs.util.ResourceUtil;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.network.chat.CommonComponents;
 import org.jspecify.annotations.NonNull;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
-
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.SPACING;
 
 public abstract class PackLayout {
-    protected final PackList list;
-    private final Consumer<PackListAction> dispatcher;
+    protected final PackListContainer listContainer;
     private final ToggleableEditBox<Void> searchField;
     private final FidgetzButton<Void> transferButton;
     private FlexLayout headerLayout;
     private FlexLayout layout;
 
-    protected PackLayout(Function<PackListProps, PackList> listFactory, PackListProps listProps) {
-        this.list = listFactory.apply(listProps);
-        this.dispatcher = listProps.dispatcher();
+    protected PackLayout(ScreenContext screenContext, PackListViewModel viewModel) {
+        this.listContainer = new PackListContainer(screenContext, viewModel);
         this.searchField = ToggleableEditBox.<Void>builder()
                 .setHint(ResourceUtil.getText("search").append(CommonComponents.ELLIPSIS))
                 .setEditable(true)
-                .addListener(search -> this.dispatcher.accept(new PackListAction.Search(this.list, search)))
+                .addListener(viewModel::search)
                 .build();
         this.transferButton = FidgetzButton.<Void>builder()
                 .makeSquare()
-                .setOnPress(this.list::transferAll)
+                .setOnPress(viewModel::transferAll)
                 .setTooltip(Tooltip.create(ResourceUtil.getText("transfer_all.info")))
                 .build();
     }
@@ -43,16 +38,16 @@ public abstract class PackLayout {
     protected abstract void initHeader(@NonNull FlexLayout header);
 
     public final void init(@NonNull FlexLayout layout) {
-        this.headerLayout = FlexLayout.horizontal(this.list::getWidth).spacing(SPACING);
+        this.headerLayout = FlexLayout.horizontal(this.listContainer::getWidth).spacing(SPACING);
         this.initHeader(headerLayout);
 
         this.layout = layout;
         this.layout.addChild(headerLayout);
-        this.layout.addFlexChild(this.list, true);
+        this.layout.addFlexChild(this.listContainer, true);
     }
 
-    public PackList list() {
-        return this.list;
+    public PackListContainer listContainer() {
+        return this.listContainer;
     }
 
     public ToggleableEditBox<Void> getSearchField() {
@@ -72,8 +67,8 @@ public abstract class PackLayout {
         int y = visible ? headerRect.bottom() + SPACING : headerRect.top();
         int height = visible ? layout.getHeight() - headerRect.height() - SPACING : layout.getHeight();
 
-        this.list.setY(y);
-        this.list.setHeight(height);
-        this.list.clampScrollAmount();
+        this.listContainer.setY(y);
+        this.listContainer.setHeight(height);
+        this.listContainer.list().clampScrollAmount();
     }
 }

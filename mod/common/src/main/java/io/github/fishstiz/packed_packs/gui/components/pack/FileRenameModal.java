@@ -4,7 +4,8 @@ import com.mojang.blaze3d.platform.InputConstants;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
-import io.github.fishstiz.packed_packs.gui.components.actions.PackListAction;
+import io.github.fishstiz.packed_packs.gui.intents.PackListIntent;
+import io.github.fishstiz.packed_packs.gui.model.PackedPacksViewModel;
 import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import net.minecraft.client.Minecraft;
@@ -24,7 +25,6 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import static io.github.fishstiz.packed_packs.util.PackUtil.ZIP_PACK_EXTENSION;
@@ -40,21 +40,12 @@ public class FileRenameModal extends Modal<LinearLayout> {
     private final FidgetzText<Void> title;
     private final ToggleableEditBox<Void> nameEditor;
     private final FidgetzButton<Void> saveButton;
-    private final PackAssetManager assets;
-    private final Consumer<PackListAction> dispatcher;
-    private PackList packList;
-    private Pack pack;
+    private final PackedPacksViewModel viewModel;
     private String oldName;
 
-    public <S extends Screen & ToggleableDialogContainer> FileRenameModal(
-            S screen,
-            Consumer<PackListAction> dispatcher,
-            PackAssetManager assets
-    ) {
+    public <S extends Screen & ToggleableDialogContainer> FileRenameModal(S screen, PackedPacksViewModel viewModel) {
         super(Modal.builder(screen, LinearLayout.vertical().spacing(SPACING)).padding(SPACING));
-        this.dispatcher = dispatcher;
-        this.assets = assets;
-
+        this.viewModel = viewModel;
         this.sprite = RenderableRectWidget.<Void>builder(PackAssetManager.DEFAULT_ICON)
                 .makeSquare()
                 .build();
@@ -78,7 +69,7 @@ public class FileRenameModal extends Modal<LinearLayout> {
                 .build();
 
         FidgetzButton<Void> cancelButton = FidgetzButton.<Void>builder()
-                .setOnPress(() -> this.dispatcher.accept(new PackListAction.CloseRename(this.packList, this.pack)))
+                .setOnPress(this::closeModal)
                 .setMessage(CommonComponents.GUI_CANCEL)
                 .build();
         this.saveButton = FidgetzButton.<Void>builder()
@@ -109,27 +100,28 @@ public class FileRenameModal extends Modal<LinearLayout> {
     }
 
     private void clearReferences() {
-        this.packList = null;
-        this.pack = null;
         this.oldName = null;
         this.sprite.setRenderableRect(PackAssetManager.DEFAULT_ICON);
         this.title.setMessage(CommonComponents.EMPTY);
         this.nameEditor.setValue("");
     }
 
-    public void open(PackList packList, Pack pack) {
-        this.packList = packList;
-        this.pack = pack;
-        this.sprite.setRenderableRect(this.assets.getIcon(pack));
-        this.title.setMessage(pack.getTitle());
+    public void refresh() {
+        var renameContext = this.viewModel.state().renamingPack();
+        if (renameContext != null) {
+            this.sprite.setRenderableRect(renameContext.sourceEntry().sprite());
+            this.title.setMessage(renameContext.pack().getTitle());
 
-        this.oldName = sanitizeNameForEdit(pack);
-        this.nameEditor.setValue(this.oldName);
-        this.nameEditor.setSuggestion(PackUtil.isZipPack(pack) ? ZIP_PACK_EXTENSION : null);
-        this.saveButton.active = false;
+            this.oldName = sanitizeNameForEdit(renameContext.pack());
+            this.nameEditor.setValue(this.oldName);
+            this.nameEditor.setSuggestion(PackUtil.isZipPack(renameContext.pack()) ? ZIP_PACK_EXTENSION : null);
+            this.saveButton.active = false;
 
-        this.repositionElements();
-        this.setOpen(true);
+            this.repositionElements();
+            this.setOpen(true);
+        } else {
+            this.setOpen(false);
+        }
     }
 
     private boolean testInput(String input) {
@@ -143,7 +135,8 @@ public class FileRenameModal extends Modal<LinearLayout> {
         if (input == null || input.isBlank()) {
             return false;
         }
-        if (this.pack == null || PackUtil.validatePackPath(pack) == null) {
+        var renameContext = this.viewModel.state().renamingPack();
+        if (renameContext == null || PackUtil.validatePackPath(renameContext.pack()) == null) {
             return false;
         }
         String trimmed = input.trim();
@@ -158,8 +151,12 @@ public class FileRenameModal extends Modal<LinearLayout> {
     }
 
     private void onClose(boolean open) {
-        if (open) return;
-        this.clearReferences();
+        if (open) {
+            this.setFocused(this.nameEditor);
+        } else {
+            this.setFocused(null);
+            this.clearReferences();
+        }
     }
 
     private void saveName() {
@@ -168,8 +165,11 @@ public class FileRenameModal extends Modal<LinearLayout> {
             return;
         }
 
-        String sanitizedName = sanitizeNameForSave(this.pack, newName);
-        this.dispatcher.accept(new PackListAction.Rename(this.packList, this.pack, sanitizedName));
+        var renameContext = this.viewModel.state().renamingPack();
+        if (renameContext != null) {
+            String sanitizedName = sanitizeNameForSave(renameContext.pack(), newName);
+            this.viewModel.dispatch(PackListIntent.Rename.loading(renameContext.target(), renameContext.pack(), sanitizedName));
+        }
     }
 
     private static String sanitizeNameForEdit(Pack pack) {

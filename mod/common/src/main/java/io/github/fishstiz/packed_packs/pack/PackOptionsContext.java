@@ -15,14 +15,16 @@ import java.util.function.Supplier;
 public class PackOptionsContext implements PackOptions {
     private final PackOptionsResolver resolver;
     private final Config.Packs userConfig;
+    private final DevConfig.Packs config;
 
-    public PackOptionsContext(PackOptionsResolver resolver, Config.Packs userConfig) {
+    public PackOptionsContext(PackOptionsResolver resolver, Config.Packs userConfig, DevConfig.Packs config) {
         this.resolver = resolver;
         this.userConfig = userConfig;
+        this.config = config;
     }
 
     public PackOptionsContext(Supplier<@Nullable Profile> profileSupplier, Config.Packs userConfig, DevConfig.Packs config) {
-        this(new PackOptionsResolver(profileSupplier, config), userConfig);
+        this(new PackOptionsResolver(profileSupplier, config), userConfig, config);
     }
 
     @Override
@@ -55,14 +57,14 @@ public class PackOptionsContext implements PackOptions {
     }
 
     public Optional<Profile> getDefaultProfile() {
-        return Optional.ofNullable(this.resolver.config().getDefaultProfile());
+        return Optional.ofNullable(this.config.getDefaultProfile());
     }
 
     public void validate(Pack pack) {
         Profile profile = this.resolver.profileSupplier().get();
         if (profile == null) return;
 
-        Profile defaultProfile = this.resolver.config().getDefaultProfile();
+        Profile defaultProfile = this.config.getDefaultProfile();
 
         // non-default profiles cannot override required to false
         if (defaultProfile == null || !defaultProfile.overridesRequired(pack)) {
@@ -79,7 +81,7 @@ public class PackOptionsContext implements PackOptions {
 
     public boolean isDefaultProfile() {
         Profile profile = this.resolver.profileSupplier().get();
-        return profile != null && profile == this.resolver.config().getDefaultProfile();
+        return profile != null && profile == this.config.getDefaultProfile();
     }
 
     public Config.Packs getUserConfig() {
@@ -87,11 +89,11 @@ public class PackOptionsContext implements PackOptions {
     }
 
     public DevConfig.Packs getConfig() {
-        return this.resolver.config();
+        return this.config;
     }
 
     public boolean hasOverride(Pack pack) {
-        Profile defaultProfile = this.resolver.config().getDefaultProfile();
+        Profile defaultProfile = this.config.getDefaultProfile();
         Profile profile = this.resolver.profileSupplier().get();
 
         return (defaultProfile != null && defaultProfile.hasOverride(pack)) ||
@@ -99,7 +101,7 @@ public class PackOptionsContext implements PackOptions {
     }
 
     public ProfileScope hasOverride(Pack pack, BiPredicate<Profile, Pack> option) {
-        Profile defaultProfile = this.resolver.config().getDefaultProfile();
+        Profile defaultProfile = this.config.getDefaultProfile();
         Profile profile = this.resolver.profileSupplier().get();
         ProfileScope scope = ProfileScope.NONE;
 

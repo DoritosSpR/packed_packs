@@ -1,8 +1,8 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
-import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
-import io.github.fishstiz.packed_packs.pack.PackAssetManager;
+import io.github.fishstiz.fidgetz.util.DrawUtil;
+import io.github.fishstiz.packed_packs.api.context.PackContext;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -10,37 +10,25 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.MultiLineTextWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.repository.Pack;
 import org.jspecify.annotations.NonNull;
 
 class PackWidget extends AbstractWidget {
     private static final int DESCRIPTION_LINES = 2;
-    private final Pack pack;
-    private final PackAssetManager assetManager;
+    private final PackContext pack;
     private final FidgetzText<Void> title = FidgetzText.<Void>builder()
             .setHeight(Minecraft.getInstance().font.lineHeight)
             .setColor(ChatFormatting.WHITE.getColor())
             .setShadow(true)
             .build();
     private MultiLineTextWidget description;
-    private Sprite sprite;
     private final int spacing;
-    private boolean lazyLoaded = false;
 
-    PackWidget(Pack pack, PackAssetManager assetManager, int x, int y, int width, int height, int spacing) {
-        super(x, y, width, height, pack.getTitle());
-
+    PackWidget(PackContext pack, int height, int spacing) {
+        super(0, 0, 0, height, pack.pack().getTitle());
         this.pack = pack;
-        this.assetManager = assetManager;
-        this.title.setMessage(pack.getTitle());
+        this.title.setMessage(pack.pack().getTitle());
         this.spacing = spacing;
-        this.sprite = PackAssetManager.getDefaultIcon(pack);
-
         this.cacheDescription();
-    }
-
-    public Sprite getSprite() {
-        return this.sprite;
     }
 
     private int getIconSize() {
@@ -48,7 +36,10 @@ class PackWidget extends AbstractWidget {
     }
 
     private void cacheDescription() {
-        this.description = new MultiLineTextWidget(this.pack.getPackSource().decorate(this.pack.getDescription()), Minecraft.getInstance().font);
+        this.description = new MultiLineTextWidget(
+                this.pack.pack().getPackSource().decorate(this.pack.pack().getDescription()),
+                Minecraft.getInstance().font
+        );
         this.description.setMaxRows(DESCRIPTION_LINES);
         this.description.setMaxWidth(this.title.getWidth());
         this.description.setCentered(false);
@@ -76,21 +67,16 @@ class PackWidget extends AbstractWidget {
         return this.title.getX();
     }
 
-    protected void renderSprite(GuiGraphics guiGraphics, float partialTick) {
-        if (!this.lazyLoaded) { // lazy loads icon as this is not called if not in view
-            this.lazyLoaded = true;
-            this.assetManager.getOrLoadIcon(this.pack, icon -> this.sprite = icon);
-        }
-
+    protected void renderSprite(GuiGraphics guiGraphics) {
         int x = this.getX() + this.spacing;
         int y = this.getY();
         int size = this.getIconSize();
-        this.sprite.render(guiGraphics, x, y, size, size, partialTick);
+        DrawUtil.renderTexture(guiGraphics, this.pack.icon(), x, y, x, y, size, size);
     }
 
     @Override
     protected void renderWidget(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderSprite(guiGraphics, partialTick);
+        this.renderSprite(guiGraphics);
 
         int lineHeight = Minecraft.getInstance().font.lineHeight;
         int totalContentHeight = lineHeight + spacing + (lineHeight * DESCRIPTION_LINES);

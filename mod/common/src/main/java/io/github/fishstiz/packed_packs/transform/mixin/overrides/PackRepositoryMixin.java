@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
+import io.github.fishstiz.packed_packs.config.DevConfig;
 import io.github.fishstiz.packed_packs.pack.PackAliasMap;
 import io.github.fishstiz.packed_packs.pack.PackOptionsResolver;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
@@ -30,6 +31,9 @@ public abstract class PackRepositoryMixin implements MappedPackRepository {
     private PackOptionsResolver packed_packs$resolver;
 
     @Unique
+    private DevConfig.Packs packed_packs$config;
+
+    @Unique
     private boolean packed_packs$hasAlias = false;
 
     @Inject(method = "<init>", at = @At("TAIL"))
@@ -37,8 +41,10 @@ public abstract class PackRepositoryMixin implements MappedPackRepository {
         if (sources.length > 0) {
             if (sources[0] instanceof ServerPacksSource) {
                 this.packed_packs$resolver = PackOptionsResolver.DATA_PACKS;
+                this.packed_packs$config = DevConfig.get().getDatapacks();
             } else if (sources[0] instanceof ClientPackSource) {
                 this.packed_packs$resolver = PackOptionsResolver.RESOURCE_PACKS;
+                this.packed_packs$config = DevConfig.get().getResourcepacks();
             }
         }
     }
@@ -75,13 +81,13 @@ public abstract class PackRepositoryMixin implements MappedPackRepository {
         Map<String, Pack> immutableMap = original.call();
         Map<String, Pack> mutableMap = mutableMapRef.get();
 
-        if (this.packed_packs$resolver == null || this.packed_packs$resolver.config().getAliases().isEmpty() || mutableMap == null) {
+        if (this.packed_packs$config == null || this.packed_packs$config.getAliases().isEmpty() || mutableMap == null) {
             this.packed_packs$hasAlias = false;
             return immutableMap;
         }
 
         this.packed_packs$hasAlias = true;
-        return new PackAliasMap(this.packed_packs$resolver.config(), mutableMap);
+        return new PackAliasMap(this.packed_packs$config, mutableMap);
     }
 
     @Override

@@ -18,10 +18,14 @@ import java.util.function.*;
  */
 public record PackOptionsResolver(
         Supplier<@Nullable Profile> profileSupplier,
-        DevConfig.Packs config
+        Supplier<@Nullable Profile> defaultProfileSupplier
 ) implements PackOptions {
     public static final PackOptionsResolver DATA_PACKS = new PackOptionsResolver(DevConfig.get().get(PackType.SERVER_DATA));
     public static final PackOptionsResolver RESOURCE_PACKS = new PackOptionsResolver(DevConfig.get().get(PackType.CLIENT_RESOURCES));
+
+    public PackOptionsResolver(Supplier<@Nullable Profile> profileSupplier, DevConfig.Packs config) {
+        this(profileSupplier, config::getDefaultProfile);
+    }
 
     public PackOptionsResolver(DevConfig.Packs config) {
         this(FunctionsUtil.nullSupplier(), config);
@@ -76,7 +80,7 @@ public record PackOptionsResolver(
     }
 
     private boolean hasOverride(Pack pack, BiPredicate<Profile, Pack> option) {
-        Profile defaultProfile = this.config.getDefaultProfile();
+        Profile defaultProfile = this.defaultProfileSupplier.get();
         Profile selected = this.profileSupplier.get();
 
         if (defaultProfile != null && option.test(defaultProfile, pack)) {
@@ -91,7 +95,7 @@ public record PackOptionsResolver(
     }
 
     private <T> T inDefaultOrSelected(Pack pack, BiPredicate<Profile, Pack> shouldApply, BiFunction<Profile, Pack, T> option, Function<Pack, T> defaultValue) {
-        Profile defaultProfile = this.config.getDefaultProfile();
+        Profile defaultProfile = this.defaultProfileSupplier.get();
         if (defaultProfile != null && shouldApply.test(defaultProfile, pack)) {
             return option.apply(defaultProfile, pack);
         }

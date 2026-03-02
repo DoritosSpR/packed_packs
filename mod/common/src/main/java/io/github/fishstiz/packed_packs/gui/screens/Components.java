@@ -5,18 +5,13 @@ import io.github.fishstiz.fidgetz.gui.components.ToggleableDialog;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenu;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
 import io.github.fishstiz.packed_packs.config.Config;
-import io.github.fishstiz.packed_packs.gui.components.pack.FileRenameModal;
-import io.github.fishstiz.packed_packs.gui.components.pack.FolderDialog;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackListProps;
+import io.github.fishstiz.packed_packs.gui.components.pack.*;
 import io.github.fishstiz.packed_packs.gui.layouts.OptionsLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.ProfilesLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.AvailablePacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.CurrentPacksLayout;
 import io.github.fishstiz.packed_packs.gui.layouts.pack.PackAliasLayout;
-import io.github.fishstiz.packed_packs.pack.PackAssetManager;
-import io.github.fishstiz.packed_packs.pack.PackFileOperations;
-import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
+import io.github.fishstiz.packed_packs.gui.model.PackedPacksViewModel;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Util;
@@ -33,11 +28,9 @@ import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.SPACIN
  * maybe hacky or overkill, but reduces first constructor call of {@link PackedPacksScreen} by ~25%.
  */
 record Components(
-        PackFileOperations fileOps,
         ProfilesLayout profilesLayout,
         AvailablePacksLayout availablePacks,
         CurrentPacksLayout currentPacks,
-        FolderDialog folderDialog,
         FileRenameModal renameModal,
         ContextMenu contextMenu,
         Modal<OptionsLayout> optionsModal,
@@ -49,53 +42,32 @@ record Components(
         return CompletableFuture.supplyAsync(supplier, Util.backgroundExecutor());
     }
 
-    static Components bootstrap(
-            PackedPacksScreen screen,
-            PackOptionsContext options,
-            PackFileOperations fileOps,
-            PackAssetManager assets,
-            IntSupplier maxHeight
-    ) {
-        PackListProps props = new PackListProps(screen::dispatch, screen.ctx(), options, assets, fileOps);
-
+    static Components bootstrap(PackedPacksScreen screen, PackedPacksViewModel viewModel) {
         if (warmed) {
             return new Components(
-                    fileOps,
-                    new ProfilesLayout(screen, screen::dispatch, options),
-                    new AvailablePacksLayout(props),
-                    new CurrentPacksLayout(props),
-                    new FolderDialog(screen, props),
-                    new FileRenameModal(screen, screen::dispatch, assets),
+                    new ProfilesLayout(screen, viewModel.createProfilesSlice()),
+                    new AvailablePacksLayout(screen.ctx(), viewModel.createAvailableSlice()),
+                    new CurrentPacksLayout(screen.ctx(), viewModel.createEnabledSlice()),
+                    new FileRenameModal(screen, viewModel),
                     buildMenu(screen),
-                    buildOptionsModal(screen, maxHeight, options),
-                    buildAliasModal(screen, options, assets)
+                    buildOptionsModal(screen, screen::getMaxHeight, viewModel.getConfig()),
+                    buildAliasModal(screen, viewModel)
             );
         }
 
-        var profiles = async(() -> new ProfilesLayout(screen, screen::dispatch, options));
-        var available = async(() -> new AvailablePacksLayout(props));
-        var current = async(() -> new CurrentPacksLayout(props));
-        var folder = async(() -> new FolderDialog(screen, props));
-        var rename = async(() -> new FileRenameModal(screen, screen::dispatch, assets));
+        var profiles = async(() -> new ProfilesLayout(screen, viewModel.createProfilesSlice()));
+        var available = async(() -> new AvailablePacksLayout(screen.ctx(), viewModel.createAvailableSlice()));
+        var current = async(() -> new CurrentPacksLayout(screen.ctx(), viewModel.createEnabledSlice()));
+        var rename = async(() -> new FileRenameModal(screen, viewModel));
         var menu = async(() -> buildMenu(screen));
-        var alias = async(() -> buildAliasModal(screen, options, assets));
-        var optionsModal = async(() -> buildOptionsModal(screen, maxHeight, options));
+        var alias = async(() -> buildAliasModal(screen, viewModel));
+        var optionsModal = async(() -> buildOptionsModal(screen, screen::getMaxHeight, viewModel.getConfig()));
 
-        CompletableFuture.allOf(available, current, folder, rename, menu, alias, profiles).join();
+        CompletableFuture.allOf(available, current, rename, menu, alias, profiles).join();
 
         warmed = true;
 
-        return new Components(
-                fileOps,
-                profiles.join(),
-                available.join(),
-                current.join(),
-                folder.join(),
-                rename.join(),
-                menu.join(),
-                optionsModal.join(),
-                alias.join()
-        );
+        return new Components(profiles.join(), available.join(), current.join(), rename.join(), menu.join(), optionsModal.join(), alias.join());
     }
 
     private static ContextMenu buildMenu(PackedPacksScreen screen) {
@@ -106,37 +78,29 @@ record Components(
                 .build();
     }
 
-    private static @Nullable Modal<PackAliasLayout> buildAliasModal(
-            PackedPacksScreen screen,
-            PackOptionsContext options,
-            PackAssetManager assets
-    ) {
+    private static @Nullable Modal<PackAliasLayout> buildAliasModal(PackedPacksScreen screen, PackedPacksViewModel viewModel) {
         if (!Config.get().isDevMode()) return null;
 
-        PackAliasLayout layout = new PackAliasLayout(screen::dispatch, options.getConfig(), assets);
+        PackAliasLayout layout = new PackAliasLayout(viewModel);
         return Modal.builder(screen, layout)
                 .addListener(open -> {
-                    if (!open) layout.saveAliases();
+                    if (!open) layout.onClose();
                 })
                 .padding(SPACING)
                 .build();
     }
 
-    private static Modal<OptionsLayout> buildOptionsModal(PackedPacksScreen screen, IntSupplier maxHeight, PackOptionsContext options) {
-        return Modal.builder(screen, new OptionsLayout(Minecraft.getInstance(), maxHeight, options.getUserConfig()))
+    private static Modal<OptionsLayout> buildOptionsModal(PackedPacksScreen screen, IntSupplier maxHeight, Config.Packs config) {
+        return Modal.builder(screen, new OptionsLayout(Minecraft.getInstance(), maxHeight, config))
                 .setBackdrop(new ColoredRect(Theme.BLACK.withAlpha(0.5f)))
                 .setCaptureFocus(true)
                 .padding(SPACING)
                 .build();
     }
 
-    List<PackList> packLists() {
-        return List.of(this.folderDialog.root(), this.availablePacks.list(), this.currentPacks.list());
-    }
-
     List<ToggleableDialog<?>> dialogs() {
         return this.aliasModal != null
-                ? List.of(this.optionsModal, this.contextMenu, this.aliasModal, this.renameModal, this.profilesLayout.getSidebar(), this.folderDialog)
-                : List.of(this.optionsModal, this.contextMenu, this.renameModal, this.profilesLayout.getSidebar(), this.folderDialog);
+                ? List.of(this.optionsModal, this.contextMenu, this.aliasModal, this.renameModal, this.profilesLayout.getSidebar())
+                : List.of(this.optionsModal, this.contextMenu, this.renameModal, this.profilesLayout.getSidebar());
     }
 }

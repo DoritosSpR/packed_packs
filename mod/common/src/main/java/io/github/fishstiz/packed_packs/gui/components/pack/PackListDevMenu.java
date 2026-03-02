@@ -1,9 +1,12 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
+import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuProvider;
+import io.github.fishstiz.fidgetz.gui.renderables.RenderableRect;
 import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.packed_packs.config.PackOverride;
 import io.github.fishstiz.packed_packs.config.Profile;
+import io.github.fishstiz.packed_packs.gui.model.PackListViewModel;
 import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
 import io.github.fishstiz.packed_packs.pack.ProfileScope;
 import io.github.fishstiz.packed_packs.transform.interfaces.ConfiguredPack;
@@ -19,7 +22,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.repository.Pack;
 import org.jspecify.annotations.Nullable;
 
-import java.util.List;
 import java.util.function.BiPredicate;
 
 import static io.github.fishstiz.packed_packs.gui.components.ToggleableHelper.getDefaultIcon;
@@ -27,7 +29,17 @@ import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.devItem;
 import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.pick;
 
-public record PackListDevMenu(Minecraft minecraft, PackOptionsContext options, PackList.Entry entry) {
+public class PackListDevMenu implements ContextMenuProvider, RenderableRect {
+    private final Minecraft minecraft;
+    private final PackOptionsContext options;
+    private final PackListViewModel.Entry viewModel;
+
+    public PackListDevMenu(Minecraft minecraft,  PackOptionsContext options, PackListViewModel.Entry viewModel) {
+        this.minecraft = minecraft;
+        this.options = options;
+        this.viewModel = viewModel;
+    }
+
     private static final int DEV_SPRITE_SIZE = 16;
     private static final int DEV_SPRITE_MARGIN_RIGHT = 8;
     private static final Sprite EYE_SLASH_SPRITE = Sprite.of16(ResourceUtil.getIcon("eye_slash"));
@@ -45,55 +57,16 @@ public record PackListDevMenu(Minecraft minecraft, PackOptionsContext options, P
     private static final Component REMOVE_OVERRIDES = overrideText("remove");
     private static final Tooltip REQUIRED_NO_DISABLED_INFO = Tooltip.create(overrideText("required.no.disabled.info"));
 
-    public sealed interface Event<T> {
-        Pack trigger();
-
-        List<Pack> packs();
-
-        T value();
-
-        record EditAliases(Pack trigger, Boolean value) implements Event<Boolean> {
-            public List<Pack> packs() {
-                return List.of(this.trigger);
-            }
-        }
-
-        record Hide(Pack trigger, Boolean value, List<Pack> packs) implements Event<Boolean> {
-        }
-
-        record Require(Pack trigger, @Nullable Boolean value, List<Pack> packs) implements Event<Boolean> {
-        }
-
-        record Reposition(
-                Pack trigger,
-                PackOverride.@Nullable Position value,
-                List<Pack> packs
-        ) implements Event<PackOverride.Position> {
-        }
-    }
-
-    @FunctionalInterface
-    private interface EventFactory<T> {
-        Event<T> create(Pack pack, T value, List<Pack> packs);
-    }
-
-    private <T> void notifyListener(T value, List<Pack> packs, EventFactory<T> eventFactory) {
-        this.entry.handleDevMenuEvent(eventFactory.create(this.pack(), value, packs));
-    }
-
     private static Component overrideText(String keySuffix) {
         return ResourceUtil.getText("profile.override." + keySuffix);
-    }
-
-    private Pack pack() {
-        return this.entry.pack();
     }
 
     private ProfileScope hasOverride(BiPredicate<Profile, Pack> option) {
         return this.options.hasOverride(this.pack(), option);
     }
 
-    public void renderDevSprites(GuiGraphics guiGraphics, int top, int left, int width) {
+    @Override
+    public void render(GuiGraphics guiGraphics, int top, int left, int width, int height, float partialTick) {
         int size = DEV_SPRITE_SIZE;
         int iconX = (left + width) - size - DEV_SPRITE_MARGIN_RIGHT;
 
@@ -130,28 +103,20 @@ public record PackListDevMenu(Minecraft minecraft, PackOptionsContext options, P
         }
     }
 
+    private Pack pack() {
+        return this.viewModel.pack();
+    }
+
     private void updateHidden(boolean hidden) {
-        this.options.getProfile().ifPresent(profile -> {
-            List<Pack> selected = this.entry.getPackOrSelection();
-            profile.setHidden(hidden, selected);
-            this.notifyListener(hidden, selected, Event.Hide::new);
-        });
+        this.viewModel.overrideHidden(hidden);
     }
 
     private void updateRequired(@Nullable Boolean required) {
-        this.options.getProfile().ifPresent(profile -> {
-            List<Pack> selected = this.entry.getPackOrSelection();
-            profile.setRequired(required, selected);
-            this.notifyListener(required, selected, Event.Require::new);
-        });
+        this.viewModel.overrideRequire(required);
     }
 
     private void updatePosition(PackOverride.@Nullable Position position) {
-        this.options.getProfile().ifPresent(profile -> {
-            List<Pack> selected = this.entry.getPackOrSelection();
-            profile.setPosition(position, selected);
-            this.notifyListener(position, selected, Event.Reposition::new);
-        });
+        this.viewModel.overridePosition(position);
     }
 
     private void resetOverrides() {
@@ -175,12 +140,13 @@ public record PackListDevMenu(Minecraft minecraft, PackOptionsContext options, P
         ).separator();
 
         builder.add(devItem(ResourceUtil.getText("aliases.edit"))
-                .action(() -> this.entry.handleDevMenuEvent(new Event.EditAliases(this.pack(), this.options.getConfig().hasAlias(this.pack().getId()))))
+                .action(this.viewModel::openAliases)
                 .build()
         ).separator();
     }
 
-    public void onBuildHeader(ContextMenuItemBuilder builder) {
+    @Override
+    public void buildItems(ContextMenuItemBuilder builder, int mouseX, int mouseY) {
         Profile profile = this.options.getProfile().orElse(null);
         if (profile == null) {
             this.buildNonOverrideOptions(builder);

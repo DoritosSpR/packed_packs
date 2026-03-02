@@ -1,14 +1,15 @@
 package io.github.fishstiz.packed_packs.gui.layouts.pack;
 
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.gui.components.pack.CurrentPackList;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackListProps;
+import io.github.fishstiz.packed_packs.api.context.ScreenContext;
+import io.github.fishstiz.packed_packs.gui.components.pack.FolderDialog;
+import io.github.fishstiz.packed_packs.gui.model.PackListViewModel;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 
 public final class CurrentPacksLayout extends PackLayout {
-    public CurrentPacksLayout(PackListProps props) {
-        super(CurrentPackList::new, props);
+    public CurrentPacksLayout(ScreenContext screenContext, PackListViewModel packListContext) {
+        super(screenContext, packListContext);
     }
 
     @Override

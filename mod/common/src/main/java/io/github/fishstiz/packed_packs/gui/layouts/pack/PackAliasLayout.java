@@ -5,17 +5,14 @@ import io.github.fishstiz.fidgetz.gui.components.FidgetzButton;
 import io.github.fishstiz.fidgetz.gui.components.FidgetzText;
 import io.github.fishstiz.fidgetz.gui.components.RenderableRectWidget;
 import io.github.fishstiz.fidgetz.gui.layouts.FlexLayout;
-import io.github.fishstiz.packed_packs.config.DevConfig;
-import io.github.fishstiz.packed_packs.gui.components.actions.PackListAction;
-import io.github.fishstiz.packed_packs.gui.components.pack.PackList;
+import io.github.fishstiz.packed_packs.gui.intents.PackListIntent;
+import io.github.fishstiz.packed_packs.gui.model.PackedPacksViewModel;
 import io.github.fishstiz.packed_packs.util.AliasRegex;
-import io.github.fishstiz.packed_packs.pack.PackAssetManager;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
 import net.minecraft.client.gui.layouts.Layout;
 import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.layouts.LinearLayout;
-import net.minecraft.server.packs.repository.Pack;
 import org.jspecify.annotations.NonNull;
 
 import java.util.Objects;
@@ -37,35 +34,33 @@ public class PackAliasLayout implements Layout {
     private final Pattern openCharSet = Pattern.compile("(?<=(?<!\\\\)(\\\\\\\\){0,128})\\[\\^?(?=[^]]*(?<=(?<!\\\\)(\\\\\\\\){0,128})])");
     private final Pattern openCaptureGroup = Pattern.compile("(?<=(?<!\\\\)(\\\\\\\\){0,128})\\((\\?(<\\w+>|:|!|=|<!|<=))?(?=.*(?<=(?<!\\\\)(\\\\\\\\){0,128})\\))");
     private final Pattern alternation = Pattern.compile("(?<!(?<!\\\\)(\\\\\\\\){0,128}\\[[^]]{0,255})(?<=(?<!\\\\)(\\\\\\\\){0,128})\\|");
-    private final Consumer<PackListAction> dispatcher;
-    private final DevConfig.Packs config;
-    private final PackAssetManager assetManager;
+    private final PackedPacksViewModel viewModel;
     private EditableList<String> aliases;
     private LinearLayout layout;
-    private Pack pack;
 
-    public PackAliasLayout(Consumer<PackListAction> dispatcher, DevConfig.Packs config, PackAssetManager assetManager) {
-        this.dispatcher = dispatcher;
-        this.config = config;
-        this.assetManager = assetManager;
+    public PackAliasLayout(PackedPacksViewModel viewModel) {
+        this.viewModel = viewModel;
         this.layout = LinearLayout.vertical().spacing(GuiConstants.SPACING);
     }
 
-    public void saveAliases() {
-        if (this.pack != null && this.aliases != null) {
-            this.config.setAliases(this.pack.getId(), this.aliases.extractItems());
-            this.pack = null;
-            this.aliases = null;
+    public void onClose() {
+        var aliasContext = this.viewModel.state().editingAliases();
+        if (aliasContext != null && this.aliases != null) {
+            this.viewModel.dispatch(new PackListIntent.CloseAliases(aliasContext.target(), aliasContext.pack(), this.aliases.extractItems()));
         }
     }
 
-    public void editAliases(PackList source, Pack pack) {
-        this.pack = pack;
+    public void refresh() {
+        var aliasContext = this.viewModel.state().editingAliases();
+        if (aliasContext != null) {
+            this.aliases = null;
+            return;
+        }
 
-        this.aliases = EditableList.builder(this.config.getAliases(pack.getId()))
+        this.aliases = EditableList.builder(this.viewModel.getMetaConfig().getAliases(aliasContext.pack().getId()))
                 .setDimensions(LIST_WIDTH, LIST_HEIGHT)
                 .setMaxTextLength(MAX_ALIAS_LENGTH)
-                .setSaveValidator(value -> !Objects.equals(value, pack.getId()))
+                .setSaveValidator(value -> !Objects.equals(value, aliasContext.pack().getId()))
                 .addTextStylizer(AliasRegex.createStylizer(this.unescapedForwardSlash, Theme.RED_700.getARGB()))
                 .addTextStylizer(AliasRegex.createStylizer(this.unclosedParenthesis, Theme.RED_700.getARGB()))
                 .addTextStylizer(AliasRegex.createStylizer(this.unclosedBracket, Theme.RED_700.getARGB()))
@@ -83,16 +78,16 @@ public class PackAliasLayout implements Layout {
                 .build();
 
         FidgetzText<Void> name = FidgetzText.<Void>builder()
-                .setMessage(pack.getTitle())
+                .setMessage(aliasContext.pack().getTitle())
                 .setOffsetY(1)
                 .build();
-        RenderableRectWidget<Void> icon = RenderableRectWidget.<Void>builder(this.assetManager.getIcon(pack))
+        RenderableRectWidget<Void> icon = RenderableRectWidget.<Void>builder(aliasContext.sourceEntry().sprite())
                 .makeSquare()
                 .build();
         FidgetzButton<Void> closeButton = FidgetzButton.<Void>builder()
                 .makeSquare()
                 .setSprite(GuiConstants.CROSS_SPRITE)
-                .setOnPress(() -> this.dispatcher.accept(new PackListAction.CloseAliases(source, pack)))
+                .setOnPress(this::onClose)
                 .build();
 
         final FlexLayout titleLayout = FlexLayout.horizontal(this.aliases::getWidth).spacing(GuiConstants.SPACING);

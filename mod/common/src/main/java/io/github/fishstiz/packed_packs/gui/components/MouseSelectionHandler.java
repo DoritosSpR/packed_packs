@@ -4,16 +4,16 @@ import net.minecraft.util.Util;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.input.MouseButtonEvent;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.function.BooleanSupplier;
 
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
 
 public class MouseSelectionHandler<T> {
     private static final double DRAG_THRESHOLD = 1.0;
     private final GuiEventListener inputListener;
-    private final List<T> selection;
-    private final T item;
+    private final BooleanSupplier selected;
+    private final BooleanSupplier selectedLast;
+    private final BooleanSupplier selectedOnly;
     private MouseSelectionState mouseSelectionState = MouseSelectionState.INACTIVE;
     private long lastClickTime = 0;
 
@@ -30,10 +30,6 @@ public class MouseSelectionHandler<T> {
         public boolean shouldDispatch() {
             return this != NONE;
         }
-
-        public boolean isSelection() {
-            return this == SELECT || this == SELECT_TOGGLE || this == SELECT_EXCLUSIVE || this == SELECT_RANGE;
-        }
     }
 
     private enum MouseSelectionState {
@@ -42,22 +38,15 @@ public class MouseSelectionHandler<T> {
         SELECTING_MANY
     }
 
-    public MouseSelectionHandler(GuiEventListener inputListener, List<T> selection, T item) {
+    public MouseSelectionHandler(GuiEventListener inputListener, BooleanSupplier selected, BooleanSupplier selectedLast, BooleanSupplier selectedOnly) {
         this.inputListener = inputListener;
-        this.selection = selection;
-        this.item = item;
+        this.selected = selected;
+        this.selectedLast = selectedLast;
+        this.selectedOnly = selectedOnly;
     }
 
     private static boolean exceedsDragThreshold(double dragX, double dragY) {
         return Math.hypot(dragX, dragY) > DRAG_THRESHOLD;
-    }
-
-    private boolean isSelected() {
-        return this.selection.contains(this.item);
-    }
-
-    private boolean isSelectedLast() {
-        return !this.selection.isEmpty() && Objects.equals(this.selection.getLast(), this.item);
     }
 
     private boolean updateDoubleClick() {
@@ -83,11 +72,11 @@ public class MouseSelectionHandler<T> {
             this.mouseSelectionState = MouseSelectionState.SELECTING_MANY;
             return Action.SELECT_TOGGLE;
         }
-        if (!this.isSelected()) {
+        if (!this.selected.getAsBoolean()) {
             this.mouseSelectionState = MouseSelectionState.SELECTING_ONE;
             return Action.SELECT_EXCLUSIVE;
         }
-        if (!this.isSelectedLast()) {
+        if (!this.selectedLast.getAsBoolean()) {
             this.mouseSelectionState = MouseSelectionState.SELECTING_ONE;
             return Action.SELECT;
         }
@@ -99,8 +88,8 @@ public class MouseSelectionHandler<T> {
     public Action mouseReleased(MouseButtonEvent mouseButtonEvent) {
         if (this.inputListener.isMouseOver(mouseButtonEvent.x(), mouseButtonEvent.y())
             && this.mouseSelectionState == MouseSelectionState.SELECTING_ONE
-            && this.isSelectedLast()
-            && this.selection.size() > 1) {
+            && this.selectedLast.getAsBoolean()
+            && !this.selectedOnly.getAsBoolean()) {
             this.mouseSelectionState = MouseSelectionState.INACTIVE;
             return Action.SELECT_EXCLUSIVE;
         }
@@ -115,7 +104,7 @@ public class MouseSelectionHandler<T> {
         }
 
         if (exceedsDragThreshold(dragX, dragY) &&
-            this.isSelected() &&
+            this.selected.getAsBoolean() &&
             this.mouseSelectionState == MouseSelectionState.SELECTING_ONE) {
             return Action.DRAG;
         }

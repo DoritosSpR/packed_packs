@@ -1,36 +1,34 @@
 package io.github.fishstiz.packed_packs.gui.components.pack;
 
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import io.github.fishstiz.fidgetz.gui.components.*;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuContainer;
 import io.github.fishstiz.fidgetz.gui.components.contextmenu.ContextMenuItemBuilder;
 import io.github.fishstiz.fidgetz.gui.renderables.ColoredRect;
+import io.github.fishstiz.fidgetz.gui.renderables.GradientRect;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.GuiSprite;
+import io.github.fishstiz.fidgetz.gui.renderables.sprites.Sprite;
 import io.github.fishstiz.fidgetz.util.DrawUtil;
 import io.github.fishstiz.fidgetz.util.GuiUtil;
-import io.github.fishstiz.packed_packs.api.context.PackContext;
 import io.github.fishstiz.packed_packs.api.context.ScreenContext;
 import io.github.fishstiz.packed_packs.api.events.ContextMenuEvent;
 import io.github.fishstiz.packed_packs.api.events.InitializePackEntryEvent;
 import io.github.fishstiz.packed_packs.config.Preferences;
 import io.github.fishstiz.packed_packs.gui.components.MouseSelectionHandler;
 import io.github.fishstiz.packed_packs.gui.components.contextmenu.PackMenuHeader;
-import io.github.fishstiz.packed_packs.gui.history.Restorable;
 import io.github.fishstiz.packed_packs.gui.components.ToggleableHelper;
+import io.github.fishstiz.packed_packs.gui.model.PackListViewModel;
 import io.github.fishstiz.packed_packs.impl.PackedPacksApiImpl;
-import io.github.fishstiz.packed_packs.impl.context.PackContextImpl;
 import io.github.fishstiz.packed_packs.impl.events.ContextMenuEventImpl;
-import io.github.fishstiz.packed_packs.pack.PackAssetManager;
-import io.github.fishstiz.packed_packs.pack.PackFileOperations;
-import io.github.fishstiz.packed_packs.pack.PackOptionsContext;
-import io.github.fishstiz.packed_packs.transform.interfaces.FilePack;
 import io.github.fishstiz.packed_packs.util.PackUtil;
 import io.github.fishstiz.packed_packs.util.constants.GuiConstants;
 import io.github.fishstiz.packed_packs.util.constants.Theme;
-import io.github.fishstiz.packed_packs.gui.components.actions.*;
 import io.github.fishstiz.packed_packs.pack.folder.FolderPack;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.components.SelectableEntry;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
@@ -43,39 +41,47 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 import static io.github.fishstiz.fidgetz.util.GuiUtil.playClickSound;
 import static io.github.fishstiz.packed_packs.util.InputUtil.*;
+import static io.github.fishstiz.packed_packs.util.ResourceUtil.getVanilla;
 import static io.github.fishstiz.packed_packs.util.constants.GuiConstants.*;
 import static io.github.fishstiz.fidgetz.util.lang.ObjectsUtil.*;
 
-public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> implements
-        Restorable<PackList.Snapshot>,
-        ContainerEventHandlerPatch,
-        ContextMenuContainer {
-    protected static final int Y_OFFSET = 1;
-    protected static final int ITEM_HEIGHT = 35;
-    protected static final int ROW_GAP = 3;
-    protected final ScreenContext screenContext;
-    protected final PackOptionsContext options;
-    protected final PackAssetManager assets;
-    protected final PackListModel list;
-    private final PackFileOperations fileOps;
-    private final Consumer<PackListAction> dispatcher;
+public class PackList extends AbstractFixedListWidget<PackList.Entry> implements ContainerEventHandlerPatch, ContextMenuContainer {
+    private static final int Y_OFFSET = 1;
+    private static final int ITEM_HEIGHT = 35;
+    private static final int ROW_GAP = 3;
+    private static final double SCROLL_STEP = 10;
+    private static final int DROP_INDEX_PADDING = 3;
+    private final ScreenContext screenContext;
+    private final PackListViewModel viewModel;
+    private Theme dropTheme;
+    private ColoredRect dropRect;
+    private ColoredRect dropIndexRect;
+    private GradientRect scrollUpRect;
+    private GradientRect scrollDownRect;
+    private boolean scrolling;
 
-    protected PackList(PackListProps props) {
+    public PackList(ScreenContext screenContext, PackListViewModel viewModel) {
         super(ITEM_HEIGHT);
-
-        this.assets = props.assets();
-        this.options = props.options();
-        this.screenContext = props.screenContext();
-        this.dispatcher = props.dispatcher();
-        this.fileOps = props.fileOps();
-        this.list = new PackListModel(this.options);
+        this.screenContext = screenContext;
+        this.viewModel = viewModel;
+        this.applyTheme();
+        this.refresh();
     }
 
-    protected abstract @NonNull Entry createEntry(PackContext context, int index);
+    private void applyTheme() {
+        if (this.viewModel.canReorder()) {
+            this.dropTheme = Theme.GREEN_500;
+            this.dropIndexRect = new ColoredRect(dropTheme.getARGB());
+            this.scrollUpRect = GradientRect.fromTop(dropTheme.withAlpha(0.75f), dropTheme.withAlpha(0));
+            this.scrollDownRect = this.scrollUpRect.flip();
+        } else {
+            this.dropTheme = Theme.RED_700;
+            this.dropRect = new ColoredRect(dropTheme.withAlpha(0.25f));
+        }
+    }
 
     public @Nullable Entry getEntry(@Nullable Pack pack) {
         if (pack == null) return null;
@@ -85,138 +91,36 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         return null;
     }
 
-    private void refreshEntries() {
+    public void refresh() {
+        List<PackListViewModel.Entry> entries = this.viewModel.entries();
         Entry focused = this.getFocused();
-        List<Pack> visiblePacks = this.list.getVisiblePacks();
 
         this.clearEntries();
-        for (int i = 0; i < visiblePacks.size(); i++) {
-            Pack pack = visiblePacks.get(i);
-            PackContext context = new PackContextImpl(pack, this.assets, this.fileOps);
-            Entry entry = this.createEntry(context, i);
-            this.addEntry(entry);
+        for (int i = 0; i < entries.size(); i++) {
+            this.addEntry(new Entry(entries.get(i), i));
         }
 
         this.clampScrollAmount();
         this.setFocused(mapOrNull(focused, f -> this.getEntry(f.pack())));
     }
 
-    protected void refreshList() {
-        this.list.refresh();
-        this.refreshEntries();
-    }
-
     public void scrollToTop() {
         this.setScrollAmount(0);
     }
 
-    public void reload(Collection<Pack> packs) {
-        this.list.replaceAll(packs);
-        this.setFocused(null);
-        this.refresh();
-    }
-
-    public @NonNull List<Pack> copyPacks() {
-        return List.copyOf(this.list.getPacks());
-    }
-
-    public List<Pack> getOrderedSelection() {
-        return this.list.getOrderedSelection();
-    }
-
-    public void clearSelection() {
-        this.list.clearSelection();
-    }
-
-    private void refresh() {
-        this.clearSelection();
-        this.refreshList();
-        this.scrollToTop();
-    }
-
-    public void sort(Query.SortOption sort) {
-        if (this.list.sort(sort)) {
-            this.refresh();
-        }
-    }
-
-    public void hideIncompatible(boolean hideIncompatible) {
-        if (this.list.hideIncompatible(hideIncompatible)) {
-            this.clearSelection();
-            this.refreshList();
-        }
-    }
-
-    public void search(@NonNull String search) {
-        if (this.list.search(search)) {
-            this.refresh();
-        }
-    }
-
-    public boolean isQueried() {
-        return this.list.isQueried();
-    }
-
-    public void addAll(List<Pack> packs) {
-        for (Pack pack : packs) {
-            this.list.add(pack);
-        }
-        this.refreshList();
-    }
-
-    private void addOrMove(Pack pack, int to) {
-        this.list.insertOrMove(to, pack);
-        this.list.select(pack);
-    }
-
-    public void addAll(List<Pack> packs, int to) {
-        for (Pack pack : packs) {
-            this.addOrMove(pack, to);
-        }
-        this.refreshList();
-    }
-
-    public boolean moveAll(List<Pack> selection, int to) {
-        if (this.list.moveAll(to, selection)) {
-            this.refreshList();
-            return true;
-        }
-        return true;
-    }
-
-    private boolean removePack(Pack pack) {
-        Entry focused = this.getFocused();
-        if (this.list.remove(pack)) {
-            if (focused != null && focused.pack().getId().equals(pack.getId())) {
-                this.setFocused(null);
+    private @Nullable Entry getLastSelected() {
+        for (Entry entry : this.children()) {
+            if (entry.viewModel.selectedLast()) {
+                return entry;
             }
-            return true;
         }
-        return false;
-    }
-
-    public void remove(Pack pack) {
-        this.removePack(pack);
-        this.refreshList();
-    }
-
-    public void removeAll(List<Pack> packs) {
-        boolean removed = false;
-        for (Pack pack : packs) {
-            removed |= this.removePack(pack);
-        }
-        if (removed) {
-            this.refreshList();
-        }
-    }
-
-    public @Nullable Pack getLastSelected() {
-        return this.list.getLastSelected();
+        return null;
     }
 
     @Override
     public @Nullable Entry getSelected() {
-        return this.getLastSelected() != null ? this.getEntry(this.getLastSelected()) : super.getSelected();
+        Entry lastSelected = this.getLastSelected();
+        return lastSelected != null ? lastSelected : super.getSelected();
     }
 
     @Override
@@ -224,98 +128,116 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         this.selected = selected;
     }
 
-    public boolean isSelected(Pack pack) {
-        return this.list.isSelected(pack);
-    }
-
     public void scrollToLastSelected() {
-        ifPresent(this.getEntry(this.getLastSelected()), this::scrollToEntry);
+        ifPresent(this.getLastSelected(), this::scrollToEntry);
     }
 
-    public void unselect(Pack pack) {
-        this.list.unselect(pack);
-
-        Entry entry = this.getEntry(pack);
-        if (entry == this.getFocused()) {
-            this.setFocused(null);
-        }
-        if (entry == this.getSelected()) {
-            this.setSelected(null);
-        }
-    }
-
-    public void select(Pack pack) {
-        if (this.list.select(pack)) {
-            Entry entry = this.getEntry(pack);
-            this.setFocused(entry);
-            this.setSelected(entry);
-        }
-    }
-
-    public void selectAll() {
-        this.list.getVisiblePacks().forEach(this::select);
-    }
-
-    public void selectAll(List<Pack> packs) {
-        packs.forEach(this::select);
-    }
-
-    public void selectExclusive(Pack pack) {
-        this.clearSelection();
-        this.select(pack);
-    }
-
-    public void selectToggle(Pack pack) {
-        if (this.isSelected(pack)) {
-            this.unselect(pack);
+    private void scrollStep(boolean up, float partialTick) {
+        double scrollAmount = this.scrollAmount();
+        if (up) {
+            scrollAmount -= SCROLL_STEP * partialTick;
         } else {
-            this.select(pack);
+            scrollAmount += SCROLL_STEP * partialTick;
         }
+
+        this.scrolling = true;
+        this.setClampedScrollAmount(scrollAmount);
     }
 
-    public void selectRange(Pack pack) {
-        this.list.selectRange(pack);
-        this.select(pack);
+    public int getDropIndex(double mouseY) {
+        if (this.children().isEmpty()) return -1;
+
+        int index = this.getRowIndex(mouseY);
+        if (index == -1) return -1;
+
+        PackList.Entry entry = this.getEntry(index);
+        int centerY = entry.getY() + (entry.getHeight() / 2);
+
+        if (mouseY >= centerY) {
+            int next = index + 1;
+            return next < this.children().size() ? next : -1;
+        }
+        return index;
     }
 
-    public boolean isTransferable(Pack pack) {
-        return testNullable(this.getEntry(pack), PackList.Entry::isTransferable);
-    }
-
-    public void transferAll() {
-        List<Pack> payload = new ArrayList<>();
-        List<Pack> visiblePacks = this.list.getVisiblePacks();
-        for (int i = visiblePacks.size() - 1; i >= 0; i--) {
-            Pack pack = visiblePacks.get(i);
-            if (this.isTransferable(pack)) {
-                payload.add(pack);
+    private boolean isMouserOverSelection(List<Pack> selection, double mouseX, double mouseY) {
+        for (Pack selected : selection) {
+            PackList.Entry entry = this.getEntry(selected);
+            if (entry != null && entry.isMouseOver(mouseX, mouseY)) {
+                return true;
             }
         }
-        if (!payload.isEmpty()) {
-            this.dispatch(new PackListAction.Transfer(this, this.getLastSelected(), payload));
+        return false;
+    }
+
+    public boolean isDropWithinBounds(PackListViewModel source, Pack pack, List<Pack> payload, int mouseX, int mouseY, int index) {
+        if (this.scrolling || (source == this.viewModel && this.isMouserOverSelection(payload, mouseX, mouseY))) {
+            return false;
+        }
+        return this.viewModel.canAccept(source, pack, payload, index);
+    }
+
+    private void renderDropIndex(GuiGraphics guiGraphics, int x, int width, int index) {
+        int rowTop = Math.clamp(
+                this.getRowTop(index != -1 ? index : this.children().size()),
+                this.getY() + this.offsetY + DROP_INDEX_PADDING,
+                this.getBottom() - this.rowGap - DROP_INDEX_PADDING
+        );
+        int indexY = rowTop - this.rowGap - DROP_INDEX_PADDING;
+
+        guiGraphics.enableScissor(this.getX(), this.getY(), this.getRight(), this.getBottom());
+        this.dropIndexRect.render(guiGraphics, x, indexY, width, rowTop - indexY + DROP_INDEX_PADDING);
+        guiGraphics.disableScissor();
+    }
+
+    private void renderDroppableSlots(GuiGraphics guiGraphics, PackListViewModel source, Pack pack, List<Pack> payload, int mouseX, int mouseY, float partialTick) {
+        int x = this.getX();
+        int y = this.getY();
+        int width = this.scrollbarVisible() ? this.getWidth() - this.scrollbarOffset : this.getWidth();
+        int height = this.getHeight();
+        int bottom = this.getBottom();
+
+        if (this.isMouseOver(mouseX, mouseY)) {
+            double scrollAmount = this.scrollAmount();
+
+            int scrollDownY = bottom - this.getItemHeight();
+            if (scrollAmount < this.maxScrollAmount() && mouseY >= scrollDownY) {
+                this.scrollDownRect.render(guiGraphics, x, scrollDownY, width, this.getItemHeight());
+                this.scrollStep(false, partialTick);
+            } else if (scrollAmount > 0 && mouseY <= y + this.getItemHeight()) {
+                this.scrollUpRect.render(guiGraphics, x, y, width, this.getItemHeight());
+                this.scrollStep(true, partialTick);
+            } else {
+                this.scrolling = false;
+            }
+
+            int index = this.getDropIndex(mouseY);
+            if (this.isDropWithinBounds(source, pack, payload, mouseX, mouseY, index)) {
+                this.renderDropIndex(guiGraphics, x, width, index);
+            }
+        }
+
+        DrawUtil.renderOutline(guiGraphics, x, y, width, height, dropTheme.getARGB());
+    }
+
+    private void renderDroppableRect(GuiGraphics guiGraphics, PackListViewModel source, Pack pack, List<Pack> payload, int mouseX, int mouseY, float partialTick) {
+        if (this.isDropWithinBounds(source, pack, payload, mouseX, mouseY, 0)) {
+            if (this.isMouseOver(mouseX, mouseY)) {
+                this.dropRect.render(guiGraphics, this.getX(), this.getY(), width, this.getHeight(), partialTick);
+            }
+
+            DrawUtil.renderOutline(guiGraphics, this.getX(), this.getY(), width, this.getHeight(), this.dropTheme.getARGB());
         }
     }
 
-    protected void dispatch(PackListAction action) {
-        this.dispatcher.accept(action);
-    }
-
-    public abstract boolean canInteract(PackList source);
-
-    protected abstract boolean canDrop(PackListAction.Drag dragged, double mouseX, double mouseY);
-
-    protected abstract void handleDrop(PackListAction.Drag dragged, double mouseX, double mouseY);
-
-    public abstract void renderDroppableZone(GuiGraphics guiGraphics, PackListAction.Drag dragged, int mouseX, int mouseY, float partialTick);
-
-    public final void drop(PackListAction.Drag dragged, double mouseX, double mouseY) {
-        if (!this.options.isLocked() && this.canDrop(dragged, mouseX, mouseY)) {
-            this.handleDrop(dragged, mouseX, mouseY);
+    public void renderDroppableZone(GuiGraphics guiGraphics, PackListViewModel source, Pack pack, List<Pack> payload, int mouseX, int mouseY, float partialTick) {
+        if (!this.viewModel.locked() && source.canInteract(this.viewModel)) {
+            if (this.viewModel.canReorder()) {
+                this.renderDroppableSlots(guiGraphics, source, pack, payload, mouseX, mouseY, partialTick);
+            } else {
+                this.renderDroppableRect(guiGraphics, source, pack, payload, mouseX, mouseY, partialTick);
+            }
         }
-    }
-
-    protected void openFolder(FolderPack folderPack) {
-        this.dispatch(new PackListAction.OpenFolder(this, folderPack));
     }
 
     private @Nullable ComponentPath handleArrowNavigation(FocusNavigationEvent.ArrowNavigation arrowNavigation) {
@@ -326,11 +248,11 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         };
         if (entry != null) {
             if (isRangeModifierActive()) {
-                this.selectRange(entry.pack());
+                entry.viewModel.selectRange();
             } else {
-                this.selectExclusive(entry.pack());
+                entry.viewModel.selectExclusive();
             }
-            this.dispatch(new PackListAction.Focus(this, null));
+            entry.viewModel.select();
             this.scrollToEntry(entry);
             return ComponentPath.path(entry, this);
         }
@@ -341,15 +263,12 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
     @Override
     public @Nullable ComponentPath nextFocusPath(@NonNull FocusNavigationEvent event) {
         if (!this.isFocused()) {
-            Pack lastSelected = this.getLastSelected();
-            Entry entry = null;
-            if (lastSelected != null) {
-                entry = this.getEntry(lastSelected);
-            } else if (!this.children().isEmpty()) {
+            Entry entry = this.getLastSelected();
+            if (entry != null && !this.children().isEmpty()) {
                 entry = this.children().getFirst();
             }
             if (entry != null) {
-                this.select(entry.pack());
+                entry.viewModel.select();
                 this.scrollToEntry(entry);
                 return ComponentPath.path(entry, this);
             }
@@ -363,16 +282,32 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
     @Override
     public boolean keyPressed(@NonNull KeyEvent keyEvent) {
-        Entry entry = this.getEntry(this.getLastSelected());
-        if (isExpandFolder(keyEvent) && entry != null && entry.folderWidget != null && this.list.getSelection().size() == 1) {
-            this.openFolder(entry.folderWidget.getMetadata());
+        Entry entry = this.getLastSelected();
+        if (isExpandFolder(keyEvent) && entry != null && entry.viewModel.folder().isPresent() && entry.viewModel.selectedExclusive()) {
+            entry.viewModel.openFolder();
             return true;
         }
         if (isTransfer(keyEvent)) {
-            if (entry != null && entry.transfer()) {
+            if (entry != null && !entry.isStale() && entry.viewModel.canMoveOut()) {
+                entry.viewModel.transfer();
                 playClickSound();
             }
             return entry != null;
+        }
+        if (isMoveDown(keyEvent)) {
+            if (entry != null && !entry.isStale() && entry.viewModel.canMoveDown()) {
+                entry.viewModel.moveDown();
+                this.scrollToEntry(entry);
+                playClickSound();
+            }
+            return true;
+        } else if (isMoveUp(keyEvent)) {
+            if (entry != null && !entry.isStale() && entry.viewModel.canMoveUp()) {
+                entry.viewModel.moveUp();
+                this.scrollToEntry(entry);
+                playClickSound();
+            }
+            return true;
         }
         return super.keyPressed(keyEvent);
     }
@@ -387,7 +322,6 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
     @Override
     public @NonNull List<Entry> children() {
-        // for performance, return raw children instead of a new view
         return this.children;
     }
 
@@ -415,66 +349,36 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         return maxScrollAmount > 0 ? maxScrollAmount + Y_OFFSET : maxScrollAmount;
     }
 
-    public @NonNull Snapshot captureState(String eventName) {
-        return new Snapshot(this);
-    }
-
-    @Override
-    public void replaceState(@NonNull Snapshot snapshot) {
-        snapshot.model.restore();
-        this.refreshEntries();
-        this.setFocused(this.getEntry(snapshot.focused));
-        this.setSelected(this.getEntry(snapshot.selected));
-    }
-
-    public record Snapshot(
-            PackList target,
-            @Nullable Pack focused,
-            @Nullable Pack selected,
-            PackListModel.Snapshot model
-    ) implements Restorable.Snapshot<Snapshot> {
-        public Snapshot(PackList target, PackListModel.Snapshot model) {
-            this(target, extractPack(target.getFocused()), extractPack(target.getSelected()), model);
-        }
-
-        public Snapshot(PackList target) {
-            this(target, target.list.captureState());
-        }
-
-        public Snapshot replaceAll(List<Pack> packs) {
-            return new Snapshot(this.target, this.focused, this.selected, this.model.replaceAll(packs));
-        }
-
-        public Snapshot retainAll(Set<Pack> packs) {
-            return new Snapshot(this.target, this.focused, this.selected, this.model.retainAll(packs));
-        }
-    }
-
-    private static @Nullable Pack extractPack(@Nullable Entry entry) {
-        return mapOrNull(entry, Entry::pack);
-    }
-
-    public abstract class Entry extends AbstractFixedListWidget<Entry>.Entry implements ContainerEventHandlerPatch, ContextMenuContainer {
+    public class Entry extends AbstractFixedListWidget<Entry>.Entry implements SelectableEntry, ContainerEventHandlerPatch, ContextMenuContainer {
         private static final int V_MARGIN = ROW_GAP / 2 + Y_OFFSET;
         private static final int BACKGROUND_MARGIN = 1;
+        private static final int H_SPACING = 2;
+        private static final int ICON_SIZE = ITEM_HEIGHT - ROW_GAP;
         private static final Tooltip FOLDER_OPEN_INFO = Tooltip.create(FolderPack.FOLDER_OPEN_TEXT);
-        protected static final int H_SPACING = 2;
-        protected static final ColoredRect SELECTED_OVERLAY = new ColoredRect(Theme.BLUE_500.withAlpha(0.25F));
-        protected final PackContext context;
+        private static final ColoredRect SELECTED_OVERLAY = new ColoredRect(Theme.BLUE_500.withAlpha(0.25F));
+        private static final Sprite SELECT_HIGHLIGHTED_SPRITE = GuiSprite.of32(getVanilla("transferable_list/select_highlighted"));
+        private static final Sprite SELECT_SPRITE = GuiSprite.of32(getVanilla("transferable_list/select"));
+        private static final Sprite UNSELECT_HIGHLIGHTED_SPRITE = GuiSprite.of32(getVanilla("transferable_list/unselect_highlighted"));
+        private static final Sprite UNSELECT_SPRITE = GuiSprite.of32(getVanilla("transferable_list/unselect"));
+        private static final Sprite MOVE_UP_HIGHLIGHTED_SPRITE = GuiSprite.of32(getVanilla("transferable_list/move_up_highlighted"));
+        private static final Sprite MOVE_UP_SPRITE = GuiSprite.of32(getVanilla("transferable_list/move_up"));
+        private static final Sprite MOVE_DOWN_HIGHLIGHTED_SPRITE = GuiSprite.of32(getVanilla("transferable_list/move_down_highlighted"));
+        private static final Sprite MOVE_DOWN_SPRITE = GuiSprite.of32(getVanilla("transferable_list/move_down"));
+        private final PackListViewModel.Entry viewModel;
         private final MouseSelectionHandler<Pack> selectionHandler;
         private final List<GuiEventListener> children = new ObjectArrayList<>();
         private final List<Renderable> renderables = new ObjectArrayList<>();
         private final List<Renderable> topRenderables = new ObjectArrayList<>();
         private @Nullable PackListDevMenu devMenu;
         private @Nullable PackWidget packWidget;
-        private @Nullable FidgetzButton<FolderPack> folderWidget;
+        private @Nullable FidgetzButton<Void> folderWidget;
         private boolean initialized;
         private boolean stale = false;
 
-        protected Entry(PackContext context, int index) {
+        Entry(PackListViewModel.Entry viewModel, int index) {
             super(index);
-            this.context = context;
-            this.selectionHandler = new MouseSelectionHandler<>(this, PackList.this.list.getSelection(), context.pack());
+            this.viewModel = viewModel;
+            this.selectionHandler = new MouseSelectionHandler<>(this, viewModel::selected, viewModel::selectedLast, viewModel::selectedExclusive);
         }
 
         private void ensureInitialized() {
@@ -484,43 +388,34 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
         }
 
         private void init() {
-            this.packWidget = this.addRenderableWidget(new PackWidget(
-                    this.pack(),
-                    PackList.this.assets,
-                    this.getX(),
-                    PackList.this.getRowTop(this.index),
-                    this.getWidth(),
-                    ITEM_HEIGHT - ROW_GAP,
-                    H_SPACING
-            ));
+            this.packWidget = this.addRenderableWidget(new PackWidget(this.viewModel, ITEM_HEIGHT - ROW_GAP, H_SPACING));
 
             boolean devMode = PackList.this.screenContext.devMode();
 
-            if (this.pack() instanceof FolderPack folderPack && (devMode || Preferences.INSTANCE.folderPackWidget.get())) {
+            if (this.viewModel.folder().isPresent() && (devMode || Preferences.INSTANCE.folderPackWidget.get())) {
                 this.folderWidget = this.addTopRenderableOnly(this.prependWidget(
-                        ToggleableHelper.applyPref(Preferences.INSTANCE.folderPackWidget, FidgetzButton.<FolderPack>builder())
+                        ToggleableHelper.applyPref(Preferences.INSTANCE.folderPackWidget, FidgetzButton.<Void>builder())
                                 .setTooltip(FOLDER_OPEN_INFO)
                                 .setHeight(this.packWidget.getHeight() / 3)
                                 .makeSquare()
                                 .setSprite(GuiConstants.HAMBURGER_SPRITE)
                                 .setFocusOnInteract(false)
-                                .setMetadata(folderPack)
-                                .setOnPress(this::openFolder)
+                                .setOnPress(this.viewModel::openFolder)
                                 .build()));
             }
 
             if (devMode) {
-                this.devMenu = new PackListDevMenu(PackList.this.minecraft, PackList.this.options, this);
+                this.devMenu = this.viewModel.devMenu(PackList.this.minecraft);
             }
 
             this.initialized = true;
 
-            InitializePackEntryEvent event = new InitializePackEntryEvent(PackList.this.screenContext, this.context, this, this::addTopLayer);
+            InitializePackEntryEvent event = new InitializePackEntryEvent(PackList.this.screenContext, this.viewModel, this, this::addTopLayer);
             PackedPacksApiImpl.getInstance().eventBus().post(event);
         }
 
         public Pack pack() {
-            return this.context.pack();
+            return this.viewModel.pack();
         }
 
         public <U extends GuiEventListener & Renderable> U addRenderableWidget(U widget) {
@@ -543,76 +438,19 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
             this.addTopRenderableOnly(this.prependWidget(widget));
         }
 
-        public boolean isTransferable() {
-            return !PackList.this.options.isLocked() && !this.isStale();
-        }
-
-        public boolean isSelected() {
-            return PackList.this.list.getSelection().contains(this.pack());
-        }
-
-        public boolean isSelectedLast() {
-            List<Pack> selection = PackList.this.list.getSelection();
-            return !selection.isEmpty() && Objects.equals(selection.getLast(), this.pack());
-        }
-
-        public List<Pack> getPackOrSelection() {
-            return this.isSelected() ? List.copyOf(PackList.this.list.getSelection()) : List.of(this.pack());
-        }
-
-        protected void sendPacks(Pack trigger, List<Pack> payload) {
-            PackList.this.dispatch(new PackListAction.Transfer(PackList.this, trigger, payload));
-        }
-
-        private boolean sendSelection() {
-            List<Pack> payload = new ObjectArrayList<>();
-
-            for (Pack selected : PackList.this.getOrderedSelection().reversed()) {
-                if (PackList.this.isTransferable(selected)) {
-                    payload.add(selected);
-                }
-            }
-
-            if (!payload.isEmpty()) {
-                Pack trigger = this.isTransferable() ? this.pack() : null;
-                this.sendPacks(trigger, payload);
-                return true;
-            }
-
-            return false;
-        }
-
-        public boolean transfer() {
-            if (!this.isSelected() && this.isTransferable()) {
-                PackList.this.dispatch(new PackListAction.Transfer(PackList.this, this.pack()));
-                return true;
-            }
-
-            return this.sendSelection();
-        }
-
-        protected boolean handleMouseAction(MouseSelectionHandler.Action action) {
+        private boolean handleMouseAction(MouseSelectionHandler.Action action) {
             if (!action.shouldDispatch() || this.isStale()) return false;
 
             switch (action) {
-                case SELECT -> PackList.this.select(this.pack());
-                case SELECT_TOGGLE -> PackList.this.selectToggle(this.pack());
-                case SELECT_EXCLUSIVE -> PackList.this.selectExclusive(this.pack());
-                case SELECT_RANGE -> PackList.this.selectRange(this.pack());
+                case SELECT -> this.viewModel.select();
+                case SELECT_TOGGLE -> this.viewModel.selectToggle();
+                case SELECT_EXCLUSIVE -> this.viewModel.selectExclusive();
+                case SELECT_RANGE -> this.viewModel.selectRange();
+                case DRAG -> this.viewModel.drag();
                 case TRANSFER -> {
-                    if (this.isTransferable()) {
-                        PackList.this.dispatch(new PackListAction.Transfer(PackList.this, this.pack()));
-                        return false;
-                    }
+                    this.viewModel.transfer();
+                    return false;
                 }
-                case DRAG -> {
-                    List<Pack> payload = PackList.this.getOrderedSelection().reversed();
-                    PackList.this.dispatch(new PackListAction.Drag(PackList.this, this.pack(), payload));
-                }
-            }
-
-            if (action.isSelection()) {
-                PackList.this.dispatch(new PackListAction.Focus(PackList.this, this.pack()));
             }
 
             return true;
@@ -625,9 +463,39 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
         @Override
         public boolean mouseClicked(@NonNull MouseButtonEvent mouseButtonEvent, boolean doubleClicked) {
+            if (isLeftClick(mouseButtonEvent) && !this.isStale()) {
+                int relativeX = (int) mouseButtonEvent.x() - this.getX() + H_SPACING;
+                int relativeY = (int) mouseButtonEvent.y() - this.getY();
+
+                if (this.viewModel.canEnable() && this.mouseOverIcon(relativeX, relativeY, ICON_SIZE)) {
+                    this.viewModel.enable();
+                    playClickSound();
+                    return false;
+                }
+
+                if (this.viewModel.canDisable() && this.mouseOverLeftHalf(relativeX, relativeY, ICON_SIZE)) {
+                    this.viewModel.disable();
+                    playClickSound();
+                    return false;
+                }
+
+                if (this.viewModel.canMoveUp() && this.mouseOverTopRightQuarter(relativeX, relativeY, ICON_SIZE)) {
+                    this.viewModel.moveUp();
+                    playClickSound();
+                    return false;
+                }
+
+                if (this.viewModel.canMoveDown() && this.mouseOverBottomRightQuarter(relativeX, relativeY, ICON_SIZE)) {
+                    this.viewModel.moveDown();
+                    playClickSound();
+                    return false;
+                }
+            }
+
             if (ContainerEventHandlerPatch.super.mouseClicked(mouseButtonEvent, doubleClicked)) {
                 return false;
             }
+
             return this.handleMouseAction(this.selectionHandler.mouseClicked(mouseButtonEvent));
         }
 
@@ -646,6 +514,9 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
             if (super.keyPressed(keyEvent)) {
                 return true;
             }
+            if (this.isStale()) {
+                return false;
+            }
             if (isOpenFile(keyEvent)) {
                 PackUtil.openPack(this.pack());
                 return true;
@@ -654,19 +525,19 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
                 PackUtil.openParent(this.pack());
                 return true;
             }
-            if (isDelete(keyEvent) && this.canOperateFile()) {
-                this.deletePack();
+            if (isDelete(keyEvent) && this.viewModel.fileModifiable()) {
+                this.viewModel.delete();
                 return true;
             }
-            if (isRename(keyEvent) && this.canOperateFile()) {
-                this.renamePack();
+            if (isRename(keyEvent) && this.viewModel.fileModifiable()) {
+                this.viewModel.openRename();
                 return true;
             }
             return false;
         }
 
-        public void renderBack(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            if (!this.pack().getCompatibility().isCompatible() && !PackList.this.options.getUserConfig().isIncompatibleWarningsHidden()) {
+        public void renderBack(GuiGraphics guiGraphics, int top, int left, int width, int height) {
+            if (!this.pack().getCompatibility().isCompatible() && !this.viewModel.incompatibleWarningsHidden()) {
                 int backgroundLeft = left + BACKGROUND_MARGIN;
                 int backgroundTop = top + BACKGROUND_MARGIN;
                 int backgroundRight = backgroundLeft + width - BACKGROUND_MARGIN * 2;
@@ -676,16 +547,54 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
             }
         }
 
-        protected abstract void renderForeground(GuiGraphics guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick);
+        private void updateCursor(GuiGraphics guiGraphics, boolean hovered) {
+            if (hovered) {
+                guiGraphics.requestCursor(CursorTypes.POINTING_HAND);
+            }
+        }
+
+        private void renderForeground(GuiGraphics guiGraphics, int top, int left, boolean hovering) {
+            if (!hovering || !this.viewModel.selectedLast()) return;
+
+            int x = left + H_SPACING;
+            int relativeX = x - this.getX();
+            int relativeY = top - this.getY();
+
+            WHITE_OVERLAY.render(guiGraphics, x, top, ICON_SIZE, ICON_SIZE);
+
+            if (this.viewModel.canEnable()) {
+                boolean hovered = this.mouseOverIcon(relativeX, relativeY, ICON_SIZE);
+                pick(hovered, SELECT_HIGHLIGHTED_SPRITE, SELECT_SPRITE).render(guiGraphics, x, top);
+                this.updateCursor(guiGraphics, hovered);
+            }
+
+            if (this.viewModel.canDisable()) {
+                boolean hovered = this.mouseOverLeftHalf(relativeX, relativeY, ICON_SIZE);
+                pick(hovered, UNSELECT_HIGHLIGHTED_SPRITE, UNSELECT_SPRITE).render(guiGraphics, x, top);
+                this.updateCursor(guiGraphics, hovered);
+            }
+
+            if (this.viewModel.canMoveUp()) {
+                boolean hovered = this.mouseOverTopRightQuarter(relativeX, relativeY, ICON_SIZE);
+                pick(hovered, MOVE_UP_HIGHLIGHTED_SPRITE, MOVE_UP_SPRITE).render(guiGraphics, x, top);
+                this.updateCursor(guiGraphics, hovered);
+            }
+
+            if (this.viewModel.canMoveDown()) {
+                boolean hovered = this.mouseOverBottomRightQuarter(relativeX, relativeY, ICON_SIZE);
+                pick(hovered, MOVE_DOWN_HIGHLIGHTED_SPRITE, MOVE_DOWN_SPRITE).render(guiGraphics, x, top);
+                this.updateCursor(guiGraphics, hovered);
+            }
+        }
 
         private void renderSelection(GuiGraphics guiGraphics, int top, int left, int width, int height) {
-            if (this.isSelected()) {
-                pick(isSelectedLast(), WHITE_OVERLAY, SELECTED_OVERLAY).render(guiGraphics, left, top, width, height);
+            if (this.viewModel.selected()) {
+                pick(this.viewModel.selectedLast(), WHITE_OVERLAY, SELECTED_OVERLAY).render(guiGraphics, left, top, width, height);
                 DrawUtil.renderOutline(guiGraphics, left, top, width, height, Theme.BLUE_500.getARGB());
             }
         }
 
-        protected void renderTop(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        private void renderTop(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
             if (this.folderWidget != null) {
                 int folderWidgetY = this.getBottom() - this.folderWidget.getHeight() - BACKGROUND_MARGIN;
                 this.folderWidget.setPosition(this.packWidget.getContentLeft(), folderWidgetY);
@@ -710,24 +619,18 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
             this.packWidget.setPosition(left, innerTop);
             this.packWidget.setWidth(width);
 
-            this.renderBack(guiGraphics, top, left, width, height, mouseX, mouseY, hovering, partialTick);
+            this.renderBack(guiGraphics, top, left, width, height);
 
             for (Renderable renderable : this.renderables) {
                 renderable.render(guiGraphics, mouseX, mouseY, partialTick);
             }
 
             this.renderSelection(guiGraphics, top, left, width, height + Y_OFFSET);
-            this.renderForeground(guiGraphics, innerTop, left, width, innerHeight, mouseX, mouseY, hovering, partialTick);
+            this.renderForeground(guiGraphics, innerTop, left, hovering);
             this.renderTop(guiGraphics, mouseX, mouseY, partialTick);
 
             if (this.devMenu != null) {
-                this.devMenu.renderDevSprites(guiGraphics, innerTop, left, width);
-            }
-        }
-
-        protected void handleDevMenuEvent(PackListDevMenu.Event<?> event) {
-            if (event instanceof PackListDevMenu.Event.EditAliases editAliases) {
-                PackList.this.dispatch(new PackListAction.OpenAliases(PackList.this, editAliases.trigger()));
+                this.devMenu.render(guiGraphics, innerTop, left, width, innerHeight, partialTick);
             }
         }
 
@@ -737,27 +640,27 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
 
             PackList.this.setFocused(this);
 
-            var extensions = ContextMenuEventImpl.postPackEntry(PackList.this.screenContext, this.context);
+            var extensions = ContextMenuEventImpl.postPackEntry(PackList.this.screenContext, this.viewModel);
 
             ContextMenuContainer.super.buildItems(builder
                             .whenNonNull(extensions.getItems(ContextMenuEvent.PackEntry.Pos.BEFORE_HEADER))
                             .ifTrue((items, b) -> b.addAll(items))
-                            .add(new PackMenuHeader(this.pack(), this.packWidget.getSprite()))
+                            .add(new PackMenuHeader(this.pack(), this.viewModel.sprite()))
                             .whenNonNull(extensions.getItems(ContextMenuEvent.PackEntry.Pos.AFTER_HEADER))
                             .ifTrue((items, b) -> b.addAll(items))
                             .whenNonNull(this.devMenu)
-                            .ifTrue(PackListDevMenu::onBuildHeader)
+                            .ifTrue((menu, b) -> menu.buildItems(b, mouseX, mouseY))
                             .whenNonNull(extensions.getItems(ContextMenuEvent.PackEntry.Pos.AFTER_DEV))
                             .ifTrue((items, b) -> b.addAll(items))
                             .whenNonNull(this.folderWidget)
                             .ifTrue(b -> b
-                                    .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this::openFolder)
+                                    .simpleItem(FolderPack.FOLDER_OPEN_TEXT, this.viewModel::openFolder)
                                     .separator()
                             )
-                            .whenNonNull(((FilePack) this.pack()).packed_packs$getPath())
+                            .when(this.viewModel.fileModifiable())
                             .ifTrue(b -> b
-                                    .simpleItem(RENAME_FILE_TEXT, this::canOperateFile, this::renamePack)
-                                    .simpleItem(DELETE_FILE_TEXT, this::canOperateFile, this::deletePack)
+                                    .simpleItem(RENAME_FILE_TEXT, this.viewModel::fileModifiable, this.viewModel::openRename)
+                                    .simpleItem(DELETE_FILE_TEXT, this.viewModel::fileModifiable, this.viewModel::delete)
                                     .simpleItem(OPEN_FILE_TEXT, () -> PackUtil.openPack(this.pack()))
                                     .simpleItem(OPEN_PARENT_TEXT, () -> PackUtil.openParent(this.pack()))
                             )
@@ -766,22 +669,6 @@ public abstract class PackList extends AbstractFixedListWidget<PackList.Entry> i
                     mouseX,
                     mouseY
             );
-        }
-
-        private void openFolder() {
-            PackList.this.openFolder(Objects.requireNonNull(this.folderWidget, "Cannot open folder without folder widget").getMetadata());
-        }
-
-        public boolean canOperateFile() {
-            return PackList.this.fileOps.isOperable(this.pack());
-        }
-
-        public void deletePack() {
-            PackList.this.dispatch(new PackListAction.Delete(PackList.this, this.pack()));
-        }
-
-        public void renamePack() {
-            PackList.this.dispatch(new PackListAction.OpenRename(PackList.this, this.pack()));
         }
 
         public void onDelete() {
