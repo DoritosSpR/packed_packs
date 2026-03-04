@@ -3,6 +3,7 @@ plugins {
     id 'fabric-loom'
 }
 
+// Vincula este cargador con su correspondiente módulo common
 loader {
     common = ':fidgetz:common'
 }
@@ -19,14 +20,17 @@ dependencies {
 }
 
 loom {
+    // Usamos el mod_id definido en las propiedades globales
     def aw = file("src/main/resources/${mod_id}.accesswidener")
     if (aw.exists()) {
         accessWidenerPath.set(aw)
     }
     mixin {
-        defaultRefmapName.set("${mod_id}.refmap.json")
+        defaultRefmapName.set("fidgetz.refmap.json")
     }
     runs {
+        // En subproyectos de librería solemos quitar las ejecuciones 
+        // para no duplicar los botones de "Run" en el IDE
         remove client
         remove server
     }
