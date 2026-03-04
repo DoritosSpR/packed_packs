@@ -1,20 +1,6 @@
 plugins {
     id 'multiloader-common-provider'
-    id 'net.neoforged.moddev'
-}
-
-neoForge {
-    neoFormVersion = neo_form_version
-
-    def at = file('src/main/resources/META-INF/accesstransformer.cfg')
-    if (at.exists()) {
-        accessTransformers.from(at.absolutePath)
-    }
-
-    parchment {
-        minecraftVersion = parchment_minecraft
-        mappingsVersion = parchment_version
-    }
+    id 'java-library'
 }
 
 repositories {
@@ -34,6 +20,7 @@ repositories {
 }
 
 dependencies {
+    // Referencia al common de la sub-librería
     compileOnlyApi project(path: ":fidgetz:common")
 
     compileOnly group: 'org.spongepowered', name: 'mixin', version: "$mixin_version"
@@ -43,5 +30,6 @@ dependencies {
     compileOnly "io.github.fishstiz:minecraft-cursor-common-api:$minecraft_cursor_version"
     compileOnly "maven.modrinth:resourcify:$resourcify_version"
     compileOnly "maven.modrinth:respackopts:$respackopts_version"
+    // Nota: Aunque diga forge al final, si es una librería common se mantiene para compilación
     compileOnly "io.gitlab.jfronny.libjf:libjf-resource-pack-entry-widgets-forge:$libjf_resource_pack_entry_widgets_version"
 }
