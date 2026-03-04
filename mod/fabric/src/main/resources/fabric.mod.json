@@ -32,14 +32,8 @@
     ]
   },
   "mixins": [
-    {
-      "config": "${mod_id}.mixins.json",
-      "environment": "client"
-    },
-    {
-      "config": "${mod_id}.fabric.mixins.json",
-      "environment": "client"
-    }
+    "${mod_id}.mixins.json",
+    "${mod_id}.fabric.mixins.json"
   ],
   "accessWidener": "${mod_id}.accesswidener",
   "depends": {
