@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "${mod_id}",
+  "id": "fidgetz",
   "version": "${mod_version}",
-  "name": "${mod_name}",
+  "name": "Fidgetz",
   "description": "${mod_description}",
   "authors": [
     "${mod_author}"
@@ -10,14 +10,8 @@
   "license": "${license}",
   "environment": "client",
   "mixins": [
-    {
-      "config": "fidgetz.mixins.json",
-      "environment": "client"
-    },
-    {
-      "config": "fidgetz.fabric.mixins.json",
-      "environment": "client"
-    }
+    "fidgetz.mixins.json",
+    "fidgetz.fabric.mixins.json"
   ],
   "accessWidener": "fidgetz.accesswidener",
   "depends": {
