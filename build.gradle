@@ -13,7 +13,7 @@ version = mod_version
 def basePublishOptions = [
         dryRun   : false,
         type     : publishMods.STABLE,
-        changelog: file('CHANGELOG.md').text
+        changelog: file('CHANGELOG.md').exists() ? file('CHANGELOG.md').text : ""
 ]
 
 ext {
@@ -60,5 +60,14 @@ publishMods {
         tagName = "v${this.version}"
         displayName = "v${this.version}"
         allowEmptyFiles = true
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    tasks.withType(JavaCompile).configureEach {
+        it.options.encoding = 'UTF-8'
+        it.options.release = Integer.parseInt(java_version)
     }
 }
